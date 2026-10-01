@@ -12,12 +12,16 @@ import {
 } from "@/domain/events/permissions";
 import {
   canAddCandidates,
+  canFinaliseEvent,
   canRespondToCandidates,
   canWithdrawCandidate,
 } from "@/domain/scheduling/permissions";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
-import { getEventSchedulingContext } from "@/lib/scheduling/queries";
+import {
+  getEventConsensusSummary,
+  getEventSchedulingContext,
+} from "@/lib/scheduling/queries";
 import { eventKindLabel, eventStatusLabel } from "@/lib/events/labels";
 import { createClient } from "@/lib/supabase/server";
 
@@ -57,13 +61,11 @@ export default async function EventDetailPage({ params }: PageProps) {
     detail.status,
   );
 
-  const group = await getGroupDetail(supabase, detail.groupId, user!.id);
-  const scheduling = await getEventSchedulingContext(
-    supabase,
-    detail.id,
-    detail.groupId,
-    user!.id,
-  );
+  const [group, scheduling, consensus] = await Promise.all([
+    getGroupDetail(supabase, detail.groupId, user!.id),
+    getEventSchedulingContext(supabase, detail.id, detail.groupId, user!.id),
+    getEventConsensusSummary(supabase, detail.id),
+  ]);
   const settings = group?.settings;
   const showScheduling = Boolean(settings);
   const canAdd = settings
@@ -76,6 +78,12 @@ export default async function EventDetailPage({ params }: PageProps) {
     detail.status,
   );
   const canRespond = canRespondToCandidates(detail.status);
+  const canFinalise = canFinaliseEvent(
+    detail.viewerRole,
+    user!.id,
+    detail.createdBy,
+    detail.status,
+  );
 
   return (
     <AppShell title={detail.title}>
@@ -143,12 +151,15 @@ export default async function EventDetailPage({ params }: PageProps) {
         <EventScheduling
           eventId={detail.id}
           groupId={detail.groupId}
+          eventStatus={detail.status}
           candidates={scheduling.candidates}
           maybeResponsesEnabled={scheduling.maybeResponsesEnabled}
           minimumAttendees={scheduling.minimumAttendees}
+          consensus={consensus}
           canAddCandidates={canAdd}
           canRemoveCandidates={canRemove}
           canRespond={canRespond}
+          canFinalise={canFinalise}
         />
       ) : null}
 
@@ -164,6 +175,7 @@ export default async function EventDetailPage({ params }: PageProps) {
               defaultNotes={detail.notes}
               defaultStartsAt={detail.startsAt}
               defaultEndsAt={detail.endsAt}
+              scheduleLocked={detail.status === "confirmed"}
             />
           </div>
         </section>

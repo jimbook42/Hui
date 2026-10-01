@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   INITIAL_EVENT_STATUS,
+  assertCanFinalise,
   assertMetadataEditable,
+  canChangeEventSchedule,
   cancellationPatch,
+  isSchedulingOpen,
   validateMetadataUpdate,
 } from "./lifecycle";
 
@@ -20,6 +23,19 @@ describe("event lifecycle", () => {
   it("rejects status changes during metadata update", () => {
     expect(validateMetadataUpdate("proposing", "voting")).toMatch(/not available/);
     expect(validateMetadataUpdate("proposing", "proposing")).toBeNull();
+  });
+
+  it("allows confirmation only from proposing", () => {
+    expect(assertCanFinalise("proposing")).toBeNull();
+    expect(assertCanFinalise("confirmed")).toMatch(/already confirmed/);
+    expect(assertCanFinalise("cancelled")).toMatch(/Cancelled/);
+    expect(assertCanFinalise("completed")).toMatch(/Completed/);
+    expect(assertCanFinalise("voting")).toMatch(/proposing/);
+    expect(isSchedulingOpen("proposing")).toBe(true);
+    expect(isSchedulingOpen("confirmed")).toBe(false);
+    expect(isSchedulingOpen("cancelled")).toBe(false);
+    expect(canChangeEventSchedule("confirmed")).toBe(false);
+    expect(canChangeEventSchedule("proposing")).toBe(true);
   });
 
   it("builds cancellation patch", () => {

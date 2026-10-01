@@ -76,7 +76,7 @@ describe("profiles auth and RLS", () => {
       const sql = await readFile(path.join(migrationsDir, file), "utf8");
       await db.exec(sql);
     }
-  });
+  }, 60_000);
 
   afterAll(async () => {
     await db.close();

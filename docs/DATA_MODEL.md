@@ -15,7 +15,7 @@ Photos, notification delivery, fairness scores, and calendar export are not stor
 | `membership_changes` | Append-only membership audit | Written by trigger. Readable by the owner and admins, not by ordinary members. |
 | `households`, `household_members` | Optional coordination unit inside one group | A person is in at most one household per group. Household membership is not required. Attendance, availability, and dietary data stay on the person. |
 
-`group_settings` columns: who may propose (`admins_only` or `any_member`), whether one-off and recurring events are allowed, whether maybe responses are enabled, minimum attendees, proposal deadline in hours (null means none), consensus rule (`required_participants`, `minimum_attendees`, or `all_active_members`), admin veto, host veto, and reconnect reminder on/off plus a day count. `group_memberships.consensus_required` marks people the `required_participants` rule refers to. Vetoes and consensus are stored here; the domain layer enforces them later.
+`group_settings` columns: who may propose (`admins_only` or `any_member`), whether one-off and recurring events are allowed, whether maybe responses are enabled, minimum attendees, proposal deadline in hours (null means none; not enforced on an event yet), consensus rule (`required_participants`, `minimum_attendees`, or `all_active_members`), admin veto, host veto, and reconnect reminder on/off plus a day count. `group_memberships.consensus_required` marks people the `required_participants` rule refers to. The domain evaluator applies those rules. `maybe` counts as accepting only while maybe responses are enabled. The minimum attendee count always applies.
 
 Initial defaults: any member may propose, both event modes are allowed, maybe responses are enabled, minimum attendees is 1, vetoes and reconnect reminders are off. Groups can change these.
 
@@ -24,7 +24,7 @@ Initial defaults: any member may propose, both event modes are allowed, maybe re
 | Table | Purpose | Relationships and privacy |
 | --- | --- | --- |
 | `recurrence_series` | Cadence anchor (`week` or `month`, plus an interval and start date) | Belongs to one group. Generating occurrences is application logic, not a trigger. |
-| `events` | One gathering | Optional series link. Status is `draft`, `proposing`, `voting`, `awaiting_agreement`, `confirmed`, `reopened`, `completed`, or `cancelled`. The database does not run the transition graph. |
+| `events` | One gathering | Optional series link. Status is `draft`, `proposing`, `voting`, `awaiting_agreement`, `confirmed`, `reopened`, `completed`, or `cancelled`. Confirmation is only `proposing` → `confirmed`, and only through `finalise_event`, which copies the selected candidate's start and end onto the event. |
 | `event_candidates` | Proposed times | At most one `selected` candidate per event. |
 | `event_responses` | Yes, no, or maybe for one candidate | `visibility` is `group` or `private`. Group responses are readable by active members. Private responses are readable only by the author, and only while they remain active. Maybe is rejected when the group has disabled it. |
 | `host_assignments` | Host offer, acceptance, decline, or swap | A row is either a person or a household. `display_name` is copied at insert and kept if the profile is later renamed. History is new rows, not deletes. |

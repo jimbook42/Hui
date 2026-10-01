@@ -61,7 +61,7 @@ Supabase Auth (email/password) for sign-up, verification, sign-in, and sign-out.
 
 Group administration uses the HUI-005 schema and RLS. Creation and self-leave call `create_group` and `leave_group` RPCs so ownership and membership stay consistent without widening update policies. Admins add existing accounts by user ID (shown on the profile page); email invitations are not implemented yet.
 
-Events use the same HUI-005 `events` and `recurrence_series` tables. Server Actions in `src/app/events/actions.ts` enforce group settings (who may propose, one-off vs recurring) before insert; RLS remains authoritative. New gatherings start in `proposing` status. Candidate times and private availability responses use `event_candidates` and `event_responses` via `src/app/events/scheduling-actions.ts` (no consensus or finalisation yet). Routes: `/groups/[groupId]/events`, `/groups/[groupId]/events/new`, `/events/[eventId]`.
+Events use the same HUI-005 `events` and `recurrence_series` tables. Server Actions in `src/app/events/actions.ts` enforce group settings (who may propose, one-off vs recurring) before insert; RLS remains authoritative. New gatherings start in `proposing` status. Candidate times and private availability responses use `event_candidates` and `event_responses` via `src/app/events/scheduling-actions.ts`. Consensus is a pure function in `src/domain/scheduling/consensus.ts`. Active members read aggregate counts from `event_consensus_summary` (no response identities). `finalise_event` re-reads those rows under a row lock and is the only path from `proposing` to `confirmed`. Routes: `/groups/[groupId]/events`, `/groups/[groupId]/events/new`, `/events/[eventId]`.
 
 Server Components and Server Actions use the server Supabase client with cookie-backed sessions; RLS enforces row access. The database assumes `auth.uid()` and does not implement a second login system. A trigger inserts `profiles` when `auth.users` gains a row; the app may call `ensureUserProfile` idempotently after sign-in when needed.
 
@@ -75,12 +75,12 @@ Access is membership, not a client check:
 - Active members can read that group's gatherings, settings, and group-visible responses. Non-members cannot.
 - Owner and admins manage settings, households, categories, and membership. Ordinary members cannot. The owner calls `transfer_group_ownership` to hand the group on.
 - Dietary rows are private until the owner shares them with a group. A share stops applying once either person is no longer active there.
-- Private availability responses are not readable by other members. A later consensus calculation that needs those answers has to be a trusted server path, not a wider `select` policy.
+- Private availability responses are not readable by other members. Consensus counts for those answers come from `event_consensus_summary` and `finalise_event`, which do not return individual responses. Do not widen the `event_responses` select policy so the client can compute consensus.
 - Membership removal flips `group_memberships.status` to `removed`. It does not cascade into events, responses, hosts, contributions, or memories.
 
 Policies must not query `group_memberships` under its own RLS. `is_active_member`, `is_group_admin`, and `is_group_owner` are `SECURITY DEFINER`, `STABLE`, and pinned to `search_path = public`. They return a boolean for `auth.uid()` only. The same pattern is used for dietary visibility, so those policies do not recurse through each other. `transfer_group_ownership` and the profile, settings, audit, and memory-snapshot triggers are definer functions for the same reason: the caller cannot be given a general write on those rows.
 
-The database enforces tenancy, proposer rights (`who_may_propose`), one-off versus recurring flags, and the maybe-response switch. It stores event status, veto flags, deadlines, and consensus settings, and leaves those transitions to the domain layer.
+The database enforces tenancy, proposer rights (`who_may_propose`), one-off versus recurring flags, and the maybe-response switch. It stores event status, veto flags, deadlines, and consensus settings. Consensus maths stay in the domain layer. `finalise_event` is the trusted write that applies them: it locks the event, counts private responses without returning them, and confirms one candidate. Ordinary updates cannot set `confirmed` or mark a candidate `selected`. `proposal_deadline_hours` is stored and is not applied to an event clock yet.
 
 Group rules are columns on `group_settings`, not a JSON document. The MVP set is known and should stay constrained. Recurrence rows store a week/month interval only; occurrence generation is later application code.
 

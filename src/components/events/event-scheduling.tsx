@@ -5,23 +5,28 @@ import { useActionState } from "react";
 import type { EventActionState } from "@/app/events/actions";
 import {
   addCandidateAction,
+  finaliseEventAction,
   setAvailabilityResponseAction,
   withdrawCandidateAction,
 } from "@/app/events/scheduling-actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
+import type { EventStatus } from "@/domain/events/types";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
-import { availabilityLabel } from "@/lib/scheduling/labels";
-import type { EventCandidateRow } from "@/lib/scheduling/types";
+import { availabilityLabel, consensusFailureLabel, consensusRuleLabel } from "@/lib/scheduling/labels";
+import type { CandidateConsensusView, EventCandidateRow, EventConsensusSummary } from "@/lib/scheduling/types";
 
 type EventSchedulingProps = {
   eventId: string;
   groupId: string;
+  eventStatus: EventStatus;
   candidates: EventCandidateRow[];
   maybeResponsesEnabled: boolean;
   minimumAttendees: number;
+  consensus: EventConsensusSummary;
   canAddCandidates: boolean;
   canRemoveCandidates: boolean;
   canRespond: boolean;
+  canFinalise: boolean;
 };
 
 const initialState: EventActionState = {};
@@ -126,6 +131,92 @@ function CandidateResponseForm({
   );
 }
 
+function FinaliseCandidateButton({
+  eventId,
+  candidateId,
+}: {
+  eventId: string;
+  candidateId: string;
+}) {
+  const [state, formAction, pending] = useActionState(finaliseEventAction, initialState);
+
+  return (
+    <form action={formAction} className="mt-3">
+      <input type="hidden" name="event_id" value={eventId} />
+      <input type="hidden" name="candidate_id" value={candidateId} />
+      {state.error ? (
+        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+          {state.error}
+        </p>
+      ) : null}
+      {state.message ? (
+        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
+          {state.message}
+        </p>
+      ) : null}
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+      >
+        {pending ? "Confirming…" : "Confirm this time"}
+      </button>
+    </form>
+  );
+}
+
+function CandidateConsensusNote({
+  eventStatus,
+  candidate,
+  evaluation,
+  maybeResponsesEnabled,
+}: {
+  eventStatus: EventStatus;
+  candidate: EventCandidateRow;
+  evaluation: CandidateConsensusView | undefined;
+  maybeResponsesEnabled: boolean;
+}) {
+  if (eventStatus === "confirmed" && candidate.status === "selected") {
+    return (
+      <p className="mt-2 text-sm text-emerald-800 dark:text-emerald-300">
+        Confirmed time.
+      </p>
+    );
+  }
+  if (eventStatus === "confirmed") {
+    return (
+      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        Not selected. This time can no longer change the outcome.
+      </p>
+    );
+  }
+  if (!evaluation) {
+    return null;
+  }
+
+  const outcome = evaluation.passes
+    ? "Meets the group's requirements."
+    : evaluation.failureReason
+      ? consensusFailureLabel(evaluation.failureReason, evaluation)
+      : "Does not meet the group's requirements yet.";
+
+  return (
+    <div className="mt-2 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+      <p>
+        {evaluation.acceptedCount} available
+        {maybeResponsesEnabled ? `, ${evaluation.maybeCount} maybe` : ""}
+        {evaluation.consensusRule === "required_participants"
+          ? `, ${evaluation.requiredAcceptedCount} of ${evaluation.requiredParticipantCount} required participants`
+          : ""}
+        .
+      </p>
+      <p className={evaluation.passes ? "text-emerald-800 dark:text-emerald-300" : undefined}>
+        {outcome}
+      </p>
+    </div>
+  );
+}
+
 function WithdrawCandidateButton({
   eventId,
   candidateId,
@@ -161,23 +252,55 @@ function WithdrawCandidateButton({
 export function EventScheduling({
   eventId,
   groupId,
+  eventStatus,
   candidates,
   maybeResponsesEnabled,
   minimumAttendees,
+  consensus,
   canAddCandidates,
   canRemoveCandidates,
   canRespond,
+  canFinalise,
 }: EventSchedulingProps) {
+  const evaluations = new Map(
+    consensus.candidates.map((candidate) => [candidate.candidateId, candidate]),
+  );
+  const anyPasses = consensus.candidates.some((candidate) => candidate.passes);
+  const ruleLabel = consensusRuleLabel(consensus.consensusRule);
+
   return (
     <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
       <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
         Candidate times
       </h2>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Propose date and time options, then share your private availability. The group
-        needs at least {minimumAttendees} attendee
-        {minimumAttendees === 1 ? "" : "s"} before a time can be confirmed later.
+        Share your private availability. A time can be confirmed when at least{" "}
+        {minimumAttendees} {minimumAttendees === 1 ? "person is" : "people are"} available
+        {consensus.consensusRule === "minimum_attendees"
+          ? ""
+          : ` and the ${ruleLabel.toLowerCase()} rule is met`}
+        .
+        {consensus.maybeResponsesEnabled
+          ? " Maybe counts as available."
+          : " Maybe does not count as available."}{" "}
+        {consensus.eligibleMemberCount} current{" "}
+        {consensus.eligibleMemberCount === 1 ? "member" : "members"}.
       </p>
+      {eventStatus === "confirmed" ? (
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          This event is confirmed. Availability and candidate changes are closed.
+        </p>
+      ) : anyPasses ? (
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          {canFinalise
+            ? "Choose one time that meets the requirements to confirm the event."
+            : "A time meets the requirements. The proposer or a group admin can confirm it."}
+        </p>
+      ) : (
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          No candidate meets the requirements yet. Responses can continue.
+        </p>
+      )}
 
       {canAddCandidates ? (
         <div className="mt-6 max-w-lg">
@@ -209,12 +332,23 @@ export function EventScheduling({
               <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
                 {formatSlot(candidate.startsAt, candidate.endsAt)}
               </p>
+              <CandidateConsensusNote
+                eventStatus={eventStatus}
+                candidate={candidate}
+                evaluation={evaluations.get(candidate.id)}
+                maybeResponsesEnabled={maybeResponsesEnabled}
+              />
               <CandidateResponseForm
                 eventId={eventId}
                 candidate={candidate}
                 maybeResponsesEnabled={maybeResponsesEnabled}
                 canRespond={canRespond}
               />
+              {canFinalise &&
+              evaluations.get(candidate.id)?.passes &&
+              candidate.status === "proposed" ? (
+                <FinaliseCandidateButton eventId={eventId} candidateId={candidate.id} />
+              ) : null}
               {canRemoveCandidates ? (
                 <WithdrawCandidateButton eventId={eventId} candidateId={candidate.id} />
               ) : null}

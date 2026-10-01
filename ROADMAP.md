@@ -1,9 +1,9 @@
 # Hui roadmap
 
-**Phase:** 3 — Event domain and proposal flow (foundation)  
-**Milestone:** Event and proposal foundation  
-**Current ticket:** HUI-010 — Consensus and finalisation (next)  
-**Overall progress:** HUI-009 complete; consensus not started
+**Phase:** 4 — Scheduling and consensus  
+**Milestone:** Consensus and finalisation  
+**Current ticket:** HUI-010 complete; next ticket not started  
+**Overall progress:** HUI-010 complete
 
 ## Status at a glance
 
@@ -13,7 +13,7 @@
 | 1 — Identity, groups and membership | [x] Complete |
 | 2 — Group settings and permissions | [~] Partial (settings UI in HUI-007; event permissions in later tickets) |
 | 3 — Event domain and proposal flow | [~] Foundation (HUI-008) |
-| 4 — Scheduling and consensus | [~] Partial (HUI-009 candidates and private responses) |
+| 4 — Scheduling and consensus | [x] HUI-009 responses and HUI-010 consensus/finalisation |
 | 5 — Host rotation | [ ] Not started |
 | 6 — Contributions and dietary information | [ ] Not started |
 | 7 — Notifications and reminders | [ ] Not started |
@@ -50,8 +50,8 @@
 ## Phase 4 — Scheduling and consensus
 
 - [x] Candidate dates/times and responses (HUI-009)
-- [ ] Minimum attendees and consensus rules
-- [ ] Finalisation when requirements met
+- [x] Minimum attendees and consensus rules (HUI-010)
+- [x] Finalisation when requirements met (HUI-010)
 
 ## Phase 5 — Host rotation
 

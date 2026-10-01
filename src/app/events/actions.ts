@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import {
   INITIAL_EVENT_STATUS,
+  canChangeEventSchedule,
   cancellationPatch,
   validateMetadataUpdate,
 } from "@/domain/events/lifecycle";
@@ -198,16 +199,23 @@ export async function updateEventAction(
     return { error: statusError };
   }
 
-  const { error } = await supabase
-    .from("events")
-    .update({
-      title,
-      location,
-      notes,
-      starts_at: startsAt,
-      ends_at: endsAt,
-    })
-    .eq("id", eventId);
+  const patch: {
+    title: string;
+    location: string | null;
+    notes: string | null;
+    starts_at?: string | null;
+    ends_at?: string | null;
+  } = {
+    title,
+    location,
+    notes,
+  };
+  if (canChangeEventSchedule(detail.status)) {
+    patch.starts_at = startsAt;
+    patch.ends_at = endsAt;
+  }
+
+  const { error } = await supabase.from("events").update(patch).eq("id", eventId);
 
   if (error) {
     return { error: error.message };
