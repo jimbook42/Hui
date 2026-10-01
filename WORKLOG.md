@@ -54,4 +54,4 @@ Lightweight record of completed tickets. One entry per ticket.
 
 - Changed: Scheduling domain and server actions on existing `event_candidates` / `event_responses`; event detail candidate UI with private availability responses; PGlite privacy and maybe-disabled tests.
 - Checked: `npm run validate`. No new migration (HUI-005 schema and RLS sufficient).
-- Commit: (pending)
+- Commit: d136391
