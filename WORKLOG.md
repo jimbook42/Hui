@@ -31,3 +31,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: GitHub Actions CI workflow, `npm run validate`, README CI section; `.vercel` in `.gitignore`.
 - Checked: `npm run validate`, `npm run test:e2e` (local); workflow YAML reviewed (CI not executed locally).
 - Commit: f73da9e
+
+## 2026-10-02 — HUI-006
+
+- Changed: Email/password sign-up, sign-in, and sign-out; middleware and layout guards for `/dashboard` and `/profile`; profile ensure/update helpers; PGlite profile RLS tests; Playwright auth smoke tests.
+- Checked: `npm run validate`, `npm run test:e2e`.
+- Commit: feat: add Hui authentication and profiles
