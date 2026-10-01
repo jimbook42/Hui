@@ -2,8 +2,8 @@
 
 **Phase:** 3 — Event domain and proposal flow (foundation)  
 **Milestone:** Event and proposal foundation  
-**Current ticket:** HUI-009 — Candidate dates and responses (next)  
-**Overall progress:** HUI-008 complete; scheduling/consensus not started
+**Current ticket:** HUI-010 — Consensus and finalisation (next)  
+**Overall progress:** HUI-009 complete; consensus not started
 
 ## Status at a glance
 
@@ -13,7 +13,7 @@
 | 1 — Identity, groups and membership | [x] Complete |
 | 2 — Group settings and permissions | [~] Partial (settings UI in HUI-007; event permissions in later tickets) |
 | 3 — Event domain and proposal flow | [~] Foundation (HUI-008) |
-| 4 — Scheduling and consensus | [ ] Not started |
+| 4 — Scheduling and consensus | [~] Partial (HUI-009 candidates and private responses) |
 | 5 — Host rotation | [ ] Not started |
 | 6 — Contributions and dietary information | [ ] Not started |
 | 7 — Notifications and reminders | [ ] Not started |
@@ -44,11 +44,12 @@
 
 - [x] HUI-008 — Event and proposal foundation (create/list/detail/edit/cancel; recurrence series anchor)
 - [x] One-off events (same `events` table; no separate architecture)
-- [ ] Proposal deadlines and candidate-date flow (HUI-009+)
+- [x] Candidate dates and private availability responses (HUI-009)
+- [ ] Proposal deadlines (later ticket)
 
 ## Phase 4 — Scheduling and consensus
 
-- [ ] Candidate dates/times and responses
+- [x] Candidate dates/times and responses (HUI-009)
 - [ ] Minimum attendees and consensus rules
 - [ ] Finalisation when requirements met
 
