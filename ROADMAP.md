@@ -2,7 +2,7 @@
 
 **Phase:** 0 — Foundation  
 **Milestone:** Project scaffold and workflow  
-**Current ticket:** HUI-004 — CI and development quality gates  
+**Current ticket:** HUI-005 — Supabase database schema and migrations  
 **Overall progress:** Phase 0 in progress (foundation tickets); Phase 1 not started
 
 ## Status at a glance
@@ -26,7 +26,8 @@
 - [x] HUI-001 — Next.js/TypeScript/Tailwind scaffold, tests tooling, workflow docs
 - [x] HUI-002 — Supabase project, env wiring, client bootstrap
 - [x] HUI-003 — PWA service worker and installability (beyond manifest)
-- [ ] HUI-004 — CI and development quality gates
+- [x] HUI-004 — CI and development quality gates
+- [ ] HUI-005 — Supabase database schema and migrations
 
 ## Phase 1 — Identity, groups and membership
 
