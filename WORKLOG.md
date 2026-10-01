@@ -49,3 +49,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: Event domain (validation, permissions, lifecycle); event queries and server actions; group event list/create and event detail UI; PGlite event management tests; `/events` auth guard.
 - Checked: `npm run validate`, `npm run test:e2e`. No new migration (HUI-005 schema sufficient).
 - Commit: feat: add Hui event and proposal foundation
+
+## 2026-10-02 — HUI-009
+
+- Changed: Scheduling domain and server actions on existing `event_candidates` / `event_responses`; event detail candidate UI with private availability responses; PGlite privacy and maybe-disabled tests.
+- Checked: `npm run validate`. No new migration (HUI-005 schema and RLS sufficient).
+- Commit: d136391

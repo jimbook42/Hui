@@ -5,11 +5,19 @@ import { updateEventAction } from "@/app/events/actions";
 import { AppShell } from "@/components/app/app-shell";
 import { CancelEventButton } from "@/components/events/cancel-event-button";
 import { EditEventForm } from "@/components/events/event-form";
+import { EventScheduling } from "@/components/events/event-scheduling";
 import {
   canCancelEvent,
   canEditEventMetadata,
 } from "@/domain/events/permissions";
+import {
+  canAddCandidates,
+  canRespondToCandidates,
+  canWithdrawCandidate,
+} from "@/domain/scheduling/permissions";
 import { getEventDetail } from "@/lib/events/queries";
+import { getGroupDetail } from "@/lib/groups/queries";
+import { getEventSchedulingContext } from "@/lib/scheduling/queries";
 import { eventKindLabel, eventStatusLabel } from "@/lib/events/labels";
 import { createClient } from "@/lib/supabase/server";
 
@@ -48,6 +56,26 @@ export default async function EventDetailPage({ params }: PageProps) {
     detail.createdBy,
     detail.status,
   );
+
+  const group = await getGroupDetail(supabase, detail.groupId, user!.id);
+  const scheduling = await getEventSchedulingContext(
+    supabase,
+    detail.id,
+    detail.groupId,
+    user!.id,
+  );
+  const settings = group?.settings;
+  const showScheduling = Boolean(settings);
+  const canAdd = settings
+    ? canAddCandidates(detail.viewerRole, settings, detail.status)
+    : false;
+  const canRemove = canWithdrawCandidate(
+    detail.viewerRole,
+    user!.id,
+    detail.createdBy,
+    detail.status,
+  );
+  const canRespond = canRespondToCandidates(detail.status);
 
   return (
     <AppShell title={detail.title}>
@@ -110,6 +138,19 @@ export default async function EventDetailPage({ params }: PageProps) {
           </div>
         ) : null}
       </dl>
+
+      {showScheduling ? (
+        <EventScheduling
+          eventId={detail.id}
+          groupId={detail.groupId}
+          candidates={scheduling.candidates}
+          maybeResponsesEnabled={scheduling.maybeResponsesEnabled}
+          minimumAttendees={scheduling.minimumAttendees}
+          canAddCandidates={canAdd}
+          canRemoveCandidates={canRemove}
+          canRespond={canRespond}
+        />
+      ) : null}
 
       {canEdit ? (
         <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
