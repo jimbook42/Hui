@@ -68,6 +68,14 @@ Supabase Storage for user-generated media (e.g. memories) with bucket policies a
 - **Vitest** — domain and application logic.
 - **Playwright** — critical user journeys once flows exist.
 
+## PWA and offline behaviour
+
+Hui uses `@serwist/turbopack` for a minimal service worker: build-time precaching of static shell assets only, with **network-only** runtime caching (including Supabase and `/api`).
+
+> Hui may be installable and provide limited static/offline behaviour, but private user/group/event data must not be treated as safely cacheable offline data by default.
+
+When offline, navigations show `/offline`; the app does not sync data or pretend to be fully offline-capable. Web Push and notifications are out of scope for the PWA foundation.
+
 ## Deployment
 
 Build a standard Next.js output; deploy to Vercel or another Node/static host. Environment variables point at the Supabase project; no host-specific database.

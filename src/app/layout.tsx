@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+
+import { HuiSerwistProvider } from "@/components/serwist-provider";
+import { HUI_PWA_DESCRIPTION } from "@/lib/pwa/manifest";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,14 +18,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Hui",
-  description:
-    "Privacy-first PWA for recurring groups and gatherings",
+  description: HUI_PWA_DESCRIPTION,
   applicationName: "Hui",
-  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "Hui",
     statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
@@ -36,7 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-        {children}
+        <HuiSerwistProvider>{children}</HuiSerwistProvider>
       </body>
     </html>
   );
