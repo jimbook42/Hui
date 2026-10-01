@@ -25,6 +25,12 @@ export function AppShell({ title, children }: AppShellProps) {
               Dashboard
             </Link>
             <Link
+              href="/groups"
+              className="text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-300"
+            >
+              Groups
+            </Link>
+            <Link
               href="/profile"
               className="text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-300"
             >

@@ -1,17 +1,17 @@
 # Hui roadmap
 
-**Phase:** 0 — Foundation  
-**Milestone:** Project scaffold and workflow  
-**Current ticket:** HUI-007 — Groups, memberships and administration  
-**Overall progress:** Phase 0 foundation complete; Phase 1 starting
+**Phase:** 1 — Identity, groups and membership  
+**Milestone:** Group management foundation  
+**Current ticket:** HUI-008 — Events / proposal foundation  
+**Overall progress:** Phase 1 group layer complete; event domain next
 
 ## Status at a glance
 
 | Phase | Status |
 | --- | --- |
 | 0 — Foundation | [x] Complete |
-| 1 — Identity, groups and membership | [~] In progress |
-| 2 — Group settings and permissions | [ ] Not started |
+| 1 — Identity, groups and membership | [x] Complete |
+| 2 — Group settings and permissions | [~] Partial (settings UI in HUI-007; event permissions in later tickets) |
 | 3 — Event domain and proposal flow | [ ] Not started |
 | 4 — Scheduling and consensus | [ ] Not started |
 | 5 — Host rotation | [ ] Not started |
@@ -32,21 +32,17 @@
 
 ## Phase 1 — Identity, groups and membership
 
-- [x] Auth flows (Supabase Auth) — HUI-006
-- [x] Profile/person model — HUI-006
-- [ ] HUI-007 — Group creation, invites, membership roles (admin vs member)
-- [ ] Group creation and invites
-- [ ] Membership roles (admin vs member)
+- [x] HUI-006 — Auth flows and profile/person model
+- [x] HUI-007 — Group creation, membership roles, administration (settings view/edit; add by user ID)
 
 ## Phase 2 — Group settings and permissions
 
-- [ ] Group-level configuration (maybe responses, vetoes, proposal rules)
-- [ ] Admin member management
-- [ ] RLS policies for group data (initial tenancy policies landed in HUI-005; extend them with each feature)
+- [ ] Event-related permission enforcement in the application layer
+- [ ] RLS policies extended with each feature as needed
 
 ## Phase 3 — Event domain and proposal flow
 
-- [ ] Event and proposal domain model
+- [ ] HUI-008 — Event and proposal domain model
 - [ ] One-off events (no separate architecture)
 - [ ] Proposal permissions and deadlines
 
@@ -93,3 +89,4 @@
 - Hosting provider beyond initial Vercel trials (app must stay portable)
 - shadcn/ui adoption timing (add when UI work begins)
 - Push notification channel for PWA reminders
+- Email-based group invitations (HUI-007 adds members by existing user ID only)

@@ -13,6 +13,11 @@ test("unauthenticated dashboard access redirects to sign-in", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 });
 
+test("unauthenticated groups access redirects to sign-in", async ({ page }) => {
+  await page.goto("/groups");
+  await expect(page).toHaveURL(/\/sign-in/);
+});
+
 test("sign-in and sign-up pages render", async ({ page }) => {
   await page.goto("/sign-in");
   await expect(page.getByLabel("Email")).toBeVisible();

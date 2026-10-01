@@ -25,8 +25,15 @@ export default async function DashboardPage() {
         .
       </p>
       <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-        This is your authenticated home area. Groups and events will appear here in
-        later tickets.
+        Manage your gathering circles from the groups area.
+      </p>
+      <p className="mt-6 text-sm">
+        <Link
+          href="/groups"
+          className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
+        >
+          View your groups
+        </Link>
       </p>
       <p className="mt-6 text-sm">
         <Link
