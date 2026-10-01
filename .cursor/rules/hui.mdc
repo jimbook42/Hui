@@ -1,0 +1,18 @@
+---
+description: Hui project operating guide for Cursor agents
+alwaysApply: true
+---
+
+# Hui agent rules
+
+- Read `ROADMAP.md` before starting a significant ticket; stay within the current ticket scope.
+- Read relevant sections of `DECISIONS.md` and `docs/PRODUCT.md` before changing architecture or product behaviour.
+- Do not re-paste the full product spec when repository docs already cover it.
+- Keep changes bounded to the requested ticket; do not introduce dependencies without a clear reason.
+- Prefer simple, maintainable implementations; keep domain rules out of UI components where practical.
+- Treat privacy and authorisation as first-class: never rely on client-side checks alone; Supabase RLS must enforce data access.
+- Write Vitest tests for important domain rules.
+- Do not silently change established product decisions; flag ambiguous requirements that affect architecture or behaviour.
+- At the end of every ticket, update `ROADMAP.md`, `WORKLOG.md`, and `TODO.md` only as needed—keep updates brief.
+- Before declaring a ticket complete, run appropriate validation (`build`, `lint`, `typecheck`, `test` as configured).
+- Commit completed work with a clear message and push to the current feature branch.
