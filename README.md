@@ -4,7 +4,7 @@ Privacy-first PWA for recurring groups and gatherings. The app proposes, coordin
 
 ## Development status
 
-**Phase 0 — Foundation** is complete for the initial scaffold and workflow docs. Application features (auth, groups, events) have not started. See [ROADMAP.md](./ROADMAP.md).
+**Phase 0 — Foundation** includes the app scaffold and the Supabase schema in `supabase/migrations`. Auth and product UI have not started. See [ROADMAP.md](./ROADMAP.md).
 
 ## Prerequisites
 
@@ -63,8 +63,8 @@ GitHub Actions runs on pushes and pull requests to `main` (see [`.github/workflo
 | [TODO.md](./TODO.md) | Unresolved implementation questions |
 | [docs/PRODUCT.md](./docs/PRODUCT.md) | Concise product reference |
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Stack and layering |
-| [docs/DATA_MODEL.md](./docs/DATA_MODEL.md) | Conceptual data model |
+| [docs/DATA_MODEL.md](./docs/DATA_MODEL.md) | Implemented data model |
 
 ## Stack
 
-Next.js, TypeScript, Tailwind CSS, Supabase (planned), Vitest, Playwright.
+Next.js, TypeScript, Tailwind CSS, Supabase, Vitest, Playwright.

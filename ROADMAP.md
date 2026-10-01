@@ -2,15 +2,15 @@
 
 **Phase:** 0 — Foundation  
 **Milestone:** Project scaffold and workflow  
-**Current ticket:** HUI-005 — Supabase database schema and migrations  
-**Overall progress:** Phase 0 in progress (foundation tickets); Phase 1 not started
+**Current ticket:** HUI-007 — Groups, memberships and administration  
+**Overall progress:** Phase 0 foundation complete; Phase 1 starting
 
 ## Status at a glance
 
 | Phase | Status |
 | --- | --- |
-| 0 — Foundation | [~] In progress |
-| 1 — Identity, groups and membership | [ ] Not started |
+| 0 — Foundation | [x] Complete |
+| 1 — Identity, groups and membership | [~] In progress |
 | 2 — Group settings and permissions | [ ] Not started |
 | 3 — Event domain and proposal flow | [ ] Not started |
 | 4 — Scheduling and consensus | [ ] Not started |
@@ -27,12 +27,14 @@
 - [x] HUI-002 — Supabase project, env wiring, client bootstrap
 - [x] HUI-003 — PWA service worker and installability (beyond manifest)
 - [x] HUI-004 — CI and development quality gates
-- [ ] HUI-005 — Supabase database schema and migrations
+- [x] HUI-005 — Supabase database schema and migrations
+- [x] HUI-006 — Authentication and user profiles
 
 ## Phase 1 — Identity, groups and membership
 
-- [ ] Auth flows (Supabase Auth)
-- [ ] Profile/person model
+- [x] Auth flows (Supabase Auth) — HUI-006
+- [x] Profile/person model — HUI-006
+- [ ] HUI-007 — Group creation, invites, membership roles (admin vs member)
 - [ ] Group creation and invites
 - [ ] Membership roles (admin vs member)
 
@@ -40,7 +42,7 @@
 
 - [ ] Group-level configuration (maybe responses, vetoes, proposal rules)
 - [ ] Admin member management
-- [ ] RLS policies for group data
+- [ ] RLS policies for group data (initial tenancy policies landed in HUI-005; extend them with each feature)
 
 ## Phase 3 — Event domain and proposal flow
 
