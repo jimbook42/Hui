@@ -57,7 +57,9 @@ The publishable (anon) key is safe for its intended public client use but is **n
 
 ## Authentication
 
-Supabase Auth (email/password) for sign-up, verification, sign-in, and sign-out. Public routes include `/sign-in` and `/sign-up`. `/dashboard` and `/profile` require a session: middleware refreshes cookies and redirects unauthenticated visitors to sign-in; protected layouts also call `auth.getUser()` on the server.
+Supabase Auth (email/password) for sign-up, verification, sign-in, and sign-out. Public routes include `/sign-in` and `/sign-up`. `/dashboard`, `/profile`, and `/groups` require a session: middleware refreshes cookies and redirects unauthenticated visitors to sign-in; protected layouts also call `auth.getUser()` on the server.
+
+Group administration uses the HUI-005 schema and RLS. Creation and self-leave call `create_group` and `leave_group` RPCs so ownership and membership stay consistent without widening update policies. Admins add existing accounts by user ID (shown on the profile page); email invitations are not implemented yet.
 
 Server Components and Server Actions use the server Supabase client with cookie-backed sessions; RLS enforces row access. The database assumes `auth.uid()` and does not implement a second login system. A trigger inserts `profiles` when `auth.users` gains a row; the app may call `ensureUserProfile` idempotently after sign-in when needed.
 

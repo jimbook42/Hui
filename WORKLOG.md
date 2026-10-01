@@ -37,3 +37,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: Email/password sign-up, sign-in, and sign-out; middleware and layout guards for `/dashboard` and `/profile`; profile ensure/update helpers; PGlite profile RLS tests; Playwright auth smoke tests.
 - Checked: `npm run validate`, `npm run test:e2e`.
 - Commit: feat: add Hui authentication and profiles
+
+## 2026-10-02 — HUI-007
+
+- Changed: Protected `/groups`, `/groups/new`, `/groups/[groupId]`; group server actions; `create_group` and `leave_group` migration; member ID on profile; PGlite membership tests.
+- Checked: `npm run validate`, `npm run test:e2e`.
+- Commit: feat: add Hui groups and membership management

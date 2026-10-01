@@ -29,6 +29,12 @@ export default async function ProfilePage() {
           defaultValue={profile?.display_name ?? ""}
         />
       </AuthForm>
+      <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
+        Member ID (share with a group admin to be added):
+      </p>
+      <p className="mt-1 font-mono text-xs text-zinc-800 break-all dark:text-zinc-200">
+        {user?.id}
+      </p>
       <p className="mt-4 text-xs text-zinc-500">
         Your display name is visible to people who share a group with you.
       </p>
