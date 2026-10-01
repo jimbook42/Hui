@@ -16,6 +16,12 @@ describe("resolveSessionGuard", () => {
       action: "redirect",
       location: "/sign-in?next=%2Fgroups",
     });
+    expect(
+      resolveSessionGuard({ pathname: "/events/abc", hasUser: false }),
+    ).toEqual({
+      action: "redirect",
+      location: "/sign-in?next=%2Fevents%2Fabc",
+    });
   });
 
   it("allows public routes without a session", () => {

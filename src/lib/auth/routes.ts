@@ -1,5 +1,10 @@
 /** Routes that require an authenticated Supabase session. */
-export const PROTECTED_ROUTE_PREFIXES = ["/dashboard", "/profile", "/groups"] as const;
+export const PROTECTED_ROUTE_PREFIXES = [
+  "/dashboard",
+  "/profile",
+  "/groups",
+  "/events",
+] as const;
 
 /** Auth entry routes; signed-in users are redirected away. */
 export const AUTH_ENTRY_ROUTES = ["/sign-in", "/sign-up"] as const;

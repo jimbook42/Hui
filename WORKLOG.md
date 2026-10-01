@@ -43,3 +43,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: Protected `/groups`, `/groups/new`, `/groups/[groupId]`; group server actions; `create_group` and `leave_group` migration; member ID on profile; PGlite membership tests.
 - Checked: `npm run validate`, `npm run test:e2e`.
 - Commit: feat: add Hui groups and membership management
+
+## 2026-10-02 — HUI-008
+
+- Changed: Event domain (validation, permissions, lifecycle); event queries and server actions; group event list/create and event detail UI; PGlite event management tests; `/events` auth guard.
+- Checked: `npm run validate`, `npm run test:e2e`. No new migration (HUI-005 schema sufficient).
+- Commit: feat: add Hui event and proposal foundation
