@@ -19,3 +19,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: `@serwist/turbopack` service worker (network-only), App Router manifest, PNG icons, `/offline`, `SerwistProvider`; PWA caching note in architecture.
 - Checked: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`.
 - Commit: a2a6a7e
+
+## 2026-10-01 — HUI-004
+
+- Changed: GitHub Actions CI workflow, `npm run validate`, README CI section; `.vercel` in `.gitignore`.
+- Checked: `npm run validate`, `npm run test:e2e` (local); workflow YAML reviewed (CI not executed locally).
+- Commit: f73da9e
