@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { updateGroupNameAction } from "@/app/groups/actions";
@@ -51,6 +52,15 @@ export default async function GroupDetailPage({ params }: PageProps) {
     <AppShell title={detail.name}>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         Your role: <span className="font-medium">{roleLabel(detail.viewerRole)}</span>
+      </p>
+
+      <p className="mt-4 text-sm">
+        <Link
+          href={`/groups/${groupId}/events`}
+          className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
+        >
+          View events
+        </Link>
       </p>
 
       <section className="mt-10">

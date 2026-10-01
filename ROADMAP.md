@@ -1,9 +1,9 @@
 # Hui roadmap
 
-**Phase:** 1 — Identity, groups and membership  
-**Milestone:** Group management foundation  
-**Current ticket:** HUI-008 — Events / proposal foundation  
-**Overall progress:** Phase 1 group layer complete; event domain next
+**Phase:** 3 — Event domain and proposal flow (foundation)  
+**Milestone:** Event and proposal foundation  
+**Current ticket:** HUI-009 — Candidate dates and responses (next)  
+**Overall progress:** HUI-008 complete; scheduling/consensus not started
 
 ## Status at a glance
 
@@ -12,7 +12,7 @@
 | 0 — Foundation | [x] Complete |
 | 1 — Identity, groups and membership | [x] Complete |
 | 2 — Group settings and permissions | [~] Partial (settings UI in HUI-007; event permissions in later tickets) |
-| 3 — Event domain and proposal flow | [ ] Not started |
+| 3 — Event domain and proposal flow | [~] Foundation (HUI-008) |
 | 4 — Scheduling and consensus | [ ] Not started |
 | 5 — Host rotation | [ ] Not started |
 | 6 — Contributions and dietary information | [ ] Not started |
@@ -37,14 +37,14 @@
 
 ## Phase 2 — Group settings and permissions
 
-- [ ] Event-related permission enforcement in the application layer
+- [x] Event proposal permission enforcement in application layer (HUI-008; RLS from HUI-005)
 - [ ] RLS policies extended with each feature as needed
 
 ## Phase 3 — Event domain and proposal flow
 
-- [ ] HUI-008 — Event and proposal domain model
-- [ ] One-off events (no separate architecture)
-- [ ] Proposal permissions and deadlines
+- [x] HUI-008 — Event and proposal foundation (create/list/detail/edit/cancel; recurrence series anchor)
+- [x] One-off events (same `events` table; no separate architecture)
+- [ ] Proposal deadlines and candidate-date flow (HUI-009+)
 
 ## Phase 4 — Scheduling and consensus
 
