@@ -1,20 +1,10 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(
-      `Missing ${name}. Copy .env.example to .env.local and set Supabase credentials.`,
-    );
-  }
-  return value;
-}
+import { getPublicSupabaseConfig } from "./env";
 
-/** Browser Supabase client. Requires env vars; used once auth UI exists. */
+/** Browser Supabase client (publishable key only). */
 export function createClient(): SupabaseClient {
-  return createSupabaseClient(
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
-  );
+  const { url, publishableKey } = getPublicSupabaseConfig();
+  return createBrowserClient(url, publishableKey);
 }

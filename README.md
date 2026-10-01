@@ -17,11 +17,13 @@ Privacy-first PWA for recurring groups and gatherings. The app proposes, coordin
 npm install
 ```
 
-Copy environment template (values come from your Supabase project when ready):
+Copy environment template and set Supabase URL + publishable key from the project Connect panel:
 
 ```bash
 cp .env.example .env.local
 ```
+
+Required variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 
 ## Run locally
 

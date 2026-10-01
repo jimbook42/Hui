@@ -2,14 +2,14 @@
 
 **Phase:** 0 — Foundation  
 **Milestone:** Project scaffold and workflow  
-**Current ticket:** HUI-002 — Supabase project setup and local env  
-**Overall progress:** Phase 0 complete; Phase 1 not started
+**Current ticket:** HUI-003 — PWA/service-worker foundation  
+**Overall progress:** Phase 0 in progress (foundation tickets); Phase 1 not started
 
 ## Status at a glance
 
 | Phase | Status |
 | --- | --- |
-| 0 — Foundation | [x] Complete |
+| 0 — Foundation | [~] In progress |
 | 1 — Identity, groups and membership | [ ] Not started |
 | 2 — Group settings and permissions | [ ] Not started |
 | 3 — Event domain and proposal flow | [ ] Not started |
@@ -24,7 +24,7 @@
 ## Phase 0 — Foundation
 
 - [x] HUI-001 — Next.js/TypeScript/Tailwind scaffold, tests tooling, workflow docs
-- [ ] HUI-002 — Supabase project, env wiring, client bootstrap
+- [x] HUI-002 — Supabase project, env wiring, client bootstrap
 - [ ] HUI-003 — PWA service worker and installability (beyond manifest)
 - [ ] HUI-004 — CI validation (build, lint, test, e2e)
 
