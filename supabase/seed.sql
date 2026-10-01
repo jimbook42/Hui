@@ -1,0 +1,3 @@
+-- Development-only seed for `supabase db reset`.
+-- Intentionally empty. Do not insert users, groups, or personal data here.
+-- Production rows are created through Supabase Auth and the application.

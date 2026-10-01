@@ -20,6 +20,12 @@ Lightweight record of completed tickets. One entry per ticket.
 - Checked: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`.
 - Commit: a2a6a7e
 
+## 2026-10-01 — HUI-005
+
+- Changed: Supabase migrations for groups, membership, one event model, responses, hosts, contributions, dietary shares, and memories; RLS tenancy policies; security tests that apply those migrations.
+- Checked: `npm run validate`, `npm run test:e2e`. RLS: member read, non-member and anon denial, private-row updates, removal keeping history, owner/admin restrictions.
+- Commit: feat: establish Hui database foundation
+
 ## 2026-10-01 — HUI-004
 
 - Changed: GitHub Actions CI workflow, `npm run validate`, README CI section; `.vercel` in `.gitignore`.

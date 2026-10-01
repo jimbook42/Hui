@@ -57,7 +57,26 @@ The publishable (anon) key is safe for its intended public client use but is **n
 
 ## Authentication
 
-Supabase Auth for sign-in/session (later tickets). Server Components and route handlers use the server client with the user session; RLS enforces row access.
+Supabase Auth for sign-in/session (later tickets). Server Components and route handlers use the server client with the user session; RLS enforces row access. The database assumes `auth.uid()` and does not implement a second login system. A trigger inserts `profiles` when `auth.users` gains a row.
+
+## Tenancy and RLS
+
+Migrations in `supabase/migrations` are the schema source of truth. Every public table has row level security enabled and forced. Policies apply to `authenticated`. `anon` has no policies and no table grants. The service role is for server maintenance and bypasses RLS; application code must not send that key to the browser.
+
+Access is membership, not a client check:
+
+- A person can read and update their own profile, and can read display names of people with whom they share an active membership.
+- Active members can read that group's gatherings, settings, and group-visible responses. Non-members cannot.
+- Owner and admins manage settings, households, categories, and membership. Ordinary members cannot. The owner calls `transfer_group_ownership` to hand the group on.
+- Dietary rows are private until the owner shares them with a group. A share stops applying once either person is no longer active there.
+- Private availability responses are not readable by other members. A later consensus calculation that needs those answers has to be a trusted server path, not a wider `select` policy.
+- Membership removal flips `group_memberships.status` to `removed`. It does not cascade into events, responses, hosts, contributions, or memories.
+
+Policies must not query `group_memberships` under its own RLS. `is_active_member`, `is_group_admin`, and `is_group_owner` are `SECURITY DEFINER`, `STABLE`, and pinned to `search_path = public`. They return a boolean for `auth.uid()` only. The same pattern is used for dietary visibility, so those policies do not recurse through each other. `transfer_group_ownership` and the profile, settings, audit, and memory-snapshot triggers are definer functions for the same reason: the caller cannot be given a general write on those rows.
+
+The database enforces tenancy, proposer rights (`who_may_propose`), one-off versus recurring flags, and the maybe-response switch. It stores event status, veto flags, deadlines, and consensus settings, and leaves those transitions to the domain layer.
+
+Group rules are columns on `group_settings`, not a JSON document. The MVP set is known and should stay constrained. Recurrence rows store a week/month interval only; occurrence generation is later application code.
 
 ## Storage
 
@@ -65,7 +84,7 @@ Supabase Storage for user-generated media (e.g. memories) with bucket policies a
 
 ## Testing
 
-- **Vitest** — domain and application logic.
+- **Vitest** — domain and application logic. `src/db/rls-foundation.test.ts` applies `supabase/migrations` on in-process Postgres and checks tenancy. `supabase start` needs Docker, which is optional for that test.
 - **Playwright** — critical user journeys once flows exist.
 
 ## PWA and offline behaviour

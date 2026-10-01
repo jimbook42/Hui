@@ -2,7 +2,7 @@
 
 **Phase:** 0 — Foundation  
 **Milestone:** Project scaffold and workflow  
-**Current ticket:** HUI-005 — Supabase database schema and migrations  
+**Current ticket:** HUI-006 — Authentication and user profiles  
 **Overall progress:** Phase 0 in progress (foundation tickets); Phase 1 not started
 
 ## Status at a glance
@@ -27,7 +27,7 @@
 - [x] HUI-002 — Supabase project, env wiring, client bootstrap
 - [x] HUI-003 — PWA service worker and installability (beyond manifest)
 - [x] HUI-004 — CI and development quality gates
-- [ ] HUI-005 — Supabase database schema and migrations
+- [x] HUI-005 — Supabase database schema and migrations
 
 ## Phase 1 — Identity, groups and membership
 
@@ -40,7 +40,7 @@
 
 - [ ] Group-level configuration (maybe responses, vetoes, proposal rules)
 - [ ] Admin member management
-- [ ] RLS policies for group data
+- [ ] RLS policies for group data (initial tenancy policies landed in HUI-005; extend them with each feature)
 
 ## Phase 3 — Event domain and proposal flow
 
