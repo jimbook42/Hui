@@ -6,7 +6,17 @@ import { AppShell } from "@/components/app/app-shell";
 import { CancelEventButton } from "@/components/events/cancel-event-button";
 import { EditEventForm } from "@/components/events/event-form";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
+import { EventContributionsSection } from "@/components/contributions/event-contributions-section";
 import { EventScheduling } from "@/components/events/event-scheduling";
+import {
+  canCoordinateContributions,
+  isProposedEvent,
+} from "@/domain/contributions/permissions";
+import {
+  getGroupContributionHistory,
+  listContributionCategories,
+  listEventContributions,
+} from "@/lib/contributions/queries";
 import {
   canCancelEvent,
   canEditEventMetadata,
@@ -64,13 +74,18 @@ export default async function EventDetailPage({ params }: PageProps) {
   );
 
   const group = await getGroupDetail(supabase, detail.groupId, user!.id);
-  const [scheduling, consensus, householdView] = await Promise.all([
-    getEventSchedulingContext(supabase, detail.id, detail.groupId, user!.id),
-    getEventConsensusSummary(supabase, detail.id),
-    group
-      ? getGroupHouseholdMemberView(supabase, detail.groupId, group.members)
-      : Promise.resolve(null),
-  ]);
+  const [scheduling, consensus, householdView, contributionCategories, eventContributions, contributionHistory] =
+    await Promise.all([
+      getEventSchedulingContext(supabase, detail.id, detail.groupId, user!.id),
+      getEventConsensusSummary(supabase, detail.id),
+      group
+        ? getGroupHouseholdMemberView(supabase, detail.groupId, group.members)
+        : Promise.resolve(null),
+      listContributionCategories(supabase, detail.groupId),
+      listEventContributions(supabase, detail.id),
+      getGroupContributionHistory(supabase, detail.groupId, user!.id),
+    ]);
+  const canCoordinate = canCoordinateContributions(detail.status);
   const settings = group?.settings;
   const showScheduling = Boolean(settings);
   const canAdd = settings
@@ -197,6 +212,18 @@ export default async function EventDetailPage({ params }: PageProps) {
           eligibleMemberCount={consensus.eligibleMemberCount}
         />
       ) : null}
+
+      <EventContributionsSection
+        eventId={detail.id}
+        groupId={detail.groupId}
+        eventStatus={detail.status}
+        canCoordinate={canCoordinate}
+        isProposed={isProposedEvent(detail.status)}
+        categories={contributionCategories}
+        contributions={eventContributions}
+        viewerUserId={user!.id}
+        viewerHistoryCount={contributionHistory.viewerCount}
+      />
 
       {canEdit ? (
         <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">

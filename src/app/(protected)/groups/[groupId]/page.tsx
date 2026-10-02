@@ -5,7 +5,11 @@ import { updateGroupNameAction } from "@/app/groups/actions";
 import { AppShell } from "@/components/app/app-shell";
 import { GroupForm, GroupNameField } from "@/components/groups/group-form";
 import { GroupSettingsForm } from "@/components/groups/group-settings-form";
+import { ContributionCategoriesAdmin } from "@/components/contributions/contribution-categories-admin";
+import { GroupContributionHistorySection } from "@/components/contributions/group-contribution-history";
 import { GroupMembersHouseholds } from "@/components/groups/group-members-households";
+import { canManageContributionCategories } from "@/domain/contributions/permissions";
+import { listContributionCategories, getGroupContributionHistory } from "@/lib/contributions/queries";
 import {
   AddMemberForm,
   LeaveGroupForm,
@@ -49,11 +53,12 @@ export default async function GroupDetailPage({ params }: PageProps) {
   const viewerCanRename = canRenameGroup(detail.viewerRole);
   const viewerCanTransfer = canTransferOwnership(detail.viewerRole);
   const viewerCanLeave = detail.viewerRole !== "owner";
-  const householdView = await getGroupHouseholdMemberView(
-    supabase,
-    groupId,
-    detail.members,
-  );
+  const [householdView, contributionCategories, contributionHistory] = await Promise.all([
+    getGroupHouseholdMemberView(supabase, groupId, detail.members),
+    listContributionCategories(supabase, groupId),
+    getGroupContributionHistory(supabase, groupId, user!.id),
+  ]);
+  const viewerCanManageCategories = canManageContributionCategories(detail.viewerRole);
 
   return (
     <AppShell title={detail.name}>
@@ -135,6 +140,22 @@ export default async function GroupDetailPage({ params }: PageProps) {
           </div>
         </section>
       ) : null}
+
+      {viewerCanManageCategories ? (
+        <section className="mt-10">
+          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+            Contribution categories
+          </h2>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            Categories members can claim on events. Deactivating keeps past event records intact.
+          </p>
+          <div className="mt-4 max-w-lg">
+            <ContributionCategoriesAdmin groupId={detail.id} categories={contributionCategories} />
+          </div>
+        </section>
+      ) : null}
+
+      <GroupContributionHistorySection history={contributionHistory} />
 
       <section className="mt-10">
         <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Settings</h2>
