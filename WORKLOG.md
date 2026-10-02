@@ -184,4 +184,5 @@ Lightweight record of completed tickets. One entry per ticket.
 
 - Changed: In-app `member_notifications` (migration `20261002220000_notifications.sql`) with trigger-driven event/consensus/host/contribution messages; reconnect reminders via `sync_reconnect_reminders_for_member()`; profile opt-out `member_reconnect_reminders_enabled`; `/notifications` UI, nav unread badge, mark read; domain + PGlite tests; Playwright auth redirect tests for `/notifications`.
 - Checked: `npm run validate` (204 tests), `npm run test:e2e` (10 passed, 6 live-auth skipped).
-- Manual: Apply migration `20261002220000_notifications.sql` on linked Supabase (and `20261002210000_host_coordination.sql` if HUI-020 not yet applied).
+- Commit: `437bc97` — PR: https://github.com/jimbook42/Hui/pull/18 — merge `a8d7df3` on `main` (includes HUI-020 host rotation); production https://hui-seven-gamma.vercel.app
+- Manual: Apply migrations `20261002210000_host_coordination.sql` and `20261002220000_notifications.sql` on linked Supabase before host RPCs and notifications work in production.
