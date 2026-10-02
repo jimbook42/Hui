@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { oauthCallbackFailureReason } from "@/lib/auth/oauth";
 import { sanitizeNextPath } from "@/lib/auth/routes";
 import { ensureUserProfile } from "@/lib/profiles/ensure-profile";
 import { normalizeDisplayName } from "@/lib/profiles/validation";
@@ -31,8 +32,9 @@ function preferredOAuthDisplayName(
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
 
-  if (requestUrl.searchParams.get("error")) {
-    return redirectToSignIn(request, "cancelled");
+  const oauthError = requestUrl.searchParams.get("error");
+  if (oauthError) {
+    return redirectToSignIn(request, oauthCallbackFailureReason(oauthError));
   }
 
   const code = requestUrl.searchParams.get("code");

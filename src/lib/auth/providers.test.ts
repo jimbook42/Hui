@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CANONICAL_USER_ID_FIELD } from "./identity";
 import {
   buildOAuthCallbackUrl,
+  oauthCallbackFailureReason,
   signInWithOAuthProvider,
   validateOAuthSignInRequest,
 } from "./oauth";
@@ -70,6 +71,14 @@ describe("buildOAuthCallbackUrl", () => {
     ).toBe(
       "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
     );
+  });
+});
+
+describe("oauthCallbackFailureReason", () => {
+  it("treats access_denied as cancellation and other provider errors as failure", () => {
+    expect(oauthCallbackFailureReason("access_denied")).toBe("cancelled");
+    expect(oauthCallbackFailureReason("server_error")).toBe("failed");
+    expect(oauthCallbackFailureReason("temporarily_unavailable")).toBe("failed");
   });
 });
 

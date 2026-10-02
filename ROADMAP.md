@@ -30,7 +30,7 @@
 - [x] HUI-005 — Supabase database schema and migrations
 - [x] HUI-006 — Authentication and user profiles
 - [x] HUI-011 — Social auth provider config and auth UI groundwork (email/password only in UI; OAuth backlog)
-- [x] HUI-012 — Google OAuth integration (Hui-side; Supabase provider config + production test still required)
+- [x] HUI-012 — Google OAuth integration (Hui-side; Google provider enabled in Supabase; production sign-in test still required)
 
 ## Phase 1 — Identity, groups and membership
 
@@ -82,7 +82,7 @@
 
 - [ ] Security review, RLS audit, performance
 - [ ] Production deployment and monitoring
-- [x] Google OAuth integration — Hui-side (HUI-012); Supabase Google provider + production sign-in test still required
+- [x] Google OAuth integration — Hui-side (HUI-012); Google provider enabled in Supabase; production sign-in test still required
 - [ ] Microsoft / Azure OAuth integration
 - [ ] Meta / Facebook OAuth integration
 - [ ] Apple Sign in with Apple integration (requires Apple Developer Program membership)
@@ -97,4 +97,4 @@
 - shadcn/ui adoption timing (add when UI work begins)
 - Push notification channel for PWA reminders
 - Email-based group invitations (HUI-007 adds members by existing user ID only)
-- **Social authentication:** Google is implemented on the Hui side (HUI-012) and enabled in `providers.ts`; configure Google in Supabase Auth and verify production sign-in before treating it as live. Microsoft/Azure, Meta/Facebook, and Apple remain backlog. Apple Sign in with Apple requires the paid Apple Developer Program — defer Apple activation until closer to launch. One Hui user identity via Supabase Auth; link identities with Supabase rules, not email-only matching (not implemented yet).
+- **Social authentication:** Google is implemented on the Hui side (HUI-012), enabled in `providers.ts`, and enabled in Supabase Auth. Verify production sign-in before treating it as live. Microsoft/Azure, Meta/Facebook, and Apple remain backlog. Apple Sign in with Apple requires the paid Apple Developer Program — defer Apple activation until closer to launch. One Hui user identity via Supabase Auth; link identities with Supabase rules, not email-only matching (not implemented yet).

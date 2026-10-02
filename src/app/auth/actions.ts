@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
 import {
@@ -109,6 +109,7 @@ export async function oauthSignInAction(
 
   const next = sanitizeNextPath(String(formData.get("next") ?? ""));
 
+  let oauthUrl: string;
   try {
     const origin = await resolveAuthRedirectOrigin();
     const redirectTo = buildOAuthCallbackUrl(origin, next);
@@ -126,13 +127,16 @@ export async function oauthSignInAction(
       };
     }
 
-    redirect(data.url);
-  } catch {
+    oauthUrl = data.url;
+  } catch (error) {
+    unstable_rethrow(error);
     return {
       error:
         "Could not start social sign-in. Try again or use email and password.",
     };
   }
+
+  redirect(oauthUrl);
 }
 
 export async function signOutAction(): Promise<void> {

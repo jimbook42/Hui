@@ -25,6 +25,16 @@ export function buildOAuthCallbackUrl(origin: string, next: string): string {
   return url.toString();
 }
 
+/** Maps a provider error query value to the sign-in notice. */
+export function oauthCallbackFailureReason(
+  error: string,
+): "cancelled" | "failed" {
+  if (error === "access_denied") {
+    return "cancelled";
+  }
+  return "failed";
+}
+
 export async function signInWithOAuthProvider(
   supabase: SupabaseClient,
   provider: AuthOAuthProviderId,
