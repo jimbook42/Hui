@@ -157,3 +157,11 @@ Lightweight record of completed tickets. One entry per ticket.
 - Checked: `npm run validate` (159 tests), `npm run test:e2e` (8 passed, 3 live-auth skipped); PR #15 CI and Vercel preview passed.
 - Commit: `6ce0338` — PR: https://github.com/jimbook42/Hui/pull/15 — merge `3655b90` on `main`.
 - Manual: Optional live event E2E with `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD`; multi-user consensus/finalisation smoke on preview/production.
+
+## 2026-10-02 — HUI-018
+
+- Changed: Contribution coordination on existing `contribution_categories` / `event_contributions` — migration `20261002200000_contribution_coordination.sql` (`claim_event_contribution`, `update_my_event_contribution`, `release_event_contribution`). Group admins manage categories on the group page; event **Contributions** section (still needed / claimed / yours); transparent history counts on group and per-viewer hint on events. Domain validation/display, server actions, PGlite contribution tests, live-auth Playwright journey (skipped without E2E credentials). `ARCHITECTURE.md` updated.
+- Checked: `npm run validate` (171 tests), `npm run test:e2e` (8 passed, 4 live-auth skipped); PR #16 CI and Vercel preview passed.
+- Commit: `b4b0fb7` — PR: https://github.com/jimbook42/Hui/pull/16 — merge `041bc97` on `main`.
+- Manual: Apply migration `20261002200000_contribution_coordination.sql` on linked Supabase (`supabase db push`) before claim/release RPCs work in production. Optional: live contribution E2E with `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD`.
+- Follow-ups: Dietary coordination (Phase 6); optional category ordering; multi-user E2E for cross-member edit denial.
