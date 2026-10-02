@@ -164,4 +164,12 @@ Lightweight record of completed tickets. One entry per ticket.
 - Checked: `npm run validate` (171 tests), `npm run test:e2e` (8 passed, 4 live-auth skipped); PR #16 CI and Vercel preview passed.
 - Commit: `b4b0fb7` — PR: https://github.com/jimbook42/Hui/pull/16 — merge `041bc97` on `main` (docs follow-up `6ee3367`); production https://hui-seven-gamma.vercel.app (deployment `dpl_ACsSFenmfXuqtPZZa6bDfxHo5FUD`, READY).
 - Manual: Apply migration `20261002200000_contribution_coordination.sql` on linked Supabase (`supabase db push`) before claim/release RPCs work in production. Optional: live contribution E2E with `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD`.
-- Follow-ups: Dietary coordination (Phase 6); optional category ordering; multi-user E2E for cross-member edit denial.
+- Follow-ups: Optional category ordering; multi-user E2E for cross-member edit denial.
+
+## 2026-10-02 — HUI-019
+
+- Changed: Dietary coordination on existing `dietary_entries` / `dietary_entry_shares` — profile **Dietary information** section (add/edit/remove, private/shared status, share/unshare per group); group **Dietary information** and event **Dietary considerations** lists; aggregate reminder on event contributions. Server Actions (`src/app/dietary/actions.ts`), queries (`src/lib/dietary/queries.ts`), domain validation/display, PGlite privacy tests (`src/db/dietary.test.ts`), Playwright journey (`e2e/dietary.spec.ts`, live-auth skipped without E2E credentials). `docs/ARCHITECTURE.md` dietary access flow. No migration.
+- Checked: `npm run validate` (181 tests), `npm run test:e2e` (8 passed, 5 live-auth skipped); PR #17 and main CI passed.
+- Commit: `a71ae99` — PR: https://github.com/jimbook42/Hui/pull/17 — merge `762fa76` on `main`.
+- Manual: Optional live dietary E2E with `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD`; multi-user smoke that a second member sees shared but not private entries.
+- Follow-ups: Per-event dietary snapshots if historical event menus need frozen requirements; richer category UX without medical framing.
