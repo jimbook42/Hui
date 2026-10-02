@@ -68,4 +68,4 @@ Lightweight record of completed tickets. One entry per ticket.
 
 - Changed: Auth provider registry (`providers.ts`) with Google, Apple, Facebook, and Azure disabled by default; `AuthOAuthSection` on sign-in/sign-up (renders nothing until a provider is enabled); OAuth validation stub and canonical identity notes; architecture, decisions, and roadmap backlog for future social login.
 - Checked: `npm run validate`.
-- Commit: 79505b0
+- Commit: 1ab529e
