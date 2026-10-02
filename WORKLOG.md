@@ -143,3 +143,10 @@ Lightweight record of completed tickets. One entry per ticket.
 - Checked: `npm run validate` (138 tests), `npm run test:e2e` (8 passed, 1 live-auth skipped); PR CI and main CI passed.
 - PR: https://github.com/jimbook42/Hui/pull/13 — feature commit `2b3210a`, merge `7dce96c` on `main`; production https://hui-seven-gamma.vercel.app/profile (unauthenticated redirect verified).
 - Manual: display name edit/reload, sign-out/in, delete-account entry point — for account holder on production.
+
+## 2026-10-02 — HUI-016
+
+- Changed: Per-group household management via migration `20261002180000_household_member_management.sql` (`create_household`, `update_household_name`, `add_household_member`, `remove_household_member`; admin-only direct writes removed). Profile **Household** section (one card per active group); group detail shows members grouped by household. Server actions, queries, domain validation/display helpers; PGlite household tests; live-auth Playwright household journey (skipped without E2E credentials). Updated `ARCHITECTURE.md` and `DATA_MODEL.md`.
+- Checked: `npm run validate` (149 unit tests), `npm run test:e2e` (8 passed, 2 live-auth skipped); PR #14 and main CI passed.
+- Commit: `62ef343` — PR: https://github.com/jimbook42/Hui/pull/14 — merge `9da6081` on `main`; production https://hui-seven-gamma.vercel.app (deployment `dpl_9iNYLvdkVTTJ5gNdoGe92eLTfHaK`, READY).
+- Manual: Run `supabase db push` (or apply the new migration) on the linked Supabase project before household RPCs work in production. Optional: run live household E2E with `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD`.
