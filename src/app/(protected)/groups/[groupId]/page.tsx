@@ -7,7 +7,9 @@ import { GroupForm, GroupNameField } from "@/components/groups/group-form";
 import { GroupSettingsForm } from "@/components/groups/group-settings-form";
 import { ContributionCategoriesAdmin } from "@/components/contributions/contribution-categories-admin";
 import { GroupContributionHistorySection } from "@/components/contributions/group-contribution-history";
+import { GroupDietarySection } from "@/components/dietary/group-dietary-section";
 import { GroupMembersHouseholds } from "@/components/groups/group-members-households";
+import { listGroupSharedDietary } from "@/lib/dietary/queries";
 import { canManageContributionCategories } from "@/domain/contributions/permissions";
 import { listContributionCategories, getGroupContributionHistory } from "@/lib/contributions/queries";
 import {
@@ -53,11 +55,13 @@ export default async function GroupDetailPage({ params }: PageProps) {
   const viewerCanRename = canRenameGroup(detail.viewerRole);
   const viewerCanTransfer = canTransferOwnership(detail.viewerRole);
   const viewerCanLeave = detail.viewerRole !== "owner";
-  const [householdView, contributionCategories, contributionHistory] = await Promise.all([
-    getGroupHouseholdMemberView(supabase, groupId, detail.members),
-    listContributionCategories(supabase, groupId),
-    getGroupContributionHistory(supabase, groupId, user!.id),
-  ]);
+  const [householdView, contributionCategories, contributionHistory, sharedDietary] =
+    await Promise.all([
+      getGroupHouseholdMemberView(supabase, groupId, detail.members),
+      listContributionCategories(supabase, groupId),
+      getGroupContributionHistory(supabase, groupId, user!.id),
+      listGroupSharedDietary(supabase, groupId),
+    ]);
   const viewerCanManageCategories = canManageContributionCategories(detail.viewerRole);
 
   return (
@@ -154,6 +158,8 @@ export default async function GroupDetailPage({ params }: PageProps) {
           </div>
         </section>
       ) : null}
+
+      <GroupDietarySection rows={sharedDietary} />
 
       <GroupContributionHistorySection history={contributionHistory} />
 
