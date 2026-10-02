@@ -173,3 +173,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Commit: `a71ae99` — PR: https://github.com/jimbook42/Hui/pull/17 — merge `762fa76` on `main` (docs `1bc63ad`); production https://hui-seven-gamma.vercel.app (deployment `dpl_BnrB2qhnt3NVckyyXexVDG2FLyBb`, READY).
 - Manual: Optional live dietary E2E with `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD`; multi-user smoke that a second member sees shared but not private entries.
 - Follow-ups: Per-event dietary snapshots if historical event menus need frozen requirements; richer category UX without medical framing.
+
+## 2026-10-02 — HUI-020
+
+- Changed: Host rotation on `host_assignments` — domain fairness suggestion (`src/domain/hosts`), `assign_event_host` / `respond_to_host_assignment` RPCs (migration `20261002210000_host_coordination.sql`), event Host section and group hosting history UI, server actions, PGlite security tests (`src/db/host-coordination.test.ts`), Playwright `e2e/hosts.spec.ts` (live-auth skipped without credentials). Member-level hosting only; cancelled events excluded from history counts; no scores or auto-assignment.
+- Checked: `npm run validate` (193 tests), `npm run test:e2e` (8 passed, 6 live-auth skipped including hosts journey without E2E credentials).
+- Production: Apply migration `20261002210000_host_coordination.sql` on linked Supabase before host RPCs work in production.

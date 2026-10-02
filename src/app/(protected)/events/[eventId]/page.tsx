@@ -8,12 +8,20 @@ import { EditEventForm } from "@/components/events/event-form";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
 import { EventContributionsSection } from "@/components/contributions/event-contributions-section";
 import { EventDietarySection } from "@/components/dietary/event-dietary-section";
-import { listGroupSharedDietary } from "@/lib/dietary/queries";
-import { EventScheduling } from "@/components/events/event-scheduling";
+import { EventHostSection } from "@/components/hosts/event-host-section";
 import {
   canCoordinateContributions,
   isProposedEvent,
 } from "@/domain/contributions/permissions";
+import { getEventHostContext } from "@/lib/hosts/queries";
+import { listGroupSharedDietary } from "@/lib/dietary/queries";
+import { EventScheduling } from "@/components/events/event-scheduling";
+import {
+  canAssignEventHost,
+  canRespondToHostProposal,
+  canViewHostCoordination,
+} from "@/domain/hosts/permissions";
+import { pickPendingHostProposal } from "@/domain/hosts/display";
 import {
   getGroupContributionHistory,
   listContributionCategories,
@@ -84,6 +92,7 @@ export default async function EventDetailPage({ params }: PageProps) {
     eventContributions,
     contributionHistory,
     sharedDietary,
+    hostContext,
   ] = await Promise.all([
     getEventSchedulingContext(supabase, detail.id, detail.groupId, user!.id),
     getEventConsensusSummary(supabase, detail.id),
@@ -94,6 +103,18 @@ export default async function EventDetailPage({ params }: PageProps) {
     listEventContributions(supabase, detail.id),
     getGroupContributionHistory(supabase, detail.groupId, user!.id),
     listGroupSharedDietary(supabase, detail.groupId),
+    group
+      ? getEventHostContext(
+          supabase,
+          detail.id,
+          detail.groupId,
+          user!.id,
+          group.members.map((m) => ({
+            userId: m.userId,
+            displayName: m.displayName,
+          })),
+        )
+      : Promise.resolve(null),
   ]);
   const canCoordinate = canCoordinateContributions(detail.status);
   const settings = group?.settings;
@@ -114,6 +135,21 @@ export default async function EventDetailPage({ params }: PageProps) {
     detail.createdBy,
     detail.status,
   );
+  const pendingHostProposal = hostContext
+    ? pickPendingHostProposal(hostContext.assignments)
+    : null;
+  const canAssignHost = canAssignEventHost(
+    detail.viewerRole,
+    user!.id,
+    detail.createdBy,
+    detail.status,
+  );
+  const canRespondHost = canRespondToHostProposal(
+    user!.id,
+    pendingHostProposal,
+    detail.status,
+  );
+  const showHostSection = canViewHostCoordination(detail.status);
 
   return (
     <AppShell title={detail.title}>
@@ -220,6 +256,20 @@ export default async function EventDetailPage({ params }: PageProps) {
         <EventParticipantsSummary
           view={householdView}
           eligibleMemberCount={consensus.eligibleMemberCount}
+        />
+      ) : null}
+
+      {showHostSection && hostContext && group && settings ? (
+        <EventHostSection
+          eventId={detail.id}
+          groupId={detail.groupId}
+          eventStatus={detail.status}
+          hostVetoEnabled={settings.hostVetoEnabled}
+          canAssign={canAssignHost}
+          canRespond={canRespondHost}
+          eligibleMembers={group.members}
+          view={hostContext.view}
+          viewerHistoryCount={hostContext.history.viewerCount}
         />
       ) : null}
 
