@@ -135,3 +135,10 @@ Lightweight record of completed tickets. One entry per ticket.
 - Checked: `npm run validate` (127 tests), `npm run test:e2e` (7 passed, 1 live-auth skipped); PR CI and main CI passed.
 - PR: https://github.com/jimbook42/Hui/pull/12 — merge `249da30` on `main`; production https://hui-seven-gamma.vercel.app/sign-in shows Google, Microsoft, Facebook.
 - Pending: Manual retest completing Facebook login → dashboard and repeat sign-in (display name preserved).
+
+## 2026-10-02 — HUI-015
+
+- Changed: Reworked `/profile` into an account settings surface (Profile + Account sections) with card layout aligned to auth screens; display name save with `refreshOnSuccess` so the field reflects persisted data; read-only account email; sign-in method labels from Supabase `user.identities` (no linking/merging); Member ID for group admins; dedicated Sign out in Account alongside existing HUI-012B deletion flow. Added `auth-methods` and `update-display-name` unit tests; expanded profile e2e coverage (unauthenticated redirect, email display, reload persistence).
+- Decisions: Email remains non-editable in UI; OAuth tokens/provider secrets not shown; auth methods are informational only; header nav Sign out retained plus Account section control.
+- Checked: `npm run validate` (138 tests), `npm run test:e2e` (8 passed, 1 live-auth skipped).
+- Pending: PR merge, CI, production deploy, manual checklist on production.

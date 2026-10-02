@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** none (HUI-014 merged; end-to-end Facebook sign-in retest still recommended)  
-**Overall progress:** HUI-014 Facebook OAuth enabled in Hui and on production sign-in; OAuth redirect to Meta verified
+**Current ticket:** none (HUI-015 complete)  
+**Overall progress:** HUI-015 account settings foundation shipped — display name editing, account email, sign-in methods readout, sign-out, and deletion entry point
 
 ## Status at a glance
 
@@ -36,11 +36,13 @@
 - [x] HUI-013 — Microsoft/Azure OAuth (Hui-side; Supabase `azure` provider must be enabled for live sign-in)
 - [x] HUI-013A — Azure `email` scope on `signInWithOAuth` (Supabase rejects the callback without it; live sign-in retest still required)
 - [x] HUI-014 — Facebook/Meta OAuth (Hui-side; production OAuth start verified; end-to-end Facebook login retest still recommended)
+- [x] HUI-015 — Profile, identity and account settings foundation (display name, account email, sign-in methods readout, sign-out, deletion entry point)
 
 ## Phase 1 — Identity, groups and membership
 
 - [x] HUI-006 — Auth flows and profile/person model
 - [x] HUI-007 — Group creation, membership roles, administration (settings view/edit; add by user ID)
+- [x] HUI-015 — Profile and account settings UI (see Phase 0)
 
 ## Phase 2 — Group settings and permissions
 

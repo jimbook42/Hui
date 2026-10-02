@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect } from "react";
 
 import type { AuthActionState } from "@/app/auth/actions";
 
@@ -12,6 +13,8 @@ type AuthFormProps = {
   submitLabel: string;
   children: React.ReactNode;
   hiddenFields?: Record<string, string>;
+  /** Re-fetch server data after a successful action message (e.g. profile save). */
+  refreshOnSuccess?: boolean;
 };
 
 const initialState: AuthActionState = {};
@@ -21,8 +24,16 @@ export function AuthForm({
   submitLabel,
   children,
   hiddenFields,
+  refreshOnSuccess = false,
 }: AuthFormProps) {
   const [state, formAction, pending] = useActionState(action, initialState);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (refreshOnSuccess && state.message) {
+      router.refresh();
+    }
+  }, [refreshOnSuccess, state.message, router]);
 
   return (
     <form action={formAction} className="space-y-4">

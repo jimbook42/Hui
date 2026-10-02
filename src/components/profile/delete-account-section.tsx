@@ -27,10 +27,10 @@ export function DeleteAccountSection() {
   }
 
   return (
-    <section className="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-800">
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-        Account
-      </h2>
+    <div className="border-t border-zinc-200 pt-8 dark:border-zinc-800">
+      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        Delete account
+      </h3>
 
       {step === "idle" ? (
         <div className="mt-2">
@@ -136,6 +136,6 @@ export function DeleteAccountSection() {
           </form>
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }

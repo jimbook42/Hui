@@ -8,7 +8,13 @@ describe("normalizeDisplayName", () => {
   });
 
   it("rejects empty and overlong names", () => {
+    expect(normalizeDisplayName("")).toBeNull();
     expect(normalizeDisplayName("   ")).toBeNull();
     expect(normalizeDisplayName("a".repeat(81))).toBeNull();
+  });
+
+  it("accepts names up to 80 characters", () => {
+    const name = "a".repeat(80);
+    expect(normalizeDisplayName(name)).toBe(name);
   });
 });
