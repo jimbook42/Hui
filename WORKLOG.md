@@ -186,3 +186,16 @@ Lightweight record of completed tickets. One entry per ticket.
 - Checked: `npm run validate` (204 tests), `npm run test:e2e` (10 passed, 6 live-auth skipped).
 - Commit: `437bc97` — PR: https://github.com/jimbook42/Hui/pull/18 — merge `a8d7df3` on `main` (includes HUI-020 host rotation); production https://hui-seven-gamma.vercel.app
 - Manual: Apply migrations `20261002210000_host_coordination.sql` and `20261002220000_notifications.sql` on linked Supabase before host RPCs and notifications work in production.
+
+## 2026-10-03 — HUI-022A
+
+- Changed: Coordination model correction — migration `20261003000000_coordination_model_correction.sql` (optional hosting, auto-propose host on confirm, accept/swap, member hosting standing, group timezone, contribution seeding and host-bound categories, attendance roster RPC, tighter event/candidate RLS, consensus-required UI). App updates for host UX, named attendance, timezone-aware scheduling display, group settings, member coordination preferences.
+- Checked: `npm run validate` (212 tests, build OK).
+- Manual: Apply migration on Supabase; run multi-account scenarios A–D from ticket; confirm notifications appear after `db push` (empty list with no migration is expected).
+- Follow-ups: Household host rotation; full standing contribution preferences; temporary “can’t host this time”; manual multi-user QA not automated in CI.
+
+## 2026-10-03 — Production Supabase migration deployment
+
+- Changed: Applied pending migrations to linked production project `xmvzzypefpiethefrfka` (`npx supabase db push` after dry-run): `20261002170000_account_deletion_fixes.sql`, `20261002180000_household_member_management.sql`, `20261002200000_contribution_coordination.sql`, `20261002210000_host_coordination.sql` (HUI-020), `20261002220000_notifications.sql` (HUI-021), `20261003000000_coordination_model_correction.sql` (HUI-022A). Verified remote migration history matches local; spot-checked key types/tables/RPCs/triggers on production.
+- Checked: `npm run validate` (212 tests, lint, typecheck, build OK).
+- Manual: Live multi-user QA for host propose/accept/swap, optional hosting, attendance privacy, host-bound contributions, timezone display, in-app notifications, RLS, and consensus — not completed in this session.
