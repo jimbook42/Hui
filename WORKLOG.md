@@ -102,3 +102,11 @@ Lightweight record of completed tickets. One entry per ticket.
 - Fixed: Auth delete + verification first, then RPC; idempotent RPC; RLS allows reading own profile for guards; middleware allows `deleted=1` sign-in; sign-in page clears stale session on success; tombstone-only layout redirect uses `deletion_incomplete=1` not success copy; integration/unit tests for Auth deletion helper.
 - Pending: push migration to hosted Supabase, redeploy preview, manual destructive retest.
 - Commit: 37d6d9d
+
+## 2026-10-02 — HUI-012B (complete)
+
+- Status: complete. Manual preview validation passed. No deletion or session bug remains.
+- Manual preview: account deletion succeeds; the Auth user is deleted; old credentials fail; the same email registers again as a fresh account. Supabase email confirmation stayed disabled for the current testing configuration (out of scope; unchanged).
+- Policy: typed `DELETE` confirmation; Auth delete and verification first, then `delete_my_account_data`; shared history kept on an anonymised profile; re-registration is a new auth id with no email re-link.
+- Checked: `npm run validate`, `npm run test:e2e`.
+- Commit: pending

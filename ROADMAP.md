@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** HUI-012B — account deletion fix (auth-first order, session/sign-in guards; apply migration + preview retest pending)  
-**Overall progress:** HUI-012B implementation updated; merge blocked on hosted migration + preview validation
+**Current ticket:** none (HUI-012B complete)  
+**Overall progress:** HUI-012B account deletion and re-registration complete; manual preview validation passed
 
 ## Status at a glance
 
@@ -32,7 +32,7 @@
 - [x] HUI-011 — Social auth provider config and auth UI groundwork (email/password only in UI; OAuth backlog)
 - [x] HUI-012 — Google OAuth integration (Hui-side; Google provider enabled in Supabase; production sign-in test still required)
 - [x] HUI-012A — OAuth initial profile display name from provider metadata (trigger + app precedence; existing names preserved)
-- [~] HUI-012B — Account deletion and re-registration (two-step UI; Auth delete then RPC; verified `deleteUser`; preview needs migration `20261002170000_account_deletion_fixes.sql` + full destructive retest before merge)
+- [x] HUI-012B — Account deletion and re-registration (two-step UI; Auth delete then RPC; verified `deleteUser`; manual preview passed: Auth user removed, old credentials fail, same email re-registers as a new account)
 
 ## Phase 1 — Identity, groups and membership
 
@@ -91,7 +91,7 @@
 
 ## Known blockers
 
-- [!] **HUI-012B:** Apply Supabase migration `20261002170000_account_deletion_fixes.sql` to the hosted project used by preview/production, then re-run the full account-deletion preview test after PR #9 redeploys.
+- None.
 
 ## Deferred decisions
 
