@@ -28,14 +28,15 @@ test("sign-in and sign-up pages render", async ({ page }) => {
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with Microsoft" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(2);
-  await expect(page.getByRole("button", { name: "Continue with Facebook" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Continue with Facebook" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(3);
   await expect(page.getByRole("button", { name: "Continue with Apple" })).toHaveCount(0);
   await page.goto("/sign-up");
   await expect(page.getByLabel("Display name")).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with Microsoft" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Continue with Facebook" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(3);
 });
 
 test("OAuth cancellation shows a friendly sign-in notice", async ({ page }) => {

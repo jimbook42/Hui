@@ -16,22 +16,24 @@ import {
 } from "./providers";
 
 describe("auth providers", () => {
-  it("keeps email/password enabled alongside Google and Microsoft OAuth", () => {
+  it("keeps email/password enabled alongside Google, Microsoft, and Facebook OAuth", () => {
     expect(isEmailAuthEnabled()).toBe(true);
     expect(getEnabledOAuthProviders().map((provider) => provider.id)).toEqual([
       "google",
       "azure",
+      "facebook",
     ]);
   });
 
-  it("enables Google and Microsoft among OAuth providers", () => {
+  it("enables Google, Microsoft, and Facebook among OAuth providers", () => {
     for (const id of AUTH_OAUTH_PROVIDER_IDS) {
-      expect(getAuthProvider(id)?.enabled).toBe(id === "google" || id === "azure");
+      expect(getAuthProvider(id)?.enabled).toBe(
+        id === "google" || id === "azure" || id === "facebook",
+      );
     }
   });
 
-  it("keeps Facebook and Apple hidden (disabled)", () => {
-    expect(getAuthProvider("facebook")?.enabled).toBe(false);
+  it("keeps Apple hidden (disabled)", () => {
     expect(getAuthProvider("apple")?.enabled).toBe(false);
   });
 
@@ -56,17 +58,26 @@ describe("auth providers", () => {
     const ids = AUTH_PROVIDERS.map((provider) => provider.id);
     expect(ids).toEqual([...AUTH_OAUTH_PROVIDER_IDS, "email"]);
   });
+
+  it("keeps provider enablement independently controllable", () => {
+    expect(getAuthProvider("google")?.enabled).toBe(true);
+    expect(getAuthProvider("azure")?.enabled).toBe(true);
+    expect(getAuthProvider("facebook")?.enabled).toBe(true);
+    expect(getAuthProvider("apple")?.enabled).toBe(false);
+  });
 });
 
 describe("validateOAuthSignInRequest", () => {
-  it("allows Google and Microsoft when enabled", () => {
+  it("allows Google, Microsoft, and Facebook when enabled", () => {
     expect(validateOAuthSignInRequest("google")).toEqual({ provider: "google" });
     expect(validateOAuthSignInRequest("azure")).toEqual({ provider: "azure" });
+    expect(validateOAuthSignInRequest("facebook")).toEqual({
+      provider: "facebook",
+    });
   });
 
   it("rejects disabled OAuth providers", () => {
     expect(() => validateOAuthSignInRequest("apple")).toThrow(/not enabled/);
-    expect(() => validateOAuthSignInRequest("facebook")).toThrow(/not enabled/);
   });
 });
 
@@ -86,9 +97,20 @@ describe("oauthCallbackFailureReason", () => {
     expect(oauthCallbackFailureReason("server_error")).toBe("failed");
     expect(oauthCallbackFailureReason("temporarily_unavailable")).toBe("failed");
   });
+
+  it("uses the same cancellation mapping for Facebook access_denied", () => {
+    expect(oauthCallbackFailureReason("access_denied")).toBe("cancelled");
+  });
+
+  it("uses the same failure mapping for Facebook provider errors", () => {
+    expect(oauthCallbackFailureReason("server_error")).toBe("failed");
+  });
 });
 
 describe("signInWithOAuthProvider", () => {
+  const callbackUrl =
+    "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard";
+
   it("calls Supabase signInWithOAuth for Google", async () => {
     const signInWithOAuth = vi.fn().mockResolvedValue({
       data: { url: "https://accounts.google.com/o/oauth2/v2/auth" },
@@ -96,17 +118,12 @@ describe("signInWithOAuthProvider", () => {
     });
     const supabase = { auth: { signInWithOAuth } } as never;
 
-    await signInWithOAuthProvider(
-      supabase,
-      "google",
-      "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
-    );
+    await signInWithOAuthProvider(supabase, "google", callbackUrl);
 
     expect(signInWithOAuth).toHaveBeenCalledWith({
       provider: "google",
       options: {
-        redirectTo:
-          "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
+        redirectTo: callbackUrl,
       },
     });
   });
@@ -118,18 +135,30 @@ describe("signInWithOAuthProvider", () => {
     });
     const supabase = { auth: { signInWithOAuth } } as never;
 
-    await signInWithOAuthProvider(
-      supabase,
-      "azure",
-      "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
-    );
+    await signInWithOAuthProvider(supabase, "azure", callbackUrl);
 
     expect(signInWithOAuth).toHaveBeenCalledWith({
       provider: "azure",
       options: {
-        redirectTo:
-          "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
+        redirectTo: callbackUrl,
         scopes: "email",
+      },
+    });
+  });
+
+  it("calls Supabase signInWithOAuth for Facebook", async () => {
+    const signInWithOAuth = vi.fn().mockResolvedValue({
+      data: { url: "https://www.facebook.com/v18.0/dialog/oauth" },
+      error: null,
+    });
+    const supabase = { auth: { signInWithOAuth } } as never;
+
+    await signInWithOAuthProvider(supabase, "facebook", callbackUrl);
+
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: "facebook",
+      options: {
+        redirectTo: callbackUrl,
       },
     });
   });
@@ -141,11 +170,20 @@ describe("signInWithOAuthProvider", () => {
     });
     const supabase = { auth: { signInWithOAuth } } as never;
 
-    await signInWithOAuthProvider(
-      supabase,
-      "google",
-      "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
-    );
+    await signInWithOAuthProvider(supabase, "google", callbackUrl);
+
+    const options = signInWithOAuth.mock.calls[0]?.[0]?.options;
+    expect(options).not.toHaveProperty("scopes");
+  });
+
+  it("does not add scopes to Facebook OAuth", async () => {
+    const signInWithOAuth = vi.fn().mockResolvedValue({
+      data: { url: "https://www.facebook.com/v18.0/dialog/oauth" },
+      error: null,
+    });
+    const supabase = { auth: { signInWithOAuth } } as never;
+
+    await signInWithOAuthProvider(supabase, "facebook", callbackUrl);
 
     const options = signInWithOAuth.mock.calls[0]?.[0]?.options;
     expect(options).not.toHaveProperty("scopes");
