@@ -33,16 +33,32 @@ export async function getEventSchedulingContext(
     throw new Error(settingsError.message);
   }
 
-  const { data: candidates, error: candidatesError } = await supabase
-    .from("event_candidates")
-    .select("id, starts_at, ends_at, status, proposed_by, created_at")
-    .eq("event_id", eventId)
-    .in("status", [...ACTIVE_CANDIDATE_STATUSES])
-    .order("starts_at", { ascending: true })
-    .order("id", { ascending: true });
+  const candidateSelect =
+    "id, starts_at, ends_at, status, proposed_by, created_at";
+
+  const [{ data: candidates, error: candidatesError }, { data: withdrawn, error: withdrawnError }] =
+    await Promise.all([
+      supabase
+        .from("event_candidates")
+        .select(candidateSelect)
+        .eq("event_id", eventId)
+        .in("status", [...ACTIVE_CANDIDATE_STATUSES])
+        .order("starts_at", { ascending: true })
+        .order("id", { ascending: true }),
+      supabase
+        .from("event_candidates")
+        .select(candidateSelect)
+        .eq("event_id", eventId)
+        .eq("status", "withdrawn")
+        .order("starts_at", { ascending: true })
+        .order("id", { ascending: true }),
+    ]);
 
   if (candidatesError) {
     throw new Error(candidatesError.message);
+  }
+  if (withdrawnError) {
+    throw new Error(withdrawnError.message);
   }
 
   const candidateIds = (candidates ?? []).map((row) => row.id as string);
@@ -67,7 +83,7 @@ export async function getEventSchedulingContext(
     }
   }
 
-  const mapped: EventCandidateRow[] = (candidates ?? []).map((row) => ({
+  const mapCandidate = (row: Record<string, unknown>): EventCandidateRow => ({
     id: row.id as string,
     startsAt: row.starts_at as string,
     endsAt: row.ends_at as string,
@@ -75,10 +91,18 @@ export async function getEventSchedulingContext(
     proposedBy: row.proposed_by as string,
     createdAt: row.created_at as string,
     viewerResponse: responsesByCandidate.get(row.id as string) ?? null,
-  }));
+  });
+
+  const mapped: EventCandidateRow[] = (candidates ?? []).map((row) =>
+    mapCandidate(row as Record<string, unknown>),
+  );
+  const withdrawnMapped: EventCandidateRow[] = (withdrawn ?? []).map((row) =>
+    mapCandidate(row as Record<string, unknown>),
+  );
 
   return {
     candidates: mapped,
+    withdrawnCandidates: withdrawnMapped,
     maybeResponsesEnabled: Boolean(settings?.maybe_responses_enabled),
     minimumAttendees: Number(settings?.minimum_attendees ?? 1),
     consensusRule: (settings?.consensus_rule ??

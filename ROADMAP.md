@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** none (HUI-016 complete)  
-**Overall progress:** HUI-016 household and member structure shipped — per-group households, member-managed RPCs, profile household settings, group member grouping
+**Current ticket:** HUI-017 (in progress)  
+**Overall progress:** HUI-017 event attendance and consensus UX — clearer candidate/response UI, aggregate attendance summaries, finalisation messaging, household-grouped member context on event pages
 
 ## Status at a glance
 
@@ -13,7 +13,7 @@
 | 1 — Identity, groups and membership | [x] Complete |
 | 2 — Group settings and permissions | [~] Partial (settings UI in HUI-007; event permissions in later tickets) |
 | 3 — Event domain and proposal flow | [~] Foundation (HUI-008) |
-| 4 — Scheduling and consensus | [x] HUI-009 responses and HUI-010 consensus/finalisation |
+| 4 — Scheduling and consensus | [~] HUI-017 consensus UX in progress (HUI-009/HUI-010 backend complete) |
 | 5 — Host rotation | [ ] Not started |
 | 6 — Contributions and dietary information | [ ] Not started |
 | 7 — Notifications and reminders | [ ] Not started |
@@ -64,6 +64,7 @@
 - [x] Candidate dates/times and responses (HUI-009)
 - [x] Minimum attendees and consensus rules (HUI-010)
 - [x] Finalisation when requirements met (HUI-010)
+- [~] HUI-017 — Event attendance and consensus UX (event page scheduling section, aggregate attendance, finalisation copy, withdrawn candidates, household-grouped roster; no new consensus model)
 
 ## Phase 5 — Host rotation
 

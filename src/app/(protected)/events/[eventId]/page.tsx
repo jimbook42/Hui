@@ -5,6 +5,7 @@ import { updateEventAction } from "@/app/events/actions";
 import { AppShell } from "@/components/app/app-shell";
 import { CancelEventButton } from "@/components/events/cancel-event-button";
 import { EditEventForm } from "@/components/events/event-form";
+import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
 import { EventScheduling } from "@/components/events/event-scheduling";
 import {
   canCancelEvent,
@@ -18,6 +19,7 @@ import {
 } from "@/domain/scheduling/permissions";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
+import { getGroupHouseholdMemberView } from "@/lib/households/queries";
 import {
   getEventConsensusSummary,
   getEventSchedulingContext,
@@ -61,10 +63,13 @@ export default async function EventDetailPage({ params }: PageProps) {
     detail.status,
   );
 
-  const [group, scheduling, consensus] = await Promise.all([
-    getGroupDetail(supabase, detail.groupId, user!.id),
+  const group = await getGroupDetail(supabase, detail.groupId, user!.id);
+  const [scheduling, consensus, householdView] = await Promise.all([
     getEventSchedulingContext(supabase, detail.id, detail.groupId, user!.id),
     getEventConsensusSummary(supabase, detail.id),
+    group
+      ? getGroupHouseholdMemberView(supabase, detail.groupId, group.members)
+      : Promise.resolve(null),
   ]);
   const settings = group?.settings;
   const showScheduling = Boolean(settings);
@@ -102,6 +107,27 @@ export default async function EventDetailPage({ params }: PageProps) {
           Events
         </Link>
       </p>
+
+      {detail.status === "confirmed" ? (
+        <div
+          className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
+          role="status"
+        >
+          <p className="font-medium">Confirmed</p>
+          <p className="mt-1">
+            {formatWhen(detail.startsAt)}
+            {detail.endsAt ? ` — ${formatWhen(detail.endsAt)}` : ""}
+          </p>
+        </div>
+      ) : null}
+      {detail.status === "cancelled" ? (
+        <div
+          className="mt-6 rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-300"
+          role="status"
+        >
+          This event was cancelled. Scheduling and confirmation are closed.
+        </div>
+      ) : null}
 
       <dl className="mt-8 grid gap-3 text-sm text-zinc-800 dark:text-zinc-200">
         <div>
@@ -153,13 +179,22 @@ export default async function EventDetailPage({ params }: PageProps) {
           groupId={detail.groupId}
           eventStatus={detail.status}
           candidates={scheduling.candidates}
+          withdrawnCandidates={scheduling.withdrawnCandidates}
           maybeResponsesEnabled={scheduling.maybeResponsesEnabled}
           minimumAttendees={scheduling.minimumAttendees}
+          proposalDeadlineHours={settings?.proposalDeadlineHours ?? null}
           consensus={consensus}
           canAddCandidates={canAdd}
           canRemoveCandidates={canRemove}
           canRespond={canRespond}
           canFinalise={canFinalise}
+        />
+      ) : null}
+
+      {householdView && settings ? (
+        <EventParticipantsSummary
+          view={householdView}
+          eligibleMemberCount={consensus.eligibleMemberCount}
         />
       ) : null}
 
