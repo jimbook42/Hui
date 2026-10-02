@@ -94,3 +94,4 @@ Lightweight record of completed tickets. One entry per ticket.
 - Preview config: `vercel env ls` shows `SUPABASE_SECRET_KEY` absent from Preview/Production/Development on `jimbook/hui` (only `NEXT_PUBLIC_SUPABASE_*` set).
 - Checked: `npm run validate`, `npm run test:e2e`.
 - Pending: add `SUPABASE_SECRET_KEY` to Vercel Preview, redeploy, full destructive preview test before merge (PR #9).
+- Commit: 153d431
