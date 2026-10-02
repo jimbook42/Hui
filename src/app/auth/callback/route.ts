@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { oauthCallbackFailureReason } from "@/lib/auth/oauth";
 import { sanitizeNextPath } from "@/lib/auth/routes";
 import { ensureUserProfile } from "@/lib/profiles/ensure-profile";
-import { normalizeDisplayName } from "@/lib/profiles/validation";
+import { initialDisplayNameFromAuthMetadata } from "@/lib/profiles/initial-display-name";
 import { createClient } from "@/lib/supabase/server";
 
 function redirectToSignIn(
@@ -13,20 +13,6 @@ function redirectToSignIn(
   const url = new URL("/sign-in", request.url);
   url.searchParams.set("oauth", reason);
   return NextResponse.redirect(url);
-}
-
-function preferredOAuthDisplayName(
-  metadata: Record<string, unknown> | undefined,
-  email: string | undefined,
-): string {
-  const fromMetadata =
-    normalizeDisplayName(String(metadata?.display_name ?? "")) ??
-    normalizeDisplayName(String(metadata?.full_name ?? "")) ??
-    normalizeDisplayName(String(metadata?.name ?? ""));
-  if (fromMetadata) {
-    return fromMetadata;
-  }
-  return normalizeDisplayName(email?.split("@")[0] ?? "") ?? "Member";
 }
 
 export async function GET(request: NextRequest) {
@@ -62,7 +48,7 @@ export async function GET(request: NextRequest) {
   const ensured = await ensureUserProfile(
     supabase,
     user.id,
-    preferredOAuthDisplayName(user.user_metadata, user.email),
+    initialDisplayNameFromAuthMetadata(user.user_metadata, user.email),
   );
   if (!ensured.ok) {
     return redirectToSignIn(request, "failed");

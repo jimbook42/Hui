@@ -13,6 +13,7 @@ import {
 } from "@/lib/auth/providers";
 import { sanitizeNextPath } from "@/lib/auth/routes";
 import { ensureUserProfile } from "@/lib/profiles/ensure-profile";
+import { initialDisplayNameFromAuthMetadata } from "@/lib/profiles/initial-display-name";
 import { updateOwnDisplayName } from "@/lib/profiles/update-display-name";
 import { normalizeDisplayName } from "@/lib/profiles/validation";
 import { createClient } from "@/lib/supabase/server";
@@ -87,10 +88,11 @@ export async function signInAction(
     return { error: error.message };
   }
 
-  const displayName =
-    (data.user.user_metadata?.display_name as string | undefined) ??
-    email.split("@")[0];
-  const ensured = await ensureUserProfile(supabase, data.user.id, displayName);
+  const ensured = await ensureUserProfile(
+    supabase,
+    data.user.id,
+    initialDisplayNameFromAuthMetadata(data.user.user_metadata, data.user.email),
+  );
   if (!ensured.ok) {
     return { error: ensured.error };
   }

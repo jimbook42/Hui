@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { ensureUserProfile } from "@/lib/profiles/ensure-profile";
+import { initialDisplayNameFromAuthMetadata } from "@/lib/profiles/initial-display-name";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProtectedLayout({
@@ -17,11 +18,11 @@ export default async function ProtectedLayout({
     redirect("/sign-in");
   }
 
-  const displayName =
-    (user.user_metadata?.display_name as string | undefined) ??
-    user.email?.split("@")[0] ??
-    "Member";
-  const ensured = await ensureUserProfile(supabase, user.id, displayName);
+  const ensured = await ensureUserProfile(
+    supabase,
+    user.id,
+    initialDisplayNameFromAuthMetadata(user.user_metadata, user.email),
+  );
   if (!ensured.ok) {
     throw new Error(ensured.error);
   }

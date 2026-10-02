@@ -75,3 +75,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: Google OAuth via Supabase `signInWithOAuth`, `/auth/callback` session exchange, `ensureUserProfile` on first OAuth login; Google enabled in provider registry (Apple/Facebook/Microsoft remain disabled); auth UI “Continue with Google”; tests and architecture doc update. Google client credentials stay in Supabase dashboard only. Follow-up: `redirect()` is outside the OAuth action catch so Next.js can send the browser to Google, and provider `access_denied` is cancellation rather than a generic failure.
 - Checked: `npm run validate`, `npm run test:e2e`.
 - Commit: 360a207; redirect fix 6008e72; redirect fix 6008e72
+
+## 2026-10-02 — HUI-012A
+
+- Changed: `initial_profile_display_name` SQL helper and updated `handle_new_user` trigger (`full_name` → `name` → `display_name` → email local-part); shared `initialDisplayNameFromAuthMetadata` for OAuth callback, sign-in, and protected layout; tests and architecture note that existing display names are never overwritten on re-auth.
+- Checked: `npm run validate`, `npm run test:e2e`.
+- Commit: (pending)
