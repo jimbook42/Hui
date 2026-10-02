@@ -18,6 +18,11 @@ test("unauthenticated groups access redirects to sign-in", async ({ page }) => {
   await expect(page).toHaveURL(/\/sign-in/);
 });
 
+test("unauthenticated profile access redirects to sign-in", async ({ page }) => {
+  await page.goto("/profile");
+  await expect(page).toHaveURL(/\/sign-in/);
+});
+
 test("sign-in shows confirmation after account deletion", async ({ page }) => {
   await page.goto("/sign-in?deleted=1");
   await expect(page.getByText(/Your account was deleted/)).toBeVisible();
@@ -72,12 +77,21 @@ test.describe("live Supabase auth", () => {
     await expect(page).toHaveURL(/\/dashboard/);
 
     await page.goto("/profile");
+    await expect(page.getByRole("heading", { name: "Account settings" })).toBeVisible();
+    await expect(page.getByText("Account email")).toBeVisible();
+    await expect(page.getByText(email, { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Delete my account" })).toBeVisible();
+
     const profileName = `${displayName} Updated`;
     await page.getByLabel("Display name").fill(profileName);
-    await page.getByRole("button", { name: "Save profile" }).click();
+    await page.getByRole("button", { name: "Save display name" }).click();
     await expect(page.getByText("Profile updated.")).toBeVisible();
+    await expect(page.getByLabel("Display name")).toHaveValue(profileName);
 
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.reload();
+    await expect(page.getByLabel("Display name")).toHaveValue(profileName);
+
+    await page.getByRole("button", { name: "Sign out" }).first().click();
     await expect(page).toHaveURL(/\/sign-in/);
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/sign-in/);
