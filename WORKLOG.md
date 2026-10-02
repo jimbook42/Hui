@@ -110,3 +110,11 @@ Lightweight record of completed tickets. One entry per ticket.
 - Policy: typed `DELETE` confirmation; Auth delete and verification first, then `delete_my_account_data`; shared history kept on an anonymised profile; re-registration is a new auth id with no email re-link.
 - Checked: `npm run validate`, `npm run test:e2e`.
 - Commit: a0ab037
+
+## 2026-10-02 — HUI-013
+
+- Changed: Enabled Microsoft OAuth in `providers.ts` (`azure` Supabase provider) alongside Google; reuses existing `oauthSignInAction`, `signInWithOAuthProvider`, and `/auth/callback` flow with HUI-012A display-name precedence (`full_name` → `name` → `display_name`). Updated provider/unit/e2e tests and architecture doc. No callback or identity-merging changes.
+- Architecture: Microsoft → Supabase Auth (`signInWithOAuth` provider `azure`) → Hui `/auth/callback` → session + `ensureUserProfile` (existing names preserved).
+- Manual: In Supabase Dashboard → Authentication → Providers → Azure, enable the provider and set Azure AD application (client) ID and secret; ensure redirect URLs include the Supabase callback URL and production site URL is in Supabase redirect allow list. Live Microsoft sign-in not verified in this session (requires dashboard enable + Microsoft account).
+- Checked: `npm run validate`, `npm run test:e2e` (7 passed, 1 live-auth skipped).
+- Commit: (pending)

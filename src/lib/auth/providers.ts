@@ -42,6 +42,12 @@ const OAUTH_PROVIDER_META: Record<
   },
 };
 
+/** OAuth providers enabled in Hui UI and server actions (Supabase dashboard must match). */
+const ENABLED_OAUTH_PROVIDER_IDS: ReadonlySet<AuthOAuthProviderId> = new Set([
+  "google",
+  "azure",
+]);
+
 /**
  * Authentication method enablement for Hui.
  *
@@ -52,7 +58,7 @@ export const AUTH_PROVIDERS: readonly AuthProviderDefinition[] = [
   ...AUTH_OAUTH_PROVIDER_IDS.map((id) => ({
     id,
     ...OAUTH_PROVIDER_META[id],
-    enabled: id === "google",
+    enabled: ENABLED_OAUTH_PROVIDER_IDS.has(id),
   })),
   {
     id: "email",

@@ -16,27 +16,33 @@ import {
 } from "./providers";
 
 describe("auth providers", () => {
-  it("keeps email/password enabled alongside Google OAuth", () => {
+  it("keeps email/password enabled alongside Google and Microsoft OAuth", () => {
     expect(isEmailAuthEnabled()).toBe(true);
     expect(getEnabledOAuthProviders().map((provider) => provider.id)).toEqual([
       "google",
+      "azure",
     ]);
   });
 
-  it("enables only Google among OAuth providers", () => {
+  it("enables Google and Microsoft among OAuth providers", () => {
     for (const id of AUTH_OAUTH_PROVIDER_IDS) {
-      expect(getAuthProvider(id)?.enabled).toBe(id === "google");
+      expect(getAuthProvider(id)?.enabled).toBe(id === "google" || id === "azure");
     }
+  });
+
+  it("keeps Facebook and Apple hidden (disabled)", () => {
+    expect(getAuthProvider("facebook")?.enabled).toBe(false);
+    expect(getAuthProvider("apple")?.enabled).toBe(false);
   });
 
   it("defines planned OAuth providers with continue labels", () => {
     expect(getAuthProvider("google")?.continueLabel).toBe("Continue with Google");
+    expect(getAuthProvider("azure")?.continueLabel).toBe(
+      "Continue with Microsoft",
+    );
     expect(getAuthProvider("apple")?.continueLabel).toBe("Continue with Apple");
     expect(getAuthProvider("facebook")?.continueLabel).toBe(
       "Continue with Facebook",
-    );
-    expect(getAuthProvider("azure")?.continueLabel).toBe(
-      "Continue with Microsoft",
     );
   });
 
@@ -53,14 +59,14 @@ describe("auth providers", () => {
 });
 
 describe("validateOAuthSignInRequest", () => {
-  it("allows Google when enabled", () => {
+  it("allows Google and Microsoft when enabled", () => {
     expect(validateOAuthSignInRequest("google")).toEqual({ provider: "google" });
+    expect(validateOAuthSignInRequest("azure")).toEqual({ provider: "azure" });
   });
 
   it("rejects disabled OAuth providers", () => {
     expect(() => validateOAuthSignInRequest("apple")).toThrow(/not enabled/);
     expect(() => validateOAuthSignInRequest("facebook")).toThrow(/not enabled/);
-    expect(() => validateOAuthSignInRequest("azure")).toThrow(/not enabled/);
   });
 });
 
@@ -83,7 +89,7 @@ describe("oauthCallbackFailureReason", () => {
 });
 
 describe("signInWithOAuthProvider", () => {
-  it("calls Supabase signInWithOAuth for enabled providers", async () => {
+  it("calls Supabase signInWithOAuth for Google", async () => {
     const signInWithOAuth = vi.fn().mockResolvedValue({
       data: { url: "https://accounts.google.com/o/oauth2/v2/auth" },
       error: null,
@@ -105,6 +111,28 @@ describe("signInWithOAuthProvider", () => {
     });
   });
 
+  it("calls Supabase signInWithOAuth for Microsoft (azure)", async () => {
+    const signInWithOAuth = vi.fn().mockResolvedValue({
+      data: { url: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize" },
+      error: null,
+    });
+    const supabase = { auth: { signInWithOAuth } } as never;
+
+    await signInWithOAuthProvider(
+      supabase,
+      "azure",
+      "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
+    );
+
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: "azure",
+      options: {
+        redirectTo:
+          "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
+      },
+    });
+  });
+
   it("does not call Supabase for disabled providers", async () => {
     const signInWithOAuth = vi.fn();
     const supabase = { auth: { signInWithOAuth } } as never;
@@ -119,5 +147,10 @@ describe("signInWithOAuthProvider", () => {
 describe("canonical identity", () => {
   it("documents Supabase auth user id as the Hui identity source", () => {
     expect(CANONICAL_USER_ID_FIELD).toBe("auth.users.id");
+  });
+
+  it("does not introduce email-based account merging in provider config", () => {
+    expect(AUTH_PROVIDERS.some((provider) => provider.id === "email")).toBe(true);
+    expect(getAuthProvider("email")?.enabled).toBe(true);
   });
 });

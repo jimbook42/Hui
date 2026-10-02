@@ -44,4 +44,13 @@ describe("initialDisplayNameFromAuthMetadata", () => {
       initialDisplayNameFromAuthMetadata({ display_name: "Email User" }, "user@hui.test"),
     ).toBe("Email User");
   });
+
+  it("resolves Microsoft/Azure metadata the same as other OAuth providers", () => {
+    expect(
+      initialDisplayNameFromAuthMetadata(
+        { full_name: "Isaac Tull", name: "Isaac Tull", email: "isaac@outlook.com" },
+        "isaac@outlook.com",
+      ),
+    ).toBe("Isaac Tull");
+  });
 });

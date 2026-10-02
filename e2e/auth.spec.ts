@@ -27,11 +27,25 @@ test("sign-in and sign-up pages render", async ({ page }) => {
   await page.goto("/sign-in");
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Continue with Microsoft" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Continue with Facebook" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Continue with Apple" })).toHaveCount(0);
   await page.goto("/sign-up");
   await expect(page.getByLabel("Display name")).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Continue with Microsoft" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(2);
+});
+
+test("OAuth cancellation shows a friendly sign-in notice", async ({ page }) => {
+  await page.goto("/sign-in?oauth=cancelled");
+  await expect(page.getByText(/Social sign-in was cancelled/)).toBeVisible();
+});
+
+test("OAuth provider errors show a friendly sign-in notice", async ({ page }) => {
+  await page.goto("/sign-in?oauth=failed");
+  await expect(page.getByText(/Social sign-in could not be completed/)).toBeVisible();
 });
 
 test.describe("live Supabase auth", () => {
