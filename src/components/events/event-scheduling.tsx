@@ -11,17 +11,37 @@ import {
 } from "@/app/events/scheduling-actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import type { EventStatus } from "@/domain/events/types";
-import type { AvailabilityChoice } from "@/domain/scheduling/types";
-import { availabilityLabel, consensusFailureLabel, consensusRuleLabel } from "@/lib/scheduling/labels";
-import type { CandidateConsensusView, EventCandidateRow, EventConsensusSummary } from "@/lib/scheduling/types";
+import {
+  availabilityResponseOptions,
+  buildAttendanceSummaryLines,
+  candidateStatusBadge,
+  consensusRuleRequirementSummary,
+  eventSchedulingSectionMessage,
+  hasNoResponsesYet,
+  isCandidateOpenForResponses,
+  proposalDeadlineGroupNotice,
+  shouldShowFinaliseControl,
+} from "@/domain/scheduling/consensus-display";
+import {
+  availabilityLabel,
+  consensusFailureLabel,
+  consensusRuleLabel,
+} from "@/lib/scheduling/labels";
+import type {
+  CandidateConsensusView,
+  EventCandidateRow,
+  EventConsensusSummary,
+} from "@/lib/scheduling/types";
 
 type EventSchedulingProps = {
   eventId: string;
   groupId: string;
   eventStatus: EventStatus;
   candidates: EventCandidateRow[];
+  withdrawnCandidates: EventCandidateRow[];
   maybeResponsesEnabled: boolean;
   minimumAttendees: number;
+  proposalDeadlineHours: number | null;
   consensus: EventConsensusSummary;
   canAddCandidates: boolean;
   canRemoveCandidates: boolean;
@@ -44,26 +64,56 @@ function formatSlot(startsAt: string, endsAt: string): string {
   return `${start.toLocaleString()} — ${end.toLocaleString()}`;
 }
 
-const responseOptions = (
-  maybeEnabled: boolean,
-): { value: AvailabilityChoice; label: string }[] => {
-  const options: { value: AvailabilityChoice; label: string }[] = [
-    { value: "available", label: availabilityLabel("available") },
-    { value: "unavailable", label: availabilityLabel("unavailable") },
-  ];
-  if (maybeEnabled) {
-    options.push({ value: "maybe", label: availabilityLabel("maybe") });
-  }
-  return options;
-};
+function AttendanceSummary({
+  evaluation,
+  maybeResponsesEnabled,
+}: {
+  evaluation: CandidateConsensusView;
+  maybeResponsesEnabled: boolean;
+}) {
+  const lines = buildAttendanceSummaryLines({
+    acceptedCount: evaluation.acceptedCount,
+    maybeCount: evaluation.maybeCount,
+    unavailableCount: evaluation.unavailableCount,
+    noResponseCount: evaluation.noResponseCount,
+    maybeResponsesEnabled,
+  });
+
+  return (
+    <div className="mt-3 rounded-md bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-900/60">
+      <p className="font-medium text-zinc-800 dark:text-zinc-200">Attendance</p>
+      <ul className="mt-1 list-inside list-disc text-zinc-600 dark:text-zinc-400">
+        {lines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+      <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+        {consensusRuleRequirementSummary(evaluation.consensusRule, {
+          minimumAttendees: evaluation.minimumAttendees,
+          eligibleMemberCount: evaluation.eligibleMemberCount,
+          requiredParticipantCount: evaluation.requiredParticipantCount,
+        })}
+      </p>
+      {evaluation.consensusRule === "required_participants" &&
+      evaluation.requiredParticipantCount > 0 ? (
+        <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+          {evaluation.requiredAcceptedCount} of {evaluation.requiredParticipantCount}{" "}
+          required participants available.
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 function CandidateResponseForm({
   eventId,
+  eventStatus,
   candidate,
   maybeResponsesEnabled,
   canRespond,
 }: {
   eventId: string;
+  eventStatus: EventStatus;
   candidate: EventCandidateRow;
   maybeResponsesEnabled: boolean;
   canRespond: boolean;
@@ -72,15 +122,19 @@ function CandidateResponseForm({
     setAvailabilityResponseAction,
     initialState,
   );
-  const options = responseOptions(maybeResponsesEnabled);
+  const options = availabilityResponseOptions(maybeResponsesEnabled);
+  const open = canRespond && isCandidateOpenForResponses(eventStatus, candidate.status);
 
-  if (!canRespond) {
+  if (!open) {
     return candidate.viewerResponse ? (
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Your response: {availabilityLabel(candidate.viewerResponse)}
+      <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+        Your response:{" "}
+        <span className="font-medium text-zinc-800 dark:text-zinc-200">
+          {availabilityLabel(candidate.viewerResponse)}
+        </span>
       </p>
     ) : (
-      <p className="text-sm text-zinc-500">No response recorded.</p>
+      <p className="mt-3 text-sm text-zinc-500">No response recorded.</p>
     );
   }
 
@@ -89,12 +143,14 @@ function CandidateResponseForm({
       <input type="hidden" name="event_id" value={eventId} />
       <input type="hidden" name="candidate_id" value={candidate.id} />
       <fieldset className="flex flex-wrap gap-2">
-        <legend className="sr-only">Your availability</legend>
+        <legend className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+          Your availability (private to you)
+        </legend>
         {options.map((option) => (
           <label
-            key={option.value}
-            className={`cursor-pointer rounded-lg border px-3 py-1.5 text-sm ${
-              candidate.viewerResponse === option.value
+            key={option}
+            className={`mt-2 cursor-pointer rounded-lg border px-3 py-1.5 text-sm ${
+              candidate.viewerResponse === option
                 ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
                 : "border-zinc-300 text-zinc-800 dark:border-zinc-600 dark:text-zinc-200"
             }`}
@@ -102,11 +158,11 @@ function CandidateResponseForm({
             <input
               type="radio"
               name="response"
-              value={option.value}
+              value={option}
               className="sr-only"
-              defaultChecked={candidate.viewerResponse === option.value}
+              defaultChecked={candidate.viewerResponse === option}
             />
-            {option.label}
+            {availabilityLabel(option)}
           </label>
         ))}
       </fieldset>
@@ -141,23 +197,26 @@ function FinaliseCandidateButton({
   const [state, formAction, pending] = useActionState(finaliseEventAction, initialState);
 
   return (
-    <form action={formAction} className="mt-3">
+    <form action={formAction} className="mt-4 rounded-md border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-900 dark:bg-emerald-950/40">
+      <p className="text-sm text-emerald-900 dark:text-emerald-200">
+        Confirming selects this time and locks further candidate and availability changes.
+      </p>
       <input type="hidden" name="event_id" value={eventId} />
       <input type="hidden" name="candidate_id" value={candidateId} />
       {state.error ? (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.message ? (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
+        <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400" role="status">
           {state.message}
         </p>
       ) : null}
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+        className="mt-3 rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
       >
         {pending ? "Confirming…" : "Confirm this time"}
       </button>
@@ -176,10 +235,18 @@ function CandidateConsensusNote({
   evaluation: CandidateConsensusView | undefined;
   maybeResponsesEnabled: boolean;
 }) {
+  if (candidate.status === "withdrawn") {
+    return (
+      <p className="mt-2 text-sm text-zinc-500">
+        This time was withdrawn and no longer accepts responses.
+      </p>
+    );
+  }
+
   if (eventStatus === "confirmed" && candidate.status === "selected") {
     return (
       <p className="mt-2 text-sm text-emerald-800 dark:text-emerald-300">
-        Confirmed time.
+        This is the confirmed time for the event.
       </p>
     );
   }
@@ -191,7 +258,25 @@ function CandidateConsensusNote({
     );
   }
   if (!evaluation) {
-    return null;
+    return (
+      <p className="mt-2 text-sm text-zinc-500">
+        Consensus summary is not available for this time.
+      </p>
+    );
+  }
+
+  if (hasNoResponsesYet(evaluation)) {
+    return (
+      <div className="mt-2 space-y-2">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Waiting for the first responses.
+        </p>
+        <AttendanceSummary
+          evaluation={evaluation}
+          maybeResponsesEnabled={maybeResponsesEnabled}
+        />
+      </div>
+    );
   }
 
   const outcome = evaluation.passes
@@ -201,18 +286,20 @@ function CandidateConsensusNote({
       : "Does not meet the group's requirements yet.";
 
   return (
-    <div className="mt-2 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-      <p>
-        {evaluation.acceptedCount} available
-        {maybeResponsesEnabled ? `, ${evaluation.maybeCount} maybe` : ""}
-        {evaluation.consensusRule === "required_participants"
-          ? `, ${evaluation.requiredAcceptedCount} of ${evaluation.requiredParticipantCount} required participants`
-          : ""}
-        .
-      </p>
-      <p className={evaluation.passes ? "text-emerald-800 dark:text-emerald-300" : undefined}>
+    <div className="mt-2 space-y-2">
+      <p
+        className={
+          evaluation.passes
+            ? "text-sm text-emerald-800 dark:text-emerald-300"
+            : "text-sm text-zinc-600 dark:text-zinc-400"
+        }
+      >
         {outcome}
       </p>
+      <AttendanceSummary
+        evaluation={evaluation}
+        maybeResponsesEnabled={maybeResponsesEnabled}
+      />
     </div>
   );
 }
@@ -249,13 +336,96 @@ function WithdrawCandidateButton({
   );
 }
 
+function CandidateCard({
+  eventId,
+  eventStatus,
+  candidate,
+  evaluation,
+  maybeResponsesEnabled,
+  canRespond,
+  canRemoveCandidates,
+  canFinalise,
+}: {
+  eventId: string;
+  eventStatus: EventStatus;
+  candidate: EventCandidateRow;
+  evaluation: CandidateConsensusView | undefined;
+  maybeResponsesEnabled: boolean;
+  canRespond: boolean;
+  canRemoveCandidates: boolean;
+  canFinalise: boolean;
+}) {
+  const badge = candidateStatusBadge(
+    eventStatus,
+    candidate.status,
+    evaluation?.passes ?? false,
+  );
+
+  return (
+    <li
+      className={`rounded-lg border p-4 ${
+        candidate.status === "selected"
+          ? "border-emerald-300 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/30"
+          : "border-zinc-200 dark:border-zinc-800"
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+          {formatSlot(candidate.startsAt, candidate.endsAt)}
+        </p>
+        {badge ? (
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+              badge === "Confirmed time" || badge === "Meets requirements"
+                ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-100"
+                : badge === "Withdrawn"
+                  ? "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                  : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            }`}
+          >
+            {badge}
+          </span>
+        ) : null}
+      </div>
+      <CandidateConsensusNote
+        eventStatus={eventStatus}
+        candidate={candidate}
+        evaluation={evaluation}
+        maybeResponsesEnabled={maybeResponsesEnabled}
+      />
+      {candidate.status !== "withdrawn" ? (
+        <CandidateResponseForm
+          eventId={eventId}
+          eventStatus={eventStatus}
+          candidate={candidate}
+          maybeResponsesEnabled={maybeResponsesEnabled}
+          canRespond={canRespond}
+        />
+      ) : null}
+      {shouldShowFinaliseControl(
+        canFinalise,
+        eventStatus,
+        candidate.status,
+        evaluation?.passes ?? false,
+      ) ? (
+        <FinaliseCandidateButton eventId={eventId} candidateId={candidate.id} />
+      ) : null}
+      {canRemoveCandidates && candidate.status === "proposed" ? (
+        <WithdrawCandidateButton eventId={eventId} candidateId={candidate.id} />
+      ) : null}
+    </li>
+  );
+}
+
 export function EventScheduling({
   eventId,
   groupId,
   eventStatus,
   candidates,
+  withdrawnCandidates,
   maybeResponsesEnabled,
   minimumAttendees,
+  proposalDeadlineHours,
   consensus,
   canAddCandidates,
   canRemoveCandidates,
@@ -265,47 +435,44 @@ export function EventScheduling({
   const evaluations = new Map(
     consensus.candidates.map((candidate) => [candidate.candidateId, candidate]),
   );
-  const anyPasses = consensus.candidates.some((candidate) => candidate.passes);
+  const passingCount = consensus.candidates.filter((candidate) => candidate.passes).length;
   const ruleLabel = consensusRuleLabel(consensus.consensusRule);
+  const deadlineNotice = proposalDeadlineGroupNotice(proposalDeadlineHours);
+  const sectionMessage = eventSchedulingSectionMessage(
+    eventStatus,
+    passingCount,
+    canFinalise,
+  );
+
+  const requiredCount = consensus.candidates[0]?.requiredParticipantCount ?? 0;
 
   return (
     <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
       <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-        Candidate times
+        Scheduling and consensus
       </h2>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Share your private availability. A time can be confirmed when at least{" "}
-        {minimumAttendees} {minimumAttendees === 1 ? "person is" : "people are"} available
-        {consensus.consensusRule === "minimum_attendees"
-          ? ""
-          : ` and the ${ruleLabel.toLowerCase()} rule is met`}
-        .
+        Share your private availability for each candidate time. Group rule:{" "}
+        <span className="font-medium text-zinc-800 dark:text-zinc-200">{ruleLabel}</span>
+        .{" "}
+        {consensusRuleRequirementSummary(consensus.consensusRule, {
+          minimumAttendees,
+          eligibleMemberCount: consensus.eligibleMemberCount,
+          requiredParticipantCount: requiredCount,
+        })}
         {consensus.maybeResponsesEnabled
           ? " Maybe counts as available."
-          : " Maybe does not count as available."}{" "}
-        {consensus.eligibleMemberCount} current{" "}
-        {consensus.eligibleMemberCount === 1 ? "member" : "members"}.
+          : " Maybe does not count as available."}
       </p>
-      {eventStatus === "confirmed" ? (
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          This event is confirmed. Availability and candidate changes are closed.
-        </p>
-      ) : anyPasses ? (
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          {canFinalise
-            ? "Choose one time that meets the requirements to confirm the event."
-            : "A time meets the requirements. The proposer or a group admin can confirm it."}
-        </p>
-      ) : (
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          No candidate meets the requirements yet. Responses can continue.
-        </p>
-      )}
+      {deadlineNotice ? (
+        <p className="mt-2 text-sm text-zinc-500">{deadlineNotice}</p>
+      ) : null}
+      <p className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">{sectionMessage}</p>
 
       {canAddCandidates ? (
         <div className="mt-6 max-w-lg">
           <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-            Add a candidate
+            Add a candidate time
           </h3>
           <div className="mt-3">
             <AuthForm
@@ -322,40 +489,51 @@ export function EventScheduling({
 
       <ul className="mt-8 space-y-6">
         {candidates.length === 0 ? (
-          <li className="text-sm text-zinc-500">No candidate times yet.</li>
+          <li className="text-sm text-zinc-500">
+            No candidate times yet.
+            {canAddCandidates
+              ? " Add a time above to start collecting availability."
+              : " The proposer can add times while the event is proposing."}
+          </li>
         ) : (
           candidates.map((candidate) => (
-            <li
+            <CandidateCard
               key={candidate.id}
-              className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-            >
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                {formatSlot(candidate.startsAt, candidate.endsAt)}
-              </p>
-              <CandidateConsensusNote
-                eventStatus={eventStatus}
-                candidate={candidate}
-                evaluation={evaluations.get(candidate.id)}
-                maybeResponsesEnabled={maybeResponsesEnabled}
-              />
-              <CandidateResponseForm
-                eventId={eventId}
-                candidate={candidate}
-                maybeResponsesEnabled={maybeResponsesEnabled}
-                canRespond={canRespond}
-              />
-              {canFinalise &&
-              evaluations.get(candidate.id)?.passes &&
-              candidate.status === "proposed" ? (
-                <FinaliseCandidateButton eventId={eventId} candidateId={candidate.id} />
-              ) : null}
-              {canRemoveCandidates ? (
-                <WithdrawCandidateButton eventId={eventId} candidateId={candidate.id} />
-              ) : null}
-            </li>
+              eventId={eventId}
+              eventStatus={eventStatus}
+              candidate={candidate}
+              evaluation={evaluations.get(candidate.id)}
+              maybeResponsesEnabled={maybeResponsesEnabled}
+              canRespond={canRespond}
+              canRemoveCandidates={canRemoveCandidates}
+              canFinalise={canFinalise}
+            />
           ))
         )}
       </ul>
+
+      {withdrawnCandidates.length > 0 ? (
+        <div className="mt-10">
+          <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+            Withdrawn times
+          </h3>
+          <ul className="mt-4 space-y-4">
+            {withdrawnCandidates.map((candidate) => (
+              <CandidateCard
+                key={candidate.id}
+                eventId={eventId}
+                eventStatus={eventStatus}
+                candidate={candidate}
+                evaluation={undefined}
+                maybeResponsesEnabled={maybeResponsesEnabled}
+                canRespond={false}
+                canRemoveCandidates={false}
+                canFinalise={false}
+              />
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }

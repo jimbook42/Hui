@@ -13,6 +13,7 @@ export type EventCandidateRow = {
 
 export type EventSchedulingContext = {
   candidates: EventCandidateRow[];
+  withdrawnCandidates: EventCandidateRow[];
   maybeResponsesEnabled: boolean;
   minimumAttendees: number;
   consensusRule: ConsensusRule;
