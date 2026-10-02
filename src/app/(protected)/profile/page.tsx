@@ -1,6 +1,7 @@
 import { updateProfileAction } from "@/app/auth/actions";
 import { AppShell } from "@/components/app/app-shell";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
+import { DeleteAccountSection } from "@/components/profile/delete-account-section";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProfilePage() {
@@ -38,6 +39,7 @@ export default async function ProfilePage() {
       <p className="mt-4 text-xs text-zinc-500">
         Your display name is visible to people who share a group with you.
       </p>
+      <DeleteAccountSection />
     </AppShell>
   );
 }

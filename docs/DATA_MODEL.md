@@ -43,6 +43,18 @@ Initial defaults: any member may propose, both event modes are allowed, maybe re
 
 Responses, hosts, contributions, and memory attendees reference `profiles.id`. Hosts, contributions, and memory attendees also store `display_name` as it was when the row was written. Those foreign keys use `ON DELETE RESTRICT`, so deleting an account cannot erase a gathering. Removing a member does not delete or null those rows; it only marks the membership removed. After that, the person cannot read the group's data. Remaining members still can.
 
+## Account deletion (HUI-012B)
+
+Deleting an account is a deliberate, server-side flow: the authenticated user confirms with `DELETE`, Postgres runs `delete_my_account_data()` (identity from `auth.uid()` only), then the app removes the Supabase Auth user with the server secret key. That is **not** one atomic transaction across Postgres and Auth.
+
+**Removed:** all `dietary_entries` (and shares), private `event_responses`, household membership rows, active group memberships (status `removed`), and sole-member groups (entire group tree). The profile row is kept but anonymised (`display_name` → `Former member`, `account_deleted_at` set) so historical foreign keys stay valid. The profile no longer references `auth.users` after migration `20261002160000_account_deletion`.
+
+**May remain for other members:** shared events, group-visible availability responses, hosts, contributions, memories, and membership audit rows that already referenced the person. Snapshot `display_name` columns on historical rows are unchanged.
+
+**Ownership:** if the user owns a group with any other active member, deletion is blocked until they call `transfer_group_ownership`. If they are the only active member, the group is deleted with them.
+
+**Re-registration:** the same email can sign up again with a **new** `auth.users.id` and a new profile. Hui does not match on email to old rows. OAuth follows Supabase identity rules for the new account.
+
 ## Ownership
 
 The active `owner` membership is the source of truth. `groups.owner_id` follows it. Changing owner is `transfer_group_ownership(group_id, new_owner)`, which the current owner calls. Direct updates to `groups.owner_id` or to the owner membership are rejected.

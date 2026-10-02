@@ -18,6 +18,17 @@ export default async function ProtectedLayout({
     redirect("/sign-in");
   }
 
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("account_deleted_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileRow?.account_deleted_at) {
+    await supabase.auth.signOut();
+    redirect("/sign-in?deleted=1");
+  }
+
   const ensured = await ensureUserProfile(
     supabase,
     user.id,

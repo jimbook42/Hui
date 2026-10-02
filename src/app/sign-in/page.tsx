@@ -16,9 +16,10 @@ const OAUTH_SIGN_IN_MESSAGES: Record<string, string> = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; oauth?: string }>;
+  searchParams: Promise<{ next?: string; oauth?: string; deleted?: string }>;
 }) {
   const params = await searchParams;
+  const accountDeleted = params.deleted === "1";
   const next = sanitizeNextPath(
     typeof params.next === "string" ? params.next : undefined,
   );
@@ -40,6 +41,11 @@ export default async function SignInPage({
         </>
       }
     >
+      {accountDeleted ? (
+        <p className="mb-4 text-sm text-emerald-800 dark:text-emerald-300" role="status">
+          Your account was deleted. You can sign up again with the same email if you choose.
+        </p>
+      ) : null}
       {oauthNotice ? (
         <p className="mb-4 text-sm text-amber-800 dark:text-amber-200" role="status">
           {oauthNotice}

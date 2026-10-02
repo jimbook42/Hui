@@ -69,6 +69,8 @@ Events use the same HUI-005 `events` and `recurrence_series` tables. Server Acti
 
 Server Components and Server Actions use the server Supabase client with cookie-backed sessions; RLS enforces row access. The database assumes `auth.uid()` and does not implement a second login system. A trigger inserts `profiles` when `auth.users` gains a row, using provider `full_name`, then `name`, then app `display_name` metadata, then the email local-part; the app may call `ensureUserProfile` idempotently after sign-in when the row is missing. Provider name metadata may be used only when creating an initial profile. Existing user-selected display names are authoritative and must not be overwritten by subsequent authentication.
 
+**Account deletion (HUI-012B).** Profile settings expose “Delete my account” with typed `DELETE` confirmation. `deleteAccountAction` calls `delete_my_account_data()` via the session client (RLS-safe RPC), then `createSecretSupabaseClient()` (`SUPABASE_SECRET_KEY`, server-only) to `auth.admin.deleteUser` for the same session user id—never a client-supplied id. If Auth deletion fails after the RPC succeeds, the user may be signed out of groups with a tombstone profile until retry or support. Protected layout signs out users whose profile already has `account_deleted_at`. See `docs/DATA_MODEL.md` for what is deleted vs preserved.
+
 ## Tenancy and RLS
 
 Migrations in `supabase/migrations` are the schema source of truth. Every public table has row level security enabled and forced. Policies apply to `authenticated`. `anon` has no policies and no table grants. The service role is for server maintenance and bypasses RLS; application code must not send that key to the browser.

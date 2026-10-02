@@ -15,7 +15,9 @@ import { sanitizeNextPath } from "@/lib/auth/routes";
 import { ensureUserProfile } from "@/lib/profiles/ensure-profile";
 import { initialDisplayNameFromAuthMetadata } from "@/lib/profiles/initial-display-name";
 import { updateOwnDisplayName } from "@/lib/profiles/update-display-name";
+import { isAccountDeletionConfirmed } from "@/lib/auth/account-deletion";
 import { normalizeDisplayName } from "@/lib/profiles/validation";
+import { createSecretSupabaseClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthActionState = {
@@ -170,4 +172,51 @@ export async function updateProfileAction(
   revalidatePath("/profile");
   revalidatePath("/dashboard");
   return { message: "Profile updated." };
+}
+
+export async function deleteAccountAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const confirmation = String(formData.get("confirmation") ?? "");
+  if (!isAccountDeletionConfirmed(confirmation)) {
+    return { error: 'Type DELETE (all caps) to confirm account deletion.' };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const { error: dataError } = await supabase.rpc("delete_my_account_data");
+  if (dataError) {
+    return { error: dataError.message };
+  }
+
+  try {
+    const admin = createSecretSupabaseClient();
+    const { error: authDeleteError } = await admin.auth.admin.deleteUser(
+      user.id,
+    );
+    if (authDeleteError) {
+      return {
+        error:
+          "Your Hui data was removed but sign-in could not be fully deleted. Contact support or try again.",
+      };
+    }
+  } catch (error) {
+    unstable_rethrow(error);
+    return {
+      error:
+        "Account deletion is not configured on this server. Try again later.",
+    };
+  }
+
+  await supabase.auth.signOut();
+  revalidatePath("/", "layout");
+  redirect("/sign-in?deleted=1");
 }
