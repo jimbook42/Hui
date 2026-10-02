@@ -80,4 +80,4 @@ Lightweight record of completed tickets. One entry per ticket.
 
 - Changed: `initial_profile_display_name` SQL helper and updated `handle_new_user` trigger (`full_name` → `name` → `display_name` → email local-part); shared `initialDisplayNameFromAuthMetadata` for OAuth callback, sign-in, and protected layout; tests and architecture note that existing display names are never overwritten on re-auth.
 - Checked: `npm run validate`, `npm run test:e2e`.
-- Commit: (pending)
+- Commit: d310d80
