@@ -1,10 +1,12 @@
 import { updateProfileAction } from "@/app/auth/actions";
+import { AccountActionsSection } from "@/components/profile/account-actions-section";
 import { AppShell } from "@/components/app/app-shell";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import { DietarySettingsSection } from "@/components/dietary/dietary-settings-section";
 import { HouseholdSettingsSection } from "@/components/households/household-section";
 import { listUserDietaryEntries, listUserGroupsForDietary } from "@/lib/dietary/queries";
-import { AccountActionsSection } from "@/components/profile/account-actions-section";
+import { NotificationPreferencesSection } from "@/components/profile/notification-preferences-section";
+import { getMemberReconnectPreference } from "@/lib/notifications/queries";
 import { SettingsSection } from "@/components/profile/settings-section";
 import { authMethodLabelsForUser } from "@/lib/auth/auth-methods";
 import { listUserHouseholdsByGroup } from "@/lib/households/queries";
@@ -23,6 +25,9 @@ export default async function ProfilePage() {
     .maybeSingle();
 
   const authMethods = user ? authMethodLabelsForUser(user) : [];
+  const reconnectPref = user
+    ? await getMemberReconnectPreference(supabase, user.id)
+    : true;
   const [householdContexts, dietaryEntries, dietaryGroups] = user
     ? await Promise.all([
         listUserHouseholdsByGroup(supabase, user.id),
@@ -117,6 +122,13 @@ export default async function ProfilePage() {
             contexts={householdContexts}
             currentUserId={user!.id}
           />
+        </SettingsSection>
+
+        <SettingsSection
+          title="Notifications"
+          description="Control optional in-app reminders. Event and group updates still appear in your notification list when you are a member."
+        >
+          <NotificationPreferencesSection reconnectRemindersEnabled={reconnectPref} />
         </SettingsSection>
 
         <SettingsSection

@@ -7,11 +7,13 @@ import { GroupForm, GroupNameField } from "@/components/groups/group-form";
 import { GroupSettingsForm } from "@/components/groups/group-settings-form";
 import { ContributionCategoriesAdmin } from "@/components/contributions/contribution-categories-admin";
 import { GroupContributionHistorySection } from "@/components/contributions/group-contribution-history";
+import { GroupHostHistorySection } from "@/components/hosts/group-host-history";
 import { GroupDietarySection } from "@/components/dietary/group-dietary-section";
 import { GroupMembersHouseholds } from "@/components/groups/group-members-households";
 import { listGroupSharedDietary } from "@/lib/dietary/queries";
 import { canManageContributionCategories } from "@/domain/contributions/permissions";
 import { listContributionCategories, getGroupContributionHistory } from "@/lib/contributions/queries";
+import { getGroupHostHistory } from "@/lib/hosts/queries";
 import {
   AddMemberForm,
   LeaveGroupForm,
@@ -55,11 +57,12 @@ export default async function GroupDetailPage({ params }: PageProps) {
   const viewerCanRename = canRenameGroup(detail.viewerRole);
   const viewerCanTransfer = canTransferOwnership(detail.viewerRole);
   const viewerCanLeave = detail.viewerRole !== "owner";
-  const [householdView, contributionCategories, contributionHistory, sharedDietary] =
+  const [householdView, contributionCategories, contributionHistory, hostHistory, sharedDietary] =
     await Promise.all([
       getGroupHouseholdMemberView(supabase, groupId, detail.members),
       listContributionCategories(supabase, groupId),
       getGroupContributionHistory(supabase, groupId, user!.id),
+      getGroupHostHistory(supabase, groupId, user!.id),
       listGroupSharedDietary(supabase, groupId),
     ]);
   const viewerCanManageCategories = canManageContributionCategories(detail.viewerRole);
@@ -162,6 +165,8 @@ export default async function GroupDetailPage({ params }: PageProps) {
       <GroupDietarySection rows={sharedDietary} />
 
       <GroupContributionHistorySection history={contributionHistory} />
+
+      <GroupHostHistorySection history={hostHistory} />
 
       <section className="mt-10">
         <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Settings</h2>

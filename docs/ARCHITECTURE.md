@@ -37,7 +37,7 @@ persistence & integrations (Supabase client, storage, export)
 - **Groups** — membership, roles, group settings.
 - **Events** — proposals, candidates, responses, consensus, hosting (recurring and one-off).
 - **Contributions & dietary** — fairness and preferences tied to events/members.
-- **Notifications** — reminders and activity (no chat).
+- **Notifications** — in-app activity and optional reconnect reminders (`member_notifications`, triggers/RPCs); no chat, email, SMS, or browser push in HUI-021.
 - **Export** — calendar export for confirmed events.
 - **Memories** — post-event history attached to events/groups.
 
@@ -82,6 +82,7 @@ Access is membership, not a client check:
 - Owner and admins manage settings, categories, and group membership. Ordinary members cannot change those. The owner calls `transfer_group_ownership` to hand the group on.
 - Households belong to one group. Active members can read household names and membership for grouping in that group. Mutations run through `create_household`, `update_household_name`, `add_household_member`, and `remove_household_member` (`SECURITY DEFINER`, `auth.uid()` checks, `search_path = public`). Direct inserts/updates/deletes on `households` and `household_members` are not granted to `authenticated`.
 - Contribution categories are group-scoped rows on `contribution_categories`. Owner and admins create, rename, and archive (`archived_at`) categories through table RLS. Event claims use `event_contributions` with member ownership (`user_id`, not households). Claiming, updating a label, and releasing a current claim run through `claim_event_contribution`, `update_my_event_contribution`, and `release_event_contribution` so release is possible despite the contribution snapshot trigger locking assignees on update. Fairness in HUI-018 is transparent counts from stored accepted contributions on confirmed/completed events only — no scores or auto-assignment.
+- Host assignments use `host_assignments` with member-level `user_id` in the app flow (household hosts remain a schema capability only). Proposers and group admins assign or change hosts on confirmed events through `assign_event_host`; when `host_veto_enabled` is on, the row stays `proposed` until the member calls `respond_to_host_assignment`. Rotation suggestions in HUI-020 count accepted member hosts on confirmed/completed events only (cancelled events excluded) — no scores, ranks, or silent auto-hosting.
 - Dietary rows live on `dietary_entries` (owned by `profiles.id`, not households). They are private until the owner inserts a row in `dietary_entry_shares` for a group they belong to. `can_read_dietary_entry` and `can_read_dietary_share` are `SECURITY DEFINER` helpers; select policies use them so members never read unshared entries and removed members lose current access even if a share row remains. Owners manage entries and shares from `/profile` (Server Actions in `src/app/dietary/actions.ts`); group and event pages list only shared entries via `listGroupSharedDietary`. Event contribution UI may show an aggregate count of shared requirements — not individual private labels through contribution queries.
 - Private availability responses are not readable by other members. Consensus counts for those answers come from `event_consensus_summary` and `finalise_event`, which do not return individual responses. Do not widen the `event_responses` select policy so the client can compute consensus.
 - Membership removal flips `group_memberships.status` to `removed`. It does not cascade into events, responses, hosts, contributions, or memories.
@@ -107,7 +108,9 @@ Hui uses `@serwist/turbopack` for a minimal service worker: build-time precachin
 
 > Hui may be installable and provide limited static/offline behaviour, but private user/group/event data must not be treated as safely cacheable offline data by default.
 
-When offline, navigations show `/offline`; the app does not sync data or pretend to be fully offline-capable. Web Push and notifications are out of scope for the PWA foundation.
+When offline, navigations show `/offline`; the app does not sync data or pretend to be fully offline-capable. Web Push and external notification providers are out of scope for the PWA foundation.
+
+**In-app notifications (HUI-021).** `member_notifications` stores short, privacy-safe messages for the authenticated member. Rows are created by database triggers on meaningful event/host/contribution changes and by `sync_reconnect_reminders_for_member()` when a group with reconnect settings has been inactive (last non-cancelled event activity, or group creation if none). Members manage read state via `mark_notification_read` / `mark_all_notifications_read`. `/notifications` lists items; profile settings include `member_reconnect_reminders_enabled` to opt out of reconnect reminders only. No browser permission prompts.
 
 ## Deployment
 
