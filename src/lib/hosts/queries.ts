@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { pickAcceptedHost, pickPendingHostProposal } from "@/domain/hosts/display";
-import { buildHostHistory, suggestHost } from "@/domain/hosts/rotation";
+import { buildHostHistory, filterHostEligibleMembers, suggestHost } from "@/domain/hosts/rotation";
 import type { HostAssignmentSnapshot } from "@/domain/hosts/types";
 
 import type { EventHostContext, GroupHostHistory } from "./types";
@@ -87,15 +87,21 @@ export type EventHostView = {
 
 export function buildEventHostView(
   assignments: HostAssignmentSnapshot[],
-  eligibleMembers: { userId: string; displayName: string }[],
+  eligibleMembers: {
+    userId: string;
+    displayName: string;
+    hostingStanding?: "default" | "prefer_not" | "never";
+  }[],
   history: GroupHostHistory,
 ): EventHostView {
   const acceptedHost = pickAcceptedHost(assignments);
   const pendingProposal = pickPendingHostProposal(assignments);
+  const excludedForEvent = assignments
+    .filter((row) => row.status === "declined" || row.status === "swapped_out")
+    .map((row) => row.userId);
+  const pool = filterHostEligibleMembers(eligibleMembers, excludedForEvent);
   const suggestion =
-    acceptedHost || pendingProposal
-      ? null
-      : suggestHost(eligibleMembers, history.entries);
+    acceptedHost || pendingProposal ? null : suggestHost(pool, history.entries);
 
   return { acceptedHost, pendingProposal, suggestion };
 }

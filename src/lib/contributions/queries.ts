@@ -14,6 +14,9 @@ function mapCategory(row: Record<string, unknown>): ContributionCategoryRow {
     groupId: row.group_id as string,
     name: row.name as string,
     archivedAt: row.archived_at === null ? null : (row.archived_at as string),
+    followsHost: Boolean(row.follows_host),
+    defaultAssigneeUserId:
+      row.default_assignee_user_id === null ? null : (row.default_assignee_user_id as string),
   };
 }
 
@@ -43,7 +46,7 @@ export async function listContributionCategories(
 ): Promise<ContributionCategoryRow[]> {
   const { data, error } = await supabase
     .from("contribution_categories")
-    .select("id, group_id, name, archived_at")
+    .select("id, group_id, name, archived_at, follows_host, default_assignee_user_id")
     .eq("group_id", groupId)
     .order("name", { ascending: true });
 

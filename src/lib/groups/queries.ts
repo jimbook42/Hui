@@ -18,6 +18,12 @@ function mapSettings(row: Record<string, unknown>): GroupSettingsRow {
     consensusRule: row.consensus_rule as GroupSettingsRow["consensusRule"],
     adminVetoEnabled: Boolean(row.admin_veto_enabled),
     hostVetoEnabled: Boolean(row.host_veto_enabled),
+    hostingEnabled: row.hosting_enabled !== false,
+    avoidConsecutiveHosts: Boolean(row.avoid_consecutive_hosts),
+    timezone:
+      typeof row.timezone === "string" && row.timezone.length > 0
+        ? row.timezone
+        : "Pacific/Auckland",
     reconnectRemindersEnabled: Boolean(row.reconnect_reminders_enabled),
     reconnectAfterDays:
       row.reconnect_after_days === null ? null : Number(row.reconnect_after_days),
@@ -102,6 +108,8 @@ export async function getGroupDetail(
       user_id,
       role,
       joined_at,
+      consensus_required,
+      hosting_standing,
       profiles:user_id (
         display_name
       )
@@ -144,6 +152,9 @@ export async function getGroupDetail(
         displayName: profile?.display_name ?? "Member",
         role: member.role as MembershipRole,
         joinedAt: member.joined_at as string,
+        consensusRequired: Boolean(member.consensus_required),
+        hostingStanding: (member.hosting_standing ??
+          "default") as GroupDetail["members"][number]["hostingStanding"],
       };
     }),
     settings: mapSettings(settings),

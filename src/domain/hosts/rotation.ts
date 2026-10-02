@@ -7,7 +7,19 @@ export type HostHistoryEntry = {
 export type HostEligibleMember = {
   userId: string;
   displayName: string;
+  hostingStanding?: "default" | "prefer_not" | "never";
 };
+
+export function filterHostEligibleMembers(
+  members: HostEligibleMember[],
+  excludedUserIds: readonly string[] = [],
+): HostEligibleMember[] {
+  const excluded = new Set(excludedUserIds);
+  return members.filter(
+    (member) =>
+      member.hostingStanding !== "never" && !excluded.has(member.userId),
+  );
+}
 
 export type HostSuggestion = {
   userId: string;
@@ -38,9 +50,9 @@ export function buildHostHistory(
 
 export function hostSuggestionReason(displayName: string, hostedCount: number): string {
   if (hostedCount === 0) {
-    return `${displayName} has not hosted a confirmed gathering in this group yet.`;
+    return `Hui has suggested ${displayName} to host this gathering.`;
   }
-  return `${displayName} is among members with the fewest confirmed hosting turns in this group (${hostedCount}).`;
+  return `Hui has suggested ${displayName} to host this gathering.`;
 }
 
 export function suggestHost(

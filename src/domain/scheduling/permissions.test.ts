@@ -19,6 +19,9 @@ const baseSettings: GroupSettingsRow = {
   consensusRule: "minimum_attendees",
   adminVetoEnabled: false,
   hostVetoEnabled: false,
+  hostingEnabled: true,
+  avoidConsecutiveHosts: false,
+  timezone: "Pacific/Auckland",
   reconnectRemindersEnabled: false,
   reconnectAfterDays: null,
 };

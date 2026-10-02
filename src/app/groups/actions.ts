@@ -105,6 +105,9 @@ export async function updateGroupSettingsAction(
     consensus_rule: String(formData.get("consensus_rule") ?? "required_participants"),
     admin_veto_enabled: formData.get("admin_veto_enabled") === "on",
     host_veto_enabled: formData.get("host_veto_enabled") === "on",
+    hosting_enabled: formData.get("hosting_enabled") === "on",
+    avoid_consecutive_hosts: formData.get("avoid_consecutive_hosts") === "on",
+    timezone: String(formData.get("timezone") ?? "Pacific/Auckland").trim(),
     reconnect_reminders_enabled: formData.get("reconnect_reminders_enabled") === "on",
     reconnect_after_days: reconnectDaysRaw === "" ? null : Number(reconnectDaysRaw),
   };
@@ -124,6 +127,9 @@ export async function updateGroupSettingsAction(
     !payload.recurring_events_enabled
   ) {
     return { error: "Enable at least one event mode." };
+  }
+  if (payload.timezone.length < 1 || payload.timezone.length > 64) {
+    return { error: "Enter a valid timezone for this group." };
   }
   if (
     payload.reconnect_reminders_enabled &&
@@ -145,6 +151,69 @@ export async function updateGroupSettingsAction(
 
   revalidatePath(`/groups/${groupId}`);
   return { message: "Settings saved." };
+}
+
+export async function setMyHostingStandingAction(
+  _prev: GroupActionState,
+  formData: FormData,
+): Promise<GroupActionState> {
+  const groupId = String(formData.get("group_id") ?? "");
+  const standing = String(formData.get("hosting_standing") ?? "default");
+  if (!groupId) {
+    return { error: "Missing group." };
+  }
+  if (standing !== "default" && standing !== "prefer_not" && standing !== "never") {
+    return { error: "Choose a valid hosting preference." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getGroupDetail(supabase, groupId, user.id);
+  if (!detail) {
+    return { error: "Group not found." };
+  }
+
+  const { error } = await supabase.rpc("set_my_hosting_standing", {
+    p_group_id: groupId,
+    p_standing: standing,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  return { message: "Hosting preference saved." };
+}
+
+export async function setMemberConsensusRequiredAction(
+  _prev: GroupActionState,
+  formData: FormData,
+): Promise<GroupActionState> {
+  const groupId = String(formData.get("group_id") ?? "");
+  const userId = String(formData.get("user_id") ?? "");
+  const required = String(formData.get("required") ?? "") === "on";
+  if (!groupId || !userId) {
+    return { error: "Missing member." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getGroupDetail(supabase, groupId, user.id);
+  if (!detail || !canManageMembers(detail.viewerRole)) {
+    return { error: "You cannot update member settings." };
+  }
+
+  const { error } = await supabase.rpc("set_member_consensus_required", {
+    p_group_id: groupId,
+    p_user_id: userId,
+    p_required: required,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  return { message: "Member updated." };
 }
 
 export async function addGroupMemberAction(

@@ -30,6 +30,7 @@ export type EventDetail = {
   notes: string | null;
   startsAt: string | null;
   endsAt: string | null;
+  timezone: string | null;
   createdBy: string;
   creatorDisplayName: string;
   recurrenceSeries: RecurrenceSeriesSummary | null;

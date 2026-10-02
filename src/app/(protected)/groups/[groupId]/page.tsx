@@ -9,6 +9,7 @@ import { ContributionCategoriesAdmin } from "@/components/contributions/contribu
 import { GroupContributionHistorySection } from "@/components/contributions/group-contribution-history";
 import { GroupHostHistorySection } from "@/components/hosts/group-host-history";
 import { GroupDietarySection } from "@/components/dietary/group-dietary-section";
+import { GroupMemberCoordination } from "@/components/groups/group-member-coordination";
 import { GroupMembersHouseholds } from "@/components/groups/group-members-households";
 import { listGroupSharedDietary } from "@/lib/dietary/queries";
 import { canManageContributionCategories } from "@/domain/contributions/permissions";
@@ -123,6 +124,14 @@ export default async function GroupDetailPage({ params }: PageProps) {
           </ul>
         ) : null}
       </section>
+
+      <GroupMemberCoordination
+        groupId={detail.id}
+        settings={detail.settings}
+        members={detail.members}
+        viewerUserId={user!.id}
+        canManageMembers={viewerCanManage}
+      />
 
       {viewerCanManage ? (
         <section className="mt-10">

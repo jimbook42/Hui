@@ -40,7 +40,10 @@ import {
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getGroupHouseholdMemberView } from "@/lib/households/queries";
+import { formatEventTimeRange } from "@/domain/datetime/timezone";
+import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 import {
+  getCandidateAttendanceRoster,
   getEventConsensusSummary,
   getEventSchedulingContext,
 } from "@/lib/scheduling/queries";
@@ -51,11 +54,18 @@ type PageProps = {
   params: Promise<{ eventId: string }>;
 };
 
-function formatWhen(iso: string | null): string {
-  if (!iso) {
+function formatWhen(
+  startsAt: string | null,
+  endsAt: string | null,
+  timeZone: string,
+): string {
+  if (!startsAt) {
     return "Not set";
   }
-  return new Date(iso).toLocaleString();
+  if (endsAt) {
+    return formatEventTimeRange(startsAt, endsAt, timeZone);
+  }
+  return formatEventTimeRange(startsAt, startsAt, timeZone);
 }
 
 export default async function EventDetailPage({ params }: PageProps) {
@@ -112,6 +122,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           group.members.map((m) => ({
             userId: m.userId,
             displayName: m.displayName,
+            hostingStanding: m.hostingStanding,
           })),
         )
       : Promise.resolve(null),
@@ -149,7 +160,24 @@ export default async function EventDetailPage({ params }: PageProps) {
     pendingHostProposal,
     detail.status,
   );
-  const showHostSection = canViewHostCoordination(detail.status);
+  const showHostSection =
+    canViewHostCoordination(detail.status) && Boolean(settings?.hostingEnabled);
+  const displayTimeZone =
+    detail.timezone ?? settings?.timezone ?? "Pacific/Auckland";
+  const attendanceRosters: Record<string, AttendanceRoster> = {};
+  if (scheduling.candidates.length > 0) {
+    const rosterRows = await Promise.all(
+      scheduling.candidates.map(async (candidate) => ({
+        id: candidate.id,
+        roster: await getCandidateAttendanceRoster(supabase, candidate.id),
+      })),
+    );
+    for (const row of rosterRows) {
+      if (row.roster) {
+        attendanceRosters[row.id] = row.roster;
+      }
+    }
+  }
 
   return (
     <AppShell title={detail.title}>
@@ -175,10 +203,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           role="status"
         >
           <p className="font-medium">Confirmed</p>
-          <p className="mt-1">
-            {formatWhen(detail.startsAt)}
-            {detail.endsAt ? ` — ${formatWhen(detail.endsAt)}` : ""}
-          </p>
+          <p className="mt-1">{formatWhen(detail.startsAt, detail.endsAt, displayTimeZone)}</p>
         </div>
       ) : null}
       {detail.status === "cancelled" ? (
@@ -206,8 +231,7 @@ export default async function EventDetailPage({ params }: PageProps) {
         <div>
           <dt className="text-zinc-500">When</dt>
           <dd>
-            {formatWhen(detail.startsAt)}
-            {detail.endsAt ? ` — ${formatWhen(detail.endsAt)}` : ""}
+            {formatWhen(detail.startsAt, detail.endsAt, displayTimeZone)}
           </dd>
         </div>
         {detail.location ? (
@@ -249,6 +273,8 @@ export default async function EventDetailPage({ params }: PageProps) {
           canRemoveCandidates={canRemove}
           canRespond={canRespond}
           canFinalise={canFinalise}
+          timeZone={displayTimeZone}
+          attendanceRosters={attendanceRosters}
         />
       ) : null}
 
@@ -264,7 +290,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           eventId={detail.id}
           groupId={detail.groupId}
           eventStatus={detail.status}
-          hostVetoEnabled={settings.hostVetoEnabled}
+          hostingEnabled={settings.hostingEnabled}
           canAssign={canAssignHost}
           canRespond={canRespondHost}
           eligibleMembers={group.members}

@@ -10,12 +10,48 @@ import { dbResponseToAvailability } from "@/domain/scheduling/mapping";
 import type { AvailabilityChoice, DbResponseValue } from "@/domain/scheduling/types";
 import { ACTIVE_CANDIDATE_STATUSES } from "@/domain/scheduling/types";
 
+import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
+
 import type {
   CandidateConsensusView,
   EventCandidateRow,
   EventConsensusSummary,
   EventSchedulingContext,
 } from "./types";
+
+export async function getCandidateAttendanceRoster(
+  supabase: SupabaseClient,
+  candidateId: string,
+): Promise<AttendanceRoster | null> {
+  const { data, error } = await supabase.rpc("candidate_attendance_roster", {
+    p_candidate_id: candidateId,
+  });
+
+  if (error || !data) {
+    return null;
+  }
+
+  const summary =
+    typeof data === "string" ? (JSON.parse(data) as Record<string, unknown>) : data;
+  const membersRaw = Array.isArray(summary.members) ? summary.members : [];
+  const members = membersRaw.map((row: unknown) => {
+    const record = row as Record<string, unknown>;
+    const response = record.response;
+    return {
+      userId: String(record.user_id ?? ""),
+      displayName: String(record.display_name ?? "Member"),
+      response:
+        response === "yes" || response === "no" || response === "maybe"
+          ? response
+          : null,
+    };
+  });
+
+  return {
+    maybeResponsesEnabled: summary.maybe_responses_enabled !== false,
+    members,
+  };
+}
 
 export async function getEventSchedulingContext(
   supabase: SupabaseClient,

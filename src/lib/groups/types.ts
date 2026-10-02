@@ -6,11 +6,15 @@ export type GroupListItem = {
   role: MembershipRole;
 };
 
+export type MemberHostingStanding = "default" | "prefer_not" | "never";
+
 export type GroupMemberRow = {
   userId: string;
   displayName: string;
   role: MembershipRole;
   joinedAt: string;
+  consensusRequired: boolean;
+  hostingStanding: MemberHostingStanding;
 };
 
 export type GroupSettingsRow = {
@@ -23,6 +27,9 @@ export type GroupSettingsRow = {
   consensusRule: "required_participants" | "minimum_attendees" | "all_active_members";
   adminVetoEnabled: boolean;
   hostVetoEnabled: boolean;
+  hostingEnabled: boolean;
+  avoidConsecutiveHosts: boolean;
+  timezone: string;
   reconnectRemindersEnabled: boolean;
   reconnectAfterDays: number | null;
 };

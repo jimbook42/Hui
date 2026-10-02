@@ -59,7 +59,7 @@ describe("consensus display (HUI-017)", () => {
         eligibleMemberCount: 5,
         requiredParticipantCount: 0,
       }),
-    ).toBe("Minimum required: 2");
+    ).toContain("Minimum required: 2");
 
     expect(
       consensusRuleRequirementSummary("required_participants", {

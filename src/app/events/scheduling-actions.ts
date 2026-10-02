@@ -42,18 +42,6 @@ export async function addCandidateAction(
 ): Promise<EventActionState> {
   const eventId = String(formData.get("event_id") ?? "");
   const groupId = String(formData.get("group_id") ?? "");
-  const startsAt = parseRequiredDateTime(String(formData.get("starts_at") ?? ""));
-  const endsAt = parseRequiredDateTime(String(formData.get("ends_at") ?? ""));
-
-  if (!eventId || !groupId || !startsAt || !endsAt) {
-    return { error: "Enter a valid start and end time." };
-  }
-
-  const windowError = validateCandidateWindow(startsAt, endsAt);
-  if (windowError) {
-    return { error: windowError };
-  }
-
   const { supabase, user } = await requireUser();
   const detail = await getEventDetail(supabase, eventId, user.id);
   if (!detail || detail.groupId !== groupId) {
@@ -63,6 +51,22 @@ export async function addCandidateAction(
   const group = await getGroupDetail(supabase, groupId, user.id);
   if (!group) {
     return { error: "You do not have access to this group." };
+  }
+
+  const timeZone = group.settings.timezone;
+  const startsAt = parseRequiredDateTime(
+    String(formData.get("starts_at") ?? ""),
+    timeZone,
+  );
+  const endsAt = parseRequiredDateTime(String(formData.get("ends_at") ?? ""), timeZone);
+
+  if (!eventId || !groupId || !startsAt || !endsAt) {
+    return { error: "Enter a valid start and end time." };
+  }
+
+  const windowError = validateCandidateWindow(startsAt, endsAt);
+  if (windowError) {
+    return { error: windowError };
   }
 
   if (!canAddCandidates(detail.viewerRole, group.settings, detail.status)) {

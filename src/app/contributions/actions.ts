@@ -58,6 +58,36 @@ export async function createContributionCategoryAction(
   return { message: "Category added." };
 }
 
+export async function updateContributionCategoryRulesAction(
+  _prev: ContributionActionState,
+  formData: FormData,
+): Promise<ContributionActionState> {
+  const groupId = String(formData.get("group_id") ?? "");
+  const categoryId = String(formData.get("category_id") ?? "");
+  if (!groupId || !categoryId) {
+    return { error: "Category not found." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const group = await getGroupDetail(supabase, groupId, user.id);
+  if (!group || !canManageContributionCategories(group.viewerRole)) {
+    return { error: "You cannot manage contribution categories for this group." };
+  }
+
+  const { error } = await supabase
+    .from("contribution_categories")
+    .update({ follows_host: formData.get("follows_host") === "on" })
+    .eq("id", categoryId)
+    .eq("group_id", groupId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  return { message: "Category rules saved." };
+}
+
 export async function renameContributionCategoryAction(
   _prev: ContributionActionState,
   formData: FormData,

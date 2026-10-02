@@ -18,6 +18,9 @@ const baseSettings: GroupSettingsRow = {
   consensusRule: "required_participants",
   adminVetoEnabled: false,
   hostVetoEnabled: false,
+  hostingEnabled: true,
+  avoidConsecutiveHosts: false,
+  timezone: "Pacific/Auckland",
   reconnectRemindersEnabled: false,
   reconnectAfterDays: null,
 };

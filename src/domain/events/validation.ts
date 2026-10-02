@@ -1,3 +1,5 @@
+import { wallClockToUtcIso } from "@/domain/datetime/timezone";
+
 import type { CadenceUnit, EventKind } from "./types";
 
 const MIN_TITLE_LENGTH = 1;
@@ -69,10 +71,19 @@ export function parseStartsOnDate(raw: string): string | null {
   return trimmed;
 }
 
-export function parseOptionalDateTime(raw: string): string | null {
+export function parseOptionalDateTime(
+  raw: string,
+  timeZone?: string,
+): string | null {
   const trimmed = raw.trim();
   if (trimmed.length === 0) {
     return null;
+  }
+  if (timeZone) {
+    const zoned = wallClockToUtcIso(trimmed, timeZone);
+    if (zoned) {
+      return zoned;
+    }
   }
   const parsed = Date.parse(trimmed);
   if (Number.isNaN(parsed)) {

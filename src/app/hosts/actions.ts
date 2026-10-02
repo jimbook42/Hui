@@ -71,7 +71,41 @@ export async function assignEventHostAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${groupId}`);
-  return { message: "Host updated." };
+  return { message: "Host suggestion updated." };
+}
+
+export async function requestHostSwapAction(
+  _prev: HostActionState,
+  formData: FormData,
+): Promise<HostActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  if (!eventId) {
+    return { error: "Event not found." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getEventDetail(supabase, eventId, user.id);
+  if (!detail) {
+    return { error: "Event not found." };
+  }
+
+  const assignments = await listEventHostAssignments(supabase, eventId);
+  const pending = pickPendingHostProposal(assignments);
+  if (!canRespondToHostProposal(user.id, pending, detail.status)) {
+    return { error: "You cannot request a swap for this event." };
+  }
+
+  const { error } = await supabase.rpc("request_host_swap", {
+    p_event_id: eventId,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/groups/${detail.groupId}`);
+  return { message: "Hui will suggest another host." };
 }
 
 export async function acceptHostProposalAction(
@@ -106,7 +140,7 @@ export async function acceptHostProposalAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${detail.groupId}`);
-  return { message: "You accepted hosting this gathering." };
+  return { message: "Thanks — you are down to host this gathering." };
 }
 
 export async function declineHostProposalAction(
@@ -143,21 +177,3 @@ export async function declineHostProposalAction(
   return { message: "Host proposal declined." };
 }
 
-export async function assignSuggestedHostAction(
-  _prev: HostActionState,
-  formData: FormData,
-): Promise<HostActionState> {
-  const eventId = String(formData.get("event_id") ?? "");
-  const groupId = String(formData.get("group_id") ?? "");
-  const hostUserId = normalizeUserId(String(formData.get("host_user_id") ?? ""));
-
-  if (!eventId || !groupId || !hostUserId) {
-    return { error: "Suggestion unavailable." };
-  }
-
-  const next = new FormData();
-  next.set("event_id", eventId);
-  next.set("group_id", groupId);
-  next.set("host_user_id", hostUserId);
-  return assignEventHostAction(_prev, next);
-}

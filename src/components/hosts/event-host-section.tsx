@@ -3,8 +3,7 @@
 import {
   acceptHostProposalAction,
   assignEventHostAction,
-  assignSuggestedHostAction,
-  declineHostProposalAction,
+  requestHostSwapAction,
 } from "@/app/hosts/actions";
 import { AuthForm } from "@/components/auth/auth-form";
 import type { EventHostView } from "@/lib/hosts/queries";
@@ -14,7 +13,7 @@ type EventHostSectionProps = {
   eventId: string;
   groupId: string;
   eventStatus: string;
-  hostVetoEnabled: boolean;
+  hostingEnabled: boolean;
   canAssign: boolean;
   canRespond: boolean;
   eligibleMembers: GroupMemberRow[];
@@ -26,13 +25,24 @@ export function EventHostSection({
   eventId,
   groupId,
   eventStatus,
-  hostVetoEnabled,
+  hostingEnabled,
   canAssign,
   canRespond,
   eligibleMembers,
   view,
   viewerHistoryCount,
 }: EventHostSectionProps) {
+  if (!hostingEnabled) {
+    return (
+      <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Host</h2>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          This group does not use a host for gatherings.
+        </p>
+      </section>
+    );
+  }
+
   if (eventStatus === "cancelled") {
     return (
       <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
@@ -54,14 +64,12 @@ export function EventHostSection({
   }
 
   const readOnly = eventStatus === "completed";
+  const suggestedName =
+    view.pendingProposal?.displayName ?? view.suggestion?.displayName ?? null;
 
   return (
     <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
       <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Host</h2>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-        Hui suggests fairly based on who has hosted confirmed gatherings in this group. The group
-        chooses who hosts — nothing is assigned without your agreement.
-      </p>
 
       {viewerHistoryCount !== null && viewerHistoryCount > 0 ? (
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
@@ -72,32 +80,26 @@ export function EventHostSection({
 
       {view.acceptedHost ? (
         <p className="mt-4 text-sm text-zinc-800 dark:text-zinc-200">
-          <span className="font-medium">Host:</span> {view.acceptedHost.displayName}
+          <span className="font-medium">{view.acceptedHost.displayName}</span> is hosting.
         </p>
-      ) : (
-        <p className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">No host selected yet.</p>
-      )}
-
-      {view.pendingProposal ? (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
-          <p className="font-medium">Waiting for agreement</p>
-          <p className="mt-1">
-            {view.pendingProposal.displayName} has been asked to host
-            {hostVetoEnabled ? " and must accept before it is final." : "."}
+      ) : suggestedName ? (
+        <div className="mt-4 rounded-lg border border-zinc-200 px-4 py-3 text-sm dark:border-zinc-800">
+          <p className="text-zinc-800 dark:text-zinc-200">
+            Hui has suggested {suggestedName} to host this gathering.
           </p>
           {canRespond ? (
             <div className="mt-3 flex flex-wrap gap-3">
               <AuthForm
                 action={acceptHostProposalAction}
-                submitLabel="Accept hosting"
+                submitLabel="I can host"
                 hiddenFields={{ event_id: eventId }}
                 refreshOnSuccess
               >
                 {null}
               </AuthForm>
               <AuthForm
-                action={declineHostProposalAction}
-                submitLabel="Decline"
+                action={requestHostSwapAction}
+                submitLabel="Ask to swap"
                 hiddenFields={{ event_id: eventId }}
                 refreshOnSuccess
               >
@@ -106,49 +108,33 @@ export function EventHostSection({
             </div>
           ) : null}
         </div>
-      ) : null}
+      ) : (
+        <p className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">
+          No host has been suggested yet.
+        </p>
+      )}
 
-      {view.suggestion && !readOnly ? (
-        <div className="mt-4 rounded-lg border border-zinc-200 px-4 py-3 text-sm dark:border-zinc-800">
-          <p className="font-medium text-zinc-900 dark:text-zinc-50">Suggested next host</p>
-          <p className="mt-1 text-zinc-700 dark:text-zinc-300">{view.suggestion.reason}</p>
-          {canAssign ? (
-            <div className="mt-3">
-              <AuthForm
-                action={assignSuggestedHostAction}
-                submitLabel={`Ask ${view.suggestion.displayName} to host`}
-                hiddenFields={{
-                  event_id: eventId,
-                  group_id: groupId,
-                  host_user_id: view.suggestion.userId,
-                }}
-                refreshOnSuccess
-              >
-                {null}
-              </AuthForm>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {canAssign && !readOnly ? (
+      {canAssign && !readOnly && !view.acceptedHost ? (
         <div className="mt-6 max-w-md">
-          <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Choose a host</h3>
+          <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Suggest someone else
+          </h3>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Event proposers and group admins can select or change the host.
+            Event proposers and group admins can suggest a different host. They still need to
+            accept.
           </p>
           <AssignHostForm
             eventId={eventId}
             groupId={groupId}
-            members={eligibleMembers}
-            currentHostId={view.acceptedHost?.userId ?? view.pendingProposal?.userId ?? null}
+            members={eligibleMembers.filter((m) => m.hostingStanding !== "never")}
+            currentHostId={view.pendingProposal?.userId ?? null}
           />
         </div>
       ) : null}
 
       {readOnly && !view.acceptedHost ? (
         <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-          This event is complete. Host selection is read-only.
+          This event is complete. Host details are read-only.
         </p>
       ) : null}
     </section>
@@ -169,7 +155,7 @@ function AssignHostForm({
   return (
     <AuthForm
       action={assignEventHostAction}
-      submitLabel="Set host"
+      submitLabel="Suggest host"
       hiddenFields={{ event_id: eventId, group_id: groupId }}
       refreshOnSuccess
     >

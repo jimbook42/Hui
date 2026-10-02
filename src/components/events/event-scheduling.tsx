@@ -27,6 +27,11 @@ import {
   consensusFailureLabel,
   consensusRuleLabel,
 } from "@/lib/scheduling/labels";
+import { formatEventTimeRange } from "@/domain/datetime/timezone";
+import {
+  groupAttendanceByResponse,
+  type AttendanceRoster,
+} from "@/domain/scheduling/attendance-roster";
 import type {
   CandidateConsensusView,
   EventCandidateRow,
@@ -47,46 +52,52 @@ type EventSchedulingProps = {
   canRemoveCandidates: boolean;
   canRespond: boolean;
   canFinalise: boolean;
+  timeZone: string;
+  attendanceRosters: Record<string, AttendanceRoster>;
 };
 
 const initialState: EventActionState = {};
 
-function formatSlot(startsAt: string, endsAt: string): string {
-  const start = new Date(startsAt);
-  const end = new Date(endsAt);
-  const sameDay =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === end.getMonth() &&
-    start.getDate() === end.getDate();
-  if (sameDay) {
-    return `${start.toLocaleString()} — ${end.toLocaleTimeString()}`;
-  }
-  return `${start.toLocaleString()} — ${end.toLocaleString()}`;
+function formatSlot(startsAt: string, endsAt: string, timeZone: string): string {
+  return formatEventTimeRange(startsAt, endsAt, timeZone);
 }
 
 function AttendanceSummary({
   evaluation,
   maybeResponsesEnabled,
+  roster,
 }: {
   evaluation: CandidateConsensusView;
   maybeResponsesEnabled: boolean;
+  roster?: AttendanceRoster | null;
 }) {
-  const lines = buildAttendanceSummaryLines({
-    acceptedCount: evaluation.acceptedCount,
-    maybeCount: evaluation.maybeCount,
-    unavailableCount: evaluation.unavailableCount,
-    noResponseCount: evaluation.noResponseCount,
-    maybeResponsesEnabled,
-  });
+  const namedGroups = roster ? groupAttendanceByResponse(roster) : [];
 
   return (
     <div className="mt-3 rounded-md bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-900/60">
       <p className="font-medium text-zinc-800 dark:text-zinc-200">Attendance</p>
-      <ul className="mt-1 list-inside list-disc text-zinc-600 dark:text-zinc-400">
-        {lines.map((line) => (
-          <li key={line}>{line}</li>
-        ))}
-      </ul>
+      {namedGroups.length > 0 ? (
+        <div className="mt-2 space-y-2 text-zinc-600 dark:text-zinc-400">
+          {namedGroups.map((group) => (
+            <div key={group.label}>
+              <p className="font-medium text-zinc-700 dark:text-zinc-300">{group.label}</p>
+              <p>{group.names.join(", ")}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <ul className="mt-1 list-inside list-disc text-zinc-600 dark:text-zinc-400">
+          {buildAttendanceSummaryLines({
+            acceptedCount: evaluation.acceptedCount,
+            maybeCount: evaluation.maybeCount,
+            unavailableCount: evaluation.unavailableCount,
+            noResponseCount: evaluation.noResponseCount,
+            maybeResponsesEnabled,
+          }).map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
       <p className="mt-2 text-zinc-600 dark:text-zinc-400">
         {consensusRuleRequirementSummary(evaluation.consensusRule, {
           minimumAttendees: evaluation.minimumAttendees,
@@ -229,11 +240,13 @@ function CandidateConsensusNote({
   candidate,
   evaluation,
   maybeResponsesEnabled,
+  roster,
 }: {
   eventStatus: EventStatus;
   candidate: EventCandidateRow;
   evaluation: CandidateConsensusView | undefined;
   maybeResponsesEnabled: boolean;
+  roster?: AttendanceRoster | null;
 }) {
   if (candidate.status === "withdrawn") {
     return (
@@ -274,6 +287,7 @@ function CandidateConsensusNote({
         <AttendanceSummary
           evaluation={evaluation}
           maybeResponsesEnabled={maybeResponsesEnabled}
+          roster={roster}
         />
       </div>
     );
@@ -299,6 +313,7 @@ function CandidateConsensusNote({
       <AttendanceSummary
         evaluation={evaluation}
         maybeResponsesEnabled={maybeResponsesEnabled}
+        roster={roster}
       />
     </div>
   );
@@ -345,6 +360,8 @@ function CandidateCard({
   canRespond,
   canRemoveCandidates,
   canFinalise,
+  timeZone,
+  roster,
 }: {
   eventId: string;
   eventStatus: EventStatus;
@@ -354,6 +371,8 @@ function CandidateCard({
   canRespond: boolean;
   canRemoveCandidates: boolean;
   canFinalise: boolean;
+  timeZone: string;
+  roster?: AttendanceRoster | null;
 }) {
   const badge = candidateStatusBadge(
     eventStatus,
@@ -371,7 +390,7 @@ function CandidateCard({
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-          {formatSlot(candidate.startsAt, candidate.endsAt)}
+          {formatSlot(candidate.startsAt, candidate.endsAt, timeZone)}
         </p>
         {badge ? (
           <span
@@ -392,6 +411,7 @@ function CandidateCard({
         candidate={candidate}
         evaluation={evaluation}
         maybeResponsesEnabled={maybeResponsesEnabled}
+        roster={roster}
       />
       {candidate.status !== "withdrawn" ? (
         <CandidateResponseForm
@@ -431,6 +451,8 @@ export function EventScheduling({
   canRemoveCandidates,
   canRespond,
   canFinalise,
+  timeZone,
+  attendanceRosters,
 }: EventSchedulingProps) {
   const evaluations = new Map(
     consensus.candidates.map((candidate) => [candidate.candidateId, candidate]),
@@ -507,6 +529,8 @@ export function EventScheduling({
               canRespond={canRespond}
               canRemoveCandidates={canRemoveCandidates}
               canFinalise={canFinalise}
+              timeZone={timeZone}
+              roster={attendanceRosters[candidate.id] ?? null}
             />
           ))
         )}
@@ -529,6 +553,7 @@ export function EventScheduling({
                 canRespond={false}
                 canRemoveCandidates={false}
                 canFinalise={false}
+                timeZone={timeZone}
               />
             ))}
           </ul>

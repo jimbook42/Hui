@@ -3,6 +3,8 @@ export type ContributionCategoryRow = {
   groupId: string;
   name: string;
   archivedAt: string | null;
+  followsHost: boolean;
+  defaultAssigneeUserId: string | null;
 };
 
 export type EventContributionRow = {

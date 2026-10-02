@@ -2,12 +2,12 @@ import { parseOptionalDateTime } from "@/domain/events/validation";
 
 import type { AvailabilityChoice } from "./types";
 
-export function parseRequiredDateTime(raw: string): string | null {
+export function parseRequiredDateTime(raw: string, timeZone?: string): string | null {
   const trimmed = raw.trim();
   if (trimmed.length === 0) {
     return null;
   }
-  return parseOptionalDateTime(trimmed);
+  return parseOptionalDateTime(trimmed, timeZone);
 }
 
 export function validateCandidateWindow(

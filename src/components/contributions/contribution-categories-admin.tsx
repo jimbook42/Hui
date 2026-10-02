@@ -4,6 +4,7 @@ import {
   createContributionCategoryAction,
   deactivateContributionCategoryAction,
   renameContributionCategoryAction,
+  updateContributionCategoryRulesAction,
 } from "@/app/contributions/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
@@ -79,6 +80,22 @@ function CategoryRow({
         refreshOnSuccess
       >
         <AuthField label="Rename" name="name" defaultValue={category.name} required />
+      </AuthForm>
+      <AuthForm
+        action={updateContributionCategoryRulesAction}
+        submitLabel="Save category rules"
+        hiddenFields={{ group_id: groupId, category_id: category.id }}
+        refreshOnSuccess
+      >
+        <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+          <input
+            type="checkbox"
+            name="follows_host"
+            defaultChecked={category.followsHost}
+            className="rounded"
+          />
+          <span>Follows the host (for example, main dish)</span>
+        </label>
       </AuthForm>
       <AuthForm
         action={deactivateContributionCategoryAction}

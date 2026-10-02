@@ -77,6 +77,7 @@ export async function getEventDetail(
       notes,
       starts_at,
       ends_at,
+      timezone,
       created_by,
       recurrence_series_id,
       created_at,
@@ -152,6 +153,10 @@ export async function getEventDetail(
     notes: event.notes as string | null,
     startsAt: event.starts_at as string | null,
     endsAt: event.ends_at as string | null,
+    timezone:
+      typeof event.timezone === "string" && event.timezone.length > 0
+        ? event.timezone
+        : null,
     createdBy: event.created_by as string,
     creatorDisplayName: profile?.display_name ?? "Member",
     recurrenceSeries,

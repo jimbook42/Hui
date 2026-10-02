@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildHostHistory, hostSuggestionReason, suggestHost } from "./rotation";
+import { buildHostHistory, suggestHost } from "./rotation";
 
 describe("host rotation", () => {
   it("counts member-level accepted hosts from history rows only", () => {
@@ -41,7 +41,7 @@ describe("host rotation", () => {
     );
     expect(suggestion?.userId).toBe("2");
     expect(suggestion?.hostedCount).toBe(0);
-    expect(suggestion?.reason).toBe(hostSuggestionReason("Alex", 0));
+    expect(suggestion?.reason).toContain("Alex");
   });
 
   it("breaks ties by display name then user id", () => {

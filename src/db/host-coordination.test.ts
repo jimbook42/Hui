@@ -160,7 +160,7 @@ describe("host coordination (HUI-020)", () => {
     await db?.close();
   });
 
-  it("assigns an accepted host when host veto is disabled", async () => {
+  it("proposes a host who must accept before hosting is final", async () => {
     const confirmedEventId = await createConfirmedEvent(db, groupId, ids.owner, "Confirmed dinner");
     await asUser(db, ids.owner);
     const assignmentId = (
@@ -175,19 +175,14 @@ describe("host coordination (HUI-020)", () => {
       [assignmentId],
     );
     expect(row.rows[0]).toMatchObject({
-      status: "accepted",
+      status: "proposed",
       user_id: ids.member,
       display_name: "Mia Member",
     });
   });
 
-  it("requires host acceptance when host veto is enabled", async () => {
-    await asUser(db, ids.owner);
-    await db.query(`update public.group_settings set host_veto_enabled = true where group_id = $1`, [
-      groupId,
-    ]);
-
-    const swapEvent = await createConfirmedEvent(db, groupId, ids.owner, "Veto dinner");
+  it("accepts a proposed host assignment", async () => {
+    const swapEvent = await createConfirmedEvent(db, groupId, ids.owner, "Accept dinner");
 
     await db.query(`select public.assign_event_host($1, $2)`, [swapEvent, ids.owner]);
 

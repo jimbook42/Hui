@@ -97,7 +97,21 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
           </select>
         </label>
         <Checkbox name="admin_veto_enabled" label="Admin veto" checked={settings.adminVetoEnabled} />
-        <Checkbox name="host_veto_enabled" label="Host veto" checked={settings.hostVetoEnabled} />
+        <Checkbox name="hosting_enabled" label="Use a host for gatherings" checked={settings.hostingEnabled} />
+        <Checkbox
+          name="avoid_consecutive_hosts"
+          label="Don't ask the same person to host twice in a row"
+          checked={settings.avoidConsecutiveHosts}
+        />
+        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+          <span>Timezone for event times</span>
+          <input
+            type="text"
+            name="timezone"
+            defaultValue={settings.timezone}
+            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+          />
+        </label>
         <Checkbox
           name="reconnect_reminders_enabled"
           label="Reconnect reminders"

@@ -42,7 +42,7 @@ export function consensusRuleRequirementSummary(
       return `Every active member must be available (${input.eligibleMemberCount} members), with ${minimumAttendeesRequirementLabel(input.minimumAttendees).toLowerCase()}.`;
     case "required_participants":
       if (input.requiredParticipantCount === 0) {
-        return minimumAttendeesRequirementLabel(input.minimumAttendees);
+        return `${minimumAttendeesRequirementLabel(input.minimumAttendees)} No members are marked as required yet — group admins can set that on the group page.`;
       }
       return `Every member marked as required must be available (${input.requiredParticipantCount} required), with ${minimumAttendeesRequirementLabel(input.minimumAttendees).toLowerCase()}.`;
   }

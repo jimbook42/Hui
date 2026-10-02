@@ -22,8 +22,9 @@ export function EventParticipantsSummary({
         Group members
       </h2>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        {eligibleMemberCount} active {eligibleMemberCount === 1 ? "member" : "members"}{" "}
-        can respond privately. Attendance totals above never name individuals.
+        {eligibleMemberCount} active {eligibleMemberCount === 1 ? "member" : "members"} can
+        respond. Private notes stay private; attendance above shows who can come when responses are
+        shared with the group.
       </p>
 
       <div className="mt-4 space-y-4 text-sm">

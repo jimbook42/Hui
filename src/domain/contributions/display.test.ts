@@ -5,8 +5,22 @@ import { buildContributionBoard, buildContributionHistory } from "./display";
 describe("contribution display", () => {
   it("partitions still needed and claimed categories", () => {
     const categories = [
-      { id: "c1", groupId: "g", name: "Main", archivedAt: null },
-      { id: "c2", groupId: "g", name: "Dessert", archivedAt: null },
+      {
+        id: "c1",
+        groupId: "g",
+        name: "Main",
+        archivedAt: null,
+        followsHost: false,
+        defaultAssigneeUserId: null,
+      },
+      {
+        id: "c2",
+        groupId: "g",
+        name: "Dessert",
+        archivedAt: null,
+        followsHost: false,
+        defaultAssigneeUserId: null,
+      },
     ];
     const contributions = [
       {
