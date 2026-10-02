@@ -98,6 +98,7 @@ type EditEventFormProps = {
   defaultNotes: string | null;
   defaultStartsAt: string | null;
   defaultEndsAt: string | null;
+  scheduleLocked?: boolean;
 };
 
 export function EditEventForm({
@@ -108,6 +109,7 @@ export function EditEventForm({
   defaultNotes,
   defaultStartsAt,
   defaultEndsAt,
+  scheduleLocked = false,
 }: EditEventFormProps) {
   return (
     <AuthForm action={action} submitLabel="Save changes" hiddenFields={{ event_id: eventId }}>
@@ -127,20 +129,28 @@ export function EditEventForm({
           className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
         />
       </label>
-      <AuthField
-        label="Start (optional)"
-        name="starts_at"
-        type="datetime-local"
-        required={false}
-        defaultValue={formatDateTimeLocal(defaultStartsAt)}
-      />
-      <AuthField
-        label="End (optional)"
-        name="ends_at"
-        type="datetime-local"
-        required={false}
-        defaultValue={formatDateTimeLocal(defaultEndsAt)}
-      />
+      {scheduleLocked ? (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          The confirmed time stays as agreed. Title, location, and notes can still be edited.
+        </p>
+      ) : (
+        <>
+          <AuthField
+            label="Start (optional)"
+            name="starts_at"
+            type="datetime-local"
+            required={false}
+            defaultValue={formatDateTimeLocal(defaultStartsAt)}
+          />
+          <AuthField
+            label="End (optional)"
+            name="ends_at"
+            type="datetime-local"
+            required={false}
+            defaultValue={formatDateTimeLocal(defaultEndsAt)}
+          />
+        </>
+      )}
     </AuthForm>
   );
 }

@@ -2,18 +2,30 @@ import Link from "next/link";
 
 import { signInAction } from "@/app/auth/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
+import { AuthOAuthSection } from "@/components/auth/auth-provider-options";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { sanitizeNextPath } from "@/lib/auth/routes";
+
+const OAUTH_SIGN_IN_MESSAGES: Record<string, string> = {
+  cancelled:
+    "Social sign-in was cancelled. You can try again or use email and password.",
+  failed:
+    "Social sign-in could not be completed. Try again or use email and password.",
+};
 
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; oauth?: string }>;
 }) {
   const params = await searchParams;
   const next = sanitizeNextPath(
     typeof params.next === "string" ? params.next : undefined,
   );
+  const oauthNotice =
+    typeof params.oauth === "string"
+      ? OAUTH_SIGN_IN_MESSAGES[params.oauth]
+      : undefined;
 
   return (
     <AuthShell
@@ -28,6 +40,12 @@ export default async function SignInPage({
         </>
       }
     >
+      {oauthNotice ? (
+        <p className="mb-4 text-sm text-amber-800 dark:text-amber-200" role="status">
+          {oauthNotice}
+        </p>
+      ) : null}
+      <AuthOAuthSection next={next} />
       <AuthForm action={signInAction} submitLabel="Sign in" hiddenFields={{ next }}>
         <AuthField label="Email" name="email" type="email" autoComplete="email" />
         <AuthField

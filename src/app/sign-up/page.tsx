@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { signUpAction } from "@/app/auth/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
+import { AuthOAuthSection } from "@/components/auth/auth-provider-options";
 import { AuthShell } from "@/components/auth/auth-shell";
 
 export default function SignUpPage() {
@@ -18,6 +19,7 @@ export default function SignUpPage() {
         </>
       }
     >
+      <AuthOAuthSection />
       <AuthForm action={signUpAction} submitLabel="Sign up">
         <AuthField
           label="Display name"

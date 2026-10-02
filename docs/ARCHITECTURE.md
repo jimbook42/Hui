@@ -57,11 +57,15 @@ The publishable (anon) key is safe for its intended public client use but is **n
 
 ## Authentication
 
-Supabase Auth (email/password) for sign-up, verification, sign-in, and sign-out. Public routes include `/sign-in` and `/sign-up`. `/dashboard`, `/profile`, and `/groups` require a session: middleware refreshes cookies and redirects unauthenticated visitors to sign-in; protected layouts also call `auth.getUser()` on the server.
+Supabase Auth is the sole login system. **Canonical Hui identity** is `auth.users.id` (the session user’s uuid). `profiles.id`, `group_memberships.user_id`, event ownership, and RLS all key off that id — not email. Email/password and **Google OAuth** (when enabled in `src/lib/auth/providers.ts`) are available sign-in methods.
+
+Public routes include `/sign-in` and `/sign-up`. `/dashboard`, `/profile`, `/groups`, and `/events` require a session: middleware refreshes cookies and redirects unauthenticated visitors to sign-in; protected layouts also call `auth.getUser()` on the server. OAuth completes at `/auth/callback`, which exchanges the Supabase authorization code for a session cookie and runs `ensureUserProfile` before redirecting to the requested in-app path.
+
+**Social authentication.** Provider enablement lives in `src/lib/auth/providers.ts`. **Google** is implemented on the Hui side (Supabase `signInWithOAuth` + `/auth/callback`) and enabled in the Supabase dashboard. Google client secrets stay in Supabase, never in the repository. Apple, Facebook, and Microsoft (Azure) remain **disabled** until their integration tickets land. `AuthOAuthSection` on sign-in/sign-up renders third-party controls only for enabled providers. Do not merge Hui accounts by matching email alone; future work should use Supabase identity linking where supported so one Hui user keeps one auth identity.
 
 Group administration uses the HUI-005 schema and RLS. Creation and self-leave call `create_group` and `leave_group` RPCs so ownership and membership stay consistent without widening update policies. Admins add existing accounts by user ID (shown on the profile page); email invitations are not implemented yet.
 
-Events use the same HUI-005 `events` and `recurrence_series` tables. Server Actions in `src/app/events/actions.ts` enforce group settings (who may propose, one-off vs recurring) before insert; RLS remains authoritative. New gatherings start in `proposing` status. Candidate times and private availability responses use `event_candidates` and `event_responses` via `src/app/events/scheduling-actions.ts` (no consensus or finalisation yet). Routes: `/groups/[groupId]/events`, `/groups/[groupId]/events/new`, `/events/[eventId]`.
+Events use the same HUI-005 `events` and `recurrence_series` tables. Server Actions in `src/app/events/actions.ts` enforce group settings (who may propose, one-off vs recurring) before insert; RLS remains authoritative. New gatherings start in `proposing` status. Candidate times and private availability responses use `event_candidates` and `event_responses` via `src/app/events/scheduling-actions.ts`. Consensus is a pure function in `src/domain/scheduling/consensus.ts`. Active members read aggregate counts from `event_consensus_summary` (no response identities). `finalise_event` re-reads those rows under a row lock and is the only path from `proposing` to `confirmed`. Routes: `/groups/[groupId]/events`, `/groups/[groupId]/events/new`, `/events/[eventId]`.
 
 Server Components and Server Actions use the server Supabase client with cookie-backed sessions; RLS enforces row access. The database assumes `auth.uid()` and does not implement a second login system. A trigger inserts `profiles` when `auth.users` gains a row; the app may call `ensureUserProfile` idempotently after sign-in when needed.
 
@@ -75,12 +79,12 @@ Access is membership, not a client check:
 - Active members can read that group's gatherings, settings, and group-visible responses. Non-members cannot.
 - Owner and admins manage settings, households, categories, and membership. Ordinary members cannot. The owner calls `transfer_group_ownership` to hand the group on.
 - Dietary rows are private until the owner shares them with a group. A share stops applying once either person is no longer active there.
-- Private availability responses are not readable by other members. A later consensus calculation that needs those answers has to be a trusted server path, not a wider `select` policy.
+- Private availability responses are not readable by other members. Consensus counts for those answers come from `event_consensus_summary` and `finalise_event`, which do not return individual responses. Do not widen the `event_responses` select policy so the client can compute consensus.
 - Membership removal flips `group_memberships.status` to `removed`. It does not cascade into events, responses, hosts, contributions, or memories.
 
 Policies must not query `group_memberships` under its own RLS. `is_active_member`, `is_group_admin`, and `is_group_owner` are `SECURITY DEFINER`, `STABLE`, and pinned to `search_path = public`. They return a boolean for `auth.uid()` only. The same pattern is used for dietary visibility, so those policies do not recurse through each other. `transfer_group_ownership` and the profile, settings, audit, and memory-snapshot triggers are definer functions for the same reason: the caller cannot be given a general write on those rows.
 
-The database enforces tenancy, proposer rights (`who_may_propose`), one-off versus recurring flags, and the maybe-response switch. It stores event status, veto flags, deadlines, and consensus settings, and leaves those transitions to the domain layer.
+The database enforces tenancy, proposer rights (`who_may_propose`), one-off versus recurring flags, and the maybe-response switch. It stores event status, veto flags, deadlines, and consensus settings. Consensus maths stay in the domain layer. `finalise_event` is the trusted write that applies them: it locks the event, counts private responses without returning them, and confirms one candidate. Ordinary updates cannot set `confirmed` or mark a candidate `selected`. `proposal_deadline_hours` is stored and is not applied to an event clock yet.
 
 Group rules are columns on `group_settings`, not a JSON document. The MVP set is known and should stay constrained. Recurrence rows store a week/month interval only; occurrence generation is later application code.
 

@@ -1,8 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
+import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
+import {
+  buildOAuthCallbackUrl,
+  signInWithOAuthProvider,
+} from "@/lib/auth/oauth";
+import {
+  isAuthOAuthProviderId,
+} from "@/lib/auth/providers";
 import { sanitizeNextPath } from "@/lib/auth/routes";
 import { ensureUserProfile } from "@/lib/profiles/ensure-profile";
 import { updateOwnDisplayName } from "@/lib/profiles/update-display-name";
@@ -88,6 +96,47 @@ export async function signInAction(
   }
 
   redirect(next);
+}
+
+export async function oauthSignInAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const providerRaw = String(formData.get("provider") ?? "").trim();
+  if (!isAuthOAuthProviderId(providerRaw)) {
+    return { error: "That sign-in option is not available." };
+  }
+
+  const next = sanitizeNextPath(String(formData.get("next") ?? ""));
+
+  let oauthUrl: string;
+  try {
+    const origin = await resolveAuthRedirectOrigin();
+    const redirectTo = buildOAuthCallbackUrl(origin, next);
+    const supabase = await createClient();
+    const { data, error } = await signInWithOAuthProvider(
+      supabase,
+      providerRaw,
+      redirectTo,
+    );
+
+    if (error || !data.url) {
+      return {
+        error:
+          "Could not start social sign-in. Try again or use email and password.",
+      };
+    }
+
+    oauthUrl = data.url;
+  } catch (error) {
+    unstable_rethrow(error);
+    return {
+      error:
+        "Could not start social sign-in. Try again or use email and password.",
+    };
+  }
+
+  redirect(oauthUrl);
 }
 
 export async function signOutAction(): Promise<void> {

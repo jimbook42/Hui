@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import type { GroupSettingsRow } from "@/lib/groups/types";
 
-import { canAddCandidates, canRespondToCandidates } from "./permissions";
+import {
+  canAddCandidates,
+  canFinaliseEvent,
+  canRespondToCandidates,
+  canWithdrawCandidate,
+} from "./permissions";
 
 const baseSettings: GroupSettingsRow = {
   whoMayPropose: "any_member",
@@ -29,6 +34,17 @@ describe("scheduling permissions", () => {
 
   it("lets members respond while the event accepts scheduling input", () => {
     expect(canRespondToCandidates("proposing")).toBe(true);
+    expect(canRespondToCandidates("confirmed")).toBe(false);
     expect(canRespondToCandidates("completed")).toBe(false);
+  });
+
+  it("lets the proposer or an admin confirm a proposing event", () => {
+    expect(canFinaliseEvent("member", "user-1", "user-1", "proposing")).toBe(true);
+    expect(canFinaliseEvent("admin", "user-2", "user-1", "proposing")).toBe(true);
+    expect(canFinaliseEvent("member", "user-2", "user-1", "proposing")).toBe(false);
+    expect(canFinaliseEvent("owner", "user-2", "user-1", "cancelled")).toBe(false);
+    expect(canFinaliseEvent("owner", "user-2", "user-1", "confirmed")).toBe(false);
+    expect(canWithdrawCandidate("member", "user-1", "user-1", "confirmed")).toBe(false);
+    expect(canAddCandidates("member", baseSettings, "confirmed")).toBe(false);
   });
 });

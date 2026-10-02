@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { assertCanFinalise } from "@/domain/events/lifecycle";
 import { availabilityToDbResponse } from "@/domain/scheduling/mapping";
 import {
   canAddCandidates,
+  canFinaliseEvent,
   canRespondToCandidates,
   canWithdrawCandidate,
 } from "@/domain/scheduling/permissions";
@@ -233,4 +235,45 @@ export async function setAvailabilityResponseAction(
 
   revalidatePath(`/events/${eventId}`);
   return { message: "Response saved." };
+}
+
+export async function finaliseEventAction(
+  _prev: EventActionState,
+  formData: FormData,
+): Promise<EventActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  const candidateId = String(formData.get("candidate_id") ?? "");
+
+  if (!eventId || !candidateId) {
+    return { error: "Missing candidate." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getEventDetail(supabase, eventId, user.id);
+  if (!detail) {
+    return { error: "Event not found." };
+  }
+
+  const statusError = assertCanFinalise(detail.status);
+  if (statusError) {
+    return { error: statusError };
+  }
+  if (
+    !canFinaliseEvent(detail.viewerRole, user.id, detail.createdBy, detail.status)
+  ) {
+    return { error: "You cannot confirm this event." };
+  }
+
+  const { error } = await supabase.rpc("finalise_event", {
+    p_event_id: eventId,
+    p_candidate_id: candidateId,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/groups/${detail.groupId}/events`);
+  return { message: "Event confirmed." };
 }

@@ -21,8 +21,12 @@ test("unauthenticated groups access redirects to sign-in", async ({ page }) => {
 test("sign-in and sign-up pages render", async ({ page }) => {
   await page.goto("/sign-in");
   await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(1);
   await page.goto("/sign-up");
   await expect(page.getByLabel("Display name")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(1);
 });
 
 test.describe("live Supabase auth", () => {
