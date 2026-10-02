@@ -118,3 +118,11 @@ Lightweight record of completed tickets. One entry per ticket.
 - Manual: In Supabase Dashboard → Authentication → Providers → Azure, enable the provider and set Azure AD application (client) ID and secret; ensure redirect URLs include the Supabase callback URL and production site URL is in Supabase redirect allow list. Live Microsoft sign-in not verified in this session (requires dashboard enable + Microsoft account).
 - Checked: `npm run validate`, `npm run test:e2e` (7 passed, 1 live-auth skipped).
 - Commit: a479946
+
+## 2026-10-02 — HUI-013A
+
+- Root cause: Azure `signInWithOAuth` did not request `scopes: "email"`. Supabase Auth only asks Azure for `openid` unless the client sends extra scopes, then rejects the provider callback when no email is returned (`error=server_error`, `error_description=Error getting user email from external provider`). Hui’s `/auth/callback` maps any non-`access_denied` `error` to `oauth=failed` and drops `error_description`, which is the generic “Social sign-in could not be completed” notice. Microsoft consent itself succeeded; failure is Supabase’s callback, before `exchangeCodeForSession`.
+- Changed: `oauthScopes: "email"` on the Azure provider definition; `signInWithOAuthProvider` passes it only when set. Google options unchanged. Callback and display-name logic unchanged.
+- Checked: `npm run validate` (120 tests), `npm run test:e2e` (7 passed, 1 live-auth skipped).
+- Pending: production Microsoft sign-in retest after deploy. If Azure still omits email, add the Graph `email` delegated permission and the `email` optional claim on the Entra app (documented by Supabase; not a Hui code change).
+- Commit: (pending)

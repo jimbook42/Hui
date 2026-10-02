@@ -18,11 +18,21 @@ export type AuthProviderDefinition = {
   enabled: boolean;
   /** Supabase `signInWithOAuth` provider id for OAuth methods. */
   supabaseOAuthProvider?: AuthOAuthProviderId;
+  /**
+   * Extra scopes for `signInWithOAuth`. Supabase Auth always requests `openid`
+   * for Azure and appends these. Azure must include `email` or Auth rejects the
+   * callback with no email address.
+   */
+  oauthScopes?: string;
 };
 
 const OAUTH_PROVIDER_META: Record<
   AuthOAuthProviderId,
-  { continueLabel: string; supabaseOAuthProvider: AuthOAuthProviderId }
+  {
+    continueLabel: string;
+    supabaseOAuthProvider: AuthOAuthProviderId;
+    oauthScopes?: string;
+  }
 > = {
   google: {
     continueLabel: "Continue with Google",
@@ -39,6 +49,7 @@ const OAUTH_PROVIDER_META: Record<
   azure: {
     continueLabel: "Continue with Microsoft",
     supabaseOAuthProvider: "azure",
+    oauthScopes: "email",
   },
 };
 
