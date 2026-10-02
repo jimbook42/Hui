@@ -179,3 +179,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: Host rotation on `host_assignments` — domain fairness suggestion (`src/domain/hosts`), `assign_event_host` / `respond_to_host_assignment` RPCs (migration `20261002210000_host_coordination.sql`), event Host section and group hosting history UI, server actions, PGlite security tests (`src/db/host-coordination.test.ts`), Playwright `e2e/hosts.spec.ts` (live-auth skipped without credentials). Member-level hosting only; cancelled events excluded from history counts; no scores or auto-assignment.
 - Checked: `npm run validate` (193 tests), `npm run test:e2e` (8 passed, 6 live-auth skipped including hosts journey without E2E credentials).
 - Production: Apply migration `20261002210000_host_coordination.sql` on linked Supabase before host RPCs work in production.
+
+## 2026-10-02 — HUI-021
+
+- Changed: In-app `member_notifications` (migration `20261002220000_notifications.sql`) with trigger-driven event/consensus/host/contribution messages; reconnect reminders via `sync_reconnect_reminders_for_member()`; profile opt-out `member_reconnect_reminders_enabled`; `/notifications` UI, nav unread badge, mark read; domain + PGlite tests; Playwright auth redirect tests for `/notifications`.
+- Checked: `npm run validate` (204 tests), `npm run test:e2e` (10 passed, 6 live-auth skipped).
+- Manual: Apply migration `20261002220000_notifications.sql` on linked Supabase (and `20261002210000_host_coordination.sql` if HUI-020 not yet applied).

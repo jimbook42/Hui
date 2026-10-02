@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { signOutAction } from "@/app/auth/actions";
+import { NotificationsNavLink } from "@/components/notifications/notifications-nav-link";
 
 type AppShellProps = {
   title: string;
@@ -30,6 +31,7 @@ export function AppShell({ title, children }: AppShellProps) {
             >
               Groups
             </Link>
+            <NotificationsNavLink />
             <Link
               href="/profile"
               className="text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-300"

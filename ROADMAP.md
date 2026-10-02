@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** none (HUI-020 complete)  
-**Overall progress:** HUI-020 host rotation shipped — assignment, fairness suggestions, hosting history, host veto accept/decline
+**Current ticket:** none (HUI-021 complete)  
+**Overall progress:** HUI-021 in-app notifications and reconnect reminders shipped
 
 ## Status at a glance
 
@@ -16,7 +16,7 @@
 | 4 — Scheduling and consensus | [x] HUI-009/HUI-010 backend and HUI-017 consensus UX |
 | 5 — Host rotation | [x] HUI-020 host assignment, rotation suggestions, history |
 | 6 — Contributions and dietary information | [x] HUI-018 contributions and HUI-019 dietary coordination |
-| 7 — Notifications and reminders | [ ] Not started |
+| 7 — Notifications and reminders | [x] HUI-021 in-app notifications and reconnect reminders |
 | 8 — Calendar export | [ ] Not started |
 | 9 — Memories/history | [ ] Not started |
 | 10 — Hardening, privacy and production readiness | [ ] Not started |
@@ -77,8 +77,7 @@
 
 ## Phase 7 — Notifications and reminders
 
-- [ ] Event and proposal notifications
-- [ ] Optional reconnect reminders after inactivity
+- [x] HUI-021 — In-app notifications, read state, reconnect reminders, member opt-out (migration `20261002220000_notifications.sql`)
 
 ## Phase 8 — Calendar export
 

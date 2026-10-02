@@ -37,7 +37,7 @@ persistence & integrations (Supabase client, storage, export)
 - **Groups** — membership, roles, group settings.
 - **Events** — proposals, candidates, responses, consensus, hosting (recurring and one-off).
 - **Contributions & dietary** — fairness and preferences tied to events/members.
-- **Notifications** — reminders and activity (no chat).
+- **Notifications** — in-app activity and optional reconnect reminders (`member_notifications`, triggers/RPCs); no chat, email, SMS, or browser push in HUI-021.
 - **Export** — calendar export for confirmed events.
 - **Memories** — post-event history attached to events/groups.
 
@@ -108,7 +108,9 @@ Hui uses `@serwist/turbopack` for a minimal service worker: build-time precachin
 
 > Hui may be installable and provide limited static/offline behaviour, but private user/group/event data must not be treated as safely cacheable offline data by default.
 
-When offline, navigations show `/offline`; the app does not sync data or pretend to be fully offline-capable. Web Push and notifications are out of scope for the PWA foundation.
+When offline, navigations show `/offline`; the app does not sync data or pretend to be fully offline-capable. Web Push and external notification providers are out of scope for the PWA foundation.
+
+**In-app notifications (HUI-021).** `member_notifications` stores short, privacy-safe messages for the authenticated member. Rows are created by database triggers on meaningful event/host/contribution changes and by `sync_reconnect_reminders_for_member()` when a group with reconnect settings has been inactive (last non-cancelled event activity, or group creation if none). Members manage read state via `mark_notification_read` / `mark_all_notifications_read`. `/notifications` lists items; profile settings include `member_reconnect_reminders_enabled` to opt out of reconnect reminders only. No browser permission prompts.
 
 ## Deployment
 

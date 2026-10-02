@@ -4,6 +4,7 @@ export const PROTECTED_ROUTE_PREFIXES = [
   "/profile",
   "/groups",
   "/events",
+  "/notifications",
 ] as const;
 
 /** Auth entry routes; signed-in users are redirected away. */
