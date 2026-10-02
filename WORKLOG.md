@@ -109,4 +109,4 @@ Lightweight record of completed tickets. One entry per ticket.
 - Manual preview: account deletion succeeds; the Auth user is deleted; old credentials fail; the same email registers again as a fresh account. Supabase email confirmation stayed disabled for the current testing configuration (out of scope; unchanged).
 - Policy: typed `DELETE` confirmation; Auth delete and verification first, then `delete_my_account_data`; shared history kept on an anonymised profile; re-registration is a new auth id with no email re-link.
 - Checked: `npm run validate`, `npm run test:e2e`.
-- Commit: pending
+- Commit: a0ab037
