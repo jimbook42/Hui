@@ -5,6 +5,7 @@ import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import { AuthOAuthSection } from "@/components/auth/auth-provider-options";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { sanitizeNextPath } from "@/lib/auth/routes";
+import { createClient } from "@/lib/supabase/server";
 
 const OAUTH_SIGN_IN_MESSAGES: Record<string, string> = {
   cancelled:
@@ -16,10 +17,11 @@ const OAUTH_SIGN_IN_MESSAGES: Record<string, string> = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; oauth?: string; deleted?: string }>;
+  searchParams: Promise<{ next?: string; oauth?: string; deleted?: string; deletion_incomplete?: string }>;
 }) {
   const params = await searchParams;
   const accountDeleted = params.deleted === "1";
+  const deletionIncomplete = params.deletion_incomplete === "1";
   const next = sanitizeNextPath(
     typeof params.next === "string" ? params.next : undefined,
   );
@@ -27,6 +29,16 @@ export default async function SignInPage({
     typeof params.oauth === "string"
       ? OAUTH_SIGN_IN_MESSAGES[params.oauth]
       : undefined;
+
+  if (accountDeleted) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.auth.signOut({ scope: "global" });
+    }
+  }
 
   return (
     <AuthShell
@@ -44,6 +56,12 @@ export default async function SignInPage({
       {accountDeleted ? (
         <p className="mb-4 text-sm text-emerald-800 dark:text-emerald-300" role="status">
           Your account was deleted. You can sign up again with the same email if you choose.
+        </p>
+      ) : null}
+      {deletionIncomplete ? (
+        <p className="mb-4 text-sm text-amber-800 dark:text-amber-200" role="status">
+          Your account deletion did not finish last time. Sign in and use Delete my account on
+          your profile to try again.
         </p>
       ) : null}
       {oauthNotice ? (

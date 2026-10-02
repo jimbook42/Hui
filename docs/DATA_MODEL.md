@@ -45,7 +45,7 @@ Responses, hosts, contributions, and memory attendees reference `profiles.id`. H
 
 ## Account deletion (HUI-012B)
 
-Deleting an account is a deliberate, server-side flow: the authenticated user confirms with `DELETE`, Postgres runs `delete_my_account_data()` (identity from `auth.uid()` only), then the app removes the Supabase Auth user with the server secret key. That is **not** one atomic transaction across Postgres and Auth.
+Deleting an account is a deliberate, server-side flow: the authenticated user confirms with `DELETE`, the app removes the Supabase Auth user with the server secret key and verifies it is gone, then Postgres runs `delete_my_account_data()` (identity from `auth.uid()` only). That is **not** one atomic transaction across Auth and Postgres. The success message is shown only when both steps succeed.
 
 **Removed:** all `dietary_entries` (and shares), private `event_responses`, household membership rows, active group memberships (status `removed`), and sole-member groups (entire group tree). The profile row is kept but anonymised (`display_name` → `Former member`, `account_deleted_at` set) so historical foreign keys stay valid. The profile no longer references `auth.users` after migration `20261002160000_account_deletion`.
 

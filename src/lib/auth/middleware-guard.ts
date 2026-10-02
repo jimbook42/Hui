@@ -8,6 +8,8 @@ export type SessionGuardInput = {
   pathname: string;
   hasUser: boolean;
   nextParam?: string | null;
+  /** When `1`, allow sign-in so post-deletion sign-out can complete. */
+  accountDeletedParam?: string | null;
 };
 
 export type SessionGuardResult =
@@ -19,6 +21,7 @@ export function resolveSessionGuard({
   pathname,
   hasUser,
   nextParam,
+  accountDeletedParam,
 }: SessionGuardInput): SessionGuardResult {
   if (!hasUser && isProtectedPath(pathname)) {
     const next = encodeURIComponent(pathname);
@@ -26,6 +29,9 @@ export function resolveSessionGuard({
   }
 
   if (hasUser && isAuthEntryPath(pathname)) {
+    if (pathname === "/sign-in" && accountDeletedParam === "1") {
+      return { action: "next" };
+    }
     return { action: "redirect", location: sanitizeNextPath(nextParam) };
   }
 

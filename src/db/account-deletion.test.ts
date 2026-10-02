@@ -299,13 +299,26 @@ describe("account deletion (HUI-012B)", () => {
     expect(newProfile.rows[0].display_name).toBe("New Signup Name");
   });
 
-  it("rejects duplicate deletion", async () => {
+  it("allows idempotent second deletion call after tombstone", async () => {
     const userId = await createUser(db, "twice@hui.test", "Twice");
     await asUser(db, userId);
     await db.query(`select public.delete_my_account_data()`);
-    const error = await expectFail(() =>
+    await expect(
       db.query(`select public.delete_my_account_data()`),
+    ).resolves.toBeDefined();
+  });
+
+  it("lets a tombstoned user read their own profile row for session guards", async () => {
+    const userId = await createUser(db, "tombstone-read@hui.test", "T Read");
+    await asUser(db, userId);
+    await db.query(`select public.delete_my_account_data()`);
+
+    const profile = await db.query<{ account_deleted_at: string | null }>(
+      `select account_deleted_at::text as account_deleted_at
+       from public.profiles where id = $1`,
+      [userId],
     );
-    expect(error).toMatch(/already deleted/);
+
+    expect(profile.rows[0].account_deleted_at).toBeTruthy();
   });
 });

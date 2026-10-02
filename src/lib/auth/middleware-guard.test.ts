@@ -37,6 +37,16 @@ describe("resolveSessionGuard", () => {
     });
   });
 
+  it("allows sign-in with deleted=1 so post-deletion sign-out can finish", () => {
+    expect(
+      resolveSessionGuard({
+        pathname: "/sign-in",
+        hasUser: true,
+        accountDeletedParam: "1",
+      }),
+    ).toEqual({ action: "next" });
+  });
+
   it("honours a safe next path when leaving auth routes", () => {
     expect(
       resolveSessionGuard({

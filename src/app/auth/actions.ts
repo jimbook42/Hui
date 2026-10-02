@@ -16,6 +16,7 @@ import { ensureUserProfile } from "@/lib/profiles/ensure-profile";
 import { initialDisplayNameFromAuthMetadata } from "@/lib/profiles/initial-display-name";
 import { updateOwnDisplayName } from "@/lib/profiles/update-display-name";
 import { isAccountDeletionConfirmed } from "@/lib/auth/account-deletion";
+import { deleteAuthUserWithVerification } from "@/lib/auth/delete-auth-user";
 import { normalizeDisplayName } from "@/lib/profiles/validation";
 import { createSecretSupabaseClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -192,20 +193,15 @@ export async function deleteAccountAction(
     redirect("/sign-in");
   }
 
-  const { error: dataError } = await supabase.rpc("delete_my_account_data");
-  if (dataError) {
-    return { error: dataError.message };
-  }
+  const userId = user.id;
 
   try {
     const admin = createSecretSupabaseClient();
-    const { error: authDeleteError } = await admin.auth.admin.deleteUser(
-      user.id,
-    );
-    if (authDeleteError) {
+    const authDelete = await deleteAuthUserWithVerification(admin, userId);
+    if (!authDelete.ok) {
       return {
         error:
-          "Your Hui data was removed but sign-in could not be fully deleted. Contact support or try again.",
+          "Account deletion could not be completed. Your Hui account was not deleted. Try again or contact support if this continues.",
       };
     }
   } catch (error) {
@@ -216,7 +212,15 @@ export async function deleteAccountAction(
     };
   }
 
-  await supabase.auth.signOut();
+  const { error: dataError } = await supabase.rpc("delete_my_account_data");
+  if (dataError) {
+    return {
+      error:
+        "Account deletion could not be completed. Your sign-in was removed but some Hui data may remain. Contact support.",
+    };
+  }
+
+  await supabase.auth.signOut({ scope: "global" });
   revalidatePath("/", "layout");
   redirect("/sign-in?deleted=1");
 }
