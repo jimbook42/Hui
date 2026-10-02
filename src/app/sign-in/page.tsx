@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { signInAction } from "@/app/auth/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
+import { AuthOAuthSection } from "@/components/auth/auth-provider-options";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { sanitizeNextPath } from "@/lib/auth/routes";
 
@@ -28,6 +29,7 @@ export default async function SignInPage({
         </>
       }
     >
+      <AuthOAuthSection />
       <AuthForm action={signInAction} submitLabel="Sign in" hiddenFields={{ next }}>
         <AuthField label="Email" name="email" type="email" autoComplete="email" />
         <AuthField

@@ -63,3 +63,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Not in this ticket: `proposal_deadline_hours` is still only a group setting. No event deadline is stored, so it is not enforced.
 - Checked: `npm run validate`, `npm run test:e2e`. Migration `20261002140000_event_consensus_finalisation.sql`.
 - Commit: 5438c6d
+
+## 2026-10-02 — HUI-011
+
+- Changed: Auth provider registry (`providers.ts`) with Google, Apple, Facebook, and Azure disabled by default; `AuthOAuthSection` on sign-in/sign-up (renders nothing until a provider is enabled); OAuth validation stub and canonical identity notes; architecture, decisions, and roadmap backlog for future social login.
+- Checked: `npm run validate`.
+- Commit: 79505b0

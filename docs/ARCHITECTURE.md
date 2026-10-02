@@ -57,7 +57,11 @@ The publishable (anon) key is safe for its intended public client use but is **n
 
 ## Authentication
 
-Supabase Auth (email/password) for sign-up, verification, sign-in, and sign-out. Public routes include `/sign-in` and `/sign-up`. `/dashboard`, `/profile`, and `/groups` require a session: middleware refreshes cookies and redirects unauthenticated visitors to sign-in; protected layouts also call `auth.getUser()` on the server.
+Supabase Auth is the sole login system. **Canonical Hui identity** is `auth.users.id` (the session user’s uuid). `profiles.id`, `group_memberships.user_id`, event ownership, and RLS all key off that id — not email. Email/password is the only enabled sign-in method today.
+
+Public routes include `/sign-in` and `/sign-up`. `/dashboard`, `/profile`, `/groups`, and `/events` require a session: middleware refreshes cookies and redirects unauthenticated visitors to sign-in; protected layouts also call `auth.getUser()` on the server.
+
+**Social authentication (groundwork only).** Provider enablement lives in `src/lib/auth/providers.ts`. Google, Apple, Facebook, and Microsoft (Azure) are defined but default to **disabled** until each provider has developer credentials, Supabase Auth provider configuration, and a completed OAuth integration ticket. `AuthOAuthSection` on sign-in/sign-up renders third-party controls only for enabled providers (nothing extra is shown in production today). Do not merge Hui accounts by matching email alone; future work should use Supabase identity linking where supported so one Hui user keeps one auth identity.
 
 Group administration uses the HUI-005 schema and RLS. Creation and self-leave call `create_group` and `leave_group` RPCs so ownership and membership stay consistent without widening update policies. Admins add existing accounts by user ID (shown on the profile page); email invitations are not implemented yet.
 

@@ -27,6 +27,7 @@ Record only decisions future work should not reverse without explicit discussion
 ## Engineering
 
 - **Authorisation:** never rely on client-side checks alone; Supabase RLS must enforce data access.
+- **Hui user identity:** one person maps to one Supabase Auth user id (`auth.users.id`). Profiles and memberships use that uuid. Future social login must not create parallel Hui accounts; use Supabase-supported identity linking rather than merging on email alone (HUI-011 groundwork only; linking not built yet).
 - **Layering:** keep domain rules out of UI components where practical (UI → application → domain → persistence).
 
 ## Data and privacy
