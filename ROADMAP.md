@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** HUI-014 — Meta/Facebook OAuth (in progress)  
-**Overall progress:** HUI-014 enables Facebook in Hui provider config; Supabase/Meta dashboard enablement required for live sign-in
+**Current ticket:** none (HUI-014 merged; end-to-end Facebook sign-in retest still recommended)  
+**Overall progress:** HUI-014 Facebook OAuth enabled in Hui and on production sign-in; OAuth redirect to Meta verified
 
 ## Status at a glance
 
@@ -35,7 +35,7 @@
 - [x] HUI-012B — Account deletion and re-registration (two-step UI; Auth delete then RPC; verified `deleteUser`; manual preview passed: Auth user removed, old credentials fail, same email re-registers as a new account)
 - [x] HUI-013 — Microsoft/Azure OAuth (Hui-side; Supabase `azure` provider must be enabled for live sign-in)
 - [x] HUI-013A — Azure `email` scope on `signInWithOAuth` (Supabase rejects the callback without it; live sign-in retest still required)
-- [~] HUI-014 — Facebook/Meta OAuth (Hui-side enabled; Supabase Facebook provider + Meta redirect URI required for live sign-in)
+- [x] HUI-014 — Facebook/Meta OAuth (Hui-side; production OAuth start verified; end-to-end Facebook login retest still recommended)
 
 ## Phase 1 — Identity, groups and membership
 
@@ -89,7 +89,7 @@
 - [ ] Production deployment and monitoring
 - [x] Google OAuth integration — Hui-side (HUI-012); Google provider enabled in Supabase; production sign-in test still required
 - [x] Microsoft / Azure OAuth integration (HUI-013; HUI-013A adds the required Azure `email` scope — production sign-in retest still required)
-- [~] Meta / Facebook OAuth integration (HUI-014 — Hui-side; enable Facebook in Supabase + Meta redirect URI for live sign-in)
+- [x] Meta / Facebook OAuth integration (HUI-014 — Hui-side; production OAuth redirect verified; full login retest still recommended)
 - [ ] Apple Sign in with Apple integration (requires Apple Developer Program membership)
 
 ## Known blockers
