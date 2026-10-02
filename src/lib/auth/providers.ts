@@ -1,9 +1,9 @@
 /** Supabase OAuth provider ids Hui is planned to support. */
 export const AUTH_OAUTH_PROVIDER_IDS = [
   "google",
-  "apple",
-  "facebook",
   "azure",
+  "facebook",
+  "apple",
 ] as const;
 
 export type AuthOAuthProviderId = (typeof AUTH_OAUTH_PROVIDER_IDS)[number];
@@ -57,6 +57,7 @@ const OAUTH_PROVIDER_META: Record<
 const ENABLED_OAUTH_PROVIDER_IDS: ReadonlySet<AuthOAuthProviderId> = new Set([
   "google",
   "azure",
+  "facebook",
 ]);
 
 /**

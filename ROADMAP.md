@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** none (HUI-013A code fix validated; live Microsoft sign-in retest still required)  
-**Overall progress:** HUI-013A Azure OAuth now requests the `email` scope Supabase Auth requires
+**Current ticket:** HUI-014 — Meta/Facebook OAuth (in progress)  
+**Overall progress:** HUI-014 enables Facebook in Hui provider config; Supabase/Meta dashboard enablement required for live sign-in
 
 ## Status at a glance
 
@@ -35,6 +35,7 @@
 - [x] HUI-012B — Account deletion and re-registration (two-step UI; Auth delete then RPC; verified `deleteUser`; manual preview passed: Auth user removed, old credentials fail, same email re-registers as a new account)
 - [x] HUI-013 — Microsoft/Azure OAuth (Hui-side; Supabase `azure` provider must be enabled for live sign-in)
 - [x] HUI-013A — Azure `email` scope on `signInWithOAuth` (Supabase rejects the callback without it; live sign-in retest still required)
+- [~] HUI-014 — Facebook/Meta OAuth (Hui-side enabled; Supabase Facebook provider + Meta redirect URI required for live sign-in)
 
 ## Phase 1 — Identity, groups and membership
 
@@ -88,7 +89,7 @@
 - [ ] Production deployment and monitoring
 - [x] Google OAuth integration — Hui-side (HUI-012); Google provider enabled in Supabase; production sign-in test still required
 - [x] Microsoft / Azure OAuth integration (HUI-013; HUI-013A adds the required Azure `email` scope — production sign-in retest still required)
-- [ ] Meta / Facebook OAuth integration
+- [~] Meta / Facebook OAuth integration (HUI-014 — Hui-side; enable Facebook in Supabase + Meta redirect URI for live sign-in)
 - [ ] Apple Sign in with Apple integration (requires Apple Developer Program membership)
 
 ## Known blockers
@@ -101,4 +102,4 @@
 - shadcn/ui adoption timing (add when UI work begins)
 - Push notification channel for PWA reminders
 - Email-based group invitations (HUI-007 adds members by existing user ID only)
-- **Social authentication:** Google (HUI-012) and Microsoft/Azure (HUI-013) are implemented on the Hui side and enabled in `providers.ts`. Each provider must also be enabled and configured in Supabase Auth (client secrets stay in the dashboard). Meta/Facebook and Apple remain backlog. Apple Sign in with Apple requires the paid Apple Developer Program — defer Apple activation until closer to launch. One Hui user identity via Supabase Auth; link identities with Supabase rules, not email-only matching (not implemented yet).
+- **Social authentication:** Google (HUI-012), Microsoft/Azure (HUI-013), and Facebook (HUI-014) are implemented on the Hui side when enabled in `providers.ts`. Each provider must also be enabled and configured in Supabase Auth (client secrets stay in the dashboard). Apple remains backlog. Apple Sign in with Apple requires the paid Apple Developer Program — defer Apple activation until closer to launch. One Hui user identity via Supabase Auth; link identities with Supabase rules, not email-only matching (not implemented yet).

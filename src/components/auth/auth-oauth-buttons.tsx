@@ -3,7 +3,9 @@
 import { useActionState } from "react";
 
 import { oauthSignInAction, type AuthActionState } from "@/app/auth/actions";
-import type { AuthProviderDefinition } from "@/lib/auth/providers";
+import type { AuthOAuthProviderId, AuthProviderDefinition } from "@/lib/auth/providers";
+
+import { AuthOAuthProviderIcon } from "./auth-oauth-provider-icon";
 
 const initialState: AuthActionState = {};
 
@@ -31,8 +33,13 @@ export function AuthOAuthButtons({ providers, next }: AuthOAuthButtonsProps) {
               <button
                 type="submit"
                 disabled={pending}
-                className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800/50"
+                className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800/50"
               >
+                {provider.id !== "email" ? (
+                  <AuthOAuthProviderIcon
+                    providerId={provider.id as AuthOAuthProviderId}
+                  />
+                ) : null}
                 {provider.continueLabel}
               </button>
             </form>

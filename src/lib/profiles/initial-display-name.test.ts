@@ -53,4 +53,29 @@ describe("initialDisplayNameFromAuthMetadata", () => {
       ),
     ).toBe("Isaac Tull");
   });
+
+  it("resolves Facebook metadata from Supabase (name and full_name from Graph)", () => {
+    expect(
+      initialDisplayNameFromAuthMetadata(
+        {
+          full_name: "Jane Doe",
+          name: "Jane Doe",
+          avatar_url: "https://platform-lookaside.fbsbx.com/platform/profilepic/example.jpg",
+          email: "jane@example.com",
+          email_verified: true,
+          provider_id: "123456789",
+        },
+        "jane@example.com",
+      ),
+    ).toBe("Jane Doe");
+  });
+
+  it("uses Facebook name when full_name is absent in metadata", () => {
+    expect(
+      initialDisplayNameFromAuthMetadata(
+        { name: "Jane Doe", provider_id: "123456789" },
+        "jane@example.com",
+      ),
+    ).toBe("Jane Doe");
+  });
 });

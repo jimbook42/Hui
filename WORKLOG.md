@@ -126,3 +126,11 @@ Lightweight record of completed tickets. One entry per ticket.
 - Checked: `npm run validate` (120 tests), `npm run test:e2e` (7 passed, 1 live-auth skipped).
 - Pending: production Microsoft sign-in retest after deploy. If Azure still omits email, add the Graph `email` delegated permission and the `email` optional claim on the Entra app (documented by Supabase; not a Hui code change).
 - Commit: 62e95ca
+
+## 2026-10-02 — HUI-014 (in progress)
+
+- Changed: Enabled Facebook OAuth in `providers.ts` (`facebook` Supabase provider) alongside Google and Microsoft; reordered provider registry to Google → Microsoft → Facebook in UI. Reuses `oauthSignInAction`, `signInWithOAuthProvider`, `/auth/callback`, and HUI-012A display-name precedence. Added provider brand icons on OAuth buttons (`auth-oauth-provider-icon.tsx`). Updated unit/e2e tests and architecture doc.
+- Architecture: Facebook → Supabase Auth (`signInWithOAuth` provider `facebook`) → Hui `/auth/callback` → session + `ensureUserProfile` (existing names preserved; no email-based merging).
+- Meta/Supabase: Enable Facebook in Supabase Dashboard → Authentication → Providers; set Meta App ID and App Secret. In Meta Developer → Facebook Login → Valid OAuth Redirect URIs, add the **exact** callback URL shown in that Supabase provider panel (`https://<project-ref>.supabase.co/auth/v1/callback`). Ensure use case includes `public_profile` and `email`. For Development mode, sign in with app roles/test users only. Live Facebook sign-in not verified in this session until dashboard steps are done.
+- Checked: `npm run validate` (127 tests), `npm run test:e2e` (7 passed, 1 live-auth skipped).
+- Pending: Supabase/Meta dashboard enablement, live Facebook sign-in test, PR merge/deploy.
