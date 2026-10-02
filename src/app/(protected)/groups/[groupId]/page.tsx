@@ -5,6 +5,7 @@ import { updateGroupNameAction } from "@/app/groups/actions";
 import { AppShell } from "@/components/app/app-shell";
 import { GroupForm, GroupNameField } from "@/components/groups/group-form";
 import { GroupSettingsForm } from "@/components/groups/group-settings-form";
+import { GroupMembersHouseholds } from "@/components/groups/group-members-households";
 import {
   AddMemberForm,
   LeaveGroupForm,
@@ -18,6 +19,7 @@ import {
   canTransferOwnership,
 } from "@/domain/groups/permissions";
 import { getGroupDetail } from "@/lib/groups/queries";
+import { getGroupHouseholdMemberView } from "@/lib/households/queries";
 import { createClient } from "@/lib/supabase/server";
 
 function roleLabel(role: string): string {
@@ -47,6 +49,11 @@ export default async function GroupDetailPage({ params }: PageProps) {
   const viewerCanRename = canRenameGroup(detail.viewerRole);
   const viewerCanTransfer = canTransferOwnership(detail.viewerRole);
   const viewerCanLeave = detail.viewerRole !== "owner";
+  const householdView = await getGroupHouseholdMemberView(
+    supabase,
+    groupId,
+    detail.members,
+  );
 
   return (
     <AppShell title={detail.name}>
@@ -65,31 +72,44 @@ export default async function GroupDetailPage({ params }: PageProps) {
 
       <section className="mt-10">
         <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Members</h2>
-        <ul className="mt-4 divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-          {detail.members.map((member) => (
-            <li
-              key={member.userId}
-              className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
-            >
-              <div>
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                  {member.displayName}
-                  {member.userId === user!.id ? " (you)" : ""}
-                </p>
-                <p className="text-xs text-zinc-500">{roleLabel(member.role)}</p>
-              </div>
-              {viewerCanManage &&
-              member.userId !== detail.ownerId &&
-              member.userId !== user!.id ? (
-                <RemoveMemberButton
-                  groupId={detail.id}
-                  userId={member.userId}
-                  displayName={member.displayName}
-                />
-              ) : null}
-            </li>
-          ))}
-        </ul>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          Group members are listed by household where set. Manage your household from{" "}
+          <Link
+            href="/profile"
+            className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
+          >
+            account settings
+          </Link>
+          .
+        </p>
+        <div className="mt-4">
+          <GroupMembersHouseholds
+            view={householdView}
+            members={detail.members}
+            currentUserId={user!.id}
+          />
+        </div>
+        {viewerCanManage ? (
+          <ul className="mt-6 space-y-2 text-sm">
+            {detail.members
+              .filter(
+                (member) =>
+                  member.userId !== detail.ownerId && member.userId !== user!.id,
+              )
+              .map((member) => (
+                <li key={member.userId} className="flex flex-wrap items-center gap-2">
+                  <span className="text-zinc-700 dark:text-zinc-300">
+                    Remove {member.displayName} from group:
+                  </span>
+                  <RemoveMemberButton
+                    groupId={detail.id}
+                    userId={member.userId}
+                    displayName={member.displayName}
+                  />
+                </li>
+              ))}
+          </ul>
+        ) : null}
       </section>
 
       {viewerCanManage ? (

@@ -79,7 +79,8 @@ Access is membership, not a client check:
 
 - A person can read and update their own profile, and can read display names of people with whom they share an active membership.
 - Active members can read that group's gatherings, settings, and group-visible responses. Non-members cannot.
-- Owner and admins manage settings, households, categories, and membership. Ordinary members cannot. The owner calls `transfer_group_ownership` to hand the group on.
+- Owner and admins manage settings, categories, and group membership. Ordinary members cannot change those. The owner calls `transfer_group_ownership` to hand the group on.
+- Households belong to one group. Active members can read household names and membership for grouping in that group. Mutations run through `create_household`, `update_household_name`, `add_household_member`, and `remove_household_member` (`SECURITY DEFINER`, `auth.uid()` checks, `search_path = public`). Direct inserts/updates/deletes on `households` and `household_members` are not granted to `authenticated`.
 - Dietary rows are private until the owner shares them with a group. A share stops applying once either person is no longer active there.
 - Private availability responses are not readable by other members. Consensus counts for those answers come from `event_consensus_summary` and `finalise_event`, which do not return individual responses. Do not widen the `event_responses` select policy so the client can compute consensus.
 - Membership removal flips `group_memberships.status` to `removed`. It does not cascade into events, responses, hosts, contributions, or memories.

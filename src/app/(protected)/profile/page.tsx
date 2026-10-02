@@ -1,9 +1,11 @@
 import { updateProfileAction } from "@/app/auth/actions";
 import { AppShell } from "@/components/app/app-shell";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
+import { HouseholdSettingsSection } from "@/components/households/household-section";
 import { AccountActionsSection } from "@/components/profile/account-actions-section";
 import { SettingsSection } from "@/components/profile/settings-section";
 import { authMethodLabelsForUser } from "@/lib/auth/auth-methods";
+import { listUserHouseholdsByGroup } from "@/lib/households/queries";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProfilePage() {
@@ -19,6 +21,9 @@ export default async function ProfilePage() {
     .maybeSingle();
 
   const authMethods = user ? authMethodLabelsForUser(user) : [];
+  const householdContexts = user
+    ? await listUserHouseholdsByGroup(supabase, user.id)
+    : [];
 
   return (
     <AppShell title="Account settings">
@@ -89,6 +94,16 @@ export default async function ProfilePage() {
               </p>
             </div>
           </dl>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Household"
+          description="Manage how you are grouped with others in each of your groups. Households are separate from group membership."
+        >
+          <HouseholdSettingsSection
+            contexts={householdContexts}
+            currentUserId={user!.id}
+          />
         </SettingsSection>
 
         <SettingsSection
