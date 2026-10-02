@@ -7,6 +7,7 @@ import {
 } from "@/app/contributions/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import { buildContributionBoard } from "@/domain/contributions/display";
+import { sharedDietaryReminder } from "@/domain/dietary/display";
 import type { ContributionCategoryRow, EventContributionRow } from "@/lib/contributions/types";
 
 type EventContributionsSectionProps = {
@@ -19,6 +20,7 @@ type EventContributionsSectionProps = {
   contributions: EventContributionRow[];
   viewerUserId: string;
   viewerHistoryCount: number | null;
+  sharedDietaryCount: number;
 };
 
 function contributionLine(contribution: EventContributionRow): string {
@@ -41,9 +43,11 @@ export function EventContributionsSection({
   contributions,
   viewerUserId,
   viewerHistoryCount,
+  sharedDietaryCount,
 }: EventContributionsSectionProps) {
   const board = buildContributionBoard(categories, contributions, viewerUserId);
   const hasActiveCategories = categories.some((c) => c.archivedAt === null);
+  const dietaryReminder = sharedDietaryReminder(sharedDietaryCount);
 
   if (eventStatus === "cancelled") {
     return (
@@ -83,6 +87,10 @@ export function EventContributionsSection({
           You&apos;ve contributed {viewerHistoryCount} time{viewerHistoryCount === 1 ? "" : "s"} across
           recent confirmed events in this group.
         </p>
+      ) : null}
+
+      {dietaryReminder ? (
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{dietaryReminder}</p>
       ) : null}
 
       {hasActiveCategories ? (

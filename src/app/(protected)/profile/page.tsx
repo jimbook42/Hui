@@ -1,7 +1,9 @@
 import { updateProfileAction } from "@/app/auth/actions";
 import { AppShell } from "@/components/app/app-shell";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
+import { DietarySettingsSection } from "@/components/dietary/dietary-settings-section";
 import { HouseholdSettingsSection } from "@/components/households/household-section";
+import { listUserDietaryEntries, listUserGroupsForDietary } from "@/lib/dietary/queries";
 import { AccountActionsSection } from "@/components/profile/account-actions-section";
 import { SettingsSection } from "@/components/profile/settings-section";
 import { authMethodLabelsForUser } from "@/lib/auth/auth-methods";
@@ -21,9 +23,13 @@ export default async function ProfilePage() {
     .maybeSingle();
 
   const authMethods = user ? authMethodLabelsForUser(user) : [];
-  const householdContexts = user
-    ? await listUserHouseholdsByGroup(supabase, user.id)
-    : [];
+  const [householdContexts, dietaryEntries, dietaryGroups] = user
+    ? await Promise.all([
+        listUserHouseholdsByGroup(supabase, user.id),
+        listUserDietaryEntries(supabase),
+        listUserGroupsForDietary(supabase, user.id),
+      ])
+    : [[], [], []];
 
   return (
     <AppShell title="Account settings">
@@ -94,6 +100,13 @@ export default async function ProfilePage() {
               </p>
             </div>
           </dl>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Dietary information"
+          description="Record dietary information once. It stays private until you choose to share it with a group for event planning."
+        >
+          <DietarySettingsSection entries={dietaryEntries} groups={dietaryGroups} />
         </SettingsSection>
 
         <SettingsSection
