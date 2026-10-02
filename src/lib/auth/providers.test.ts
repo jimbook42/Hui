@@ -129,8 +129,26 @@ describe("signInWithOAuthProvider", () => {
       options: {
         redirectTo:
           "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
+        scopes: "email",
       },
     });
+  });
+
+  it("does not add scopes to Google OAuth", async () => {
+    const signInWithOAuth = vi.fn().mockResolvedValue({
+      data: { url: "https://accounts.google.com/o/oauth2/v2/auth" },
+      error: null,
+    });
+    const supabase = { auth: { signInWithOAuth } } as never;
+
+    await signInWithOAuthProvider(
+      supabase,
+      "google",
+      "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
+    );
+
+    const options = signInWithOAuth.mock.calls[0]?.[0]?.options;
+    expect(options).not.toHaveProperty("scopes");
   });
 
   it("does not call Supabase for disabled providers", async () => {

@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** none (HUI-013 complete pending Supabase Azure enable + production sign-in test)  
-**Overall progress:** HUI-013 Microsoft OAuth enabled on Hui side; manual Supabase/Azure dashboard enable required for live sign-in
+**Current ticket:** none (HUI-013A code fix validated; live Microsoft sign-in retest still required)  
+**Overall progress:** HUI-013A Azure OAuth now requests the `email` scope Supabase Auth requires
 
 ## Status at a glance
 
@@ -34,6 +34,7 @@
 - [x] HUI-012A — OAuth initial profile display name from provider metadata (trigger + app precedence; existing names preserved)
 - [x] HUI-012B — Account deletion and re-registration (two-step UI; Auth delete then RPC; verified `deleteUser`; manual preview passed: Auth user removed, old credentials fail, same email re-registers as a new account)
 - [x] HUI-013 — Microsoft/Azure OAuth (Hui-side; Supabase `azure` provider must be enabled for live sign-in)
+- [x] HUI-013A — Azure `email` scope on `signInWithOAuth` (Supabase rejects the callback without it; live sign-in retest still required)
 
 ## Phase 1 — Identity, groups and membership
 
@@ -86,7 +87,7 @@
 - [ ] Security review, RLS audit, performance
 - [ ] Production deployment and monitoring
 - [x] Google OAuth integration — Hui-side (HUI-012); Google provider enabled in Supabase; production sign-in test still required
-- [x] Microsoft / Azure OAuth integration (HUI-013 — Hui-side; Supabase Azure provider enable + production sign-in test still required)
+- [x] Microsoft / Azure OAuth integration (HUI-013; HUI-013A adds the required Azure `email` scope — production sign-in retest still required)
 - [ ] Meta / Facebook OAuth integration
 - [ ] Apple Sign in with Apple integration (requires Apple Developer Program membership)
 

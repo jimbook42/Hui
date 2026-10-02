@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   assertOAuthProviderEnabled,
+  getAuthProvider,
   type AuthOAuthProviderId,
 } from "./providers";
 
@@ -41,10 +42,12 @@ export async function signInWithOAuthProvider(
   redirectTo: string,
 ) {
   const { provider: validatedProvider } = validateOAuthSignInRequest(provider);
+  const scopes = getAuthProvider(validatedProvider)?.oauthScopes;
   return supabase.auth.signInWithOAuth({
     provider: validatedProvider,
     options: {
       redirectTo,
+      ...(scopes ? { scopes } : {}),
     },
   });
 }
