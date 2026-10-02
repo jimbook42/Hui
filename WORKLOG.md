@@ -150,3 +150,10 @@ Lightweight record of completed tickets. One entry per ticket.
 - Checked: `npm run validate` (149 unit tests), `npm run test:e2e` (8 passed, 2 live-auth skipped); PR #14 and main CI passed.
 - Commit: `62ef343` — PR: https://github.com/jimbook42/Hui/pull/14 — merge `9da6081` on `main`; production https://hui-seven-gamma.vercel.app (deployment `dpl_9iNYLvdkVTTJ5gNdoGe92eLTfHaK`, READY).
 - Manual: Run `supabase db push` (or apply the new migration) on the linked Supabase project before household RPCs work in production. Optional: run live household E2E with `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD`.
+
+## 2026-10-02 — HUI-017
+
+- Changed: Event detail scheduling UX (`EventScheduling`): per-candidate aggregate **Attendance** blocks from `event_consensus_summary`, rule/requirement copy, status badges, finalisation locking message, withdrawn-candidate list, confirmed/cancelled banners; household-grouped **Group members** roster (`EventParticipantsSummary`). Presentation helpers in `consensus-display.ts` (Vitest). No schema or consensus rule changes; `finalise_event` unchanged.
+- Checked: `npm run validate` (159 tests), `npm run test:e2e` (8 passed, 3 live-auth skipped); PR #15 CI and Vercel preview passed.
+- Commit: `6ce0338` — PR: https://github.com/jimbook42/Hui/pull/15 — merge `3655b90` on `main`.
+- Manual: Optional live event E2E with `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD`; multi-user consensus/finalisation smoke on preview/production.
