@@ -87,3 +87,10 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: `delete_my_account_data` migration (personal data purge, sole-member group delete, profile tombstone), profile “Delete my account” UI, server `deleteAccountAction` + `SUPABASE_SECRET_KEY` Auth admin delete, PGlite deletion/re-registration tests, docs.
 - Checked: `npm run validate`, `npm run test:e2e`.
 - Commit: ecf0f92
+
+## 2026-10-02 — HUI-012B (follow-up)
+
+- Changed: two-step account deletion UX (irreversible warning → typed `DELETE` confirmation); `ROADMAP.md` status reflects preview env gap and pending manual validation.
+- Preview config: `vercel env ls` shows `SUPABASE_SECRET_KEY` absent from Preview/Production/Development on `jimbook/hui` (only `NEXT_PUBLIC_SUPABASE_*` set).
+- Checked: `npm run validate`, `npm run test:e2e`.
+- Pending: add `SUPABASE_SECRET_KEY` to Vercel Preview, redeploy, full destructive preview test before merge (PR #9).

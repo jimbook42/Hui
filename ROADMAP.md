@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** HUI-012B complete; next ticket not started  
-**Overall progress:** HUI-012B complete
+**Current ticket:** HUI-012B — account deletion (implemented; preview env + manual validation pending)  
+**Overall progress:** HUI-012B code complete; merge blocked on preview deletion test
 
 ## Status at a glance
 
@@ -32,7 +32,7 @@
 - [x] HUI-011 — Social auth provider config and auth UI groundwork (email/password only in UI; OAuth backlog)
 - [x] HUI-012 — Google OAuth integration (Hui-side; Google provider enabled in Supabase; production sign-in test still required)
 - [x] HUI-012A — OAuth initial profile display name from provider metadata (trigger + app precedence; existing names preserved)
-- [x] HUI-012B — Account deletion and re-registration (profile settings UI, `delete_my_account_data`, server Auth admin delete, tests)
+- [~] HUI-012B — Account deletion and re-registration (two-step profile UI, `delete_my_account_data`, server `SUPABASE_SECRET_KEY` Auth admin delete, unit/PGlite tests; **preview:** set `SUPABASE_SECRET_KEY` on Vercel Preview, then run full destructive flow before merge)
 
 ## Phase 1 — Identity, groups and membership
 
@@ -91,7 +91,7 @@
 
 ## Known blockers
 
-- [!] None
+- [!] **HUI-012B preview:** Vercel project `jimbook/hui` has no `SUPABASE_SECRET_KEY` for Preview (or Production). Account deletion returns “not configured” until the Supabase **secret** (service role) key is added server-only in [Vercel env settings](https://vercel.com/jimbook/hui/settings/environment-variables) for Preview (and Production when ready). Value from Supabase → Project Settings → API → `service_role` secret.
 
 ## Deferred decisions
 
