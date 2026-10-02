@@ -75,3 +75,38 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: Google OAuth via Supabase `signInWithOAuth`, `/auth/callback` session exchange, `ensureUserProfile` on first OAuth login; Google enabled in provider registry (Apple/Facebook/Microsoft remain disabled); auth UI “Continue with Google”; tests and architecture doc update. Google client credentials stay in Supabase dashboard only. Follow-up: `redirect()` is outside the OAuth action catch so Next.js can send the browser to Google, and provider `access_denied` is cancellation rather than a generic failure.
 - Checked: `npm run validate`, `npm run test:e2e`.
 - Commit: 360a207; redirect fix 6008e72; redirect fix 6008e72
+
+## 2026-10-02 — HUI-012A
+
+- Changed: `initial_profile_display_name` SQL helper and updated `handle_new_user` trigger (`full_name` → `name` → `display_name` → email local-part); shared `initialDisplayNameFromAuthMetadata` for OAuth callback, sign-in, and protected layout; tests and architecture note that existing display names are never overwritten on re-auth.
+- Checked: `npm run validate`, `npm run test:e2e`.
+- Commit: d310d80
+
+## 2026-10-02 — HUI-012B
+
+- Changed: `delete_my_account_data` migration (personal data purge, sole-member group delete, profile tombstone), profile “Delete my account” UI, server `deleteAccountAction` + `SUPABASE_SECRET_KEY` Auth admin delete, PGlite deletion/re-registration tests, docs.
+- Checked: `npm run validate`, `npm run test:e2e`.
+- Commit: ecf0f92
+
+## 2026-10-02 — HUI-012B (follow-up)
+
+- Changed: two-step account deletion UX (irreversible warning → typed `DELETE` confirmation); `ROADMAP.md` status reflects preview env gap and pending manual validation.
+- Preview config: `vercel env ls` shows `SUPABASE_SECRET_KEY` absent from Preview/Production/Development on `jimbook/hui` (only `NEXT_PUBLIC_SUPABASE_*` set).
+- Checked: `npm run validate`, `npm run test:e2e`.
+- Pending: add `SUPABASE_SECRET_KEY` to Vercel Preview, redeploy, full destructive preview test before merge (PR #9).
+- Commit: 153d431
+
+## 2026-10-02 — HUI-012B (preview deletion bug)
+
+- Root cause: (1) RPC ran before Auth delete, so a failed Auth step left a tombstoned profile while `auth.users` still existed and blocked retry; (2) `profiles` RLS hid the user’s own tombstone row, so protected layout never signed them out; (3) middleware redirected signed-in users away from `/sign-in?deleted=1` back to the app, so the success banner appeared while the session still looked active; (4) `deleteUser` success was not verified with a follow-up admin lookup.
+- Fixed: Auth delete + verification first, then RPC; idempotent RPC; RLS allows reading own profile for guards; middleware allows `deleted=1` sign-in; sign-in page clears stale session on success; tombstone-only layout redirect uses `deletion_incomplete=1` not success copy; integration/unit tests for Auth deletion helper.
+- Pending: push migration to hosted Supabase, redeploy preview, manual destructive retest.
+- Commit: 37d6d9d
+
+## 2026-10-02 — HUI-012B (complete)
+
+- Status: complete. Manual preview validation passed. No deletion or session bug remains.
+- Manual preview: account deletion succeeds; the Auth user is deleted; old credentials fail; the same email registers again as a fresh account. Supabase email confirmation stayed disabled for the current testing configuration (out of scope; unchanged).
+- Policy: typed `DELETE` confirmation; Auth delete and verification first, then `delete_my_account_data`; shared history kept on an anonymised profile; re-registration is a new auth id with no email re-link.
+- Checked: `npm run validate`, `npm run test:e2e`.
+- Commit: a0ab037

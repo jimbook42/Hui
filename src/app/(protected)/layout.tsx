@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { ensureUserProfile } from "@/lib/profiles/ensure-profile";
+import { initialDisplayNameFromAuthMetadata } from "@/lib/profiles/initial-display-name";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProtectedLayout({
@@ -17,11 +18,22 @@ export default async function ProtectedLayout({
     redirect("/sign-in");
   }
 
-  const displayName =
-    (user.user_metadata?.display_name as string | undefined) ??
-    user.email?.split("@")[0] ??
-    "Member";
-  const ensured = await ensureUserProfile(supabase, user.id, displayName);
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("account_deleted_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileRow?.account_deleted_at) {
+    await supabase.auth.signOut({ scope: "global" });
+    redirect("/sign-in?deletion_incomplete=1");
+  }
+
+  const ensured = await ensureUserProfile(
+    supabase,
+    user.id,
+    initialDisplayNameFromAuthMetadata(user.user_metadata, user.email),
+  );
   if (!ensured.ok) {
     throw new Error(ensured.error);
   }

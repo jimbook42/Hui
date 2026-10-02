@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** HUI-012 complete; next ticket not started  
-**Overall progress:** HUI-012 complete
+**Current ticket:** none (HUI-012B complete)  
+**Overall progress:** HUI-012B account deletion and re-registration complete; manual preview validation passed
 
 ## Status at a glance
 
@@ -31,6 +31,8 @@
 - [x] HUI-006 — Authentication and user profiles
 - [x] HUI-011 — Social auth provider config and auth UI groundwork (email/password only in UI; OAuth backlog)
 - [x] HUI-012 — Google OAuth integration (Hui-side; Google provider enabled in Supabase; production sign-in test still required)
+- [x] HUI-012A — OAuth initial profile display name from provider metadata (trigger + app precedence; existing names preserved)
+- [x] HUI-012B — Account deletion and re-registration (two-step UI; Auth delete then RPC; verified `deleteUser`; manual preview passed: Auth user removed, old credentials fail, same email re-registers as a new account)
 
 ## Phase 1 — Identity, groups and membership
 
@@ -89,7 +91,7 @@
 
 ## Known blockers
 
-- [!] None
+- None.
 
 ## Deferred decisions
 

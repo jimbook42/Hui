@@ -52,6 +52,7 @@ export async function updateSession(request: NextRequest) {
     pathname: request.nextUrl.pathname,
     hasUser,
     nextParam: request.nextUrl.searchParams.get("next"),
+    accountDeletedParam: request.nextUrl.searchParams.get("deleted"),
   });
 
   if (guard.action === "redirect") {

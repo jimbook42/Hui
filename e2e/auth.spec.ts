@@ -18,6 +18,11 @@ test("unauthenticated groups access redirects to sign-in", async ({ page }) => {
   await expect(page).toHaveURL(/\/sign-in/);
 });
 
+test("sign-in shows confirmation after account deletion", async ({ page }) => {
+  await page.goto("/sign-in?deleted=1");
+  await expect(page.getByText(/Your account was deleted/)).toBeVisible();
+});
+
 test("sign-in and sign-up pages render", async ({ page }) => {
   await page.goto("/sign-in");
   await expect(page.getByLabel("Email")).toBeVisible();

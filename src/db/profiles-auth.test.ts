@@ -55,14 +55,30 @@ async function asUser(database: PGlite, userId: string | null) {
 }
 
 async function createUser(database: PGlite, email: string, displayName: string) {
+  return createAuthUser(database, email, { display_name: displayName });
+}
+
+async function createAuthUser(
+  database: PGlite,
+  email: string,
+  metadata: Record<string, string>,
+) {
   await asUser(database, null);
   const created = await database.query<{ id: string }>(
     `insert into auth.users (email, raw_user_meta_data)
-     values ($1, jsonb_build_object('display_name', $2::text))
+     values ($1, $2::jsonb)
      returning id`,
-    [email, displayName],
+    [email, JSON.stringify(metadata)],
   );
   return created.rows[0].id;
+}
+
+async function profileDisplayName(database: PGlite, userId: string) {
+  const row = await database.query<{ display_name: string }>(
+    `select display_name from public.profiles where id = $1`,
+    [userId],
+  );
+  return row.rows[0]?.display_name;
 }
 
 describe("profiles auth and RLS", () => {
@@ -148,5 +164,48 @@ describe("profiles auth and RLS", () => {
         [owner],
       ),
     ).rejects.toThrow();
+  });
+
+  it("creates an initial profile from OAuth full_name metadata", async () => {
+    const userId = await createAuthUser(db, "isaac@gmail.com", {
+      full_name: "Isaac Tull",
+      name: "Isaac",
+    });
+    await expect(profileDisplayName(db, userId)).resolves.toBe("Isaac Tull");
+  });
+
+  it("falls back to name when full_name is absent", async () => {
+    const userId = await createAuthUser(db, "solo@hui.test", { name: "Solo Name" });
+    await expect(profileDisplayName(db, userId)).resolves.toBe("Solo Name");
+  });
+
+  it("falls back to the email local-part when provider names are absent", async () => {
+    const userId = await createAuthUser(db, "isaactull42@gmail.com", {});
+    await expect(profileDisplayName(db, userId)).resolves.toBe("isaactull42");
+  });
+
+  it("keeps a user-edited display name when auth email metadata changes", async () => {
+    const userId = await createAuthUser(db, "old@hui.test", { full_name: "Isaac Tull" });
+    await asUser(db, userId);
+    await db.query(`update public.profiles set display_name = 'Isaac' where id = $1`, [
+      userId,
+    ]);
+    await asUser(db, null);
+    await db.query(`update auth.users set email = 'new@hui.test' where id = $1`, [userId]);
+    await expect(profileDisplayName(db, userId)).resolves.toBe("Isaac");
+  });
+
+  it("does not rewrite an existing profile when auth user metadata would differ", async () => {
+    const userId = await createAuthUser(db, "oauth@hui.test", { full_name: "Isaac Tull" });
+    await asUser(db, userId);
+    await db.query(`update public.profiles set display_name = 'Isaac' where id = $1`, [
+      userId,
+    ]);
+    await asUser(db, null);
+    await db.query(
+      `update auth.users set raw_user_meta_data = $2::jsonb where id = $1`,
+      [userId, JSON.stringify({ full_name: "Isaac Tull", name: "Isaac Tull" })],
+    );
+    await expect(profileDisplayName(db, userId)).resolves.toBe("Isaac");
   });
 });
