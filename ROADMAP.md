@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** none (HUI-015 complete)  
-**Overall progress:** HUI-015 account settings foundation shipped — display name editing, account email, sign-in methods readout, sign-out, and deletion entry point
+**Current ticket:** none (HUI-016 complete)  
+**Overall progress:** HUI-016 household and member structure shipped — per-group households, member-managed RPCs, profile household settings, group member grouping
 
 ## Status at a glance
 
@@ -37,8 +37,11 @@
 - [x] HUI-013A — Azure `email` scope on `signInWithOAuth` (Supabase rejects the callback without it; live sign-in retest still required)
 - [x] HUI-014 — Facebook/Meta OAuth (Hui-side; production OAuth start verified; end-to-end Facebook login retest still recommended)
 - [x] HUI-015 — Profile, identity and account settings foundation (display name, account email, sign-in methods readout, sign-out, deletion entry point)
+- [x] HUI-016 — Household and member structure (per-group households; member-managed membership; group member grouping)
 
 ## Phase 1 — Identity, groups and membership
+
+- [x] HUI-016 — Per-group households and member grouping in groups (see Phase 0)
 
 - [x] HUI-006 — Auth flows and profile/person model
 - [x] HUI-007 — Group creation, membership roles, administration (settings view/edit; add by user ID)
