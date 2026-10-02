@@ -86,4 +86,4 @@ Lightweight record of completed tickets. One entry per ticket.
 
 - Changed: `delete_my_account_data` migration (personal data purge, sole-member group delete, profile tombstone), profile “Delete my account” UI, server `deleteAccountAction` + `SUPABASE_SECRET_KEY` Auth admin delete, PGlite deletion/re-registration tests, docs.
 - Checked: `npm run validate`, `npm run test:e2e`.
-- Commit: (pending)
+- Commit: ecf0f92
