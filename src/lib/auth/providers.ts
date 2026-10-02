@@ -45,15 +45,14 @@ const OAUTH_PROVIDER_META: Record<
 /**
  * Authentication method enablement for Hui.
  *
- * OAuth providers remain disabled until developer credentials exist and
+ * OAuth providers stay disabled until the Hui-side integration is complete and
  * Supabase Auth provider settings are configured. Do not add placeholder secrets.
- * Enable a provider here only after its OAuth integration is implemented and tested.
  */
 export const AUTH_PROVIDERS: readonly AuthProviderDefinition[] = [
   ...AUTH_OAUTH_PROVIDER_IDS.map((id) => ({
     id,
     ...OAUTH_PROVIDER_META[id],
-    enabled: false,
+    enabled: id === "google",
   })),
   {
     id: "email",
@@ -84,4 +83,10 @@ export function assertOAuthProviderEnabled(id: AuthOAuthProviderId): void {
   if (!provider?.enabled) {
     throw new Error(`OAuth provider "${id}" is not enabled.`);
   }
+}
+
+export function isAuthOAuthProviderId(
+  value: string,
+): value is AuthOAuthProviderId {
+  return (AUTH_OAUTH_PROVIDER_IDS as readonly string[]).includes(value);
 }

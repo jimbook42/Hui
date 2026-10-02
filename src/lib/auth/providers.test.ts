@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { CANONICAL_USER_ID_FIELD } from "./identity";
-import { validateOAuthSignInRequest } from "./oauth";
+import {
+  buildOAuthCallbackUrl,
+  signInWithOAuthProvider,
+  validateOAuthSignInRequest,
+} from "./oauth";
 import {
   AUTH_OAUTH_PROVIDER_IDS,
   AUTH_PROVIDERS,
@@ -11,14 +15,16 @@ import {
 } from "./providers";
 
 describe("auth providers", () => {
-  it("keeps email/password enabled as the only active method", () => {
+  it("keeps email/password enabled alongside Google OAuth", () => {
     expect(isEmailAuthEnabled()).toBe(true);
-    expect(getEnabledOAuthProviders()).toEqual([]);
+    expect(getEnabledOAuthProviders().map((provider) => provider.id)).toEqual([
+      "google",
+    ]);
   });
 
-  it("defaults every OAuth provider to disabled", () => {
+  it("enables only Google among OAuth providers", () => {
     for (const id of AUTH_OAUTH_PROVIDER_IDS) {
-      expect(getAuthProvider(id)?.enabled).toBe(false);
+      expect(getAuthProvider(id)?.enabled).toBe(id === "google");
     }
   });
 
@@ -46,10 +52,58 @@ describe("auth providers", () => {
 });
 
 describe("validateOAuthSignInRequest", () => {
+  it("allows Google when enabled", () => {
+    expect(validateOAuthSignInRequest("google")).toEqual({ provider: "google" });
+  });
+
   it("rejects disabled OAuth providers", () => {
-    expect(() => validateOAuthSignInRequest("google")).toThrow(
-      /not enabled/,
+    expect(() => validateOAuthSignInRequest("apple")).toThrow(/not enabled/);
+    expect(() => validateOAuthSignInRequest("facebook")).toThrow(/not enabled/);
+    expect(() => validateOAuthSignInRequest("azure")).toThrow(/not enabled/);
+  });
+});
+
+describe("buildOAuthCallbackUrl", () => {
+  it("targets the Hui auth callback with a safe next path", () => {
+    expect(
+      buildOAuthCallbackUrl("https://hui-seven-gamma.vercel.app", "/dashboard"),
+    ).toBe(
+      "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
     );
+  });
+});
+
+describe("signInWithOAuthProvider", () => {
+  it("calls Supabase signInWithOAuth for enabled providers", async () => {
+    const signInWithOAuth = vi.fn().mockResolvedValue({
+      data: { url: "https://accounts.google.com/o/oauth2/v2/auth" },
+      error: null,
+    });
+    const supabase = { auth: { signInWithOAuth } } as never;
+
+    await signInWithOAuthProvider(
+      supabase,
+      "google",
+      "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
+    );
+
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo:
+          "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
+      },
+    });
+  });
+
+  it("does not call Supabase for disabled providers", async () => {
+    const signInWithOAuth = vi.fn();
+    const supabase = { auth: { signInWithOAuth } } as never;
+
+    await expect(
+      signInWithOAuthProvider(supabase, "apple", "https://example.com/auth/callback"),
+    ).rejects.toThrow(/not enabled/);
+    expect(signInWithOAuth).not.toHaveBeenCalled();
   });
 });
 

@@ -69,3 +69,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: Auth provider registry (`providers.ts`) with Google, Apple, Facebook, and Azure disabled by default; `AuthOAuthSection` on sign-in/sign-up (renders nothing until a provider is enabled); OAuth validation stub and canonical identity notes; architecture, decisions, and roadmap backlog for future social login.
 - Checked: `npm run validate`.
 - Commit: 1ab529e
+
+## 2026-10-02 — HUI-012
+
+- Changed: Google OAuth via Supabase `signInWithOAuth`, `/auth/callback` session exchange, `ensureUserProfile` on first OAuth login; Google enabled in provider registry (Apple/Facebook/Microsoft remain disabled); auth UI “Continue with Google”; tests and architecture doc update. Google client credentials stay in Supabase dashboard only.
+- Checked: `npm run validate`, `npm run test:e2e`.
+- Commit: (pending)
