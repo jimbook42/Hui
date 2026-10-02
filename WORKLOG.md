@@ -117,4 +117,4 @@ Lightweight record of completed tickets. One entry per ticket.
 - Architecture: Microsoft → Supabase Auth (`signInWithOAuth` provider `azure`) → Hui `/auth/callback` → session + `ensureUserProfile` (existing names preserved).
 - Manual: In Supabase Dashboard → Authentication → Providers → Azure, enable the provider and set Azure AD application (client) ID and secret; ensure redirect URLs include the Supabase callback URL and production site URL is in Supabase redirect allow list. Live Microsoft sign-in not verified in this session (requires dashboard enable + Microsoft account).
 - Checked: `npm run validate`, `npm run test:e2e` (7 passed, 1 live-auth skipped).
-- Commit: (pending)
+- Commit: a479946
