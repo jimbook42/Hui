@@ -2,8 +2,8 @@
 
 **Phase:** 4 — Scheduling and consensus  
 **Milestone:** Social auth  
-**Current ticket:** none (HUI-017 complete)  
-**Overall progress:** HUI-017 event attendance and consensus UX shipped — scheduling section, aggregate attendance, finalisation copy, withdrawn candidates, household-grouped roster on event pages
+**Current ticket:** HUI-018 — contribution coordination and fairness (in progress)  
+**Overall progress:** HUI-018 — event contribution claims, category admin, transparent group history; building on HUI-005 schema and HUI-017 event UX
 
 ## Status at a glance
 
@@ -15,7 +15,7 @@
 | 3 — Event domain and proposal flow | [~] Foundation (HUI-008) |
 | 4 — Scheduling and consensus | [x] HUI-009/HUI-010 backend and HUI-017 consensus UX |
 | 5 — Host rotation | [ ] Not started |
-| 6 — Contributions and dietary information | [ ] Not started |
+| 6 — Contributions and dietary information | [~] HUI-018 contribution coordination in progress |
 | 7 — Notifications and reminders | [ ] Not started |
 | 8 — Calendar export | [ ] Not started |
 | 9 — Memories/history | [ ] Not started |
@@ -73,7 +73,7 @@
 
 ## Phase 6 — Contributions and dietary information
 
-- [ ] Contribution coordination and fairness
+- [~] HUI-018 — Contribution coordination and fairness (categories admin, event claims via RPC, release/edit, transparent history counts; in progress)
 - [ ] Dietary preferences per person/event
 
 ## Phase 7 — Notifications and reminders
