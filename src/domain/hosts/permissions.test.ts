@@ -7,7 +7,7 @@ describe("host permissions", () => {
     expect(canAssignEventHost("member", "user-1", "user-1", "confirmed")).toBe(true);
     expect(canAssignEventHost("admin", "user-2", "user-1", "confirmed")).toBe(true);
     expect(canAssignEventHost("member", "user-2", "user-1", "confirmed")).toBe(false);
-    expect(canAssignEventHost("member", "user-1", "user-1", "proposing")).toBe(false);
+    expect(canAssignEventHost("member", "user-1", "user-1", "proposing")).toBe(true);
     expect(canAssignEventHost("member", "user-1", "user-1", "cancelled")).toBe(false);
   });
 
@@ -22,6 +22,6 @@ describe("host permissions", () => {
     };
     expect(canRespondToHostProposal("host-1", proposal, "confirmed")).toBe(true);
     expect(canRespondToHostProposal("other", proposal, "confirmed")).toBe(false);
-    expect(canRespondToHostProposal("host-1", proposal, "proposing")).toBe(false);
+    expect(canRespondToHostProposal("host-1", proposal, "proposing")).toBe(true);
   });
 });

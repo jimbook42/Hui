@@ -54,8 +54,15 @@ export async function createEventAction(
   const kind = parseEventKind(String(formData.get("event_kind") ?? ""));
   const location = normalizeEventLocation(String(formData.get("location") ?? ""));
   const notes = normalizeEventNotes(String(formData.get("notes") ?? ""));
-  const startsAt = parseOptionalDateTime(String(formData.get("starts_at") ?? ""));
-  const endsAt = parseOptionalDateTime(String(formData.get("ends_at") ?? ""));
+  const { supabase, user } = await requireUser();
+  const detail = await getGroupDetail(supabase, groupId, user.id);
+  if (!detail) {
+    return { error: "You do not have access to this group." };
+  }
+
+  const timeZone = detail.settings.timezone;
+  const startsAt = parseOptionalDateTime(String(formData.get("starts_at") ?? ""), timeZone);
+  const endsAt = parseOptionalDateTime(String(formData.get("ends_at") ?? ""), timeZone);
 
   if (!groupId || !title || !kind) {
     return { error: "Enter a valid event title and type." };
@@ -76,11 +83,6 @@ export async function createEventAction(
     return { error: "End time must be after start time." };
   }
 
-  const { supabase, user } = await requireUser();
-  const detail = await getGroupDetail(supabase, groupId, user.id);
-  if (!detail) {
-    return { error: "You do not have access to this group." };
-  }
   if (!canProposeEvents(detail.viewerRole, detail.settings)) {
     return { error: "You cannot propose events in this group." };
   }
@@ -144,6 +146,31 @@ export async function createEventAction(
     return { error: error.message };
   }
 
+  const initialHostRaw = String(formData.get("initial_host_user_id") ?? "").trim();
+  if (initialHostRaw.length > 0 && detail.settings.hostingEnabled) {
+    const { count: activeEventCount } = await supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId)
+      .neq("status", "cancelled");
+
+    if ((activeEventCount ?? 0) === 1) {
+      const hostUserId = initialHostRaw === "__none__" ? null : initialHostRaw;
+      if (hostUserId !== null && !detail.members.some((m) => m.userId === hostUserId)) {
+        return { error: "Choose a valid group member to host." };
+      }
+
+      const { error: hostError } = await supabase.rpc("propose_creator_initial_host_for_event", {
+        p_event_id: event.id,
+        p_host_user_id: hostUserId,
+      });
+
+      if (hostError) {
+        return { error: hostError.message };
+      }
+    }
+  }
+
   revalidatePath(`/groups/${groupId}/events`);
   redirect(`/events/${event.id}`);
 }
@@ -156,8 +183,15 @@ export async function updateEventAction(
   const title = normalizeEventTitle(String(formData.get("title") ?? ""));
   const location = normalizeEventLocation(String(formData.get("location") ?? ""));
   const notes = normalizeEventNotes(String(formData.get("notes") ?? ""));
-  const startsAt = parseOptionalDateTime(String(formData.get("starts_at") ?? ""));
-  const endsAt = parseOptionalDateTime(String(formData.get("ends_at") ?? ""));
+  const { supabase, user } = await requireUser();
+  const existing = await getEventDetail(supabase, eventId, user.id);
+  if (!existing) {
+    return { error: "Event not found." };
+  }
+  const group = await getGroupDetail(supabase, existing.groupId, user.id);
+  const timeZone = group?.settings.timezone;
+  const startsAt = parseOptionalDateTime(String(formData.get("starts_at") ?? ""), timeZone);
+  const endsAt = parseOptionalDateTime(String(formData.get("ends_at") ?? ""), timeZone);
 
   if (!eventId || !title) {
     return { error: "Enter a valid title." };
@@ -178,23 +212,18 @@ export async function updateEventAction(
     return { error: "End time must be after start time." };
   }
 
-  const { supabase, user } = await requireUser();
-  const detail = await getEventDetail(supabase, eventId, user.id);
-  if (!detail) {
-    return { error: "Event not found." };
-  }
   if (
     !canEditEventMetadata(
-      detail.viewerRole,
+      existing.viewerRole,
       user.id,
-      detail.createdBy,
-      detail.status,
+      existing.createdBy,
+      existing.status,
     )
   ) {
     return { error: "You cannot edit this event." };
   }
 
-  const statusError = validateMetadataUpdate(detail.status, detail.status);
+  const statusError = validateMetadataUpdate(existing.status, existing.status);
   if (statusError) {
     return { error: statusError };
   }
@@ -210,7 +239,7 @@ export async function updateEventAction(
     location,
     notes,
   };
-  if (canChangeEventSchedule(detail.status)) {
+  if (canChangeEventSchedule(existing.status)) {
     patch.starts_at = startsAt;
     patch.ends_at = endsAt;
   }
@@ -222,7 +251,7 @@ export async function updateEventAction(
   }
 
   revalidatePath(`/events/${eventId}`);
-  revalidatePath(`/groups/${detail.groupId}/events`);
+  revalidatePath(`/groups/${existing.groupId}/events`);
   return { message: "Event updated." };
 }
 

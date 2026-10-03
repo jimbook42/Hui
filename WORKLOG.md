@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-03 — HUI-022A.1
+
+- Changed: `20261003120000_coordination_lifecycle_correction.sql` — host coordination before confirm, attendance roster, `coordinate_event_host_after_attendance`, first-event `propose_creator_initial_host_for_event`, host-bound seeding fix; UI for initial host on first event; scheduling/notifications/timezone fixes from live QA.
+- Checked: `npm run validate` (225 passed, 2 skipped); production `supabase db push` applied `20261003120000`.
+- Deploy: app via GitHub → Vercel production; **live Grok QA pending**.
+- Commit: (see deployment commit on `main`)
+
 ## 2026-10-01 — HUI-001
 
 - Changed: Initial Next.js/TypeScript/Tailwind PWA-ready scaffold; Vitest and Playwright wiring; project workflow and architecture docs; Cursor rule.
@@ -199,3 +206,9 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: Applied pending migrations to linked production project `xmvzzypefpiethefrfka` (`npx supabase db push` after dry-run): `20261002170000_account_deletion_fixes.sql`, `20261002180000_household_member_management.sql`, `20261002200000_contribution_coordination.sql`, `20261002210000_host_coordination.sql` (HUI-020), `20261002220000_notifications.sql` (HUI-021), `20261003000000_coordination_model_correction.sql` (HUI-022A). Verified remote migration history matches local; spot-checked key types/tables/RPCs/triggers on production.
 - Checked: `npm run validate` (212 tests, lint, typecheck, build OK).
 - Manual: Live multi-user QA for host propose/accept/swap, optional hosting, attendance privacy, host-bound contributions, timezone display, in-app notifications, RLS, and consensus — not completed in this session.
+
+## 2026-10-03 — HUI-022A.1 (in progress)
+
+- Changed: Migration `20261003120000_coordination_lifecycle_correction.sql` — host propose during `proposing` (response trigger), host eligibility (can attend, prefer-not deprioritisation), attendance roster without visibility filter, host RPCs open during coordination, `finalise_event` no longer proposes host at confirm, consensus-ready notification titles by rule. App: host section during proposing, group-visible availability responses, consensus rule label when no required members, group-timezone event edit/display, notification timestamps and Open navigation.
+- Checked: pending `npm run validate` and product-owner re-QA before production deploy.
+- Blocked: **HUI-022** invitations remain out of scope.

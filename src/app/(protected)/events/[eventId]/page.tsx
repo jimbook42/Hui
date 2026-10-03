@@ -327,6 +327,7 @@ export default async function EventDetailPage({ params }: PageProps) {
               defaultStartsAt={detail.startsAt}
               defaultEndsAt={detail.endsAt}
               scheduleLocked={detail.status === "confirmed"}
+              timeZone={displayTimeZone}
             />
           </div>
         </section>

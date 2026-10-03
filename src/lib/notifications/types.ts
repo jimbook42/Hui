@@ -17,6 +17,7 @@ export type MemberNotification = {
   eventId: string | null;
   readAt: string | null;
   createdAt: string;
+  groupTimeZone: string;
 };
 
 export function notificationHref(notification: Pick<MemberNotification, "eventId" | "groupId">): string {

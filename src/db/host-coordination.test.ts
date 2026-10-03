@@ -222,8 +222,12 @@ describe("host coordination (HUI-020)", () => {
     expect(removed).toMatch(/active group member/i);
   });
 
-  it("rejects host assignment on proposing and cancelled events", async () => {
+  it("allows host assignment while proposing and rejects cancelled events", async () => {
     await asUser(db, ids.owner);
+    await db.query(
+      `update public.group_memberships set status = 'active' where group_id = $1 and user_id = $2`,
+      [groupId, ids.member],
+    );
     const proposingEvent = await db.query<{ id: string }>(
       `insert into public.events (group_id, title, status, created_by)
        values ($1, 'Still proposing', 'proposing', $2) returning id`,
@@ -231,10 +235,13 @@ describe("host coordination (HUI-020)", () => {
     );
     const proposingEventId = proposingEvent.rows[0].id;
 
-    const proposingError = await expectFail(() =>
-      db.query(`select public.assign_event_host($1, $2)`, [proposingEventId, ids.owner]),
-    );
-    expect(proposingError).toMatch(/confirmed events/i);
+    const assignmentId = (
+      await db.query<{ assign_event_host: string }>(
+        `select public.assign_event_host($1, $2) as assign_event_host`,
+        [proposingEventId, ids.member],
+      )
+    ).rows[0].assign_event_host;
+    expect(assignmentId).toBeTruthy();
 
     const cancelled = (
       await db.query<{ id: string }>(

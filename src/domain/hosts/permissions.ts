@@ -3,13 +3,15 @@ import type { MembershipRole } from "@/domain/groups/permissions";
 
 import type { HostAssignmentSnapshot } from "./types";
 
+const HOST_COORDINATION_STATUSES: EventStatus[] = ["proposing", "confirmed"];
+
 export function canAssignEventHost(
   viewerRole: MembershipRole,
   viewerId: string,
   createdBy: string,
   eventStatus: EventStatus,
 ): boolean {
-  if (eventStatus !== "confirmed") {
+  if (!HOST_COORDINATION_STATUSES.includes(eventStatus)) {
     return false;
   }
   if (viewerRole === "owner" || viewerRole === "admin") {
@@ -23,12 +25,17 @@ export function canRespondToHostProposal(
   pendingProposal: HostAssignmentSnapshot | null,
   eventStatus: EventStatus,
 ): boolean {
-  if (eventStatus !== "confirmed" || !pendingProposal) {
+  if (!HOST_COORDINATION_STATUSES.includes(eventStatus) || !pendingProposal) {
     return false;
   }
   return pendingProposal.userId === viewerId && pendingProposal.status === "proposed";
 }
 
 export function canViewHostCoordination(eventStatus: EventStatus): boolean {
-  return eventStatus === "confirmed" || eventStatus === "completed" || eventStatus === "cancelled";
+  return (
+    eventStatus === "proposing" ||
+    eventStatus === "confirmed" ||
+    eventStatus === "completed" ||
+    eventStatus === "cancelled"
+  );
 }

@@ -146,7 +146,7 @@ describe("coordination model (HUI-022A)", () => {
     await db?.close();
   });
 
-  it("auto-proposes a host on confirmation and requires acceptance", async () => {
+  it("requires host acceptance after coordination proposes a host", async () => {
     const eventId = await confirmEventWithWallClock(
       db,
       ids.owner,

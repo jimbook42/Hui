@@ -81,6 +81,27 @@ export async function updateReconnectReminderPreferenceAction(
   return { message: "Notification preferences saved." };
 }
 
+export async function markNotificationReadByIdAction(
+  notificationId: string,
+): Promise<NotificationActionState> {
+  const trimmed = notificationId.trim();
+  if (!trimmed) {
+    return { error: "Notification not found." };
+  }
+
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("mark_notification_read", {
+    p_notification_id: trimmed,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/notifications");
+  return { message: "Marked as read." };
+}
+
 export async function openNotificationAction(formData: FormData): Promise<void> {
   const notificationId = String(formData.get("notification_id") ?? "").trim();
   const groupId = String(formData.get("group_id") ?? "").trim();

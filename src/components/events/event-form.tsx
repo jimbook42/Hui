@@ -2,7 +2,8 @@
 
 import type { EventActionState } from "@/app/events/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
-import type { GroupSettingsRow } from "@/lib/groups/types";
+import { formatDateTimeLocalInTimeZone } from "@/domain/datetime/timezone";
+import type { GroupMemberRow, GroupSettingsRow } from "@/lib/groups/types";
 
 type CreateEventFormProps = {
   action: (
@@ -11,18 +12,17 @@ type CreateEventFormProps = {
   ) => Promise<EventActionState>;
   groupId: string;
   settings: GroupSettingsRow;
+  isFirstGroupEvent?: boolean;
+  members?: GroupMemberRow[];
 };
 
-function formatDateTimeLocal(iso: string | null): string {
-  if (!iso) {
-    return "";
-  }
-  const date = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-export function CreateEventForm({ action, groupId, settings }: CreateEventFormProps) {
+export function CreateEventForm({
+  action,
+  groupId,
+  settings,
+  isFirstGroupEvent = false,
+  members = [],
+}: CreateEventFormProps) {
   const canOneOff = settings.oneOffEventsAllowed;
   const canRecurring = settings.recurringEventsEnabled;
   const defaultKind = canOneOff ? "one_off" : "recurring";
@@ -62,6 +62,28 @@ export function CreateEventForm({ action, groupId, settings }: CreateEventFormPr
         type="datetime-local"
         required={false}
       />
+      {isFirstGroupEvent && settings.hostingEnabled ? (
+        <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+          <span>Initial host (first gathering)</span>
+          <p className="mt-1 text-xs font-normal text-zinc-600 dark:text-zinc-400">
+            Your choice is a proposal — they still accept or ask to swap. Later events use
+            Hui&apos;s usual host suggestions.
+          </p>
+          <select
+            name="initial_host_user_id"
+            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+            defaultValue=""
+          >
+            <option value="">Let Hui suggest when people respond</option>
+            <option value="__none__">No host for this event</option>
+            {members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       {canRecurring ? (
         <fieldset className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
           <legend className="px-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">
@@ -99,6 +121,7 @@ type EditEventFormProps = {
   defaultStartsAt: string | null;
   defaultEndsAt: string | null;
   scheduleLocked?: boolean;
+  timeZone: string;
 };
 
 export function EditEventForm({
@@ -110,6 +133,7 @@ export function EditEventForm({
   defaultStartsAt,
   defaultEndsAt,
   scheduleLocked = false,
+  timeZone,
 }: EditEventFormProps) {
   return (
     <AuthForm action={action} submitLabel="Save changes" hiddenFields={{ event_id: eventId }}>
@@ -140,14 +164,20 @@ export function EditEventForm({
             name="starts_at"
             type="datetime-local"
             required={false}
-            defaultValue={formatDateTimeLocal(defaultStartsAt)}
+            defaultValue={
+              defaultStartsAt
+                ? formatDateTimeLocalInTimeZone(defaultStartsAt, timeZone)
+                : ""
+            }
           />
           <AuthField
             label="End (optional)"
             name="ends_at"
             type="datetime-local"
             required={false}
-            defaultValue={formatDateTimeLocal(defaultEndsAt)}
+            defaultValue={
+              defaultEndsAt ? formatDateTimeLocalInTimeZone(defaultEndsAt, timeZone) : ""
+            }
           />
         </>
       )}

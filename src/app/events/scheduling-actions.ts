@@ -228,7 +228,7 @@ export async function setAvailabilityResponseAction(
       candidate_id: candidateId,
       user_id: user.id,
       response: dbResponse,
-      visibility: "private",
+      visibility: "group",
     },
     { onConflict: "candidate_id,user_id" },
   );

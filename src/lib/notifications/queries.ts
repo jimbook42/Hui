@@ -11,9 +11,28 @@ type NotificationRow = {
   event_id: string | null;
   read_at: string | null;
   created_at: string;
+  groups: unknown;
 };
 
+function readGroupTimeZone(groups: unknown): string | null {
+  if (!groups || typeof groups !== "object") {
+    return null;
+  }
+  const group = Array.isArray(groups) ? groups[0] : groups;
+  if (!group || typeof group !== "object" || !("group_settings" in group)) {
+    return null;
+  }
+  const settings = (group as { group_settings: unknown }).group_settings;
+  const setting = Array.isArray(settings) ? settings[0] : settings;
+  if (!setting || typeof setting !== "object" || !("timezone" in setting)) {
+    return null;
+  }
+  const timeZone = (setting as { timezone: unknown }).timezone;
+  return typeof timeZone === "string" && timeZone.length > 0 ? timeZone : null;
+}
+
 function mapRow(row: NotificationRow): MemberNotification {
+  const timeZone = readGroupTimeZone(row.groups);
   return {
     id: row.id,
     kind: row.kind,
@@ -23,6 +42,8 @@ function mapRow(row: NotificationRow): MemberNotification {
     eventId: row.event_id,
     readAt: row.read_at,
     createdAt: row.created_at,
+    groupTimeZone:
+      typeof timeZone === "string" && timeZone.length > 0 ? timeZone : "Pacific/Auckland",
   };
 }
 
@@ -60,7 +81,7 @@ export async function listMemberNotifications(
   const { data, error } = await supabase
     .from("member_notifications")
     .select(
-      "id, kind, title, body, group_id, event_id, read_at, created_at",
+      "id, kind, title, body, group_id, event_id, read_at, created_at, groups ( group_settings ( timezone ) )",
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
@@ -70,7 +91,7 @@ export async function listMemberNotifications(
     return [];
   }
 
-  return (data as NotificationRow[]).map(mapRow);
+  return (data as unknown as NotificationRow[]).map(mapRow);
 }
 
 export async function getMemberReconnectPreference(

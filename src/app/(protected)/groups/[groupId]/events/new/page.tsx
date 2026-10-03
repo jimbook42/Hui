@@ -36,6 +36,17 @@ export default async function NewGroupEventPage({ params }: PageProps) {
     notFound();
   }
 
+  const { count: activeEventCount } = await supabase
+    .from("events")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId)
+    .neq("status", "cancelled");
+
+  const isFirstGroupEvent = (activeEventCount ?? 0) === 0;
+  const hostEligibleMembers = detail.members.filter(
+    (member) => member.hostingStanding !== "never",
+  );
+
   return (
     <AppShell title={`Propose event — ${detail.name}`}>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -51,6 +62,8 @@ export default async function NewGroupEventPage({ params }: PageProps) {
           action={createEventAction}
           groupId={groupId}
           settings={detail.settings}
+          isFirstGroupEvent={isFirstGroupEvent}
+          members={hostEligibleMembers}
         />
       </div>
     </AppShell>

@@ -1,4 +1,6 @@
-import { markAllNotificationsReadFormAction, openNotificationAction } from "@/app/notifications/actions";
+import { markAllNotificationsReadFormAction } from "@/app/notifications/actions";
+import { OpenNotificationButton } from "@/components/notifications/open-notification-button";
+import { formatInstantInTimeZone } from "@/domain/datetime/timezone";
 import { type MemberNotification } from "@/lib/notifications/types";
 
 type NotificationsListProps = {
@@ -56,22 +58,13 @@ export function NotificationsList({ notifications }: NotificationsListProps) {
                     {notification.body}
                   </p>
                   <p className="mt-2 text-xs text-zinc-500">
-                    {new Date(notification.createdAt).toLocaleString()}
+                    {formatInstantInTimeZone(notification.createdAt, notification.groupTimeZone, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
                   </p>
                 </div>
-                <form action={openNotificationAction}>
-                  <input type="hidden" name="notification_id" value={notification.id} />
-                  <input type="hidden" name="group_id" value={notification.groupId} />
-                  {notification.eventId ? (
-                    <input type="hidden" name="event_id" value={notification.eventId} />
-                  ) : null}
-                  <button
-                    type="submit"
-                    className="shrink-0 text-sm font-medium text-sky-700 underline-offset-4 hover:underline dark:text-sky-400"
-                  >
-                    Open
-                  </button>
-                </form>
+                <OpenNotificationButton notification={notification} />
               </div>
             </li>
           );

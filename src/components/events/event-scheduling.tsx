@@ -458,7 +458,8 @@ export function EventScheduling({
     consensus.candidates.map((candidate) => [candidate.candidateId, candidate]),
   );
   const passingCount = consensus.candidates.filter((candidate) => candidate.passes).length;
-  const ruleLabel = consensusRuleLabel(consensus.consensusRule);
+  const requiredCount = consensus.candidates[0]?.requiredParticipantCount ?? 0;
+  const ruleLabel = consensusRuleLabel(consensus.consensusRule, requiredCount);
   const deadlineNotice = proposalDeadlineGroupNotice(proposalDeadlineHours);
   const sectionMessage = eventSchedulingSectionMessage(
     eventStatus,
@@ -466,15 +467,14 @@ export function EventScheduling({
     canFinalise,
   );
 
-  const requiredCount = consensus.candidates[0]?.requiredParticipantCount ?? 0;
-
   return (
     <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
       <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
         Scheduling and consensus
       </h2>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Share your private availability for each candidate time. Group rule:{" "}
+        Share your availability for each candidate time. Attendance status is visible to the
+        group; private notes stay private. Group rule:{" "}
         <span className="font-medium text-zinc-800 dark:text-zinc-200">{ruleLabel}</span>
         .{" "}
         {consensusRuleRequirementSummary(consensus.consensusRule, {

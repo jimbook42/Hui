@@ -59,17 +59,29 @@ export function EventHostSection({
     );
   }
 
-  if (eventStatus !== "confirmed" && eventStatus !== "completed") {
+  if (
+    eventStatus !== "proposing" &&
+    eventStatus !== "confirmed" &&
+    eventStatus !== "completed"
+  ) {
     return null;
   }
 
   const readOnly = eventStatus === "completed";
+  const coordinating = eventStatus === "proposing";
   const suggestedName =
     view.pendingProposal?.displayName ?? view.suggestion?.displayName ?? null;
 
   return (
     <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
       <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Host</h2>
+
+      {coordinating ? (
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          Hui suggests a host while the group coordinates attendance. Accepting makes them the
+          host for this gathering; a proposal alone does not.
+        </p>
+      ) : null}
 
       {viewerHistoryCount !== null && viewerHistoryCount > 0 ? (
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
