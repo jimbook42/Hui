@@ -6,7 +6,7 @@ Lightweight record of completed tickets. One entry per ticket.
 
 - Changed: `canRequestHostSwap` (proposed or accepted host); `EventHostSection` + event page pass `viewerUserId` / `canRequestSwap`; `requestHostSwapAction` uses new permission; migration `20261003230000_accepted_host_request_swap.sql` extends `request_host_swap` for `accepted` rows and fixes `contributions_before_write` so host-bound sync can clear assignee on swap. Tests: `coordination-hui-022a4.test.ts`, permissions + `queries.test.ts`.
 - Checked: `npm run validate` (252 passed, 2 skipped).
-- Commit: `e301259` — deploy below.
+- Commit: `cb726de` — pushed `main`; migration + Vercel below.
 
 ## 2026-10-03 — HUI-022A.3
 
