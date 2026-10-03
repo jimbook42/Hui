@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-03 — HUI-022A.3
+
+- Changed: `20261003220000_host_bound_contribution_sync_on_accept.sql` — `sync_host_bound_contributions` resolves `group_id` from the event, calls `seed_event_contributions` (insert-only for missing categories) before updating **host-following** rows so acceptance during `proposing` persists Main. PGlite regressions in `src/db/coordination-hui-022a3.test.ts`.
+- Checked: `npm run validate` (247 passed, 2 skipped); explicit claims and default-assignee rows unchanged by seed (skip-if-exists); sync updates only `follows_host` categories.
+- Commit: `37e9ed5` — deploy (migration + Vercel) recorded below after push.
+- Manual: **live Family Dinner Grok QA** — not run in deploy session.
+
 ## 2026-10-03 — HUI-022A.2
 
 - Changed: `20261003180000_host_coordination_timing_eligibility.sql` — invalidate ineligible pending hosts; `assign_event_host` requires can-attend; `event_responses` select limited to own row (notes private). App: remove client-side host “suggestion” masquerading as proposal; host assign list filtered by attendance; private attendance note field; `consensusRuleLabel` for required participants.

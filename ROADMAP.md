@@ -2,8 +2,8 @@
 
 **Phase:** Core MVP — recurring planning, invitations, and delivery  
 **Milestone:** GDD definition of done (not yet reached)  
-**Current ticket:** **HUI-022A.2** — deployed to production; **pending live multi-user Grok QA** (not fully validated until QA completes)
-**Last completed ticket:** **HUI-022A.1** — coordination lifecycle + initial host selection (app + `20261003120000` migration shipped to production)
+**Current ticket:** **HUI-022A.3** — deployed; **pending live multi-user Grok QA** (Family Dinner host accept/swap + Main while proposing)
+**Last completed ticket:** **HUI-022A.2** — host timing/eligibility (`20261003180000` + app; deployed)
 **Overall progress:** Foundation through HUI-021 shipped significant event, scheduling, host, contribution, dietary, and in-app notification **foundations**. Core GDD loop (invitations, recurring planning cycles, recurrence UX, persistent availability, scheduling recommendations, full notifications, calendar/memories, completed-event → next cycle) remains **open**.
 
 **North star:** HuI proposes, coordinates and remembers. **The group decides.**
@@ -214,7 +214,8 @@ Do not treat these as completing the larger GDD capabilities listed in later sec
 - [x] **HUI-020** — **Foundation:** host assignment model, history, member-level counts (`20261002210000_host_coordination.sql`)
 - [x] **HUI-022A** — **Corrections (deployed):** hosting optional; host propose/accept/swap; member hosting standing; attendance roster RPC; group timezone; contribution seeding; RLS (`20261003000000_coordination_model_correction.sql`)
 - [~] **HUI-022A.1** — deployed; live Grok QA found host-timing, eligibility, consensus label, and private-note gaps (see HUI-022A.2).
-- [~] **HUI-022A.2** — deployed (`20261003180000_host_coordination_timing_eligibility.sql` + app): no premature host suggestion UI; pending host invalidated on can't-come; accept/swap during proposing; private attendance note + RLS; consensus label source of truth. **Pending live Grok QA.**
+- [x] **HUI-022A.2** — deployed (`20261003180000_host_coordination_timing_eligibility.sql` + app): no premature host suggestion UI; pending host invalidated on can't-come; accept/swap during proposing; private attendance note + RLS; consensus label source of truth. Live QA found host-bound Main not following accepted host while proposing → **HUI-022A.3**.
+- [~] **HUI-022A.3** — implementation complete and deployed (`20261003220000_host_bound_contribution_sync_on_accept.sql` + PGlite tests): `sync_host_bound_contributions` seeds missing rows during `proposing`/`confirmed` then assigns host-following categories to accepted host only. **Pending live Grok QA** (not HUI-022).
 - [ ] **Still open:** recurring-cycle integration; household rotation units as hosts; temporary “can’t host this time”; deferred turns; volunteer flow; full standing preference matrix; contribution preference editor beyond defaults
 - [ ] Fairness uses count ties only — sufficient as a **start**, not full GDD fairness narrative (recent hosting, exclusions, swaps)
 
