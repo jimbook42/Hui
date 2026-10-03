@@ -18,6 +18,7 @@ import { listGroupSharedDietary } from "@/lib/dietary/queries";
 import { EventScheduling } from "@/components/events/event-scheduling";
 import {
   canAssignEventHost,
+  canRequestHostSwap,
   canRespondToHostProposal,
   canViewHostCoordination,
 } from "@/domain/hosts/permissions";
@@ -150,6 +151,9 @@ export default async function EventDetailPage({ params }: PageProps) {
     pendingHostProposal,
     detail.status,
   );
+  const canRequestHostSwapAction = hostContext
+    ? canRequestHostSwap(user!.id, hostContext.assignments, detail.status)
+    : false;
   const showHostSection =
     canViewHostCoordination(detail.status) && Boolean(settings?.hostingEnabled);
   const displayTimeZone =
@@ -287,6 +291,8 @@ export default async function EventDetailPage({ params }: PageProps) {
           hostingEnabled={settings.hostingEnabled}
           canAssign={canAssignHost}
           canRespond={canRespondHost}
+          canRequestSwap={canRequestHostSwapAction}
+          viewerUserId={user!.id}
           eligibleMembers={group.members}
           attendanceRoster={primaryAttendanceRoster}
           view={hostContext.view}

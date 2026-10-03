@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { canAssignEventHost, canRespondToHostProposal } from "@/domain/hosts/permissions";
+import {
+  canAssignEventHost,
+  canRequestHostSwap,
+  canRespondToHostProposal,
+} from "@/domain/hosts/permissions";
 import { pickPendingHostProposal } from "@/domain/hosts/display";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
@@ -90,8 +94,7 @@ export async function requestHostSwapAction(
   }
 
   const assignments = await listEventHostAssignments(supabase, eventId);
-  const pending = pickPendingHostProposal(assignments);
-  if (!canRespondToHostProposal(user.id, pending, detail.status)) {
+  if (!canRequestHostSwap(user.id, assignments, detail.status)) {
     return { error: "You cannot request a swap for this event." };
   }
 

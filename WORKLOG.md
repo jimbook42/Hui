@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-03 — HUI-022A.4
+
+- Changed: `canRequestHostSwap` (proposed or accepted host); `EventHostSection` + event page pass `viewerUserId` / `canRequestSwap`; `requestHostSwapAction` uses new permission; migration `20261003230000_accepted_host_request_swap.sql` extends `request_host_swap` for `accepted` rows and fixes `contributions_before_write` so host-bound sync can clear assignee on swap. Tests: `coordination-hui-022a4.test.ts`, permissions + `queries.test.ts`.
+- Checked: `npm run validate` (252 passed, 2 skipped).
+- Commit: `e301259` — deploy below.
+
 ## 2026-10-03 — HUI-022A.3
 
 - Changed: `20261003220000_host_bound_contribution_sync_on_accept.sql` — `sync_host_bound_contributions` resolves `group_id` from the event, calls `seed_event_contributions` (insert-only for missing categories) before updating **host-following** rows so acceptance during `proposing` persists Main. PGlite regressions in `src/db/coordination-hui-022a3.test.ts`.

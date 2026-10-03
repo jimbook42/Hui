@@ -1,6 +1,8 @@
 import type { EventStatus } from "@/domain/events/types";
 import type { MembershipRole } from "@/domain/groups/permissions";
 
+import { pickAcceptedHost, pickPendingHostProposal } from "./display";
+
 import type { HostAssignmentSnapshot } from "./types";
 
 const HOST_COORDINATION_STATUSES: EventStatus[] = ["proposing", "confirmed"];
@@ -29,6 +31,22 @@ export function canRespondToHostProposal(
     return false;
   }
   return pendingProposal.userId === viewerId && pendingProposal.status === "proposed";
+}
+
+export function canRequestHostSwap(
+  viewerId: string,
+  assignments: HostAssignmentSnapshot[],
+  eventStatus: EventStatus,
+): boolean {
+  if (!HOST_COORDINATION_STATUSES.includes(eventStatus)) {
+    return false;
+  }
+  const acceptedHost = pickAcceptedHost(assignments);
+  if (acceptedHost?.userId === viewerId) {
+    return true;
+  }
+  const pendingProposal = pickPendingHostProposal(assignments);
+  return pendingProposal?.userId === viewerId && pendingProposal.status === "proposed";
 }
 
 export function canViewHostCoordination(eventStatus: EventStatus): boolean {

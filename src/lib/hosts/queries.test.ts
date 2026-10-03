@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { pickPendingHostProposal } from "@/domain/hosts/display";
-import { canRespondToHostProposal } from "@/domain/hosts/permissions";
+import { canRequestHostSwap, canRespondToHostProposal } from "@/domain/hosts/permissions";
 import type { HostAssignmentSnapshot } from "@/domain/hosts/types";
 
 import { buildEventHostView } from "./queries";
@@ -16,7 +16,22 @@ function hostUiState(
   const pending = pickPendingHostProposal(assignments);
   const suggestedName = view.pendingProposal?.displayName ?? null;
   const canRespond = canRespondToHostProposal(viewerId, pending, eventStatus);
-  return { suggestedName, canRespond, pendingUserId: pending?.userId ?? null };
+  const canRequestSwap = canRequestHostSwap(viewerId, assignments, eventStatus);
+  const acceptedUserId = view.acceptedHost?.userId ?? null;
+  const showAcceptedSwap =
+    Boolean(view.acceptedHost) &&
+    canRequestSwap &&
+    acceptedUserId === viewerId;
+  const showProposedSwap = Boolean(suggestedName) && canRequestSwap;
+  return {
+    suggestedName,
+    canRespond,
+    canRequestSwap,
+    showAcceptedSwap,
+    showProposedSwap,
+    pendingUserId: pending?.userId ?? null,
+    acceptedUserId,
+  };
 }
 
 describe("event host view (HUI-022A.2 audit)", () => {
@@ -46,5 +61,28 @@ describe("event host view (HUI-022A.2 audit)", () => {
     expect(other.suggestedName).toBe("Isaac First");
     expect(other.canRespond).toBe(false);
     expect(buildEventHostView(assignments).suggestion).toBeNull();
+    expect(viewer.showProposedSwap).toBe(true);
+    expect(other.showProposedSwap).toBe(false);
+  });
+
+  it("shows swap for accepted host viewer while proposing", () => {
+    const assignments: HostAssignmentSnapshot[] = [
+      {
+        id: "ha-1",
+        eventId: "ev-1",
+        userId: "isaac",
+        status: "accepted",
+        displayName: "Isaac First",
+        createdAt: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const isaac = hostUiState(assignments, "isaac");
+    const jamie = hostUiState(assignments, "jamie");
+
+    expect(isaac.acceptedUserId).toBe("isaac");
+    expect(isaac.showAcceptedSwap).toBe(true);
+    expect(isaac.canRespond).toBe(false);
+    expect(jamie.showAcceptedSwap).toBe(false);
+    expect(jamie.canRequestSwap).toBe(false);
   });
 });

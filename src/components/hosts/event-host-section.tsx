@@ -18,6 +18,8 @@ type EventHostSectionProps = {
   hostingEnabled: boolean;
   canAssign: boolean;
   canRespond: boolean;
+  canRequestSwap: boolean;
+  viewerUserId: string;
   eligibleMembers: GroupMemberRow[];
   attendanceRoster: AttendanceRoster | null;
   view: EventHostView;
@@ -31,6 +33,8 @@ export function EventHostSection({
   hostingEnabled,
   canAssign,
   canRespond,
+  canRequestSwap,
+  viewerUserId,
   eligibleMembers,
   attendanceRoster,
   view,
@@ -98,24 +102,12 @@ export function EventHostSection({
       ) : null}
 
       {view.acceptedHost ? (
-        <p className="mt-4 text-sm text-zinc-800 dark:text-zinc-200">
-          <span className="font-medium">{view.acceptedHost.displayName}</span> is hosting.
-        </p>
-      ) : suggestedName ? (
-        <div className="mt-4 rounded-lg border border-zinc-200 px-4 py-3 text-sm dark:border-zinc-800">
-          <p className="text-zinc-800 dark:text-zinc-200">
-            Hui has suggested {suggestedName} to host this gathering.
+        <div className="mt-4">
+          <p className="text-sm text-zinc-800 dark:text-zinc-200">
+            <span className="font-medium">{view.acceptedHost.displayName}</span> is hosting.
           </p>
-          {canRespond ? (
-            <div className="mt-3 flex flex-wrap gap-3">
-              <AuthForm
-                action={acceptHostProposalAction}
-                submitLabel="I can host"
-                hiddenFields={{ event_id: eventId }}
-                refreshOnSuccess
-              >
-                {null}
-              </AuthForm>
+          {canRequestSwap && view.acceptedHost.userId === viewerUserId && !readOnly ? (
+            <div className="mt-3">
               <AuthForm
                 action={requestHostSwapAction}
                 submitLabel="Ask to swap"
@@ -124,6 +116,36 @@ export function EventHostSection({
               >
                 {null}
               </AuthForm>
+            </div>
+          ) : null}
+        </div>
+      ) : suggestedName ? (
+        <div className="mt-4 rounded-lg border border-zinc-200 px-4 py-3 text-sm dark:border-zinc-800">
+          <p className="text-zinc-800 dark:text-zinc-200">
+            Hui has suggested {suggestedName} to host this gathering.
+          </p>
+          {canRespond || canRequestSwap ? (
+            <div className="mt-3 flex flex-wrap gap-3">
+              {canRespond ? (
+                <AuthForm
+                  action={acceptHostProposalAction}
+                  submitLabel="I can host"
+                  hiddenFields={{ event_id: eventId }}
+                  refreshOnSuccess
+                >
+                  {null}
+                </AuthForm>
+              ) : null}
+              {canRequestSwap ? (
+                <AuthForm
+                  action={requestHostSwapAction}
+                  submitLabel="Ask to swap"
+                  hiddenFields={{ event_id: eventId }}
+                  refreshOnSuccess
+                >
+                  {null}
+                </AuthForm>
+              ) : null}
             </div>
           ) : null}
         </div>
