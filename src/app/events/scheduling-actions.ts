@@ -15,6 +15,7 @@ import {
   isDuplicateCandidate,
   parseAvailabilityChoice,
   parseRequiredDateTime,
+  normalizePrivateAttendanceNote,
   validateAvailabilityChoice,
   validateCandidateWindow,
 } from "@/domain/scheduling/validation";
@@ -222,6 +223,12 @@ export async function setAvailabilityResponseAction(
     return { error: "This candidate is no longer open for responses." };
   }
 
+  const privateNoteRaw = String(formData.get("private_note") ?? "");
+  const privateNote = normalizePrivateAttendanceNote(privateNoteRaw);
+  if (privateNoteRaw.trim().length > 0 && privateNote === null) {
+    return { error: "Private note is too long (500 characters max)." };
+  }
+
   const dbResponse = availabilityToDbResponse(choice);
   const { error } = await supabase.from("event_responses").upsert(
     {
@@ -229,6 +236,7 @@ export async function setAvailabilityResponseAction(
       user_id: user.id,
       response: dbResponse,
       visibility: "group",
+      note: privateNote,
     },
     { onConflict: "candidate_id,user_id" },
   );

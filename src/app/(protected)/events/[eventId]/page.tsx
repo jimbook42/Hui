@@ -114,17 +114,7 @@ export default async function EventDetailPage({ params }: PageProps) {
     getGroupContributionHistory(supabase, detail.groupId, user!.id),
     listGroupSharedDietary(supabase, detail.groupId),
     group
-      ? getEventHostContext(
-          supabase,
-          detail.id,
-          detail.groupId,
-          user!.id,
-          group.members.map((m) => ({
-            userId: m.userId,
-            displayName: m.displayName,
-            hostingStanding: m.hostingStanding,
-          })),
-        )
+      ? getEventHostContext(supabase, detail.id, detail.groupId, user!.id)
       : Promise.resolve(null),
   ]);
   const canCoordinate = canCoordinateContributions(detail.status);
@@ -178,6 +168,10 @@ export default async function EventDetailPage({ params }: PageProps) {
       }
     }
   }
+  const primaryAttendanceRoster: AttendanceRoster | null =
+    scheduling.candidates.length > 0
+      ? (attendanceRosters[scheduling.candidates[0].id] ?? null)
+      : null;
 
   return (
     <AppShell title={detail.title}>
@@ -294,6 +288,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           canAssign={canAssignHost}
           canRespond={canRespondHost}
           eligibleMembers={group.members}
+          attendanceRoster={primaryAttendanceRoster}
           view={hostContext.view}
           viewerHistoryCount={hostContext.history.viewerCount}
         />

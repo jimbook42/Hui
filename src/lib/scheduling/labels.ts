@@ -12,15 +12,9 @@ export function availabilityLabel(choice: AvailabilityChoice): string {
   }
 }
 
-export function consensusRuleLabel(
-  rule: ConsensusRule,
-  requiredParticipantCount = 0,
-): string {
+export function consensusRuleLabel(rule: ConsensusRule): string {
   switch (rule) {
     case "required_participants":
-      if (requiredParticipantCount === 0) {
-        return "Minimum attendees";
-      }
       return "Required participants";
     case "minimum_attendees":
       return "Minimum attendees";

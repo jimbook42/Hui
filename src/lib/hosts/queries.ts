@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { pickAcceptedHost, pickPendingHostProposal } from "@/domain/hosts/display";
-import { buildHostHistory, filterHostEligibleMembers, suggestHost } from "@/domain/hosts/rotation";
+import { buildHostHistory } from "@/domain/hosts/rotation";
 import type { HostAssignmentSnapshot } from "@/domain/hosts/types";
 
 import type { EventHostContext, GroupHostHistory } from "./types";
@@ -82,28 +82,13 @@ export async function getGroupHostHistory(
 export type EventHostView = {
   acceptedHost: HostAssignmentSnapshot | null;
   pendingProposal: HostAssignmentSnapshot | null;
-  suggestion: ReturnType<typeof suggestHost>;
+  suggestion: null;
 };
 
-export function buildEventHostView(
-  assignments: HostAssignmentSnapshot[],
-  eligibleMembers: {
-    userId: string;
-    displayName: string;
-    hostingStanding?: "default" | "prefer_not" | "never";
-  }[],
-  history: GroupHostHistory,
-): EventHostView {
+export function buildEventHostView(assignments: HostAssignmentSnapshot[]): EventHostView {
   const acceptedHost = pickAcceptedHost(assignments);
   const pendingProposal = pickPendingHostProposal(assignments);
-  const excludedForEvent = assignments
-    .filter((row) => row.status === "declined" || row.status === "swapped_out")
-    .map((row) => row.userId);
-  const pool = filterHostEligibleMembers(eligibleMembers, excludedForEvent);
-  const suggestion =
-    acceptedHost || pendingProposal ? null : suggestHost(pool, history.entries);
-
-  return { acceptedHost, pendingProposal, suggestion };
+  return { acceptedHost, pendingProposal, suggestion: null };
 }
 
 export async function getEventHostContext(
@@ -111,14 +96,13 @@ export async function getEventHostContext(
   eventId: string,
   groupId: string,
   viewerUserId: string,
-  eligibleMembers: { userId: string; displayName: string }[],
 ): Promise<EventHostContext & { view: EventHostView }> {
   const [assignments, history] = await Promise.all([
     listEventHostAssignments(supabase, eventId),
     getGroupHostHistory(supabase, groupId, viewerUserId),
   ]);
 
-  const view = buildEventHostView(assignments, eligibleMembers, history);
+  const view = buildEventHostView(assignments);
 
   return { assignments, history, view };
 }

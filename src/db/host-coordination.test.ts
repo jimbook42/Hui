@@ -76,6 +76,13 @@ async function createConfirmedEvent(
      values ($1, $2, 'yes', 'private')`,
     [candidateId, createdBy],
   );
+  await asUser(database, ids.member);
+  await database.query(
+    `insert into public.event_responses (candidate_id, user_id, response, visibility)
+     values ($1, $2, 'yes', 'group')`,
+    [candidateId, ids.member],
+  );
+  await asUser(database, createdBy);
   await database.query(`select public.finalise_event($1, $2)`, [eventId, candidateId]);
   return eventId;
 }
@@ -234,6 +241,18 @@ describe("host coordination (HUI-020)", () => {
       [groupId, ids.owner],
     );
     const proposingEventId = proposingEvent.rows[0].id;
+    const candidate = await db.query<{ id: string }>(
+      `insert into public.event_candidates (event_id, starts_at, ends_at, proposed_by)
+       values ($1, '2030-02-01T18:00:00Z', '2030-02-01T21:00:00Z', $2) returning id`,
+      [proposingEventId, ids.owner],
+    );
+    await asUser(db, ids.member);
+    await db.query(
+      `insert into public.event_responses (candidate_id, user_id, response, visibility)
+       values ($1, $2, 'yes', 'group')`,
+      [candidate.rows[0].id, ids.member],
+    );
+    await asUser(db, ids.owner);
 
     const assignmentId = (
       await db.query<{ assign_event_host: string }>(

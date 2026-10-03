@@ -9,6 +9,7 @@ export type EventCandidateRow = {
   proposedBy: string;
   createdAt: string;
   viewerResponse: AvailabilityChoice | null;
+  viewerPrivateNote: string | null;
 };
 
 export type EventSchedulingContext = {

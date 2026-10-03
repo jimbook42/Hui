@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-03 — HUI-022A.2
+
+- Changed: `20261003180000_host_coordination_timing_eligibility.sql` — invalidate ineligible pending hosts; `assign_event_host` requires can-attend; `event_responses` select limited to own row (notes private). App: remove client-side host “suggestion” masquerading as proposal; host assign list filtered by attendance; private attendance note field; `consensusRuleLabel` for required participants.
+- Checked: `npm run validate` (241 passed, 2 skipped).
+- Deploy: Supabase `20261003180000` applied; app pushed to `main` (Vercel production).
+
 ## 2026-10-03 — HUI-022A.1
 
 - Changed: `20261003120000_coordination_lifecycle_correction.sql` — host coordination before confirm, attendance roster, `coordinate_event_host_after_attendance`, first-event `propose_creator_initial_host_for_event`, host-bound seeding fix; UI for initial host on first event; scheduling/notifications/timezone fixes from live QA.

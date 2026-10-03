@@ -37,6 +37,19 @@ export function validateAvailabilityChoice(
   return null;
 }
 
+const PRIVATE_ATTENDANCE_NOTE_MAX = 500;
+
+export function normalizePrivateAttendanceNote(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+  if (trimmed.length > PRIVATE_ATTENDANCE_NOTE_MAX) {
+    return null;
+  }
+  return trimmed;
+}
+
 export function isDuplicateCandidate(
   existing: { startsAt: string; endsAt: string; status: string }[],
   startsAt: string,

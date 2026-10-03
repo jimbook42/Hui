@@ -155,7 +155,7 @@ function CandidateResponseForm({
       <input type="hidden" name="candidate_id" value={candidate.id} />
       <fieldset className="flex flex-wrap gap-2">
         <legend className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-          Your availability (private to you)
+          Your availability
         </legend>
         {options.map((option) => (
           <label
@@ -177,6 +177,17 @@ function CandidateResponseForm({
           </label>
         ))}
       </fieldset>
+      <label className="block text-sm text-zinc-700 dark:text-zinc-300">
+        Reason (optional, private)
+        <textarea
+          name="private_note"
+          rows={2}
+          maxLength={500}
+          defaultValue={candidate.viewerPrivateNote ?? ""}
+          placeholder="Only you can see this note"
+          className="mt-1 block w-full max-w-md rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+        />
+      </label>
       {state.error ? (
         <p className="text-sm text-red-600 dark:text-red-400" role="alert">
           {state.error}
@@ -459,7 +470,7 @@ export function EventScheduling({
   );
   const passingCount = consensus.candidates.filter((candidate) => candidate.passes).length;
   const requiredCount = consensus.candidates[0]?.requiredParticipantCount ?? 0;
-  const ruleLabel = consensusRuleLabel(consensus.consensusRule, requiredCount);
+  const ruleLabel = consensusRuleLabel(consensus.consensusRule);
   const deadlineNotice = proposalDeadlineGroupNotice(proposalDeadlineHours);
   const sectionMessage = eventSchedulingSectionMessage(
     eventStatus,

@@ -282,11 +282,8 @@ describe("foundation schema and RLS", () => {
       `select id from public.dietary_entries where id = $1`,
       [unshared.rows[0].id],
     );
-    const responses = await db.query<{ response: string }>(
-      `select response::text as response
-       from public.event_responses
-       where candidate_id = $1
-       order by response`,
+    const responses = await db.query<{ candidate_attendance_roster: { members: { response: string | null }[] } }>(
+      `select public.candidate_attendance_roster($1) as candidate_attendance_roster`,
       [candidateId],
     );
     const settings = await db.query<{ maybe_responses_enabled: boolean }>(
@@ -299,7 +296,11 @@ describe("foundation schema and RLS", () => {
     expect(names.rows.map((row) => row.display_name)).toEqual(["Mia Member"]);
     expect(sharedVisible.rows).toHaveLength(1);
     expect(unsharedVisible.rows).toEqual([]);
-    expect(responses.rows.map((row) => row.response)).toEqual(["yes"]);
+    const rosterResponses = responses.rows[0].candidate_attendance_roster.members
+      .map((m) => m.response)
+      .filter((r): r is string => r !== null)
+      .sort();
+    expect(rosterResponses).toEqual(["no", "yes"]);
     expect(settings.rows[0].maybe_responses_enabled).toBe(true);
   });
 

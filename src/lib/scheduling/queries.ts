@@ -98,12 +98,15 @@ export async function getEventSchedulingContext(
   }
 
   const candidateIds = (candidates ?? []).map((row) => row.id as string);
-  const responsesByCandidate = new Map<string, AvailabilityChoice>();
+  const responsesByCandidate = new Map<
+    string,
+    { choice: AvailabilityChoice; note: string | null }
+  >();
 
   if (candidateIds.length > 0) {
     const { data: responses, error: responsesError } = await supabase
       .from("event_responses")
-      .select("candidate_id, response")
+      .select("candidate_id, response, note")
       .eq("user_id", viewerId)
       .in("candidate_id", candidateIds);
 
@@ -112,10 +115,11 @@ export async function getEventSchedulingContext(
     }
 
     for (const row of responses ?? []) {
-      responsesByCandidate.set(
-        row.candidate_id as string,
-        dbResponseToAvailability(row.response as DbResponseValue),
-      );
+      const note = row.note as string | null;
+      responsesByCandidate.set(row.candidate_id as string, {
+        choice: dbResponseToAvailability(row.response as DbResponseValue),
+        note: note && note.length > 0 ? note : null,
+      });
     }
   }
 
@@ -126,7 +130,8 @@ export async function getEventSchedulingContext(
     status: row.status as EventCandidateRow["status"],
     proposedBy: row.proposed_by as string,
     createdAt: row.created_at as string,
-    viewerResponse: responsesByCandidate.get(row.id as string) ?? null,
+    viewerResponse: responsesByCandidate.get(row.id as string)?.choice ?? null,
+    viewerPrivateNote: responsesByCandidate.get(row.id as string)?.note ?? null,
   });
 
   const mapped: EventCandidateRow[] = (candidates ?? []).map((row) =>

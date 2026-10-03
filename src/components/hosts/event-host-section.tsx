@@ -6,6 +6,8 @@ import {
   requestHostSwapAction,
 } from "@/app/hosts/actions";
 import { AuthForm } from "@/components/auth/auth-form";
+import { filterHostAssignableMembers } from "@/domain/hosts/attendance-eligibility";
+import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 import type { EventHostView } from "@/lib/hosts/queries";
 import type { GroupMemberRow } from "@/lib/groups/types";
 
@@ -17,6 +19,7 @@ type EventHostSectionProps = {
   canAssign: boolean;
   canRespond: boolean;
   eligibleMembers: GroupMemberRow[];
+  attendanceRoster: AttendanceRoster | null;
   view: EventHostView;
   viewerHistoryCount: number | null;
 };
@@ -29,9 +32,14 @@ export function EventHostSection({
   canAssign,
   canRespond,
   eligibleMembers,
+  attendanceRoster,
   view,
   viewerHistoryCount,
 }: EventHostSectionProps) {
+  const assignableMembers = filterHostAssignableMembers(
+    eligibleMembers,
+    attendanceRoster,
+  );
   if (!hostingEnabled) {
     return (
       <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
@@ -69,8 +77,7 @@ export function EventHostSection({
 
   const readOnly = eventStatus === "completed";
   const coordinating = eventStatus === "proposing";
-  const suggestedName =
-    view.pendingProposal?.displayName ?? view.suggestion?.displayName ?? null;
+  const suggestedName = view.pendingProposal?.displayName ?? null;
 
   return (
     <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
@@ -138,7 +145,7 @@ export function EventHostSection({
           <AssignHostForm
             eventId={eventId}
             groupId={groupId}
-            members={eligibleMembers.filter((m) => m.hostingStanding !== "never")}
+            members={assignableMembers}
             currentHostId={view.pendingProposal?.userId ?? null}
           />
         </div>
@@ -161,7 +168,7 @@ function AssignHostForm({
 }: {
   eventId: string;
   groupId: string;
-  members: GroupMemberRow[];
+  members: Pick<GroupMemberRow, "userId" | "displayName">[];
   currentHostId: string | null;
 }) {
   return (
