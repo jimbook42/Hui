@@ -6,8 +6,10 @@ Lightweight record of completed tickets. One entry per ticket.
 
 - Changed: `20261003220000_host_bound_contribution_sync_on_accept.sql` — `sync_host_bound_contributions` resolves `group_id` from the event, calls `seed_event_contributions` (insert-only for missing categories) before updating **host-following** rows so acceptance during `proposing` persists Main. PGlite regressions in `src/db/coordination-hui-022a3.test.ts`.
 - Checked: `npm run validate` (247 passed, 2 skipped); explicit claims and default-assignee rows unchanged by seed (skip-if-exists); sync updates only `follows_host` categories.
-- Commit: `37e9ed5` — deploy (migration + Vercel) recorded below after push.
-- Manual: **live Family Dinner Grok QA** — not run in deploy session.
+- Commit: `2efc68b` — pushed `main` → `origin/main` (`5059f31..2efc68b`).
+- Deploy: `supabase db push` applied `20261003220000_host_bound_contribution_sync_on_accept.sql` on `xmvzzypefpiethefrfka`; local/remote migration list aligned through `20261003220000`.
+- Production: Vercel `dpl_6Q7t2jrpW3p3XQJYLYZnYxyUTF7S` **READY** — https://hui-seven-gamma.vercel.app (git `2efc68b06ca80a8c12bdc964913717d0dd0bec0c`); sign-in HTTP 200; Supabase `auth.getSession` smoke passed.
+- Manual: **live Family Dinner Grok QA** — next step (not run in deploy session).
 
 ## 2026-10-03 — HUI-022A.2
 
