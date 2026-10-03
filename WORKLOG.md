@@ -7,7 +7,7 @@ Lightweight record of completed tickets. One entry per ticket.
 - Changed: `20261003120000_coordination_lifecycle_correction.sql` — host coordination before confirm, attendance roster, `coordinate_event_host_after_attendance`, first-event `propose_creator_initial_host_for_event`, host-bound seeding fix; UI for initial host on first event; scheduling/notifications/timezone fixes from live QA.
 - Checked: `npm run validate` (225 passed, 2 skipped); production `supabase db push` applied `20261003120000`.
 - Deploy: app via GitHub → Vercel production; **live Grok QA pending**.
-- Commit: (see deployment commit on `main`)
+- Commit: b5bb97d
 
 ## 2026-10-01 — HUI-001
 
