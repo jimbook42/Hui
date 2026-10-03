@@ -6,7 +6,9 @@ import { DietarySettingsSection } from "@/components/dietary/dietary-settings-se
 import { HouseholdSettingsSection } from "@/components/households/household-section";
 import { listUserDietaryEntries, listUserGroupsForDietary } from "@/lib/dietary/queries";
 import { NotificationPreferencesSection } from "@/components/profile/notification-preferences-section";
+import { PushNotificationsControl } from "@/components/profile/push-notifications-control";
 import { getMemberReconnectPreference } from "@/lib/notifications/queries";
+import { getVapidPublicKey } from "@/lib/push/config";
 import { SettingsSection } from "@/components/profile/settings-section";
 import { authMethodLabelsForUser } from "@/lib/auth/auth-methods";
 import { listUserHouseholdsByGroup } from "@/lib/households/queries";
@@ -28,6 +30,22 @@ export default async function ProfilePage() {
   const reconnectPref = user
     ? await getMemberReconnectPreference(supabase, user.id)
     : true;
+  const vapidPublicKey = getVapidPublicKey();
+  let webPushEnabled = false;
+  let pushSubscriptionCount = 0;
+  let pushConfigured = false;
+  if (user && vapidPublicKey) {
+    const { data, error } = await supabase.rpc("my_push_subscription_state", {
+      p_endpoint: "",
+    });
+    const row = !error && Array.isArray(data) ? data[0] : null;
+    if (row && typeof row === "object") {
+      pushConfigured = true;
+      webPushEnabled = (row as { web_push_enabled?: boolean }).web_push_enabled === true;
+      const count = (row as { subscription_count?: number }).subscription_count;
+      pushSubscriptionCount = typeof count === "number" ? count : 0;
+    }
+  }
   const [householdContexts, dietaryEntries, dietaryGroups] = user
     ? await Promise.all([
         listUserHouseholdsByGroup(supabase, user.id),
@@ -126,9 +144,18 @@ export default async function ProfilePage() {
 
         <SettingsSection
           title="Notifications"
-          description="Control optional in-app reminders. Event and group updates still appear in your notification list when you are a member."
+          description="In-app updates stay in Hui. Push is optional and only alerts you about those same updates."
         >
-          <NotificationPreferencesSection reconnectRemindersEnabled={reconnectPref} />
+          <PushNotificationsControl
+            key={`${webPushEnabled}:${pushSubscriptionCount}`}
+            configured={pushConfigured}
+            vapidPublicKey={pushConfigured ? vapidPublicKey : null}
+            webPushEnabled={webPushEnabled}
+            subscriptionCount={pushSubscriptionCount}
+          />
+          <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+            <NotificationPreferencesSection reconnectRemindersEnabled={reconnectPref} />
+          </div>
         </SettingsSection>
 
         <SettingsSection

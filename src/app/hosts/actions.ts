@@ -12,6 +12,7 @@ import { pickPendingHostProposal } from "@/domain/hosts/display";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { listEventHostAssignments } from "@/lib/hosts/queries";
+import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
 
 export type HostActionState = {
@@ -75,6 +76,7 @@ export async function assignEventHostAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${groupId}`);
+  schedulePushDelivery();
   return { message: "Host suggestion updated." };
 }
 
@@ -108,6 +110,7 @@ export async function requestHostSwapAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${detail.groupId}`);
+  schedulePushDelivery();
   return { message: "Hui will suggest another host." };
 }
 
@@ -143,6 +146,7 @@ export async function acceptHostProposalAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${detail.groupId}`);
+  schedulePushDelivery();
   return { message: "Thanks — you are down to host this gathering." };
 }
 
@@ -177,6 +181,7 @@ export async function declineHostProposalAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  schedulePushDelivery();
   return { message: "Host proposal declined." };
 }
 

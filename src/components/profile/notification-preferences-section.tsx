@@ -30,7 +30,7 @@ export function NotificationPreferencesSection({
           <span className="mt-1 block text-zinc-600 dark:text-zinc-400">
             When a group you belong to enables reconnect reminders and has been
             inactive, Hui can show an in-app reminder here. This does not create
-            events or send email or push messages.
+            events. Reconnect reminders stay in your notification list.
           </span>
         </span>
       </label>

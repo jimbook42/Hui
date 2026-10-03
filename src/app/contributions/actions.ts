@@ -11,6 +11,7 @@ import {
 } from "@/domain/contributions/validation";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
+import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
 
 export type ContributionActionState = {
@@ -55,6 +56,7 @@ export async function createContributionCategoryAction(
   }
 
   revalidatePath(`/groups/${groupId}`);
+  schedulePushDelivery();
   return { message: "Category added." };
 }
 
@@ -85,6 +87,7 @@ export async function updateContributionCategoryRulesAction(
   }
 
   revalidatePath(`/groups/${groupId}`);
+  schedulePushDelivery();
   return { message: "Category rules saved." };
 }
 
@@ -116,6 +119,7 @@ export async function renameContributionCategoryAction(
   }
 
   revalidatePath(`/groups/${groupId}`);
+  schedulePushDelivery();
   return { message: "Category renamed." };
 }
 
@@ -147,6 +151,7 @@ export async function deactivateContributionCategoryAction(
   }
 
   revalidatePath(`/groups/${groupId}`);
+  schedulePushDelivery();
   return { message: "Category deactivated." };
 }
 
@@ -189,6 +194,7 @@ export async function claimContributionAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  schedulePushDelivery();
   return { message: "Contribution claimed." };
 }
 
@@ -222,6 +228,7 @@ export async function updateContributionAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  schedulePushDelivery();
   return { message: "Contribution updated." };
 }
 
@@ -253,5 +260,6 @@ export async function releaseContributionAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  schedulePushDelivery();
   return { message: "Contribution released." };
 }

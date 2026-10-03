@@ -37,7 +37,7 @@ persistence & integrations (Supabase client, storage, export)
 - **Groups** — membership, roles, group settings.
 - **Events** — proposals, candidates, responses, consensus, hosting (recurring and one-off).
 - **Contributions & dietary** — fairness and preferences tied to events/members.
-- **Notifications** — in-app activity and optional reconnect reminders (`member_notifications`, triggers/RPCs); no chat, email, SMS, or browser push in HUI-021.
+- **Notifications** — in-app activity (`member_notifications`) is the record. HUI-023 adds opt-in Web Push for those rows. No chat, email, or SMS.
 - **Export** — calendar export for confirmed events.
 - **Memories** — post-event history attached to events/groups.
 

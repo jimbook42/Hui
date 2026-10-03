@@ -2,6 +2,15 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-03 — HUI-023
+
+- Changed: Web Push on the existing HUI-021 records. Migration `20261004020000_web_push_notifications.sql` adds `profiles.web_push_enabled`, `push_subscriptions`, `notification_push_outbox`, and extends `queue_member_notification`. Profile setting subscribes this browser. Serwist service worker shows the push and opens the event, host, contribution, or group path. Sign-in `next` is unchanged.
+- Architecture: in-app row is canonical. One outbox row per new notification. Server drain uses VAPID (`web-push`) after coordination writes (`after`) and via `GET/POST /api/internal/push/drain` (bearer `PUSH_DELIVERY_SECRET` or `CRON_SECRET`). Reconnect reminders are not pushed. Payload is id, title, body, and a same-origin URL. Stale 404/410 subscriptions are deleted; one failed device does not block the others.
+- Env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:` or `https:`), existing `SUPABASE_SECRET_KEY`. No private key is committed. Without VAPID, profile shows push as unavailable and in-app notifications still work.
+- Security: subscription and outbox tables have no client grants; RLS is forced; RPCs are `SECURITY DEFINER` with `search_path = ''`. Keys are not returned by `my_push_subscription_state`.
+- Checked: `npm run validate` — lint, typecheck, 299 tests passed (2 skipped), production build. Built service worker still precaches `/offline` and includes `push` / `notificationclick` / `showNotification`. Linked `supabase db advisors --linked` was run before this migration is applied, so it does not cover the new tables. Migration is not applied to production in this change.
+- Limits: no email/SMS; no push for share-link invites to non-users; no new cancel/reopen kinds; iOS Web Push needs an installed PWA; daily Vercel cron is only a backup.
+
 ## 2026-10-03 — HUI-022B
 
 - Changed: migration `20261004010000_group_invite_links.sql` — `group_invite_links`, `get_group_invite_link`, `regenerate_group_invite_link`, `resolve_group_invite`, `join_group_via_invite` (token-validated membership via security definer RPC; no client-controlled group id). App: `/join/[token]`, group invite section (share/copy/regenerate), sign-up `next` + OAuth handoff, `invite-actions` / `join/actions`.

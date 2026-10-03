@@ -27,6 +27,7 @@ import {
 } from "@/domain/events/validation";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getEventDetail } from "@/lib/events/queries";
+import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
 
 export type EventActionState = {
@@ -172,6 +173,7 @@ export async function createEventAction(
   }
 
   revalidatePath(`/groups/${groupId}/events`);
+  schedulePushDelivery();
   redirect(`/events/${event.id}`);
 }
 
@@ -252,6 +254,7 @@ export async function updateEventAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${existing.groupId}/events`);
+  schedulePushDelivery();
   return { message: "Event updated." };
 }
 
@@ -288,5 +291,6 @@ export async function cancelEventAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${detail.groupId}/events`);
+  schedulePushDelivery();
   return { message: "Event cancelled." };
 }

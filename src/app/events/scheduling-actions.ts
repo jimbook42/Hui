@@ -22,6 +22,7 @@ import {
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getEventSchedulingContext } from "@/lib/scheduling/queries";
+import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
 
 import type { EventActionState } from "./actions";
@@ -107,6 +108,7 @@ export async function addCandidateAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  schedulePushDelivery();
   return { message: "Candidate time added." };
 }
 
@@ -167,6 +169,7 @@ export async function withdrawCandidateAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  schedulePushDelivery();
   return { message: "Candidate removed." };
 }
 
@@ -246,6 +249,7 @@ export async function setAvailabilityResponseAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  schedulePushDelivery();
   return { message: "Response saved." };
 }
 
@@ -287,5 +291,6 @@ export async function finaliseEventAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${detail.groupId}/events`);
+  schedulePushDelivery();
   return { message: "Event confirmed." };
 }

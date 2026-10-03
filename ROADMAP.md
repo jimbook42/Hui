@@ -2,13 +2,13 @@
 
 **Phase:** Core MVP — recurring planning, invitations, and delivery  
 **Milestone:** GDD definition of done (not yet reached)  
-**Current ticket:** **HUI-022A.4** — deployed; **pending live multi-user Grok QA** (accept → swap → replacement → Main)
+**Current ticket:** **HUI-023** — Web Push notifications implemented on `feat/hui-023-web-push-notifications` (migration `20261004020000`); not merged and not production-deployed
 **Last completed ticket:** **HUI-022B** — share-link group invitations (`20261004010000` + app)
-**Overall progress:** Foundation through HUI-021 shipped significant event, scheduling, host, contribution, dietary, and in-app notification **foundations**. Core GDD loop (invitations, recurring planning cycles, recurrence UX, persistent availability, scheduling recommendations, full notifications, calendar/memories, completed-event → next cycle) remains **open**.
+**Overall progress:** Foundation through HUI-022B shipped event, scheduling, host, contribution, dietary, in-app notification, and share-link foundations. **HUI-023** adds opt-in Web Push on top of those in-app records. Core GDD loop (recurring planning cycles, recurrence UX, persistent availability, scheduling recommendations, email delivery, calendar/memories, completed-event → next cycle) remains **open**.
 
 **North star:** HuI proposes, coordinates and remembers. **The group decides.**
 
-**Next implementation ticket:** **HUI-023** — Recurring planning / cycle engine (share-link invites shipped as **HUI-022B**)
+**Next implementation ticket:** Recurring planning / cycle engine (open; this item was previously numbered HUI-023 before Web Push took that id)
 
 ---
 
@@ -150,7 +150,7 @@ Persistent recurring constraints/preferences with privacy; per-event override; W
 | 4 — Scheduling & consensus | [~] Partial | HUI-009/010/017: manual candidates, consensus, finalise; **no** recommendation engine or persistent availability |
 | 5 — Host coordination | [~] Partial | HUI-020 foundation + **HUI-022A**: auto-propose on confirm, accept/swap, optional hosting, no auto-accept, consecutive-host setting, member “I don’t host”; **not** household rotation or full fairness engine |
 | 6 — Contributions & dietary | [~] Partial | HUI-018/019 + **HUI-022A**: seed categories on confirm, host-bound categories, default assignee column; **not** full standing-preference editor or admin reassignment flows |
-| 7 — Notifications | [~] Foundation | HUI-021 + **HUI-022A** trigger copy fixes; **not** Web Push/email/outbox/deep links |
+| 7 — Notifications | [~] In-app + Web Push | HUI-021 in-app records; **HUI-023** opt-in Web Push, subscriptions, and outbox delivery. **Not** email. Cancel/reopen are not separate notification kinds. |
 | 8 — Recurring planning & invitations | [ ] Not started | HUI-022–026 (and related) |
 | 9 — Delivery, calendar, memories | [ ] Not started | HUI-027–029 |
 | 10 — Production MVP | [ ] Not started | HUI-030 |
@@ -231,7 +231,8 @@ Do not treat these as completing the larger GDD capabilities listed in later sec
 ### Phase 7 — Notifications (foundation only)
 
 - [x] **HUI-021** — **Foundation:** `member_notifications`, read state, trigger-driven in-app messages for some domain events, reconnect reminders (`sync_reconnect_reminders_for_member`), profile opt-out; migration `20261002220000_notifications.sql`
-- [ ] **Not in HUI-021:** Web Push subscriptions and delivery; email; outbox → worker → channel architecture; full actionable **deep links** for all GDD notification types; invitation notifications
+- [x] **HUI-023** — **Web Push:** opt-in `profiles.web_push_enabled`, multi-device `push_subscriptions`, `notification_push_outbox` written by `queue_member_notification`, server drain with VAPID, service-worker push/click. Migration `20261004020000_web_push_notifications.sql`. In-app rows stay canonical. Reconnect reminders are not pushed.
+- [ ] **Not in HUI-021/023:** email; invitation notifications for people who are not already members; notification kinds for cancel/reopen beyond the existing trigger set
 
 ### Phase 8 — Calendar export
 
@@ -268,7 +269,9 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 - RLS/security; invitation notifications (when delivery stack exists)
 - Replace add-by-user-ID as the primary onboarding path
 
-### HUI-023 — Recurring planning / cycle engine
+### Recurring planning / cycle engine (open)
+
+Previously listed as HUI-023. That number is now **Web Push** (see HUI-023 above). This cycle engine is still not started.
 
 - **Planning due** from group recurrence (not auto-confirmed event chains)
 - Open/close planning cycle; normally one active next cycle
@@ -299,21 +302,20 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 - Document recommendation algorithm; no opaque leaderboard scores
 - Optional: auto-propose candidates for group review (group still confirms)
 
-**Host rotation (full GDD)** — implement within HUI-023/026 or a focused slice:
+**Host rotation (full GDD)** — implement within the cycle engine or HUI-026, or a focused slice:
 
 - Eligibility, household rotation units, standing exclusions, deferred turns, swaps, volunteer
 - Explainable recommendation; integrate with cycle and completed-event history
 
-**Contribution coordination (full GDD)** — extend HUI-018 within HUI-023/029:
+**Contribution coordination (full GDD)** — extend HUI-018 within the cycle engine or HUI-029:
 
 - Standing rules vs event assignments; assign/reassign/gaps; household-level rules
 
-### HUI-027 — Web Push + notification delivery architecture
+### HUI-027 — Notification delivery follow-on
 
-- Committed DB state → **outbox** → **worker** → delivery
-- Web Push where supported (MVP requirement)
-- Deep links to actions
-- Extend beyond trigger-only in-app inserts
+- [x] Web Push channel, outbox, and deep links for existing HUI-021 kinds — shipped as **HUI-023**
+- Email remains **HUI-028**
+- Broader worker coverage for future notification kinds is still open
 
 ### HUI-028 — Email delivery + actionable notification flows
 
@@ -346,7 +348,7 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 | Invitations + frictionless invite acceptance + signup continuation | [ ] HUI-022 |
 | Recurring groups + casual groups + one-off events | [~] Settings/one-off/recurring **anchor** only |
 | Recurrence: weeks, months, N intervals, weekday patterns, multi-weekday, time windows, nominal preview | [ ] HUI-024 |
-| Recurrence schedules **planning**, not confirmed future chain | [ ] HUI-023 |
+| Recurrence schedules **planning**, not confirmed future chain | [ ] cycle engine (open) |
 | Persistent availability + event overrides + private availability | [ ] HUI-025 |
 | Works / Can make work / Can’t attend | [~] maybe/yes/no mechanics; copy/rules incomplete |
 | Candidate times + consensus + minimum attendance | [x] HUI-009/010/017 |
@@ -358,10 +360,10 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 | Dietary information (privacy tiers) | [x] HUI-019 |
 | Event confirmation | [x] finalise_event |
 | Outbound ICS | [ ] HUI-029 |
-| Web Push + email + in-app actionable notifications | [~] in-app only HUI-021 |
+| Web Push + email + in-app actionable notifications | [~] in-app HUI-021 + Web Push HUI-023; email still open |
 | Reminders (planning, deadline, event) | [ ] |
 | Event completion + memories/history | [ ] HUI-029 |
-| Host/contribution history update + **next recurring cycle** | [ ] HUI-023/029 |
+| Host/contribution history update + **next recurring cycle** | [ ] cycle engine / HUI-029 |
 | RLS/security, privacy, TZ/DST | [~] foundation; audit in HUI-030 |
 | PWA/mobile UX, a11y, production monitoring | [~] partial |
 | Full E2E core loop validation | [ ] HUI-030 |
@@ -390,8 +392,9 @@ Also exercise: minimum attendance, deadline, admin override, host veto, never-ho
 | Item | Detail |
 | --- | --- |
 | Supabase migrations in production | **Applied 2026-10-03** on linked project `xmvzzypefpiethefrfka` via `supabase db push` (includes `20261002170000`–`20261003000000` through HUI-022A). **Live multi-user product QA** for coordination/notifications still required before treating flows as done. |
-| Invitation + delivery | HUI-022 depends on auth/session; invitation notifications fully depend on HUI-027/028 |
-| Recurring engine | HUI-023 depends on extended recurrence model (HUI-024) and benefits from HUI-025/026 |
+| Invitation + delivery | Share links shipped (HUI-022B). Invitation notifications for non-members are not part of Web Push. Email delivery is HUI-028. |
+| Recurring engine | The cycle engine (previously numbered HUI-023) depends on the extended recurrence model (HUI-024) and benefits from HUI-025/026 |
+| Web Push production | HUI-023 needs `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, and `SUPABASE_SECRET_KEY` on the server before any browser can subscribe. Do not commit the private key. |
 | Event completion | Schema supports `completed` and `event_memories`; app workflow required before next-cycle loop is real |
 | OAuth production | Google/Microsoft/Facebook enabled in Supabase dashboard; live sign-in retest recommended |
 
@@ -419,7 +422,7 @@ No other **hard** blockers identified in-repo; remaining work is substantial pro
 | Prior claim | Actual state |
 | --- | --- |
 | Phase 5 Host rotation [x] | HUI-020 is **host assignment + count-based suggestion + veto** only — not full recurring host rotation |
-| Phase 7 Notifications [x] | HUI-021 is **in-app foundation** only — not Web Push, email, or outbox/worker |
+| Phase 7 Notifications [x] | HUI-021 is the **in-app record**. HUI-023 adds **Web Push** on that record. Email is still open. |
 | HUI-008 recurrence | **Series anchor** (title, week/month interval, starts_on) — **not** recurring planning engine |
 | Known blockers: None | **Production DB is migration-current** (Oct 2026 push); **large GDD gaps** (invitations, cycles, recommendations, delivery, memories) and **live coordination QA** remain |
 | Add by user ID | Still the only membership path; UI copy acknowledges invitations are future work |

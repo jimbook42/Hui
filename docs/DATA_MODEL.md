@@ -2,15 +2,15 @@
 
 Implemented schema in `supabase/migrations`. One-off and recurring gatherings share one `events` table. A one-off event has no `recurrence_series_id`.
 
-Photos, notification delivery, fairness scores, and calendar export are not stored yet.
+Photos, fairness scores, and calendar export are not stored yet.
 
-In-app notifications are stored in `member_notifications` (HUI-021). External email/SMS/push delivery is not stored.
+In-app notifications are stored in `member_notifications` (HUI-021). HUI-023 stores Web Push subscriptions in `push_subscriptions` and one `notification_push_outbox` row per new notification. Email and SMS are not stored.
 
 ## Identity and membership
 
 | Table | Purpose | Relationships and privacy |
 | --- | --- | --- |
-| `profiles` | Display name for `auth.users` | Created when an auth user is inserted. Dietary data is not on this row. `member_reconnect_reminders_enabled` opts the member out of optional reconnect reminder notifications (default on). A person can read their own profile and the display names of people who share an active membership. |
+| `profiles` | Display name for `auth.users` | Created when an auth user is inserted. Dietary data is not on this row. `member_reconnect_reminders_enabled` opts the member out of optional reconnect reminder notifications (default on). `web_push_enabled` opts the member into Web Push (default off) and does not turn in-app notifications off. A person can read their own profile and the display names of people who share an active membership. |
 | `groups` | A gathering circle | `owner_id` mirrors the active owner membership. Active members can read the group. |
 | `group_settings` | Rules for that group | One row, created with the group. See columns below. Active members can read; owner and admins can update. |
 | `group_memberships` | Person in a group | Role `owner`, `admin`, or `member`. Leaving sets `status` to `removed` and keeps the row. A user may belong to many groups. One active owner per group. |
@@ -46,6 +46,8 @@ Initial defaults: any member may propose, both event modes are allowed, maybe re
 | Table | Purpose | Relationships and privacy |
 | --- | --- | --- |
 | `member_notifications` | In-app activity for one member | Created only through `SECURITY DEFINER` helpers and triggers (not direct client insert). Each row has a kind, short title/body (no private availability or dietary detail), optional `event_id`, and a per-member `dedupe_key`. Members read and mark read their own rows only. Removed members keep no new notifications; opening a link still requires current group/event RLS. |
+| `push_subscriptions` | One browser Web Push subscription | Endpoint is unique. `p256dh` and `auth_key` are written by `register_push_subscription` and are not granted to `anon` or `authenticated`. A member inspects state through `my_push_subscription_state` (preference, whether this endpoint is saved, and a count). |
+| `notification_push_outbox` | One pending Web Push job per new in-app notification | Written inside `queue_member_notification`. Service role drains it. Not a second history. |
 
 Responses, hosts, contributions, and memory attendees reference `profiles.id`. Hosts, contributions, and memory attendees also store `display_name` as it was when the row was written. Those foreign keys use `ON DELETE RESTRICT`, so deleting an account cannot erase a gathering. Removing a member does not delete or null those rows; it only marks the membership removed. After that, the person cannot read the group's data. Remaining members still can.
 
@@ -53,7 +55,7 @@ Responses, hosts, contributions, and memory attendees reference `profiles.id`. H
 
 Deleting an account is a deliberate, server-side flow: the authenticated user confirms with `DELETE`, the app removes the Supabase Auth user with the server secret key and verifies it is gone, then Postgres runs `delete_my_account_data()` (identity from `auth.uid()` only). That is **not** one atomic transaction across Auth and Postgres. The success message is shown only when both steps succeed.
 
-**Removed:** all `dietary_entries` (and shares), private `event_responses`, in-app `member_notifications`, household membership rows, active group memberships (status `removed`), and sole-member groups (entire group tree). The profile row is kept but anonymised (`display_name` → `Former member`, `account_deleted_at` set) so historical foreign keys stay valid. The profile no longer references `auth.users` after migration `20261002160000_account_deletion`.
+**Removed:** all `dietary_entries` (and shares), private `event_responses`, in-app `member_notifications`, Web Push `push_subscriptions`, household membership rows, active group memberships (status `removed`), and sole-member groups (entire group tree). `web_push_enabled` is set back to false. The profile row is kept but anonymised (`display_name` → `Former member`, `account_deleted_at` set) so historical foreign keys stay valid. The profile no longer references `auth.users` after migration `20261002160000_account_deletion`.
 
 **May remain for other members:** shared events, group-visible availability responses, hosts, contributions, memories, and membership audit rows that already referenced the person. Snapshot `display_name` columns on historical rows are unchanged.
 
