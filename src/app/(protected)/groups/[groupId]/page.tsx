@@ -29,6 +29,8 @@ import {
 } from "@/domain/groups/permissions";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getGroupHouseholdMemberView } from "@/lib/households/queries";
+import { GroupInviteSection } from "@/components/groups/group-invite-section";
+import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
 import { createClient } from "@/lib/supabase/server";
 
 function roleLabel(role: string): string {
@@ -67,6 +69,18 @@ export default async function GroupDetailPage({ params }: PageProps) {
       listGroupSharedDietary(supabase, groupId),
     ]);
   const viewerCanManageCategories = canManageContributionCategories(detail.viewerRole);
+
+  let inviteToken: string | null = null;
+  if (viewerCanManage) {
+    const { data: tokenData, error: inviteError } = await supabase.rpc(
+      "get_group_invite_link",
+      { p_group_id: groupId },
+    );
+    if (!inviteError && typeof tokenData === "string") {
+      inviteToken = tokenData;
+    }
+  }
+  const appOrigin = await resolveAuthRedirectOrigin();
 
   return (
     <AppShell title={detail.name}>
@@ -132,6 +146,14 @@ export default async function GroupDetailPage({ params }: PageProps) {
         viewerUserId={user!.id}
         canManageMembers={viewerCanManage}
       />
+
+      {viewerCanManage && inviteToken ? (
+        <GroupInviteSection
+          groupId={detail.id}
+          inviteToken={inviteToken}
+          appOrigin={appOrigin}
+        />
+      ) : null}
 
       {viewerCanManage ? (
         <section className="mt-10">

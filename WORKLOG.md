@@ -2,6 +2,15 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-03 — HUI-022B
+
+- Changed: migration `20261004010000_group_invite_links.sql` — `group_invite_links`, `get_group_invite_link`, `regenerate_group_invite_link`, `resolve_group_invite`, `join_group_via_invite` (token-validated membership via security definer RPC; no client-controlled group id). App: `/join/[token]`, group invite section (share/copy/regenerate), sign-up `next` + OAuth handoff, `invite-actions` / `join/actions`.
+- Security: invite tokens are high-entropy secrets; invalid/revoked tokens return no group data; membership only through `join_group_via_invite`; admins/owners only for link create/regenerate (`is_group_admin`).
+- Pre-deploy review (HUI-022B): HUI-022B definer RPCs use `set search_path = ''` with schema-qualified references; explicit `REVOKE` on `resolve_group_invite` / `join_group_via_invite` from `public` (join also from `anon`). Tests extended for join idempotency, execute privileges, and direct table access.
+- Tests: `group-invite-links.test.ts`, `domain/invites/*`, `routes.test.ts`, `middleware-guard.test.ts`, `e2e/join-invite.spec.ts`. PGlite join RPC passed locally; still verify grants, RLS, and definer behaviour on linked Supabase before marking complete.
+- Checked: `npm run validate` (272 passed, 2 skipped; build OK).
+- MVP limits: no email/SMS, QR, named invites, expiring links, or invitation inbox; add-by-user-ID retained for admins.
+
 ## 2026-10-03 — HUI-022A.4
 
 - Changed: `canRequestHostSwap` (proposed or accepted host); `EventHostSection` + event page pass `viewerUserId` / `canRequestSwap`; `requestHostSwapAction` uses new permission; migration `20261003230000_accepted_host_request_swap.sql` extends `request_host_swap` for `accepted` rows and fixes `contributions_before_write` so host-bound sync can clear assignee on swap. Tests: `coordination-hui-022a4.test.ts`, permissions + `queries.test.ts`.

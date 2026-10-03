@@ -3,6 +3,6 @@
 Unresolved implementation questions only. Add items when a real decision or task is blocked.
 
 - [ ] Decide when to add shadcn/ui (likely start of Phase 1 UI).
-- [ ] Email or invite-link membership flow (HUI-007 adds existing users by profile/user ID only).
 - [ ] **HUI-022A.4 live Grok QA** — Family Dinner: accept → Ask to swap (accepted host) → replacement accept → Main lifecycle while proposing.
-- [ ] HUI-022 invitations — blocked until HUI-022A coordination QA is accepted.
+- [ ] **HUI-022B live QA** — share invite link → sign-up/sign-in return → join; regenerate invalidates old link.
+- [ ] HUI-022 remainder — named invites, invitation records/lifecycle, invitation notifications (post HUI-027/028).

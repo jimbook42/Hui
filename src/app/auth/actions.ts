@@ -34,6 +34,7 @@ export async function signUpAction(
   const password = String(formData.get("password") ?? "");
   const displayNameRaw = String(formData.get("display_name") ?? "");
   const displayName = normalizeDisplayName(displayNameRaw);
+  const next = sanitizeNextPath(String(formData.get("next") ?? ""));
 
   if (!email || !password) {
     return { error: "Email and password are required." };
@@ -60,7 +61,7 @@ export async function signUpAction(
 
   if (data.session) {
     await ensureUserProfile(supabase, data.user!.id, displayName);
-    redirect("/dashboard");
+    redirect(next);
   }
 
   return {

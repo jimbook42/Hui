@@ -24,6 +24,12 @@ describe("resolveSessionGuard", () => {
     });
   });
 
+  it("allows public join invite routes without a session", () => {
+    expect(
+      resolveSessionGuard({ pathname: "/join/secret-token", hasUser: false }),
+    ).toEqual({ action: "next" });
+  });
+
   it("allows public routes without a session", () => {
     expect(resolveSessionGuard({ pathname: "/", hasUser: false })).toEqual({
       action: "next",
@@ -57,6 +63,16 @@ describe("resolveSessionGuard", () => {
     ).toEqual({
       action: "redirect",
       location: "/profile",
+    });
+    expect(
+      resolveSessionGuard({
+        pathname: "/sign-in",
+        hasUser: true,
+        nextParam: "/join/invite-token",
+      }),
+    ).toEqual({
+      action: "redirect",
+      location: "/join/invite-token",
     });
   });
 });

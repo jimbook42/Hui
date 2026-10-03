@@ -3,12 +3,12 @@
 **Phase:** Core MVP — recurring planning, invitations, and delivery  
 **Milestone:** GDD definition of done (not yet reached)  
 **Current ticket:** **HUI-022A.4** — deployed; **pending live multi-user Grok QA** (accept → swap → replacement → Main)
-**Last completed ticket:** **HUI-022A.2** — host timing/eligibility (`20261003180000` + app; deployed)
+**Last completed ticket:** **HUI-022B** — share-link group invitations (`20261004010000` + app)
 **Overall progress:** Foundation through HUI-021 shipped significant event, scheduling, host, contribution, dietary, and in-app notification **foundations**. Core GDD loop (invitations, recurring planning cycles, recurrence UX, persistent availability, scheduling recommendations, full notifications, calendar/memories, completed-event → next cycle) remains **open**.
 
 **North star:** HuI proposes, coordinates and remembers. **The group decides.**
 
-**Next implementation ticket:** **HUI-022** — Invitations and frictionless joining
+**Next implementation ticket:** **HUI-023** — Recurring planning / cycle engine (share-link invites shipped as **HUI-022B**)
 
 ---
 
@@ -259,8 +259,9 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 
 ### HUI-022 — Invitations and frictionless joining
 
-- Invitation records and lifecycle (invited, accepted, declined, expired/revoked)
-- Shareable / deep invitation link
+- [x] **HUI-022B** — Reusable share-link invites (`/join/[token]`), native share + copy, auth `next` handoff, admin regenerate; migration `20261004010000_group_invite_links.sql`; no email/SMS/named invites/QR
+- Invitation records and lifecycle (invited, accepted, declined, expired/revoked) — **not** share-link scope
+- Shareable / deep invitation link — **MVP share link done (HUI-022B)**
 - Unauthenticated invite experience; which group invited them
 - New user signup → return to invitation → **explicit accept** → membership + role
 - Existing user acceptance path

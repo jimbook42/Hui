@@ -4,8 +4,18 @@ import { signUpAction } from "@/app/auth/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import { AuthOAuthSection } from "@/components/auth/auth-provider-options";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { sanitizeNextPath } from "@/lib/auth/routes";
 
-export default function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const params = await searchParams;
+  const next = sanitizeNextPath(
+    typeof params.next === "string" ? params.next : undefined,
+  );
+
   return (
     <AuthShell
       title="Create your account"
@@ -13,14 +23,17 @@ export default function SignUpPage() {
       footer={
         <>
           Already have an account?{" "}
-          <Link href="/sign-in" className="font-medium underline-offset-4 hover:underline">
+          <Link
+            href={next === "/dashboard" ? "/sign-in" : `/sign-in?next=${encodeURIComponent(next)}`}
+            className="font-medium underline-offset-4 hover:underline"
+          >
             Sign in
           </Link>
         </>
       }
     >
-      <AuthOAuthSection />
-      <AuthForm action={signUpAction} submitLabel="Sign up">
+      <AuthOAuthSection next={next} />
+      <AuthForm action={signUpAction} submitLabel="Sign up" hiddenFields={{ next }}>
         <AuthField
           label="Display name"
           name="display_name"
