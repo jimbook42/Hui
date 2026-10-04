@@ -22,12 +22,13 @@ export default async function GroupEventsPage({ params }: PageProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const detail = await getGroupDetail(supabase, groupId, user!.id);
+  const [detail, events] = await Promise.all([
+    getGroupDetail(supabase, groupId, user!.id),
+    listEventsForGroup(supabase, groupId),
+  ]);
   if (!detail) {
     notFound();
   }
-
-  const events = await listEventsForGroup(supabase, groupId);
   const canPropose =
     canProposeEvents(detail.viewerRole, detail.settings) &&
     (groupAllowsEventKind("one_off", detail.settings) ||

@@ -21,6 +21,7 @@ import {
 } from "@/domain/scheduling/validation";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
+import { getGroupResponseSettings } from "@/lib/groups/response-settings";
 import { getEventSchedulingContext } from "@/lib/scheduling/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
@@ -196,17 +197,23 @@ export async function setAvailabilityResponseAction(
     return { error: "This event is no longer accepting availability responses." };
   }
 
-  const group = await getGroupDetail(supabase, detail.groupId, user.id);
-  if (!group) {
+  const responseSettings = await getGroupResponseSettings(supabase, detail.groupId);
+  if (!responseSettings) {
     return { error: "You do not have access to this group." };
   }
 
   const maybeError = validateAvailabilityChoice(
     choice,
-    group.settings.maybeResponsesEnabled,
+    responseSettings.maybeResponsesEnabled,
   );
   if (maybeError) {
     return { error: maybeError };
+  }
+
+  const privateNoteRaw = String(formData.get("private_note") ?? "");
+  const privateNote = normalizePrivateAttendanceNote(privateNoteRaw);
+  if (privateNoteRaw.trim().length > 0 && privateNote === null) {
+    return { error: "Private note is too long (500 characters max)." };
   }
 
   const { data: candidate, error: candidateError } = await supabase
@@ -225,12 +232,6 @@ export async function setAvailabilityResponseAction(
   }
   if (candidate.status !== "proposed" && candidate.status !== "selected") {
     return { error: "This candidate is no longer open for responses." };
-  }
-
-  const privateNoteRaw = String(formData.get("private_note") ?? "");
-  const privateNote = normalizePrivateAttendanceNote(privateNoteRaw);
-  if (privateNoteRaw.trim().length > 0 && privateNote === null) {
-    return { error: "Private note is too long (500 characters max)." };
   }
 
   const dbResponse = availabilityToDbResponse(choice);

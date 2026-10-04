@@ -2,6 +2,25 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-026P performance audit + fixes
+
+**Baseline (observed / code-traced bottlenecks):**
+- Event and respond routes blocked on long server waterfalls: sequential `getEventDetail` → `getGroupDetail` → large `Promise.all`, then per-candidate `candidate_attendance_roster` RPCs on the full event page.
+- Attendance Yes/Maybe/No felt multi-second because `useTransition` waited for `router.refresh()` (full RSC refetch) **before** advancing the respond flow; server action also loaded full `getGroupDetail` for one boolean setting.
+- Group → events and notification → respond paths paid extra sequential round trips; no route-level loading UI during navigations.
+- Protected layout still runs auth + profile ensure on every navigation (necessary; not changed).
+
+**Fixes:**
+- Parallelised independent Supabase reads in `getEventDetail`, `getGroupDetail`, respond page, and group events list.
+- `setAvailabilityResponseAction` uses lightweight `getGroupResponseSettings` instead of full group detail.
+- Event page streams heavy sections via `Suspense` + `loading.tsx`; shell (title, breadcrumbs, status) renders after a single event fetch.
+- Respond flow advances step immediately after successful save; `router.refresh()` runs after UI acknowledgement.
+- Dev-only timing logs: set `HUI_DEV_PERF=1` in development.
+
+**Remaining risks:** Full event page still loads all coordination surfaces in one streamed chunk; multiple roster RPCs when many candidates; group detail page still loads full admin surface; physical Android re-measurement recommended on NZ mobile.
+
+- `npm run validate` passed.
+
 ## 2026-10-04 — Member hosting standing “always”
 
 - Migration `20261004120000_member_hosting_standing_always.sql`: enum value `always` on `member_hosting_standing`; `pick_host_candidate` prefers eligible `always` members before `default`, then unchanged `prefer_not` fallback and consecutive-host passes.

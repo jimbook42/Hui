@@ -101,10 +101,11 @@ export async function getGroupDetail(
     return null;
   }
 
-  const { data: members, error: membersError } = await supabase
-    .from("group_memberships")
-    .select(
-      `
+  const [membersResult, settingsResult] = await Promise.all([
+    supabase
+      .from("group_memberships")
+      .select(
+        `
       user_id,
       role,
       joined_at,
@@ -114,21 +115,19 @@ export async function getGroupDetail(
         display_name
       )
     `,
-    )
-    .eq("group_id", groupId)
-    .eq("status", "active")
-    .order("joined_at", { ascending: true });
+      )
+      .eq("group_id", groupId)
+      .eq("status", "active")
+      .order("joined_at", { ascending: true }),
+    supabase.from("group_settings").select("*").eq("group_id", groupId).maybeSingle(),
+  ]);
 
+  const { data: members, error: membersError } = membersResult;
   if (membersError) {
     throw new Error(membersError.message);
   }
 
-  const { data: settings, error: settingsError } = await supabase
-    .from("group_settings")
-    .select("*")
-    .eq("group_id", groupId)
-    .maybeSingle();
-
+  const { data: settings, error: settingsError } = settingsResult;
   if (settingsError) {
     throw new Error(settingsError.message);
   }

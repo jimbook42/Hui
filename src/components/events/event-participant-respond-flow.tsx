@@ -185,8 +185,8 @@ export function EventParticipantRespondFlow({
       }
       setResponseOverride(choice);
       setPendingChoice(null);
-      router.refresh();
       pushStep(nextStepAfterAttendanceSave(choice));
+      router.refresh();
     });
   }
 
@@ -220,8 +220,8 @@ export function EventParticipantRespondFlow({
       setSuggestSubmittedRange(
         formatCompactEventTimeRange(parsed.startsAt, parsed.endsAt, timeZone),
       );
-      router.refresh();
       pushStep("suggest-done");
+      router.refresh();
     });
   }
 

@@ -38,17 +38,17 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
     notFound();
   }
 
-  const group = await getGroupDetail(supabase, detail.groupId, user.id);
-  if (!group) {
-    notFound();
-  }
-
-  const [scheduling, contributions, categories, hostContext] = await Promise.all([
+  const [group, scheduling, contributions, categories, hostContext] = await Promise.all([
+    getGroupDetail(supabase, detail.groupId, user.id),
     getEventSchedulingContext(supabase, detail.id, detail.groupId, user.id),
     listEventContributions(supabase, detail.id),
     listContributionCategories(supabase, detail.groupId),
     getEventHostContext(supabase, detail.id, detail.groupId, user.id),
   ]);
+
+  if (!group) {
+    notFound();
+  }
 
   const primary = pickParticipantTimeCandidate(scheduling.candidates);
   const candidate =
