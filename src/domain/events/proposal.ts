@@ -8,6 +8,7 @@ import {
   parseStartsOnDate,
 } from "@/domain/events/validation";
 import { isValidCoordinates, type EventCoordinates } from "@/domain/events/location";
+import { parseEventFoodInvolvement, type EventFoodInvolvement } from "@/domain/events/food";
 import { validateCandidateWindow } from "@/domain/scheduling/validation";
 
 export type ProposalCandidateInput = {
@@ -33,6 +34,7 @@ export type EventProposalDraft = {
   recurrence: ProposalRecurrenceInput | null;
   candidates: ProposalCandidateInput[];
   initialHostUserId: string | null | "suggest";
+  foodInvolvement: EventFoodInvolvement | null;
 };
 
 export type ProposalValidationResult =
@@ -58,6 +60,7 @@ export type ProposeGroupEventPayload = {
   candidates: RpcProposalCandidate[];
   setInitialHost: boolean;
   initialHostUserId: string | null;
+  foodInvolvement: EventFoodInvolvement | null;
 };
 
 export function candidatesForRpc(
@@ -135,6 +138,11 @@ export function validateEventProposalDraft(
     return { ok: false, error: "Choose a valid spot on the map." };
   }
 
+  const foodInvolvement = parseEventFoodInvolvement(draft.foodInvolvement);
+  if (!foodInvolvement) {
+    return { ok: false, error: "Say whether food is involved." };
+  }
+
   if (draft.candidates.length < 1) {
     return { ok: false, error: "Add at least one proposed time." };
   }
@@ -198,6 +206,7 @@ export function validateEventProposalDraft(
       candidates: candidatesForRpc(draft.candidates),
       setInitialHost,
       initialHostUserId,
+      foodInvolvement,
     },
   };
 }

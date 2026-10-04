@@ -29,6 +29,7 @@ async function requireUser() {
 
 function revalidateDietaryPaths(groupId?: string) {
   revalidatePath("/profile");
+  revalidatePath("/profile/dietary");
   if (groupId) {
     revalidatePath(`/groups/${groupId}`);
     revalidatePath(`/groups/${groupId}/events`);
@@ -204,5 +205,102 @@ export async function setDietaryShareAllGroupsAction(
   revalidatePath("/events/[eventId]", "page");
   return {
     message: enabled ? "Shared with all your groups." : "No longer shared with all your groups.",
+  };
+}
+
+async function listOwnedEntryIds(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], userId: string) {
+  const { data, error } = await supabase.from("dietary_entries").select("id").eq("user_id", userId);
+  if (error) {
+    return { ok: false as const, error: error.message };
+  }
+  return { ok: true as const, ids: (data ?? []).map((row) => row.id as string) };
+}
+
+/** Scope control: share or stop sharing all entries with every group. */
+export async function setDietaryGlobalShareAction(
+  _prev: DietaryActionState,
+  formData: FormData,
+): Promise<DietaryActionState> {
+  const enabledRaw = String(formData.get("enabled") ?? "");
+  if (enabledRaw !== "true" && enabledRaw !== "false") {
+    return { error: "Could not change sharing." };
+  }
+  const enabled = enabledRaw === "true";
+  const { supabase, user } = await requireUser();
+  const entries = await listOwnedEntryIds(supabase, user.id);
+  if (!entries.ok) {
+    return { error: entries.error };
+  }
+  if (entries.ids.length === 0) {
+    return { error: "Add dietary information before changing sharing." };
+  }
+
+  const { error } = await supabase
+    .from("dietary_entries")
+    .update({ share_with_all_groups: enabled })
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateDietaryPaths();
+  revalidatePath("/groups/[groupId]", "page");
+  revalidatePath("/events/[eventId]", "page");
+  return {
+    message: enabled
+      ? "All your dietary information is shared with every group you are in."
+      : "Stopped sharing all dietary information with every group.",
+  };
+}
+
+/** Scope control: share or stop sharing all entries with one group. */
+export async function setDietaryGroupShareAction(
+  _prev: DietaryActionState,
+  formData: FormData,
+): Promise<DietaryActionState> {
+  const groupId = parseGroupId(String(formData.get("group_id") ?? ""));
+  const enabledRaw = String(formData.get("enabled") ?? "");
+  if (!groupId || (enabledRaw !== "true" && enabledRaw !== "false")) {
+    return { error: "Could not change sharing for that group." };
+  }
+  const enabled = enabledRaw === "true";
+  const { supabase, user } = await requireUser();
+  const entries = await listOwnedEntryIds(supabase, user.id);
+  if (!entries.ok) {
+    return { error: entries.error };
+  }
+  if (entries.ids.length === 0) {
+    return { error: "Add dietary information before changing sharing." };
+  }
+
+  if (enabled) {
+    for (const entryId of entries.ids) {
+      const { error } = await supabase.from("dietary_entry_shares").insert({
+        dietary_entry_id: entryId,
+        group_id: groupId,
+      });
+      if (error && error.code !== "23505") {
+        return { error: error.message };
+      }
+    }
+  } else {
+    const { error } = await supabase
+      .from("dietary_entry_shares")
+      .delete()
+      .eq("group_id", groupId)
+      .in("dietary_entry_id", entries.ids);
+    if (error) {
+      return { error: error.message };
+    }
+  }
+
+  revalidateDietaryPaths(groupId);
+  revalidatePath("/groups/[groupId]", "page");
+  revalidatePath("/events/[eventId]", "page");
+  return {
+    message: enabled
+      ? "All your dietary information is shared with that group."
+      : "Stopped sharing your dietary information with that group.",
   };
 }

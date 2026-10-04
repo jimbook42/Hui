@@ -4,6 +4,8 @@ import type { GroupSettingsRow } from "@/lib/groups/types";
 
 import {
   canCancelEvent,
+  canEditEventLocation,
+  canEditEventMetadata,
   canProposeEvents,
   groupAllowsEventKind,
 } from "./permissions";
@@ -48,5 +50,14 @@ describe("event permissions", () => {
     expect(canCancelEvent("member", "user-2", "user-1", "proposing")).toBe(false);
     expect(canCancelEvent("admin", "user-2", "user-1", "proposing")).toBe(true);
     expect(canCancelEvent("admin", "user-2", "user-1", "cancelled")).toBe(false);
+  });
+
+  it("lets the accepted host edit the place without full metadata rights", () => {
+    expect(
+      canEditEventLocation("member", "host-user", "creator-user", "proposing", "host-user"),
+    ).toBe(true);
+    expect(
+      canEditEventMetadata("member", "host-user", "creator-user", "proposing"),
+    ).toBe(false);
   });
 });

@@ -10,6 +10,8 @@ import { EventDateBadge } from "@/components/hui/event-date-badge";
 import { HashDisclosureOpener } from "@/components/hui/hash-disclosure-opener";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
+import { OpenInMapsLink } from "@/components/map/open-in-maps-link";
+import { isDietaryCoordinationRelevant } from "@/domain/events/food";
 import {
   BowlIcon,
   ClockIcon,
@@ -106,10 +108,15 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
       <ul className="space-y-2 text-base font-bold text-foreground">
         <li className="flex items-start gap-3">
           <PinIcon size={20} className="mt-0.5 shrink-0 text-accent" />
-          <span className="min-w-0">
+          <span className="min-w-0 flex-1">
             {detail.location?.trim() ? detail.location : (
               <span className="text-muted-foreground">Place still being worked out</span>
             )}
+            <OpenInMapsLink
+              location={detail.location}
+              coordinates={detail.locationCoordinates}
+              className="mt-2"
+            />
           </span>
         </li>
         {acceptedHost ? (
@@ -366,7 +373,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
         />
       </DisclosureCard>
 
-      {detail.status !== "cancelled" ? (
+      {detail.status !== "cancelled" && isDietaryCoordinationRelevant(detail.foodInvolvement) ? (
         <DisclosureCard
           title="Dietary needs"
           summary={
@@ -426,7 +433,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
         </DisclosureCard>
       ) : null}
 
-      {data.canEdit || data.canCancel ? (
+      {data.canEdit || data.canEditLocation || data.canCancel ? (
         <DisclosureCard
           title="Manage this hui"
           summary={
@@ -434,12 +441,15 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
               ? "Edit details or cancel"
               : data.canEdit
                 ? "Edit details"
-                : "Cancel"
+                : data.canEditLocation
+                  ? "Confirm the place"
+                  : "Cancel"
           }
           icon={<SparkIcon size={20} />}
         >
           <EventDetailManagement
             canEdit={data.canEdit}
+            canEditLocation={data.canEditLocation && !data.canEdit}
             canCancel={data.canCancel}
             eventId={detail.id}
             updateAction={updateEventAction}

@@ -2,6 +2,16 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026U.4 UX refinement
+
+- **Entry:** signed-in users hitting `/` redirect to `/dashboard` (middleware + server redirect); unauthenticated landing unchanged; PWA `start_url` still `/`.
+- **Profile hub:** `/profile` is a settings hub; sections at `/profile/account`, `/profile/groups`, `/profile/hosting`, `/profile/dietary`, `/profile/notifications`, `/profile/appearance`, `/profile/install` with back navigation to Profile.
+- **Maps:** address search seam (`src/lib/maps/geocoding.ts`, optional HTTP provider env), `GET /api/geocode`, `AddressSearchField` + `EventLocationFields` on propose/edit; **Open in Maps** link from stored place/coordinates.
+- **Host place:** accepted host may confirm location (`canEditEventLocation`) without full manage rights; proposal copy de-emphasises proposer pin when hosting is on.
+- **Dietary:** sharing controlled at global + per-group scope (existing DB flags/shares); per-entry share UI removed; multi-group summary bug fixed.
+- **Food involvement:** `events.food_involvement` (yes/no/unsure) on new proposals; event dietary section hidden when `no`; legacy null unchanged.
+- **Migration:** `20261005030000_event_food_involvement.sql` (apply before deploy).
+
 ## 2026-10-05 — HUI-026U.3 follow-up (ship with production DB)
 
 - **Attendance after confirmation:** members can change Yes/Maybe/No on the confirmed time (`set_availability_response` + `attendance-override` domain rules); respond flow and `AttendanceLive` on event detail; DB tests in `attendance-after-confirmation.test.ts`.

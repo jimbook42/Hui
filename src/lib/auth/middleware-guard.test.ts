@@ -36,6 +36,13 @@ describe("resolveSessionGuard", () => {
     });
   });
 
+  it("sends signed-in users from the marketing home to the dashboard", () => {
+    expect(resolveSessionGuard({ pathname: "/", hasUser: true })).toEqual({
+      action: "redirect",
+      location: "/dashboard",
+    });
+  });
+
   it("redirects signed-in users away from auth entry routes", () => {
     expect(resolveSessionGuard({ pathname: "/sign-in", hasUser: true })).toEqual({
       action: "redirect",

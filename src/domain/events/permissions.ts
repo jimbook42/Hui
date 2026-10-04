@@ -59,3 +59,22 @@ export function canCancelEvent(
   }
   return canManageEvent(viewerRole, viewerId, createdBy, status);
 }
+
+const LOCATION_EDIT_STATUSES: EventStatus[] = ["proposing", "confirmed"];
+
+/** Accepted host may confirm the physical place without gaining full event edit rights. */
+export function canEditEventLocation(
+  viewerRole: MembershipRole,
+  viewerId: string,
+  createdBy: string,
+  status: EventStatus,
+  acceptedHostUserId: string | null,
+): boolean {
+  if (canEditEventMetadata(viewerRole, viewerId, createdBy, status)) {
+    return true;
+  }
+  if (!LOCATION_EDIT_STATUSES.includes(status)) {
+    return false;
+  }
+  return acceptedHostUserId !== null && acceptedHostUserId === viewerId;
+}

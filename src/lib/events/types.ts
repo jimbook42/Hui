@@ -1,4 +1,5 @@
 import type { EventCoordinates } from "@/domain/events/location";
+import type { EventFoodInvolvement } from "@/domain/events/food";
 import type { CadenceUnit, EventStatus } from "@/domain/events/types";
 
 export type EventListItem = {
@@ -30,6 +31,8 @@ export type EventDetail = {
   location: string | null;
   /** Hui's own stored pin for the place (provider-independent); null when none was set. */
   locationCoordinates: EventCoordinates | null;
+  /** Null on legacy events — dietary UI stays visible unless explicitly "no". */
+  foodInvolvement: EventFoodInvolvement | null;
   notes: string | null;
   startsAt: string | null;
   endsAt: string | null;

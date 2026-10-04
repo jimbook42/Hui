@@ -87,3 +87,29 @@ export function describeMapLocation(location: string | null | undefined): string
   const place = location?.trim();
   return place ? `Map showing ${place}` : "Map showing the pinned spot";
 }
+
+/**
+ * External maps URL (no SDK). Works from coordinates and/or a written place.
+ * Opens the user's maps app or browser maps via a standard HTTPS search link.
+ */
+export function buildExternalMapsUrl(
+  location: string | null | undefined,
+  coordinates: EventCoordinates | null,
+): string | null {
+  if (coordinates && isValidCoordinates(coordinates)) {
+    const { lat, lng } = coordinates;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lng}`)}`;
+  }
+  const place = location?.trim();
+  if (place) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+  }
+  return null;
+}
+
+export function hasPhysicalEventPlace(
+  location: string | null | undefined,
+  coordinates: EventCoordinates | null,
+): boolean {
+  return Boolean(buildExternalMapsUrl(location, coordinates));
+}

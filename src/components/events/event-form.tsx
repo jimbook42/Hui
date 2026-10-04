@@ -2,10 +2,11 @@
 
 import type { EventActionState } from "@/app/events/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
-import { LocationPinField } from "@/components/map/location-pin-field";
+import { EventLocationFields } from "@/components/map/event-location-fields";
 import { formatDateTimeLocalInTimeZone } from "@/domain/datetime/timezone";
 import type { EventCoordinates } from "@/domain/events/location";
 import type { GroupMemberRow, GroupSettingsRow } from "@/lib/groups/types";
+import { useState } from "react";
 
 type CreateEventFormProps = {
   action: (
@@ -139,16 +140,23 @@ export function EditEventForm({
   scheduleLocked = false,
   timeZone,
 }: EditEventFormProps) {
+  const [location, setLocation] = useState(defaultLocation ?? "");
+  const [coordinates, setCoordinates] = useState<EventCoordinates | null>(defaultCoordinates);
+
   return (
     <AuthForm action={action} submitLabel="Save changes" hiddenFields={{ event_id: eventId }}>
       <AuthField label="Title" name="title" defaultValue={defaultTitle} />
-      <AuthField
-        label="Location (optional)"
-        name="location"
-        required={false}
-        defaultValue={defaultLocation ?? ""}
+      <input type="hidden" name="location" value={location} />
+      <input type="hidden" name="location_lat" value={coordinates ? String(coordinates.lat) : ""} />
+      <input type="hidden" name="location_lng" value={coordinates ? String(coordinates.lng) : ""} />
+      <EventLocationFields
+        location={location}
+        onLocationChange={setLocation}
+        coordinates={coordinates}
+        onCoordinatesChange={setCoordinates}
+        locationLabel="Location (optional)"
+        defaultMapOpen={coordinates !== null}
       />
-      <LocationPinField defaultValue={defaultCoordinates} placeLabel={defaultLocation} />
       <label className="hui-label">
         <span>Notes (optional)</span>
         <textarea

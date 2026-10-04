@@ -11,6 +11,7 @@ import {
 } from "@/domain/events/lifecycle";
 import {
   canCancelEvent,
+  canEditEventLocation,
   canEditEventMetadata,
   canProposeEvents,
   groupAllowsEventKind,
@@ -28,6 +29,8 @@ import {
 } from "@/domain/events/validation";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getEventDetail } from "@/lib/events/queries";
+import { pickAcceptedHost } from "@/domain/hosts/display";
+import { getEventHostContext } from "@/lib/hosts/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
 
@@ -228,15 +231,42 @@ export async function updateEventAction(
     return { error: coordinates.error };
   }
 
-  if (
-    !canEditEventMetadata(
-      existing.viewerRole,
-      user.id,
-      existing.createdBy,
-      existing.status,
-    )
-  ) {
+  const hostContext = await getEventHostContext(supabase, eventId, existing.groupId, user.id);
+  const acceptedHostUserId = hostContext
+    ? (pickAcceptedHost(hostContext.assignments)?.userId ?? null)
+    : null;
+
+  const canEditAll = canEditEventMetadata(
+    existing.viewerRole,
+    user.id,
+    existing.createdBy,
+    existing.status,
+  );
+  const canEditLocation = canEditEventLocation(
+    existing.viewerRole,
+    user.id,
+    existing.createdBy,
+    existing.status,
+    acceptedHostUserId,
+  );
+
+  if (!canEditAll && !canEditLocation) {
     return { error: "You cannot edit this event." };
+  }
+
+  if (!canEditAll) {
+    if (title !== existing.title) {
+      return { error: "Only the host can update the place for this hui." };
+    }
+    if (notes !== existing.notes) {
+      return { error: "Only the host can update the place for this hui." };
+    }
+    if (
+      (startsAt ?? null) !== (existing.startsAt ?? null) ||
+      (endsAt ?? null) !== (existing.endsAt ?? null)
+    ) {
+      return { error: "Only the host can update the place for this hui." };
+    }
   }
 
   const statusError = validateMetadataUpdate(existing.status, existing.status);
@@ -253,15 +283,15 @@ export async function updateEventAction(
     location_lat?: number | null;
     location_lng?: number | null;
   } = {
-    title,
+    title: canEditAll ? title : existing.title,
     location,
-    notes,
+    notes: canEditAll ? notes : existing.notes,
   };
   if (hasCoordinateFields) {
     patch.location_lat = coordinates.coordinates?.lat ?? null;
     patch.location_lng = coordinates.coordinates?.lng ?? null;
   }
-  if (canChangeEventSchedule(existing.status)) {
+  if (canEditAll && canChangeEventSchedule(existing.status)) {
     patch.starts_at = startsAt;
     patch.ends_at = endsAt;
   }

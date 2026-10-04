@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { coordinatesFromRow } from "@/domain/events/location";
+import type { EventFoodInvolvement } from "@/domain/events/food";
 import type { EventStatus } from "@/domain/events/types";
 import type { MembershipRole } from "@/domain/groups/permissions";
 
@@ -77,6 +78,7 @@ export async function getEventDetail(
       location,
       location_lat,
       location_lng,
+      food_involvement,
       notes,
       starts_at,
       ends_at,
@@ -161,6 +163,7 @@ export async function getEventDetail(
       event.location_lat as number | null,
       event.location_lng as number | null,
     ),
+    foodInvolvement: (event.food_involvement as EventFoodInvolvement | null) ?? null,
     notes: event.notes as string | null,
     startsAt: event.starts_at as string | null,
     endsAt: event.ends_at as string | null,

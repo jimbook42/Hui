@@ -9,8 +9,8 @@ import {
 import { buildEventAttention } from "@/domain/events/attention";
 import { attendanceStateFromChoice } from "@/domain/events/home";
 import { pickParticipantTimeCandidate } from "@/domain/events/participant-flow";
-import { canCancelEvent, canEditEventMetadata } from "@/domain/events/permissions";
-import { pickPendingHostProposal } from "@/domain/hosts/display";
+import { canCancelEvent, canEditEventLocation, canEditEventMetadata } from "@/domain/events/permissions";
+import { pickAcceptedHost, pickPendingHostProposal } from "@/domain/hosts/display";
 import {
   canAssignEventHost,
   canRequestHostSwap,
@@ -111,6 +111,16 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     : null;
 
   const canEdit = canEditEventMetadata(detail.viewerRole, userId, detail.createdBy, detail.status);
+  const acceptedHostUserId = hostContext
+    ? (pickAcceptedHost(hostContext.assignments)?.userId ?? null)
+    : null;
+  const canEditLocation = canEditEventLocation(
+    detail.viewerRole,
+    userId,
+    detail.createdBy,
+    detail.status,
+    acceptedHostUserId,
+  );
   const canCancel = canCancelEvent(detail.viewerRole, userId, detail.createdBy, detail.status);
   const canRespond = canRespondToCandidates(detail.status);
   const canFinalise = canFinaliseEvent(detail.viewerRole, userId, detail.createdBy, detail.status);
@@ -177,6 +187,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     attention,
     unclaimedContributionCount,
     canEdit,
+    canEditLocation,
     canCancel,
     canRespond,
     canFinalise,

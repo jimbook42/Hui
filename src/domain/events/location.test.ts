@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildExternalMapsUrl,
   coordinatesFromRow,
   describeMapLocation,
   isValidCoordinates,
@@ -47,5 +48,11 @@ describe("event location coordinates", () => {
   it("describes the map for assistive tech", () => {
     expect(describeMapLocation("Alex's place")).toBe("Map showing Alex's place");
     expect(describeMapLocation(null)).toBe("Map showing the pinned spot");
+  });
+
+  it("builds external maps links from coordinates or place text", () => {
+    expect(buildExternalMapsUrl(null, { lat: -41.28, lng: 174.77 })).toContain("-41.28");
+    expect(buildExternalMapsUrl("Central Park", null)).toContain("Central%20Park");
+    expect(buildExternalMapsUrl(null, null)).toBeNull();
   });
 });

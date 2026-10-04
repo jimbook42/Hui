@@ -1,11 +1,13 @@
 import type { EventActionState } from "@/app/events/actions";
 import { CancelEventButton } from "@/components/events/cancel-event-button";
 import { EditEventForm } from "@/components/events/event-form";
+import { HostEventLocationForm } from "@/components/events/host-event-location-form";
 import type { EventCoordinates } from "@/domain/events/location";
 import type { EventStatus } from "@/domain/events/types";
 
 type EventDetailManagementProps = {
   canEdit: boolean;
+  canEditLocation: boolean;
   canCancel: boolean;
   eventId: string;
   updateAction: (
@@ -24,6 +26,7 @@ type EventDetailManagementProps = {
 
 export function EventDetailManagement({
   canEdit,
+  canEditLocation,
   canCancel,
   eventId,
   updateAction,
@@ -36,7 +39,7 @@ export function EventDetailManagement({
   status,
   timeZone,
 }: EventDetailManagementProps) {
-  if (!canEdit && !canCancel) {
+  if (!canEdit && !canEditLocation && !canCancel) {
     return null;
   }
 
@@ -57,6 +60,20 @@ export function EventDetailManagement({
               defaultCoordinates={defaultCoordinates}
               scheduleLocked={status === "confirmed"}
               timeZone={timeZone}
+            />
+          </div>
+        </section>
+      ) : canEditLocation ? (
+        <section className="hui-card-section">
+          <h3 className="hui-type-section text-foreground">Confirm the place</h3>
+          <div className="mt-4 max-w-lg">
+            <HostEventLocationForm
+              action={updateAction}
+              eventId={eventId}
+              defaultTitle={defaultTitle}
+              defaultNotes={defaultNotes}
+              defaultLocation={defaultLocation}
+              defaultCoordinates={defaultCoordinates}
             />
           </div>
         </section>

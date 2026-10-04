@@ -7,7 +7,7 @@ Unresolved implementation questions only. Add items when a real decision or task
 - [ ] **HUI-026C** — Event-oriented dashboard + event entry.
 - [ ] **HUI-026D** — Separate event management/admin surface.
 - [ ] **HUI-026E** — Contribution flow redesign.
-- [x] **HUI-026U (redesign + 026U.3)** — Full UI/UX rewrite plus map, optional end time, post-confirmation attendance, dietary all-groups share, PWA install UX (see WORKLOG). Follow-ups: refresh stale e2e specs (`contributions`, `event-consensus`) for current labels; live system-theme change without reload; real-device PWA check after deploy.
+- [x] **HUI-026U (redesign + 026U.3–U.4)** — Full UI/UX rewrite plus map, optional end time, post-confirmation attendance, dietary scope UI, PWA install, profile settings hub, auth entry → dashboard, address-search seam, host-confirmed place, food-involvement gating (see WORKLOG). Follow-ups: refresh stale e2e specs; configure production geocoder (`HUI_GEOCODING_*`); apply migration `20261005030000_event_food_involvement` before deploy; live system-theme change without reload; real-device PWA check after deploy.
 - [x] **HUI-026P** — Performance audit + core interaction speed (baseline documented in WORKLOG; dev perf via `HUI_DEV_PERF=1`).
 - [x] **HUI-026P.1** — Systemic latency diagnosis + common path fixes (see WORKLOG; physical Android re-measurement still required).
 - [x] **HUI-026P.2** — End-to-end interaction latency audit (`docs/performance/HUI-026P.2-audit.md`; Android timings still manual).

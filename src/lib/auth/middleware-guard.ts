@@ -35,5 +35,9 @@ export function resolveSessionGuard({
     return { action: "redirect", location: sanitizeNextPath(nextParam) };
   }
 
+  if (hasUser && pathname === "/") {
+    return { action: "redirect", location: "/dashboard" };
+  }
+
   return { action: "next" };
 }

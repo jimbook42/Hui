@@ -112,6 +112,17 @@ export async function proposeGroupEventAction(
     return { error: "Proposal could not be created. Try again." };
   }
 
+  if (payload.foodInvolvement) {
+    const { error: foodError } = await supabase
+      .from("events")
+      .update({ food_involvement: payload.foodInvolvement })
+      .eq("id", eventId)
+      .eq("group_id", groupId);
+    if (foodError) {
+      return { error: foodError.message };
+    }
+  }
+
   const { data: created, error: verifyError } = await supabase
     .from("events")
     .select("id, status, starts_at, ends_at")

@@ -9,8 +9,9 @@ import {
   WallClockTimeField,
 } from "@/components/events/wall-clock-picker-field";
 import { ChevronDownIcon } from "@/components/hui/icons";
-import { LocationPicker } from "@/components/map/location-picker";
+import { EventLocationFields } from "@/components/map/event-location-fields";
 import { PendingButton } from "@/components/ui/pending-button";
+import type { EventFoodInvolvement } from "@/domain/events/food";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import type { EventProposalDraft } from "@/domain/events/proposal";
 import { parseWallClockCandidate } from "@/domain/events/proposal";
@@ -55,6 +56,7 @@ function emptyDraft(settings: GroupSettingsRow): EventProposalDraft {
     },
     candidates: [],
     initialHostUserId: "suggest",
+    foodInvolvement: null,
   };
 }
 
@@ -180,6 +182,9 @@ export function CreateEventProposalFlow({
   if (draft.candidates.length < 1) {
     reviewMissing.push("At least one proposed time");
   }
+  if (!draft.foodInvolvement) {
+    reviewMissing.push("Whether food is involved");
+  }
 
   const canOneOff = settings.oneOffEventsAllowed;
   const canRecurring = settings.recurringEventsEnabled;
@@ -237,26 +242,19 @@ export function CreateEventProposalFlow({
               </span>
             </summary>
             <div className="space-y-4 px-5 pb-5">
-              <label className="hui-label">
-                <span>Proposed place</span>
-                <input
-                  className="hui-input"
-                  value={draft.location}
-                  placeholder="e.g. Central Park picnic area"
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, location: event.target.value }))
-                  }
-                />
-              </label>
-              <p className="text-xs font-semibold text-muted-foreground">
-                This is the event place, not a member&apos;s home address. Hosting is coordinated
-                separately.
-              </p>
-              <LocationPicker
-                value={draft.locationCoordinates ?? null}
-                placeLabel={draft.location.trim() || null}
-                onChange={(coordinates) =>
-                  setDraft((current) => ({ ...current, locationCoordinates: coordinates }))
+              <EventLocationFields
+                location={draft.location}
+                onLocationChange={(location) => setDraft((current) => ({ ...current, location }))}
+                coordinates={draft.locationCoordinates ?? null}
+                onCoordinatesChange={(locationCoordinates) =>
+                  setDraft((current) => ({ ...current, locationCoordinates }))
+                }
+                locationLabel="Proposed place (optional)"
+                searchLabel="Search for a place"
+                helperText={
+                  settings.hostingEnabled
+                    ? "Optional. The accepted host confirms the final place — you do not need to pin it now."
+                    : "Optional. The written place is the main detail; you can pin it on the map too."
                 }
               />
               <label className="hui-label">
@@ -456,6 +454,44 @@ export function CreateEventProposalFlow({
               Still needed: {reviewMissing.join(", ")}
             </p>
           ) : null}
+          <fieldset className="space-y-3 rounded-hui-xl bg-surface p-5 hui-shadow-md">
+            <legend className="px-1 text-sm font-extrabold text-foreground">Will food be involved?</legend>
+            <p className="text-xs font-semibold text-muted-foreground">
+              Helps the group know whether dietary coordination matters for this hui.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {(
+                [
+                  ["yes", "Yes"],
+                  ["no", "No"],
+                  ["unsure", "Not sure"],
+                ] as const
+              ).map(([value, label]) => (
+                <label
+                  key={value}
+                  className={`hui-focus-ring flex min-h-12 flex-1 cursor-pointer items-center justify-center rounded-hui-lg px-4 text-sm font-extrabold ${
+                    draft.foodInvolvement === value
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-muted text-foreground"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="food_involvement"
+                    className="sr-only"
+                    checked={draft.foodInvolvement === value}
+                    onChange={() =>
+                      setDraft((current) => ({
+                        ...current,
+                        foodInvolvement: value as EventFoodInvolvement,
+                      }))
+                    }
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <dl className="grid gap-4 rounded-hui-xl bg-surface p-5 text-sm font-semibold text-foreground hui-shadow-md [&_dt]:hui-type-label [&_dt]:text-muted-foreground [&_dd]:mt-1 [&_dd]:text-base [&_dd]:font-extrabold">
             <div>
               <dt>Name</dt>
