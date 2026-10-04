@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-026A Android date/time picker (production fix)
+
+- Time step (and recurrence “Series starts on”) used visible native `date`/`time` inputs with `text-sm` styling inside labels. On Android Chrome the picker affordance is easy to miss and empty fields show unusable `mm/dd/yyyy`-style placeholders.
+- Added `WallClockDateField` / `WallClockTimeField`: full-size transparent native inputs over NZ-friendly labels (`formatWallClockDateLabel` / `formatWallClockTimeLabel`), 44px tap targets, `text-base`, and `showPicker()` on user tap. Parsing, timezone, and candidate persistence unchanged.
+- Tests: `src/domain/datetime/wall-clock-display.test.ts`. `npm run validate` passed.
+
 ## 2026-10-04 — HUI-026A staged event proposal
 
 - Replaced single-page group event creation with a staged creator flow: Name → Time → Place → What to bring → Review → **Propose event**. Draft data stays client-side until submit; no partial group-visible event is created while the creator is still editing.

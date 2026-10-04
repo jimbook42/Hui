@@ -382,7 +382,7 @@ Implementation must investigate server-action latency, unnecessary refreshes, ex
 
 | Ticket | Scope | Status |
 | --- | --- | --- |
-| **HUI-026A** | Event flow foundation + staged proposal | Complete (branch `feat/hui-026a-event-proposal-flow`) |
+| **HUI-026A** | Event flow foundation + staged proposal | Complete (branch `feat/hui-026a-event-proposal-flow`; Android date/time picker fix on Time step) |
 | **HUI-026B** | Invitee response flow + alternative-time intent | Planned |
 | **HUI-026C** | Dashboard + event entry | Planned |
 | **HUI-026D** | Event management/admin surface | Planned |

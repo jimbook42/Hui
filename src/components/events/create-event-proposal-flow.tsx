@@ -4,6 +4,10 @@ import { useActionState, useMemo, useState } from "react";
 
 import type { EventActionState } from "@/app/events/actions";
 import { proposeGroupEventAction } from "@/app/events/proposal-actions";
+import {
+  WallClockDateField,
+  WallClockTimeField,
+} from "@/components/events/wall-clock-picker-field";
 import { PendingButton } from "@/components/ui/pending-button";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import type { EventProposalDraft } from "@/domain/events/proposal";
@@ -305,28 +309,24 @@ export function CreateEventProposalFlow({
                   }
                 />
               </label>
-              <label className="block text-sm">
-                <span>Series starts on</span>
-                <input
-                  type="date"
-                  className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
-                  value={draft.recurrence?.startsOn ?? ""}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      recurrence: {
-                        ...(current.recurrence ?? {
-                          seriesTitle: "",
-                          intervalUnit: "month",
-                          intervalCount: 1,
-                          startsOn: "",
-                        }),
-                        startsOn: event.target.value,
-                      },
-                    }))
-                  }
-                />
-              </label>
+              <WallClockDateField
+                label="Series starts on"
+                value={draft.recurrence?.startsOn ?? ""}
+                onChange={(startsOn) =>
+                  setDraft((current) => ({
+                    ...current,
+                    recurrence: {
+                      ...(current.recurrence ?? {
+                        seriesTitle: "",
+                        intervalUnit: "month",
+                        intervalCount: 1,
+                        startsOn: "",
+                      }),
+                      startsOn,
+                    },
+                  }))
+                }
+              />
             </fieldset>
           ) : null}
         </section>
@@ -370,34 +370,22 @@ export function CreateEventProposalFlow({
           )}
           <div className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
             <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Add a time</p>
-            <label className="block text-sm">
-              <span>Date</span>
-              <input
-                type="date"
-                className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
-                value={timeDate}
-                onChange={(event) => setTimeDate(event.target.value)}
+            <WallClockDateField
+              label="Date"
+              value={timeDate}
+              onChange={setTimeDate}
+            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <WallClockTimeField
+                label="Starts"
+                value={timeStart}
+                onChange={setTimeStart}
               />
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block text-sm">
-                <span>Starts</span>
-                <input
-                  type="time"
-                  className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
-                  value={timeStart}
-                  onChange={(event) => setTimeStart(event.target.value)}
-                />
-              </label>
-              <label className="block text-sm">
-                <span>Ends</span>
-                <input
-                  type="time"
-                  className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
-                  value={timeEnd}
-                  onChange={(event) => setTimeEnd(event.target.value)}
-                />
-              </label>
+              <WallClockTimeField
+                label="Ends"
+                value={timeEnd}
+                onChange={setTimeEnd}
+              />
             </div>
             <PendingButton type="button" variant="secondary" onClick={addCandidate}>
               Add this time
