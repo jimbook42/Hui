@@ -34,6 +34,7 @@ import {
   endInteraction,
   markInteraction,
 } from "@/lib/perf/client-interaction-perf";
+import type { EventContributionRow } from "@/lib/contributions/types";
 import type { RespondSecondaryData } from "@/lib/events/respond-page-data";
 import type { EventCandidateRow } from "@/lib/scheduling/types";
 
@@ -151,7 +152,6 @@ export function EventParticipantRespondFlow({
   }, [secondary, viewerUserId]);
 
   const categories = secondary?.categories ?? [];
-  const contributions = secondary?.contributions ?? [];
 
   const timeLabel = formatEventTimeRange(candidate.startsAt, candidate.endsAt, timeZone);
 
