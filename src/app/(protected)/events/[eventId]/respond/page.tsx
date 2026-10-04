@@ -3,20 +3,8 @@ import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app/app-shell";
 import { EventParticipantRespondFlow } from "@/components/events/event-participant-respond-flow";
-import { canCoordinateContributions } from "@/domain/contributions/permissions";
-import {
-  canSuggestAlternativeTimeInFlow,
-  canUseParticipantRespondFlow,
-  pickParticipantTimeCandidate,
-} from "@/domain/events/participant-flow";
-import { participantPlaceView } from "@/domain/events/participant-place";
-import { canRespondToCandidates } from "@/domain/scheduling/permissions";
-import { listContributionCategories, listEventContributions } from "@/lib/contributions/queries";
-import { getEventDetail } from "@/lib/events/queries";
+import { loadRespondPrimary, loadRespondSecondary } from "@/lib/events/respond-page-data";
 import { eventDetailPath } from "@/lib/events/paths";
-import { getGroupDetail } from "@/lib/groups/queries";
-import { getEventHostContext } from "@/lib/hosts/queries";
-import { getEventSchedulingContext } from "@/lib/scheduling/queries";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 
@@ -33,46 +21,15 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
 
   const supabase = await getServerSupabase();
 
-  const detail = await devTimed("respond-page:event-detail", () =>
-    getEventDetail(supabase, eventId, user.id),
+  const primary = await devTimed("respond-page:primary", () =>
+    loadRespondPrimary(supabase, eventId, user.id),
   );
-  if (!detail) {
+
+  if (primary === null) {
     notFound();
   }
 
-  const [group, scheduling, contributions, categories, hostContext] = await Promise.all([
-    getGroupDetail(supabase, detail.groupId, user.id),
-    getEventSchedulingContext(supabase, detail.id, detail.groupId, user.id),
-    listEventContributions(supabase, detail.id),
-    listContributionCategories(supabase, detail.groupId),
-    getEventHostContext(supabase, detail.id, detail.groupId, user.id),
-  ]);
-
-  if (!group) {
-    notFound();
-  }
-
-  const primary = pickParticipantTimeCandidate(scheduling.candidates);
-  const candidate =
-    primary === null
-      ? null
-      : (scheduling.candidates.find((row) => row.id === primary.id) ?? null);
-  const displayTimeZone =
-    detail.timezone ?? group.settings.timezone ?? "Pacific/Auckland";
-  const canRespond = canRespondToCandidates(detail.status);
-  const flowAvailable = canUseParticipantRespondFlow({
-    eventStatus: detail.status,
-    hasCandidate: candidate !== null,
-  });
-
-  const place = participantPlaceView({
-    eventStatus: detail.status,
-    eventLocation: detail.location,
-    acceptedHostDisplayName: hostContext.view.acceptedHost?.displayName ?? null,
-    hostingEnabled: group.settings.hostingEnabled,
-  });
-
-  if (!flowAvailable || !candidate) {
+  if (primary === "unavailable") {
     return (
       <AppShell title="Respond">
         <div className="mx-auto max-w-md space-y-4">
@@ -90,29 +47,30 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
     );
   }
 
+  const secondaryDataPromise = loadRespondSecondary(
+    supabase,
+    primary.detail.id,
+    primary.detail.groupId,
+  );
+
   return (
     <AppShell title="Your response">
       <EventParticipantRespondFlow
-        eventId={detail.id}
-        groupId={detail.groupId}
-        eventTitle={detail.title}
-        groupName={detail.groupName}
-        timeZone={displayTimeZone}
-        maybeResponsesEnabled={scheduling.maybeResponsesEnabled}
-        canRespond={canRespond}
-        canCoordinateContributions={canCoordinateContributions(detail.status)}
-        canSuggestTime={canSuggestAlternativeTimeInFlow(
-          detail.viewerRole,
-          group.settings,
-          detail.status,
-        )}
-        candidate={candidate}
-        placeView={place}
-        hostingEnabled={group.settings.hostingEnabled}
-        categories={categories}
-        contributions={contributions}
+        eventId={primary.detail.id}
+        groupId={primary.detail.groupId}
+        eventTitle={primary.detail.title}
+        groupName={primary.detail.groupName}
+        timeZone={primary.displayTimeZone}
+        maybeResponsesEnabled={primary.maybeResponsesEnabled}
+        canRespond={primary.canRespond}
+        canCoordinateContributions={primary.canCoordinateContributions}
+        canSuggestTime={primary.canSuggestTime}
+        candidate={primary.candidate}
+        placeView={primary.placeView}
+        hostingEnabled={primary.hostingEnabled}
         viewerUserId={user.id}
-        initialViewerResponse={candidate.viewerResponse}
+        initialViewerResponse={primary.candidate.viewerResponse}
+        secondaryDataPromise={secondaryDataPromise}
       />
     </AppShell>
   );

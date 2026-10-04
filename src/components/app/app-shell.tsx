@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 import { signOutAction } from "@/app/auth/actions";
 import { NotificationsNavLink } from "@/components/notifications/notifications-nav-link";
@@ -31,7 +31,18 @@ export function AppShell({ title, children }: AppShellProps) {
             >
               Groups
             </Link>
-            <NotificationsNavLink />
+            <Suspense
+              fallback={
+                <Link
+                  href="/notifications"
+                  className="text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-300"
+                >
+                  Notifications
+                </Link>
+              }
+            >
+              <NotificationsNavLink />
+            </Suspense>
             <Link
               href="/profile"
               className="text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-300"

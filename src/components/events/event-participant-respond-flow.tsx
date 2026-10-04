@@ -34,7 +34,7 @@ import {
   endInteraction,
   markInteraction,
 } from "@/lib/perf/client-interaction-perf";
-import type { ContributionCategoryRow, EventContributionRow } from "@/lib/contributions/types";
+import type { RespondSecondaryData } from "@/lib/events/respond-page-data";
 import type { EventCandidateRow } from "@/lib/scheduling/types";
 
 type EventParticipantRespondFlowProps = {
@@ -50,10 +50,9 @@ type EventParticipantRespondFlowProps = {
   candidate: EventCandidateRow;
   placeView: ReturnType<typeof participantPlaceView>;
   hostingEnabled: boolean;
-  categories: ContributionCategoryRow[];
-  contributions: EventContributionRow[];
   viewerUserId: string;
   initialViewerResponse: AvailabilityChoice | null;
+  secondaryDataPromise?: Promise<RespondSecondaryData>;
 };
 
 const choiceButtonBase =
@@ -104,10 +103,9 @@ export function EventParticipantRespondFlow({
   canSuggestTime,
   candidate,
   placeView,
-  categories,
-  contributions,
   viewerUserId,
   initialViewerResponse,
+  secondaryDataPromise,
 }: EventParticipantRespondFlowProps) {
   const router = useRouter();
   const [step, setStep] = useState<ParticipantFlowStep>(() => readStepFromHash());
@@ -122,11 +120,38 @@ export function EventParticipantRespondFlow({
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [isSavingAttendance, startSaveAttendance] = useTransition();
   const [isSubmittingSuggest, startSubmitSuggest] = useTransition();
+  const [secondary, setSecondary] = useState<RespondSecondaryData | null>(null);
+  const [secondaryError, setSecondaryError] = useState<string | null>(null);
 
-  const board = useMemo(
-    () => buildContributionBoard(categories, contributions, viewerUserId),
-    [categories, contributions, viewerUserId],
-  );
+  useEffect(() => {
+    if (!secondaryDataPromise) {
+      return;
+    }
+    let cancelled = false;
+    secondaryDataPromise
+      .then((data) => {
+        if (!cancelled) {
+          setSecondary(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSecondaryError("Contribution details could not be loaded. Try again in a moment.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [secondaryDataPromise]);
+
+  const board = useMemo(() => {
+    const categories = secondary?.categories ?? [];
+    const contributions = secondary?.contributions ?? [];
+    return buildContributionBoard(categories, contributions, viewerUserId);
+  }, [secondary, viewerUserId]);
+
+  const categories = secondary?.categories ?? [];
+  const contributions = secondary?.contributions ?? [];
 
   const timeLabel = formatEventTimeRange(candidate.startsAt, candidate.endsAt, timeZone);
 
@@ -152,6 +177,19 @@ export function EventParticipantRespondFlow({
     setStep(previous);
     window.history.pushState({ participantStep: previous }, "", `#${previous}`);
   }, [step]);
+
+  useEffect(() => {
+    if (step === "time") {
+      markInteraction("respond_route", "first-useful-ui");
+      markInteraction("respond_route", "fully-settled");
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (secondary) {
+      markInteraction("respond_route", "secondary-content-visible");
+    }
+  }, [secondary]);
 
   useEffect(() => {
     const onPop = (event: PopStateEvent) => {
@@ -430,11 +468,23 @@ export function EventParticipantRespondFlow({
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
             What are you bringing?
           </h1>
-          {categories.filter((c) => !c.archivedAt).length === 0 ? (
+          {secondaryError ? (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {secondaryError}
+            </p>
+          ) : null}
+          {!secondary && secondaryDataPromise ? (
+            <div className="space-y-3" aria-busy="true">
+              <div className="h-16 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800" />
+              <div className="h-16 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800" />
+            </div>
+          ) : null}
+          {secondary && categories.filter((c) => !c.archivedAt).length === 0 ? (
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
               This group has no contribution categories to claim.
             </p>
-          ) : (
+          ) : null}
+          {secondary && categories.filter((c) => !c.archivedAt).length > 0 ? (
             <ul className="space-y-3">
               {categories
                 .filter((c) => !c.archivedAt)
@@ -479,7 +529,7 @@ export function EventParticipantRespondFlow({
                   );
                 })}
             </ul>
-          )}
+          ) : null}
           <PendingButton type="button" className="w-full" onClick={() => pushStep("done")}>
             Done
           </PendingButton>

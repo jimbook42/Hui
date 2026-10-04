@@ -8,6 +8,10 @@ type PerfPhase =
   | "request-end"
   | "navigation-start"
   | "navigation-end"
+  | "route-shell-visible"
+  | "first-useful-ui"
+  | "secondary-content-visible"
+  | "fully-settled"
   | "usable-ui"
   | "total-tap-to-visible";
 

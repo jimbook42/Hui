@@ -390,6 +390,7 @@ Implementation must investigate server-action latency, unnecessary refreshes, ex
 | **HUI-026P** | Performance audit + core interaction speed | Complete (branch `feat/hui-026p-performance`; parallel fetches, lighter attendance action, streamed event sections, route loading UI) |
 | **HUI-026P.1** | Systemic latency diagnosis + common path fixes | Complete (branch `feat/hui-026p-performance`; request-scoped auth dedupe, profile ensure skip, household query batching, lighter profile save path) |
 | **HUI-026P.2** | End-to-end interaction latency audit | Complete (branch `feat/hui-026p-performance`; tap-to-visible instrumentation, optimistic attendance step, notification navigate-first, profile loading shell; see `docs/performance/HUI-026P.2-audit.md`) |
+| **HUI-026P.3** | Navigation & data-loading performance | Complete (branch `feat/hui-026p-performance`; respond primary/secondary split, groups Suspense, shell notification Suspense; see `docs/performance/HUI-026P.3-audit.md`) |
 
 The original GDD capabilities remain separately tracked: HUI-025 persistent availability, HUI-026 scheduling/recommendations, HUI-027 notification delivery follow-on, HUI-028 email/actionable notification flows, HUI-029 calendar/memories/next-cycle integration, and HUI-030 production hardening/MVP validation.
 

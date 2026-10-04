@@ -2,6 +2,16 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-026P.3 navigation & data-loading performance
+
+**Before:** Respond route awaited full `getGroupDetail` (member roster), host history, contributions, and categories before first paint. Groups page and AppShell blocked on group list / notification unread queries.
+
+**After:** `loadRespondPrimary` + deferred contribution data; groups shell streams list via Suspense; notification badge streams in AppShell; respond/groups `loading.tsx` shells.
+
+**Measurements:** Android before from ticket (~4–5s); after requires device + `hui_perf=1` on new deploy.
+
+- `npm run validate` passed.
+
 ## 2026-10-04 — HUI-026P.2 end-to-end interaction latency audit
 
 **Finding:** Server query improvements in P/P.1 did not fix perceived slowness because several flows still blocked visible acknowledgement on server completion + RSC refresh. Attendance waited for `setAvailabilityResponseAction` (including `getEventDetail`) before `pushStep`; notification Open awaited mark-read before `router.push`.
