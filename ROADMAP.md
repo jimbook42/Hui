@@ -387,7 +387,7 @@ Implementation must investigate server-action latency, unnecessary refreshes, ex
 | **HUI-026C** | Dashboard + event entry | Planned |
 | **HUI-026D** | Event management/admin surface | Planned |
 | **HUI-026E** | Contribution flow redesign | Planned |
-| **HUI-026U** | Visual design system & UX foundation | Complete (branch `feat/hui-026u-visual-design-system`; … **HUI-026U.4**: auth entry → dashboard, profile settings hub, address-search seam + Open in Maps, host-confirmed place, dietary scope UI, food-involvement gating — see `docs/ARCHITECTURE.md`; deploy requires migration `20261005030000_event_food_involvement`) |
+| **HUI-026U** | Visual design system & UX foundation | Complete (branch `feat/hui-026u-visual-design-system`; … **HUI-026U.4**: auth entry → dashboard, profile settings hub, address-search seam + Open in Maps, host-confirmed place, dietary scope UI, food-involvement gating — see `docs/ARCHITECTURE.md`; production geocoder: Geoapify via `HUI_GEOCODING_PROVIDER=geoapify`; migration `20261005030000_event_food_involvement` applied to linked Supabase) |
 | **HUI-026P** | Performance audit + core interaction speed | Complete (branch `feat/hui-026p-performance`; parallel fetches, lighter attendance action, streamed event sections, route loading UI) |
 | **HUI-026P.1** | Systemic latency diagnosis + common path fixes | Complete (branch `feat/hui-026p-performance`; request-scoped auth dedupe, profile ensure skip, household query batching, lighter profile save path) |
 | **HUI-026P.2** | End-to-end interaction latency audit | Complete (branch `feat/hui-026p-performance`; tap-to-visible instrumentation, optimistic attendance step, notification navigate-first, profile loading shell; see `docs/performance/HUI-026P.2-audit.md`) |
@@ -449,7 +449,7 @@ Also exercise: minimum attendance, deadline, admin override, host veto, never-ho
 
 | Item | Detail |
 | --- | --- |
-| Supabase migrations in production | **Applied through `20261004020000`** on linked project `xmvzzypefpiethefrfka` (`jimbook42's Project`, the Hui production database). Local and remote migration history match. **Live multi-user product QA** for coordination, invitations, and Web Push is still required. |
+| Supabase migrations in production | **Applied through `20261005030000`** on linked project `xmvzzypefpiethefrfka` (`jimbook42's Project`, the Hui production database). Local and remote migration history match. **Live multi-user product QA** for coordination, invitations, and Web Push is still required. |
 | Invitation + delivery | Share links shipped (HUI-022B). Invitation notifications for non-members are not part of Web Push. Email delivery is HUI-028. |
 | Recurring engine | The cycle engine (previously numbered HUI-023) depends on the extended recurrence model and benefits from HUI-025/026 |
 | Web Push production | Deployed and real Android browser delivery verified. No VAPID or schema changes in HUI-023A. |

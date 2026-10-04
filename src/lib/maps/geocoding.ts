@@ -2,9 +2,10 @@
  * Geocoding / address-search service boundary (HUI-026U.3 / HUI-026U.4).
  *
  * Address autocomplete uses this seam only — not public Nominatim or tile.openstreetmap.org.
- * Configure via `HUI_GEOCODING_*` env vars; see `docs/MAPS.md`.
+ * Configure via `HUI_GEOCODING_*` env vars; see `docs/ARCHITECTURE.md` and `.env.example`.
  */
 
+import { GeoapifyGeocodingProvider } from "./geoapify-geocoding-provider";
 import { HttpGeocodingProvider } from "./http-geocoding-provider";
 
 export type GeocodeResult = {
@@ -35,13 +36,17 @@ export function getGeocodingProvider(): GeocodingProvider | null {
   }
 
   const kind = process.env.HUI_GEOCODING_PROVIDER?.trim().toLowerCase();
+  const apiKey = process.env.HUI_GEOCODING_HTTP_KEY?.trim() || null;
+
+  if (kind === "geoapify" && apiKey) {
+    cachedProvider = new GeoapifyGeocodingProvider(apiKey);
+    return cachedProvider;
+  }
+
   if (kind === "http") {
     const searchUrl = process.env.HUI_GEOCODING_HTTP_URL?.trim();
     if (searchUrl) {
-      cachedProvider = new HttpGeocodingProvider(
-        searchUrl,
-        process.env.HUI_GEOCODING_HTTP_KEY?.trim() || null,
-      );
+      cachedProvider = new HttpGeocodingProvider(searchUrl, apiKey);
       return cachedProvider;
     }
   }

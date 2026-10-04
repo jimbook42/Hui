@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026U.4 follow-up (production geocoder + migration)
+
+- **Geocoder:** Geoapify Address Autocomplete adapter (`GeoapifyGeocodingProvider`); configure `HUI_GEOCODING_PROVIDER=geoapify` and `HUI_GEOCODING_HTTP_KEY` (server-only). Chosen for NZ address search, commercial terms, low early-scale cost (3k credits/day free tier), no MapLibre coupling; `HttpGeocodingProvider` retained for custom backends.
+- **Migration:** `supabase db push` applied `20261005030000_event_food_involvement.sql` on linked production `xmvzzypefpiethefrfka`.
+- **Manual:** Add Geoapify API key to Vercel production/preview env before expecting autocomplete in deployed builds.
+
 ## 2026-10-05 — HUI-026U.4 UX refinement
 
 - **Entry:** signed-in users hitting `/` redirect to `/dashboard` (middleware + server redirect); unauthenticated landing unchanged; PWA `start_url` still `/`.
