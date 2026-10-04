@@ -39,7 +39,7 @@ export function MobileNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur-sm md:hidden hui-safe-bottom"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/98 shadow-[0_-4px_24px_rgb(26_51_40/0.06)] backdrop-blur-md md:hidden hui-safe-bottom"
       aria-label="Primary"
     >
       <ul className="mx-auto flex max-w-3xl items-stretch justify-around px-2 pt-1 pb-2">

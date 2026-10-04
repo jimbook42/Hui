@@ -28,6 +28,8 @@ export function EventDetailSummary({
         title={detail.title}
         status={detail.status}
         whenLabel={whenLabel}
+        startsAt={detail.startsAt}
+        timeZone={displayTimeZone}
         location={detail.location}
         groupName={detail.groupName}
         proposerName={detail.creatorDisplayName}

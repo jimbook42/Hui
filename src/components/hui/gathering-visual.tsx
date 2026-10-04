@@ -5,6 +5,7 @@ import {
 } from "@/domain/scheduling/attendance-visual";
 import { layoutGatheringRing } from "@/domain/scheduling/gathering-layout";
 import { AttendanceDot } from "@/components/hui/attendance-dot";
+import { HuiGatheringMark } from "@/components/hui/hui-gathering-mark";
 import { cn } from "@/lib/ui/cn";
 
 type GatheringVisualProps = {
@@ -22,7 +23,8 @@ export function GatheringVisual({
 }: GatheringVisualProps) {
   const members = roster.members;
   const { slots, overflowCount } = layoutGatheringRing(members.length);
-  const heightClass = compact ? "h-36" : "h-44 sm:h-48";
+  const heightClass = compact ? "h-40" : "h-48 sm:h-52";
+  const hubSize = compact ? 52 : 64;
 
   return (
     <div
@@ -30,12 +32,22 @@ export function GatheringVisual({
       role="img"
       aria-label={`Attendance around ${eventTitle}`}
     >
-      <div
-        className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-border bg-muted/80 px-4 py-3 text-center shadow-[var(--shadow-sm)]"
-        style={{ width: compact ? "5.5rem" : "6.5rem", height: compact ? "5.5rem" : "6.5rem" }}
+      <svg
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--gathering-ring)] opacity-25"
+        width={compact ? 200 : 240}
+        height={compact ? 200 : 240}
+        viewBox="0 0 240 240"
+        aria-hidden="true"
       >
-        <span className="hui-type-label text-primary">Gathering</span>
-        <span className="mt-0.5 line-clamp-2 text-[10px] font-medium leading-tight text-foreground">
+        <circle cx="120" cy="120" r="88" fill="none" stroke="currentColor" strokeWidth="3" />
+      </svg>
+
+      <div
+        className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-border/80 bg-surface px-3 py-2 text-center hui-shadow-md"
+        style={{ width: hubSize + 24, minHeight: hubSize + 16 }}
+      >
+        <HuiGatheringMark size={hubSize} />
+        <span className="mt-1 line-clamp-2 max-w-[5.5rem] text-[10px] font-semibold leading-tight text-foreground">
           {eventTitle}
         </span>
       </div>
@@ -50,18 +62,20 @@ export function GatheringVisual({
           roster.maybeResponsesEnabled,
         );
         const label = attendanceVisualAccessibleLabel(member.displayName, state);
-        const initials = member.displayName.trim().charAt(0).toUpperCase() || "?";
+        const initial = member.displayName.trim().charAt(0).toUpperCase() || "?";
 
         return (
           <div
             key={member.userId}
-            className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5"
+            className="absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
             style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
           >
-            <AttendanceDot state={state} label={label} size={compact ? "sm" : "md"} />
-            <span className="max-w-[3.25rem] truncate text-[10px] text-muted-foreground">
-              {initials}
-            </span>
+            <AttendanceDot
+              state={state}
+              label={label}
+              size={compact ? "sm" : "md"}
+              initial={initial}
+            />
           </div>
         );
       })}

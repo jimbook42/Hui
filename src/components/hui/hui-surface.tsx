@@ -22,8 +22,8 @@ export function HuiSurface({
   return (
     <div
       className={cn(
-        "rounded-hui-lg border border-border",
-        elevated ? "bg-surface-elevated shadow-[var(--shadow-sm)]" : "bg-surface",
+        "rounded-hui-xl border border-border/90",
+        elevated ? "bg-surface-elevated hui-shadow-md" : "bg-surface",
         paddingClass[padding],
         className,
       )}

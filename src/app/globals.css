@@ -2,21 +2,32 @@
 
 /* Hui design tokens — warm, calm, mobile-first */
 :root {
-  --background: #faf8f5;
-  --foreground: #2c2825;
-  --surface: #ffffff;
+  /* Reference-aligned: cream parchment, forest green primary (hui-word / app icon) */
+  --background: #f6f3ec;
+  --foreground: #1a3328;
+  --surface: #fffcf7;
   --surface-elevated: #ffffff;
-  --muted: #f3efe9;
-  --muted-foreground: #6b6560;
-  --border: #e8e2db;
-  --border-strong: #d4ccc3;
+  --muted: #ebe6dc;
+  --muted-foreground: #5c655f;
+  --border: #e0dbd0;
+  --border-strong: #ccc4b6;
 
-  --primary: #b85c42;
-  --primary-hover: #a04f38;
-  --primary-foreground: #fffaf7;
+  --primary: #1f4d3a;
+  --primary-hover: #163a2c;
+  --primary-foreground: #f7faf8;
 
-  --secondary: #e8f0ea;
-  --secondary-foreground: #2d4a38;
+  --secondary: #dce8e0;
+  --secondary-foreground: #1f4d3a;
+
+  --gathering-ring: #1f4d3a;
+  --gathering-member-a: #6b8f7a;
+  --gathering-member-b: #5a7d6c;
+  --gathering-member-c: #8eb4c4;
+
+  --date-badge-primary: #a8d4e6;
+  --date-badge-primary-fg: #1a3328;
+  --date-badge-secondary: #dcc9a8;
+  --date-badge-secondary-fg: #1a3328;
 
   --destructive: #b42318;
   --destructive-foreground: #fff5f4;
@@ -32,10 +43,10 @@
   --attendance-no: #8a8278;
   --attendance-pending: #b5aea4;
 
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.5rem;
 
   --shadow-sm: 0 1px 2px rgb(44 40 37 / 0.06);
   --shadow-md: 0 4px 12px rgb(44 40 37 / 0.08);
@@ -57,12 +68,22 @@
     --border: #342f2a;
     --border-strong: #453f38;
 
-    --primary: #d4846a;
-    --primary-hover: #e0957a;
-    --primary-foreground: #1a120e;
+    --primary: #6ecf96;
+    --primary-hover: #5bb882;
+    --primary-foreground: #0d1a12;
 
     --secondary: #243328;
     --secondary-foreground: #d8ebe0;
+
+    --gathering-ring: #6ecf96;
+    --gathering-member-a: #6b8f7a;
+    --gathering-member-b: #5a7d6c;
+    --gathering-member-c: #8eb4c4;
+
+    --date-badge-primary: #3d5a6b;
+    --date-badge-primary-fg: #e8f4fa;
+    --date-badge-secondary: #5a4d3a;
+    --date-badge-secondary-fg: #f5efe6;
 
     --destructive: #f87171;
     --destructive-foreground: #1a0a0a;
@@ -123,9 +144,19 @@
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse 120% 80% at 100% 0%, rgb(111 143 122 / 0.08), transparent 55%),
+    radial-gradient(ellipse 90% 70% at 0% 100%, rgb(142 180 196 / 0.07), transparent 50%);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.hui-page-canvas {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse 120% 80% at 100% 0%, rgb(111 143 122 / 0.08), transparent 55%),
+    radial-gradient(ellipse 90% 70% at 0% 100%, rgb(142 180 196 / 0.07), transparent 50%);
 }
 
 .hui-type-display {
@@ -172,4 +203,12 @@ body {
 
 .hui-safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.hui-shadow-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.hui-shadow-md {
+  box-shadow: var(--shadow-md);
 }

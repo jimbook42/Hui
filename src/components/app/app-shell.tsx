@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 
@@ -12,14 +13,23 @@ type AppShellProps = {
 
 export function AppShell({ title, children }: AppShellProps) {
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-background">
-      <header className="border-b border-border bg-surface">
+    <div className="hui-page-canvas flex min-h-full flex-1 flex-col">
+      <header className="border-b border-border/80 bg-surface/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
-          <div className="min-w-0">
-            <Link href="/dashboard" className="hui-type-label text-primary">
-              Hui
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/dashboard" className="hui-focus-ring shrink-0">
+              <Image
+                src="/brand/hui-wordmark.png"
+                alt="Hui"
+                width={72}
+                height={28}
+                className="h-7 w-auto"
+                priority
+              />
             </Link>
-            <h1 className="hui-type-page-title truncate text-foreground">{title}</h1>
+            <h1 className="hui-type-page-title truncate border-l border-border pl-3 text-foreground">
+              {title}
+            </h1>
           </div>
           <nav
             className="hidden items-center gap-3 text-sm md:flex"

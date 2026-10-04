@@ -7,7 +7,7 @@ type HuiButtonSize = "default" | "sm" | "lg" | "touch";
 
 const variantClass: Record<HuiButtonVariant, string> = {
   primary:
-    "bg-primary text-primary-foreground hover:bg-primary-hover active:scale-[0.98]",
+    "rounded-full bg-primary text-primary-foreground hui-shadow-sm hover:bg-primary-hover active:scale-[0.98]",
   secondary:
     "border border-border bg-surface text-foreground hover:bg-muted active:scale-[0.98]",
   ghost: "text-foreground hover:bg-muted active:scale-[0.98]",

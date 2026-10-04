@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-026U.2 visual reference integration
+
+- Located reference mockups and brand assets at repo root; indexed in `docs/reference/REFERENCE_INDEX.md`.
+- Shifted primary palette from terracotta to reference forest green; added date badge, `HuiGatheringMark`, refined gathering/location/shell from `example-screen-*` and logo files.
+- Brand wordmark in `public/brand/`; production deploy from `feat/hui-026u-visual-design-system`.
+
 ## 2026-10-04 — HUI-026U visual design system & UX foundation
 
 - Warm token system in `globals.css`, Hui primitives under `src/components/hui/`, documented in `docs/DESIGN_SYSTEM.md`.

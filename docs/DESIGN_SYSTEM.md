@@ -55,16 +55,21 @@ Domain helpers: `gathering-layout.ts`, `attendance-visual.ts` (Vitest covered).
 
 `EventLocationPanel` is decorative topography plus pin — it reinforces **where the gathering is**, not live maps or member geography. No new map provider or dependency.
 
-## Reference mock-ups (interpretation)
+## Reference material (HUI-026U.2)
 
-| Reference idea | Hui implementation |
-| --- | --- |
-| People around a gathering | `GatheringVisual` + `AttendanceDot` on event detail and scheduling |
-| Map around event | `EventLocationPanel` on event hero |
-| Status circles | Attendance states tied to real `AttendanceRoster` data |
-| Mobile shell | `AppShell` + `MobileNav` |
+See `docs/reference/REFERENCE_INDEX.md` for paths. The first 026U pass did **not** have these files; 026U.2 aligned tokens and components to them.
 
-Features shown in references but not in Hui (feeds, live location, gamification) were **not** built.
+| Area | Reference | 026U.1 | 026U.2 adaptation |
+| --- | --- | --- | --- |
+| Gathering | Logo ring + map avatar rings | Ellipse + generic hub | `HuiGatheringMark` hub, outer ring, initials on dots |
+| Attendance | Photo piles + RSVP pills | State rings | Initials in dots; Hui labels (not “RSVP’d”) |
+| Location | Illustrated map + sheet | Simple topo SVG | Richer illustrated `EventLocationPanel` (still static) |
+| Event hierarchy | Date blob + card | Text-first hero | `EventDateBadge` + gathering block above metadata |
+| Navigation | 5-tab bar incl. Messages | 4-tab product nav | Kept 4 destinations; reference styling only |
+| Typography / colour | Forest green + cream | Terracotta primary | Forest green primary, parchment background |
+| Surfaces | Soft cards, large radius | Modest radius | `rounded-hui-xl`, softer elevation |
+
+Features shown in references but **not** in Hui (Messages tab, live map, distance, profile photos as attendance) were **not** built.
 
 ## Accessibility
 

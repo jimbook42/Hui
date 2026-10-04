@@ -51,9 +51,15 @@ export async function GroupsList() {
         <li key={group.id}>
           <Link
             href={`/groups/${group.id}`}
-            className="hui-focus-ring flex items-center justify-between gap-4 rounded-hui-lg border border-border bg-surface px-4 py-3.5 transition hover:bg-muted active:scale-[0.995]"
+            className="hui-focus-ring flex hui-shadow-sm items-center gap-4 rounded-hui-xl border border-border bg-surface px-4 py-3.5 transition hover:bg-muted/70 active:scale-[0.995]"
           >
-            <span className="font-medium text-foreground">{group.name}</span>
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] bg-secondary text-sm font-bold text-secondary-foreground"
+              aria-hidden="true"
+            >
+              {group.name.trim().charAt(0).toUpperCase() || "G"}
+            </span>
+            <span className="min-w-0 flex-1 font-medium text-foreground">{group.name}</span>
             <StatusPill label={roleLabel(group.role)} tone={roleTone(group.role)} />
           </Link>
         </li>

@@ -17,11 +17,16 @@ export default async function DashboardPage() {
     .maybeSingle();
 
   const displayName = profile?.display_name ?? user?.email ?? "there";
+  const firstName = displayName.split(/\s+/)[0] ?? displayName;
 
   return (
     <AppShell title="Home">
-      <HuiSurface elevated className="space-y-3">
-        <p className="hui-type-display text-foreground">Kia ora, {displayName}</p>
+      <header className="space-y-1">
+        <p className="hui-type-display text-foreground">Kia ora, {firstName}</p>
+        <p className="hui-type-supporting">What needs your attention in your groups?</p>
+      </header>
+
+      <HuiSurface elevated className="mt-6 space-y-3">
         <p className="hui-type-body text-muted-foreground">
           Hui proposes, coordinates, and remembers. Your groups decide when and how you
           gather.
@@ -31,26 +36,26 @@ export default async function DashboardPage() {
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <Link
           href="/groups"
-          className="hui-focus-ring rounded-hui-lg border border-border bg-surface px-4 py-4 transition hover:bg-muted"
+          className="hui-focus-ring rounded-hui-xl border border-border bg-surface px-4 py-4 hui-shadow-sm transition hover:bg-muted/60"
         >
-          <p className="hui-type-section text-foreground">Your groups</p>
+          <p className="hui-type-section text-primary">Your groups</p>
           <p className="hui-type-supporting mt-1">
-            See circles, members, and upcoming planning.
+            Circles, members, and planning for the next hui.
           </p>
         </Link>
         <Link
           href="/notifications"
-          className="hui-focus-ring rounded-hui-lg border border-border bg-surface px-4 py-4 transition hover:bg-muted"
+          className="hui-focus-ring rounded-hui-xl border border-border bg-surface px-4 py-4 hui-shadow-sm transition hover:bg-muted/60"
         >
-          <p className="hui-type-section text-foreground">Notifications</p>
+          <p className="hui-type-section text-primary">Notifications</p>
           <p className="hui-type-supporting mt-1">
-            What needs your attention across gatherings.
+            Updates that need a response or a quick look.
           </p>
         </Link>
       </div>
 
       <p className="mt-8 hui-type-supporting">
-        Event-oriented dashboard improvements are planned in{" "}
+        Upcoming-hui cards and map-style discovery are planned in{" "}
         <span className="font-medium text-foreground">HUI-026C</span>.
       </p>
     </AppShell>

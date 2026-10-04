@@ -18,7 +18,8 @@ const baseClass =
   "hui-focus-ring rounded-hui-md px-4 py-2.5 text-sm font-medium transition active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100";
 
 const variants = {
-  primary: "bg-primary text-primary-foreground hover:bg-primary-hover",
+  primary:
+    "rounded-full bg-primary text-primary-foreground hui-shadow-sm hover:bg-primary-hover",
   secondary:
     "border border-border bg-surface text-foreground hover:bg-muted",
 };
