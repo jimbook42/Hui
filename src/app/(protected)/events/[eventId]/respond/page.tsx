@@ -17,7 +17,8 @@ import { eventDetailPath } from "@/lib/events/paths";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getEventHostContext } from "@/lib/hosts/queries";
 import { getEventSchedulingContext } from "@/lib/scheduling/queries";
-import { createClient } from "@/lib/supabase/server";
+import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { devTimed } from "@/lib/perf/dev-server-timing";
 
 type PageProps = {
   params: Promise<{ eventId: string }>;
@@ -25,15 +26,16 @@ type PageProps = {
 
 export default async function EventParticipantRespondPage({ params }: PageProps) {
   const { eventId } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await devTimed("respond-page:getUser", () => getServerAuthUser());
   if (!user) {
     notFound();
   }
 
-  const detail = await getEventDetail(supabase, eventId, user.id);
+  const supabase = await getServerSupabase();
+
+  const detail = await devTimed("respond-page:event-detail", () =>
+    getEventDetail(supabase, eventId, user.id),
+  );
   if (!detail) {
     notFound();
   }

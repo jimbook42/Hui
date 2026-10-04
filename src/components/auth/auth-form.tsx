@@ -30,9 +30,13 @@ export function AuthForm({
   const router = useRouter();
 
   useEffect(() => {
-    if (refreshOnSuccess && state.message) {
-      router.refresh();
+    if (!refreshOnSuccess || !state.message) {
+      return;
     }
+    const id = window.setTimeout(() => {
+      router.refresh();
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [refreshOnSuccess, state.message, router]);
 
   return (

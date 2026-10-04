@@ -1,18 +1,16 @@
 import Link from "next/link";
 
+import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { countUnreadNotifications } from "@/lib/notifications/queries";
-import { createClient } from "@/lib/supabase/server";
 
 export async function NotificationsNavLink() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getServerAuthUser();
 
   if (!user) {
     return null;
   }
 
+  const supabase = await getServerSupabase();
   const unread = await countUnreadNotifications(supabase, user.id);
 
   return (

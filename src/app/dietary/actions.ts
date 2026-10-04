@@ -10,7 +10,8 @@ import {
   parseDietaryEntryId,
   parseGroupId,
 } from "@/domain/dietary/validation";
-import { createClient } from "@/lib/supabase/server";
+import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { devTimed } from "@/lib/perf/dev-server-timing";
 
 export type DietaryActionState = {
   error?: string;
@@ -18,13 +19,11 @@ export type DietaryActionState = {
 };
 
 async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await devTimed("dietary-action:getUser", () => getServerAuthUser());
   if (!user) {
     redirect("/sign-in");
   }
+  const supabase = await getServerSupabase();
   return { supabase, user };
 }
 

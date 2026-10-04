@@ -2,40 +2,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { DietaryCategory } from "@/domain/dietary/validation";
 import type { GroupSharedDietaryRow, UserDietaryEntry, UserGroupOption } from "@/lib/dietary/types";
+import {
+  listActiveMembershipGroups,
+  type UserMembershipGroup,
+} from "@/lib/groups/user-membership-groups";
 
 export async function listUserGroupsForDietary(
   supabase: SupabaseClient,
   userId: string,
+  preloadedGroups?: UserMembershipGroup[],
 ): Promise<UserGroupOption[]> {
-  const { data, error } = await supabase
-    .from("group_memberships")
-    .select(
-      `
-      group_id,
-      groups:group_id (
-        id,
-        name
-      )
-    `,
-    )
-    .eq("user_id", userId)
-    .eq("status", "active");
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const options: UserGroupOption[] = [];
-  for (const row of data ?? []) {
-    const raw = row.groups as { id: string; name: string } | { id: string; name: string }[] | null;
-    const group = Array.isArray(raw) ? raw[0] : raw;
-    if (group) {
-      options.push({ groupId: group.id, groupName: group.name });
-    }
-  }
-
-  options.sort((a, b) => a.groupName.localeCompare(b.groupName));
-  return options;
+  const groups = preloadedGroups ?? (await listActiveMembershipGroups(supabase, userId));
+  return groups.map((group) => ({
+    groupId: group.groupId,
+    groupName: group.groupName,
+  }));
 }
 
 export async function listUserDietaryEntries(

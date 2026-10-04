@@ -9,8 +9,8 @@ import {
 } from "@/components/events/event-detail-heavy-sections";
 import { formatEventTimeRange } from "@/domain/datetime/timezone";
 import { getEventDetail } from "@/lib/events/queries";
+import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { devTimed } from "@/lib/perf/dev-server-timing";
-import { createClient } from "@/lib/supabase/server";
 
 type PageProps = {
   params: Promise<{ eventId: string }>;
@@ -32,10 +32,8 @@ function formatWhen(
 
 export default async function EventDetailPage({ params }: PageProps) {
   const { eventId } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await devTimed("event-page:getUser", () => getServerAuthUser());
+  const supabase = await getServerSupabase();
 
   const detail = await devTimed("event-page:event-detail", () =>
     getEventDetail(supabase, eventId, user!.id),

@@ -11,50 +11,78 @@ import { getMemberReconnectPreference } from "@/lib/notifications/queries";
 import { getVapidPublicKey } from "@/lib/push/config";
 import { SettingsSection } from "@/components/profile/settings-section";
 import { authMethodLabelsForUser } from "@/lib/auth/auth-methods";
+import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { listActiveMembershipGroups } from "@/lib/groups/user-membership-groups";
 import { listUserHouseholdsByGroup } from "@/lib/households/queries";
-import { createClient } from "@/lib/supabase/server";
+import { devTimed } from "@/lib/perf/dev-server-timing";
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select(
-      "display_name, push_event_proposals_enabled, push_consensus_ready_enabled, push_event_confirmed_enabled, push_host_assignment_enabled, push_contribution_changes_enabled",
-    )
-    .eq("id", user!.id)
-    .maybeSingle();
-
-  const authMethods = user ? authMethodLabelsForUser(user) : [];
-  const reconnectPref = user
-    ? await getMemberReconnectPreference(supabase, user.id)
-    : true;
-  const vapidPublicKey = getVapidPublicKey();
-  let webPushEnabled = false;
-  let pushSubscriptionCount = 0;
-  let pushConfigured = false;
-  if (user && vapidPublicKey) {
-    const { data, error } = await supabase.rpc("my_push_subscription_state", {
-      p_endpoint: "",
-    });
-    const row = !error && Array.isArray(data) ? data[0] : null;
-    if (row && typeof row === "object") {
-      pushConfigured = true;
-      webPushEnabled = (row as { web_push_enabled?: boolean }).web_push_enabled === true;
-      const count = (row as { subscription_count?: number }).subscription_count;
-      pushSubscriptionCount = typeof count === "number" ? count : 0;
-    }
+  const user = await devTimed("profile-page:getUser", () => getServerAuthUser());
+  if (!user) {
+    return null;
   }
-  const [householdContexts, dietaryEntries, dietaryGroups] = user
-    ? await Promise.all([
-        listUserHouseholdsByGroup(supabase, user.id),
+
+  const supabase = await getServerSupabase();
+
+  const membershipGroups = await devTimed("profile-page:membership-groups", () =>
+    listActiveMembershipGroups(supabase, user.id),
+  );
+
+  const [profile, reconnectPref, pushState, householdContexts, dietaryEntries, dietaryGroups] =
+    await devTimed("profile-page:data", () =>
+      Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "display_name, push_event_proposals_enabled, push_consensus_ready_enabled, push_event_confirmed_enabled, push_host_assignment_enabled, push_contribution_changes_enabled",
+          )
+          .eq("id", user.id)
+          .maybeSingle()
+          .then(({ data }) => data),
+        getMemberReconnectPreference(supabase, user.id),
+        (async () => {
+          const vapidPublicKey = getVapidPublicKey();
+          if (!vapidPublicKey) {
+            return {
+              vapidPublicKey: null as string | null,
+              pushConfigured: false,
+              webPushEnabled: false,
+              pushSubscriptionCount: 0,
+            };
+          }
+          const { data, error } = await supabase.rpc("my_push_subscription_state", {
+            p_endpoint: "",
+          });
+          const row = !error && Array.isArray(data) ? data[0] : null;
+          if (!row || typeof row !== "object") {
+            return {
+              vapidPublicKey,
+              pushConfigured: false,
+              webPushEnabled: false,
+              pushSubscriptionCount: 0,
+            };
+          }
+          const count = (row as { subscription_count?: number }).subscription_count;
+          return {
+            vapidPublicKey,
+            pushConfigured: true,
+            webPushEnabled: (row as { web_push_enabled?: boolean }).web_push_enabled === true,
+            pushSubscriptionCount: typeof count === "number" ? count : 0,
+          };
+        })(),
+        listUserHouseholdsByGroup(supabase, user.id, membershipGroups),
         listUserDietaryEntries(supabase),
-        listUserGroupsForDietary(supabase, user.id),
-      ])
-    : [[], [], []];
+        listUserGroupsForDietary(supabase, user.id, membershipGroups),
+      ]),
+    );
+
+  const authMethods = authMethodLabelsForUser(user);
+  const {
+    vapidPublicKey,
+    pushConfigured,
+    webPushEnabled,
+    pushSubscriptionCount,
+  } = pushState;
 
   return (
     <AppShell title="Account settings">
@@ -67,11 +95,7 @@ export default async function ProfilePage() {
           title="Profile"
           description="Your display name is visible to people who share a group with you."
         >
-          <AuthForm
-            action={updateProfileAction}
-            submitLabel="Save display name"
-            refreshOnSuccess
-          >
+          <AuthForm action={updateProfileAction} submitLabel="Save display name">
             <AuthField
               label="Display name"
               name="display_name"
@@ -86,7 +110,7 @@ export default async function ProfilePage() {
                 Account email
               </dt>
               <dd className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                {user?.email ?? "—"}
+                {user.email ?? "—"}
               </dd>
               <p className="mt-1 text-xs text-zinc-500">
                 Used to sign in. Contact support if you need to change it.
@@ -118,7 +142,7 @@ export default async function ProfilePage() {
                 Member ID
               </dt>
               <dd className="mt-1 font-mono text-xs break-all text-zinc-600 dark:text-zinc-400">
-                {user?.id}
+                {user.id}
               </dd>
               <p className="mt-1 text-xs text-zinc-500">
                 Share this with a group admin if they need to add you to a group.
@@ -138,10 +162,7 @@ export default async function ProfilePage() {
           title="Household"
           description="Manage how you are grouped with others in each of your groups. Households are separate from group membership."
         >
-          <HouseholdSettingsSection
-            contexts={householdContexts}
-            currentUserId={user!.id}
-          />
+          <HouseholdSettingsSection contexts={householdContexts} currentUserId={user.id} />
         </SettingsSection>
 
         <SettingsSection

@@ -2,6 +2,29 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-026P.1 systemic latency (common paths)
+
+**Diagnosis (code + architecture; Android timings from ticket, not re-measured in Cursor):**
+- Protected navigations repeated `auth.getUser()` in middleware, layout, page, and `NotificationsNavLink` (AppShell on every screen) — each call is a Supabase Auth round trip.
+- Protected layout always ran `ensureUserProfile` (extra `profiles` read) even when the layout’s own profile guard query already proved the row exists.
+- Profile page loaded households via `listUserHouseholdsByGroup` with an **N+1** pattern (per-group sequential `household_members` / `households` / members queries) and duplicated active `group_memberships` reads for dietary + household sections.
+- Save display name: server action + `revalidatePath` + `router.refresh()` refetched the full heavy profile RSC tree after success.
+- Dietary saves use the same `refreshOnSuccess` pattern (deferred refresh after success message).
+
+**Fixes:**
+- `getServerAuthUser` / `getServerSupabase` (`React.cache`) — one auth + client per RSC request across layout, page, and shell.
+- Skip `ensureUserProfile` when the layout profile row already exists.
+- Batch household loading; share one `listActiveMembershipGroups` fetch across household + dietary on profile.
+- Profile display name: removed `refreshOnSuccess` and unnecessary `/dashboard` revalidation; success from action state only.
+- `AuthForm` defers `router.refresh()` to the next task so success copy paints first.
+- Dev timing labels on profile layout/page, dietary actions, display-name action, event/respond routes (`HUI_DEV_PERF=1`).
+
+**Region note:** Supabase project host `xmvzzypefpiethefrfka.supabase.co` (from prior OAuth QA). Confirm exact Supabase region in dashboard; Vercel production region not queried (API scope). Cross-region latency may still contribute on NZ mobile — needs correlation with physical traces.
+
+**Physical Android verification:** still required for profile open, display name save, dietary save, notification → respond, 026B flow.
+
+- `npm run validate` passed (incl. new `src/lib/households/queries.test.ts`).
+
 ## 2026-10-04 — HUI-026P performance audit + fixes
 
 **Baseline (observed / code-traced bottlenecks):**

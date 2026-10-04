@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildGroupMembersHouseholdView } from "@/domain/households/group-display";
 import type { GroupMemberRow } from "@/lib/groups/types";
+import {
+  listActiveMembershipGroups,
+  type UserMembershipGroup,
+} from "@/lib/groups/user-membership-groups";
 
 export type HouseholdMemberDetail = {
   userId: string;
@@ -21,110 +25,107 @@ export type UserHouseholdInGroup = {
 export async function listUserHouseholdsByGroup(
   supabase: SupabaseClient,
   userId: string,
+  preloadedGroups?: UserMembershipGroup[],
 ): Promise<UserHouseholdInGroup[]> {
-  const { data: memberships, error: membershipError } = await supabase
-    .from("group_memberships")
-    .select(
-      `
-      group_id,
-      groups:group_id (
-        id,
-        name
-      )
-    `,
-    )
+  const groups = preloadedGroups ?? (await listActiveMembershipGroups(supabase, userId));
+
+  if (groups.length === 0) {
+    return [];
+  }
+
+  const groupIds = groups.map((group) => group.groupId);
+
+  const { data: userHouseholdRows, error: userHouseholdError } = await supabase
+    .from("household_members")
+    .select("group_id, household_id")
     .eq("user_id", userId)
-    .eq("status", "active");
+    .in("group_id", groupIds);
 
-  if (membershipError) {
-    throw new Error(membershipError.message);
+  if (userHouseholdError) {
+    throw new Error(userHouseholdError.message);
   }
 
-  const groups: { id: string; name: string }[] = [];
-  for (const row of memberships ?? []) {
-    const raw = row.groups as { id: string; name: string } | { id: string; name: string }[] | null;
-    const group = Array.isArray(raw) ? raw[0] : raw;
-    if (group) {
-      groups.push({ id: group.id, name: group.name });
-    }
+  const householdIdByGroup = new Map<string, string>();
+  for (const row of userHouseholdRows ?? []) {
+    householdIdByGroup.set(row.group_id as string, row.household_id as string);
   }
 
-  groups.sort((a, b) => a.name.localeCompare(b.name));
+  const householdIds = [...new Set(householdIdByGroup.values())];
+  if (householdIds.length === 0) {
+    return groups.map((group) => ({
+      groupId: group.groupId,
+      groupName: group.groupName,
+      household: null,
+    }));
+  }
 
-  const results: UserHouseholdInGroup[] = [];
-
-  for (const group of groups) {
-    const { data: membershipRow, error: hmError } = await supabase
-      .from("household_members")
-      .select("household_id")
-      .eq("group_id", group.id)
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (hmError) {
-      throw new Error(hmError.message);
-    }
-
-    if (!membershipRow) {
-      results.push({ groupId: group.id, groupName: group.name, household: null });
-      continue;
-    }
-
-    const householdId = membershipRow.household_id as string;
-
-    const { data: household, error: householdError } = await supabase
-      .from("households")
-      .select("id, name")
-      .eq("id", householdId)
-      .maybeSingle();
-
-    if (householdError) {
-      throw new Error(householdError.message);
-    }
-    if (!household) {
-      results.push({ groupId: group.id, groupName: group.name, household: null });
-      continue;
-    }
-
-    const { data: members, error: membersError } = await supabase
-      .from("household_members")
-      .select(
-        `
+  const [{ data: households, error: householdsError }, { data: memberRows, error: membersError }] =
+    await Promise.all([
+      supabase.from("households").select("id, name").in("id", householdIds),
+      supabase
+        .from("household_members")
+        .select(
+          `
+        household_id,
         user_id,
         profiles:user_id (
           display_name
         )
       `,
-      )
-      .eq("household_id", householdId)
-      .order("created_at", { ascending: true });
+        )
+        .in("household_id", householdIds)
+        .order("created_at", { ascending: true }),
+    ]);
 
-    if (membersError) {
-      throw new Error(membersError.message);
-    }
-
-    results.push({
-      groupId: group.id,
-      groupName: group.name,
-      household: {
-        id: household.id,
-        name: household.name,
-        members: (members ?? []).map((member) => {
-          const rawProfile = member.profiles as
-            | { display_name: string }
-            | { display_name: string }[]
-            | null;
-          const profile = Array.isArray(rawProfile) ? rawProfile[0] : rawProfile;
-          return {
-            userId: member.user_id as string,
-            displayName: profile?.display_name ?? "Member",
-          };
-        }),
-      },
-    });
+  if (householdsError) {
+    throw new Error(householdsError.message);
+  }
+  if (membersError) {
+    throw new Error(membersError.message);
   }
 
-  return results;
+  const householdMeta = new Map(
+    (households ?? []).map((household) => [
+      household.id as string,
+      { id: household.id as string, name: household.name as string },
+    ]),
+  );
+
+  const membersByHousehold = new Map<string, HouseholdMemberDetail[]>();
+  for (const member of memberRows ?? []) {
+    const householdId = member.household_id as string;
+    const rawProfile = member.profiles as
+      | { display_name: string }
+      | { display_name: string }[]
+      | null;
+    const profile = Array.isArray(rawProfile) ? rawProfile[0] : rawProfile;
+    const list = membersByHousehold.get(householdId) ?? [];
+    list.push({
+      userId: member.user_id as string,
+      displayName: profile?.display_name ?? "Member",
+    });
+    membersByHousehold.set(householdId, list);
+  }
+
+  return groups.map((group) => {
+    const householdId = householdIdByGroup.get(group.groupId);
+    if (!householdId) {
+      return { groupId: group.groupId, groupName: group.groupName, household: null };
+    }
+    const meta = householdMeta.get(householdId);
+    if (!meta) {
+      return { groupId: group.groupId, groupName: group.groupName, household: null };
+    }
+    return {
+      groupId: group.groupId,
+      groupName: group.groupName,
+      household: {
+        id: meta.id,
+        name: meta.name,
+        members: membersByHousehold.get(householdId) ?? [],
+      },
+    };
+  });
 }
 
 export async function getGroupHouseholdMemberView(

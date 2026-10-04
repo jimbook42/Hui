@@ -19,6 +19,8 @@ import { isAccountDeletionConfirmed } from "@/lib/auth/account-deletion";
 import { deleteAuthUserWithVerification } from "@/lib/auth/delete-auth-user";
 import { normalizeDisplayName } from "@/lib/profiles/validation";
 import { createSecretSupabaseClient } from "@/lib/supabase/admin";
+import { devTimed } from "@/lib/perf/dev-server-timing";
+import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthActionState = {
@@ -156,23 +158,21 @@ export async function updateProfileAction(
   _prev: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await devTimed("updateProfileAction:getUser", () => getServerAuthUser());
   if (!user) {
     redirect("/sign-in");
   }
 
+  const supabase = await getServerSupabase();
   const displayName = String(formData.get("display_name") ?? "");
-  const result = await updateOwnDisplayName(supabase, user.id, displayName);
+  const result = await devTimed("updateProfileAction:update", () =>
+    updateOwnDisplayName(supabase, user.id, displayName),
+  );
   if (!result.ok) {
     return { error: result.error };
   }
 
   revalidatePath("/profile");
-  revalidatePath("/dashboard");
   return { message: "Profile updated." };
 }
 
