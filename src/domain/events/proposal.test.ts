@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   candidatesForRpc,
+  mergeWallClockIntoCandidates,
   parseWallClockCandidate,
   validateEventProposalDraft,
 } from "@/domain/events/proposal";
@@ -217,5 +218,36 @@ describe("event proposal validation (HUI-026A)", () => {
       baseOptions,
     );
     expect(result.ok).toBe(false);
+  });
+});
+
+describe("mergeWallClockIntoCandidates", () => {
+  const candidate = {
+    startsAt: "2026-10-31T05:00:00.000Z",
+    endsAt: null as string | null,
+  };
+
+  it("adds a parsed time when the list is empty", () => {
+    expect(mergeWallClockIntoCandidates([], candidate)).toEqual({
+      candidates: [candidate],
+    });
+  });
+
+  it("returns an error when there is no parsed time and no candidates", () => {
+    const result = mergeWallClockIntoCandidates([], null);
+    expect(result.error).toMatch(/valid date/i);
+  });
+
+  it("keeps existing candidates when the parsed time is a duplicate", () => {
+    expect(mergeWallClockIntoCandidates([candidate], candidate)).toEqual({
+      candidates: [candidate],
+    });
+  });
+
+  it("appends a new candidate", () => {
+    const other = { startsAt: "2026-11-01T05:00:00.000Z", endsAt: null };
+    expect(mergeWallClockIntoCandidates([candidate], other)).toEqual({
+      candidates: [candidate, other],
+    });
   });
 });

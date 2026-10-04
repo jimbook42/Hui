@@ -6,9 +6,8 @@ import { useRouter } from "next/navigation";
 import {
   disablePushNotificationsAction,
   readPushDeviceStateAction,
-  registerPushSubscriptionAction,
 } from "@/app/notifications/push-actions";
-import { urlBase64ToUint8Array } from "@/lib/push/browser";
+import { enableWebPushNotifications, browserSupportsWebPush } from "@/lib/push/client-enable";
 import { resolvePushSettingsView } from "@/lib/push/settings-state";
 
 type PushNotificationsControlProps = {
@@ -22,11 +21,7 @@ const buttonClassName =
   "hui-btn hui-btn-secondary rounded-full hui-focus-ring";
 
 function browserSupportsPush(): boolean {
-  return (
-    "serviceWorker" in navigator &&
-    "PushManager" in window &&
-    "Notification" in window
-  );
+  return browserSupportsWebPush();
 }
 
 export function PushNotificationsControl({
@@ -100,40 +95,16 @@ export function PushNotificationsControl({
     setError(null);
     setMessage(null);
     try {
-      const nextPermission = await Notification.requestPermission();
-      const normalized =
-        nextPermission === "granted" || nextPermission === "denied" ? nextPermission : "default";
-      setPermission(normalized);
-      if (normalized !== "granted") {
-        if (normalized === "default") {
-          setError("Permission was dismissed. You can try again when you are ready.");
+      const result = await enableWebPushNotifications(vapidPublicKey);
+      setPermission(result.permission);
+      if (!result.ok) {
+        if (result.error) {
+          setError(result.error);
         }
         return;
       }
-      const registration = await navigator.serviceWorker.ready;
-      const existing = await registration.pushManager.getSubscription();
-      const subscription =
-        existing ??
-        (await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-        }));
-      const json = subscription.toJSON();
-      if (!json.keys?.p256dh || !json.keys.auth) {
-        setError("This browser could not create a push subscription.");
-        return;
-      }
-      const result = await registerPushSubscriptionAction({
-        endpoint: subscription.endpoint,
-        p256dh: json.keys.p256dh,
-        authKey: json.keys.auth,
-      });
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
       setAccountEnabled(true);
-      setDeviceSubscribed(result.deviceSubscribed !== false);
+      setDeviceSubscribed(result.deviceSubscribed);
       if (typeof result.subscriptionCount === "number") {
         setSavedCount(result.subscriptionCount);
       }

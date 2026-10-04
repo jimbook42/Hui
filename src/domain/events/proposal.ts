@@ -109,6 +109,27 @@ export function parseWallClockCandidate(
   return { startsAt, endsAt };
 }
 
+export function mergeWallClockIntoCandidates(
+  candidates: ProposalCandidateInput[],
+  parsed: ProposalCandidateInput | null,
+): { candidates: ProposalCandidateInput[]; error?: string } {
+  if (!parsed) {
+    if (candidates.length < 1) {
+      return { candidates, error: "Enter a valid date and start time." };
+    }
+    return { candidates };
+  }
+
+  const duplicate = candidates.some(
+    (row) => row.startsAt === parsed.startsAt && (row.endsAt ?? null) === parsed.endsAt,
+  );
+  if (duplicate) {
+    return { candidates };
+  }
+
+  return { candidates: [...candidates, parsed] };
+}
+
 export function validateEventProposalDraft(
   draft: EventProposalDraft,
   options: {

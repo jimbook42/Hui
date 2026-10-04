@@ -2,6 +2,16 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026U.4 final polish (sign-off)
+
+- **Geoapify:** global autocomplete with `bias=countrycode:auto` on every request; optional `bias=proximity:lon,lat` when the user already has a map pin (`proximityLat`/`proximityLng` on `/api/geocode`). No default country filter.
+- **Address UI:** clearer vertical separation between place text and **Open in Maps** on the event hero.
+- **Notifications:** post-install dashboard onboarding card (enable / not now; denied → settings link); shared `enableWebPushNotifications` client helper; dismiss cooldown matches PWA install card.
+- **Propose flow:** time step uses **Continue** with implicit candidate from the picker; **Add another time** is secondary.
+- **Food involvement:** responsive legend/options wrapping; selected state uses sage tint + primary border + check (readable light/dark).
+- **Validation:** `npm run validate` (lint, typecheck, tests, build) passed.
+- **Production smoke:** re-verify address search (incl. `50 Kent Lodge Avenue, Avonhead, Christchurch`), time/food/notifications UX on `https://hui-seven-gamma.vercel.app` after deploy.
+
 ## 2026-10-05 — HUI-026U.4 production deploy (partial)
 
 - **Deploy:** Vercel production `https://hui-seven-gamma.vercel.app` — deployments `dpl_CyY3uj3x9Vo48MAxPF7BQ5sV2nHP` then `dpl_*` (second deploy for env); git `d2add56` (Geoapify attribution + prior geocoder adapter).

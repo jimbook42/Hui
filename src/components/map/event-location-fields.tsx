@@ -30,6 +30,7 @@ export function EventLocationFields({
       <AddressSearchField
         label={searchLabel}
         value={location}
+        proximityCoordinates={coordinates}
         onPlaceChange={(label, nextCoordinates) => {
           onLocationChange(label);
           onCoordinatesChange(nextCoordinates);

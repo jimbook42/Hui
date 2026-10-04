@@ -21,8 +21,8 @@ export class HttpGeocodingProvider implements GeocodingProvider {
   async search(query: string, options?: GeocodeSearchOptions): Promise<GeocodeResult[]> {
     const url = new URL(this.searchUrl);
     url.searchParams.set("q", query);
-    if (options?.countryCode) {
-      url.searchParams.set("country", options.countryCode);
+    if (options?.countryFilter) {
+      url.searchParams.set("country", options.countryFilter);
     }
     if (options?.limit) {
       url.searchParams.set("limit", String(options.limit));

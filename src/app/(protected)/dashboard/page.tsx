@@ -2,8 +2,10 @@ import { Suspense } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
 import { InstallHuiCard } from "@/components/pwa/install-hui";
+import { PushNotificationsOnboardCard } from "@/components/pwa/push-notifications-onboard";
 import { DashboardEvents, DashboardEventsSkeleton } from "@/components/home/home-sections";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { getVapidPublicKey } from "@/lib/push/config";
 
 async function Greeting() {
   const user = await getServerAuthUser();
@@ -32,12 +34,19 @@ function GreetingText({ name }: { name?: string }) {
 }
 
 export default function DashboardPage() {
+  const vapidPublicKey = getVapidPublicKey();
+  const pushConfigured = vapidPublicKey !== null;
+
   return (
     <AppShell title="Home" hideTitle>
       <Suspense fallback={<GreetingText />}>
         <Greeting />
       </Suspense>
       <InstallHuiCard />
+      <PushNotificationsOnboardCard
+        pushConfigured={pushConfigured}
+        vapidPublicKey={vapidPublicKey}
+      />
       <Suspense fallback={<DashboardEventsSkeleton />}>
         <DashboardEvents />
       </Suspense>

@@ -8,15 +8,16 @@ import {
   WallClockDateField,
   WallClockTimeField,
 } from "@/components/events/wall-clock-picker-field";
-import { ChevronDownIcon } from "@/components/hui/icons";
+import { ChevronDownIcon, CheckIcon } from "@/components/hui/icons";
 import { EventLocationFields } from "@/components/map/event-location-fields";
 import { PendingButton } from "@/components/ui/pending-button";
 import type { EventFoodInvolvement } from "@/domain/events/food";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import type { EventProposalDraft } from "@/domain/events/proposal";
-import { parseWallClockCandidate } from "@/domain/events/proposal";
+import { mergeWallClockIntoCandidates, parseWallClockCandidate } from "@/domain/events/proposal";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
 import type { GroupMemberRow, GroupSettingsRow } from "@/lib/groups/types";
+import { cn } from "@/lib/ui/cn";
 
 /**
  * Three calm steps. Place, notes and contributions are optional extras (HUI-026U): the place and
@@ -128,10 +129,25 @@ export function CreateEventProposalFlow({
       return;
     }
     if (step === "time") {
-      if (draft.candidates.length < 1) {
+      const parsed = parseWallClockCandidate(timeDate, timeStart, timeEnd, settings.timezone);
+      if (!parsed && draft.candidates.length < 1) {
+        setStepError(
+          timeEnd.trim()
+            ? "Enter a valid date and times. The end must be after the start."
+            : "Enter a valid date and start time.",
+        );
+        return;
+      }
+      const merged = mergeWallClockIntoCandidates(draft.candidates, parsed);
+      if (merged.error) {
+        setStepError(merged.error);
+        return;
+      }
+      if (merged.candidates.length < 1) {
         setStepError("Add at least one proposed time.");
         return;
       }
+      setDraft((current) => ({ ...current, candidates: merged.candidates }));
       goTo("review");
     }
   }
@@ -155,16 +171,14 @@ export function CreateEventProposalFlow({
       );
       return;
     }
-    const duplicate = draft.candidates.some(
-      (row) => row.startsAt === parsed.startsAt && (row.endsAt ?? null) === parsed.endsAt,
-    );
-    if (duplicate) {
+    const merged = mergeWallClockIntoCandidates(draft.candidates, parsed);
+    if (merged.candidates.length === draft.candidates.length) {
       setStepError("That time is already in your proposal.");
       return;
     }
     setDraft((current) => ({
       ...current,
-      candidates: [...current.candidates, parsed],
+      candidates: merged.candidates,
     }));
   }
 
@@ -416,7 +430,8 @@ export function CreateEventProposalFlow({
             </ul>
           ) : (
             <p className="hui-message-note" role="status">
-              Add at least one time before you can propose this event.
+              Choose a date and time, then tap Continue. Add another time only if you want more than
+              one option.
             </p>
           )}
           <div className="space-y-4 rounded-hui-xl bg-surface p-5 hui-shadow-md">
@@ -439,8 +454,8 @@ export function CreateEventProposalFlow({
                 clearable
               />
             </div>
-            <PendingButton type="button" variant="secondary" onClick={addCandidate}>
-              Add this time
+            <PendingButton type="button" variant="soft" onClick={addCandidate}>
+              Add another time
             </PendingButton>
           </div>
         </section>
@@ -454,42 +469,49 @@ export function CreateEventProposalFlow({
               Still needed: {reviewMissing.join(", ")}
             </p>
           ) : null}
-          <fieldset className="space-y-3 rounded-hui-xl bg-surface p-5 hui-shadow-md">
-            <legend className="px-1 text-sm font-extrabold text-foreground">Will food be involved?</legend>
-            <p className="text-xs font-semibold text-muted-foreground">
+          <fieldset className="min-w-0 space-y-3 overflow-hidden rounded-hui-xl bg-surface p-5 hui-shadow-md">
+            <legend className="max-w-full px-1 text-sm font-extrabold text-foreground break-words">
+              Will food be involved?
+            </legend>
+            <p className="text-xs font-semibold text-muted-foreground break-words">
               Helps the group know whether dietary coordination matters for this hui.
             </p>
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {(
                 [
                   ["yes", "Yes"],
                   ["no", "No"],
                   ["unsure", "Not sure"],
                 ] as const
-              ).map(([value, label]) => (
-                <label
-                  key={value}
-                  className={`hui-focus-ring flex min-h-12 flex-1 cursor-pointer items-center justify-center rounded-hui-lg px-4 text-sm font-extrabold ${
-                    draft.foodInvolvement === value
-                      ? "bg-accent text-accent-foreground"
-                      : "bg-muted text-foreground"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="food_involvement"
-                    className="sr-only"
-                    checked={draft.foodInvolvement === value}
-                    onChange={() =>
-                      setDraft((current) => ({
-                        ...current,
-                        foodInvolvement: value as EventFoodInvolvement,
-                      }))
-                    }
-                  />
-                  {label}
-                </label>
-              ))}
+              ).map(([value, label]) => {
+                const selected = draft.foodInvolvement === value;
+                return (
+                  <label
+                    key={value}
+                    className={cn(
+                      "hui-focus-ring flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-hui-lg px-4 py-3 text-sm font-extrabold",
+                      selected
+                        ? "border-2 border-primary bg-sage-soft text-foreground"
+                        : "border border-transparent bg-muted text-foreground",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="food_involvement"
+                      className="sr-only"
+                      checked={selected}
+                      onChange={() =>
+                        setDraft((current) => ({
+                          ...current,
+                          foodInvolvement: value as EventFoodInvolvement,
+                        }))
+                      }
+                    />
+                    <span className="min-w-0 text-center leading-snug">{label}</span>
+                    {selected ? <CheckIcon size={18} strokeWidth={3} className="shrink-0" /> : null}
+                  </label>
+                );
+              })}
             </div>
           </fieldset>
           <dl className="grid gap-4 rounded-hui-xl bg-surface p-5 text-sm font-semibold text-foreground hui-shadow-md [&_dt]:hui-type-label [&_dt]:text-muted-foreground [&_dd]:mt-1 [&_dd]:text-base [&_dd]:font-extrabold">

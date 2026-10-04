@@ -108,14 +108,16 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
       <ul className="space-y-2 text-base font-bold text-foreground">
         <li className="flex items-start gap-3">
           <PinIcon size={20} className="mt-0.5 shrink-0 text-accent" />
-          <span className="min-w-0 flex-1">
-            {detail.location?.trim() ? detail.location : (
-              <span className="text-muted-foreground">Place still being worked out</span>
-            )}
+          <span className="flex min-w-0 flex-1 flex-col gap-2.5">
+            <span className="block break-words">
+              {detail.location?.trim() ? detail.location : (
+                <span className="text-muted-foreground">Place still being worked out</span>
+              )}
+            </span>
             <OpenInMapsLink
               location={detail.location}
               coordinates={detail.locationCoordinates}
-              className="mt-2"
+              className="mt-0 self-start"
             />
           </span>
         </li>
