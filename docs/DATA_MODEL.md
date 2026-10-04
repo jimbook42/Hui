@@ -10,7 +10,7 @@ In-app notifications are stored in `member_notifications` (HUI-021). HUI-023 sto
 
 | Table | Purpose | Relationships and privacy |
 | --- | --- | --- |
-| `profiles` | Display name for `auth.users` | Created when an auth user is inserted. Dietary data is not on this row. `member_reconnect_reminders_enabled` opts the member out of optional reconnect reminder notifications (default on). `web_push_enabled` opts the member into Web Push (default off) and does not turn in-app notifications off. A person can read their own profile and the display names of people who share an active membership. |
+| `profiles` | Display name and notification settings for `auth.users` | Created when an auth user is inserted. Dietary data is not on this row. `member_reconnect_reminders_enabled` opts the member out of optional reconnect reminder notifications (default on). `web_push_enabled` opts the member into Web Push (default off) and does not turn in-app notifications off. The five `push_*_enabled` columns control eligible Web Push categories and default on. A person can read and update their own settings. |
 | `groups` | A gathering circle | `owner_id` mirrors the active owner membership. Active members can read the group. |
 | `group_settings` | Rules for that group | One row, created with the group. See columns below. Active members can read; owner and admins can update. |
 | `group_memberships` | Person in a group | Role `owner`, `admin`, or `member`. Leaving sets `status` to `removed` and keeps the row. A user may belong to many groups. One active owner per group. |

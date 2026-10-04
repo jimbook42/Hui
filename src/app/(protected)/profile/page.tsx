@@ -22,7 +22,9 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name")
+    .select(
+      "display_name, push_event_proposals_enabled, push_consensus_ready_enabled, push_event_confirmed_enabled, push_host_assignment_enabled, push_contribution_changes_enabled",
+    )
     .eq("id", user!.id)
     .maybeSingle();
 
@@ -154,7 +156,16 @@ export default async function ProfilePage() {
             subscriptionCount={pushSubscriptionCount}
           />
           <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-800">
-            <NotificationPreferencesSection reconnectRemindersEnabled={reconnectPref} />
+            <NotificationPreferencesSection
+              reconnectRemindersEnabled={reconnectPref}
+              pushPreferences={{
+                eventProposalsEnabled: profile?.push_event_proposals_enabled !== false,
+                consensusReadyEnabled: profile?.push_consensus_ready_enabled !== false,
+                eventConfirmedEnabled: profile?.push_event_confirmed_enabled !== false,
+                hostAssignmentEnabled: profile?.push_host_assignment_enabled !== false,
+                contributionChangesEnabled: profile?.push_contribution_changes_enabled !== false,
+              }}
+            />
           </div>
         </SettingsSection>
 

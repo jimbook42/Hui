@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-024 Web Push notification preferences
+
+- Added five default-on profile preferences for event proposals, decision-ready, event confirmation, host assignment, and contribution changes. Profile settings can independently update them; the existing master Web Push control and browser permission flow are unchanged.
+- Server-side `queue_member_notification` still creates every `member_notifications` row, but only creates a new Web Push outbox row when the recipient's matching category preference is enabled. Historical notifications and existing outbox rows are untouched.
+- Migration: `20261004030000_push_notification_preferences.sql`.
+- Validation: `npm run validate` passed — lint, typecheck, 301 tests passed / 2 skipped, and production build passed. Next.js reported its existing middleware-to-proxy deprecation warning.
+
 ## 2026-10-04 — HUI-023A Web Push finalisation
 
 - Removed temporary failed-delivery diagnostics from the profile control, Web Push delivery path, and delivery test; restored the permanent generic browser error handling and `WebPushError` status normalization.

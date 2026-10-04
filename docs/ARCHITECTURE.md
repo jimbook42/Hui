@@ -112,6 +112,8 @@ When offline, navigations show `/offline`; the app does not sync data or pretend
 
 **In-app notifications (HUI-021).** `member_notifications` stores short, privacy-safe messages for the authenticated member. Rows are created by database triggers on meaningful event/host/contribution changes and by `sync_reconnect_reminders_for_member()` when a group with reconnect settings has been inactive (last non-cancelled event activity, or group creation if none). Members manage read state via `mark_notification_read` / `mark_all_notifications_read`. `/notifications` lists items; profile settings include `member_reconnect_reminders_enabled` to opt out of reconnect reminders only. No browser permission prompts.
 
+**Web Push preferences (HUI-024).** The five default-on `profiles.push_*_enabled` settings group the existing eligible kinds into event proposals, decision-ready, confirmation, host assignment, and contribution changes. `queue_member_notification` always creates the canonical in-app row, then checks the recipient's matching setting before creating a new Web Push outbox row. Changing a preference does not alter historical notifications or existing outbox rows.
+
 ## Deployment
 
 Build a standard Next.js output; deploy to Vercel or another Node/static host. Environment variables point at the Supabase project; no host-specific database.

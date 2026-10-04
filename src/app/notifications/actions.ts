@@ -81,6 +81,32 @@ export async function updateReconnectReminderPreferenceAction(
   return { message: "Notification preferences saved." };
 }
 
+export async function updatePushNotificationPreferencesAction(
+  _prev: NotificationActionState,
+  formData: FormData,
+): Promise<NotificationActionState> {
+  const preferences = {
+    push_event_proposals_enabled: formData.get("push_event_proposals_enabled") === "on",
+    push_consensus_ready_enabled: formData.get("push_consensus_ready_enabled") === "on",
+    push_event_confirmed_enabled: formData.get("push_event_confirmed_enabled") === "on",
+    push_host_assignment_enabled: formData.get("push_host_assignment_enabled") === "on",
+    push_contribution_changes_enabled: formData.get("push_contribution_changes_enabled") === "on",
+  };
+
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("profiles")
+    .update(preferences)
+    .eq("id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/profile");
+  return { message: "Push notification preferences saved." };
+}
+
 export async function markNotificationReadByIdAction(
   notificationId: string,
 ): Promise<NotificationActionState> {

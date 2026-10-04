@@ -2,8 +2,8 @@
 
 **Phase:** Core MVP — recurring planning, invitations, and delivery  
 **Milestone:** GDD definition of done (not yet reached)  
-**Current ticket:** **HUI-023A** — Web Push cleanup/finalisation on `feat/hui-023-web-push-notifications`. Not merged to main.
-**Last completed ticket:** **HUI-023A** — Web Push cleanup/finalisation after HUI-023 production delivery
+**Current ticket:** **HUI-024** — Per-notification-type Web Push preferences on `feat/hui-023-web-push-notifications`. Not merged to main.
+**Last completed ticket:** **HUI-024** — Per-notification-type Web Push preferences
 **Overall progress:** Foundation through HUI-023A shipped event, scheduling, host, contribution, dietary, in-app notification, Web Push, and share-link foundations. Core GDD loop (recurring planning cycles, recurrence UX, persistent availability, scheduling recommendations, email delivery, calendar/memories, completed-event → next cycle) remains **open**.
 
 **North star:** HuI proposes, coordinates and remembers. **The group decides.**
@@ -233,6 +233,7 @@ Do not treat these as completing the larger GDD capabilities listed in later sec
 - [x] **HUI-021** — **Foundation:** `member_notifications`, read state, trigger-driven in-app messages for some domain events, reconnect reminders (`sync_reconnect_reminders_for_member`), profile opt-out; migration `20261002220000_notifications.sql`
 - [x] **HUI-023** — **Web Push:** opt-in subscriptions, eligible notification outbox delivery, VAPID sending, service-worker push/click routing, retries, stale recovery, immediate drain, and cron backup. Production browser delivery verified. Migration `20261004020000` is applied. Not merged to main.
 - [x] **HUI-023A** — cleanup/finalisation: removed temporary Web Push delivery diagnostics while retaining production error handling, retry, delivery, and security behaviour.
+- [x] **HUI-024** — per-notification-type Web Push preferences: default-on profile settings, Profile controls, and server-side outbox gating for event, decision, confirmation, host, and contribution notifications.
 - [ ] **Not in HUI-021/023:** email; invitation notifications for people who are not already members; notification kinds for cancel/reopen beyond the existing trigger set
 
 ### Phase 8 — Calendar export
@@ -281,7 +282,7 @@ Previously listed as HUI-023. That number is now **Web Push** (see HUI-023 above
 - **Complete event** → memory/history triggers → fairness state → next cycle due
 - Integrate host recommendation timing and contribution phase into cycle states
 
-### HUI-024 — Recurrence configuration and user-friendly recurrence UX
+### Recurrence configuration and user-friendly recurrence UX
 
 - Weeks/months/N intervals; monthly weekday patterns; multiple acceptable weekdays; time windows
 - Nominal **2–3 date preview** (labeled not confirmed)

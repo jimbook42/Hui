@@ -238,9 +238,115 @@ describe("web push subscriptions (HUI-023)", () => {
     expect(outbox).toMatch(/permission denied|row-level security/i);
   });
 
+  it("defaults every push category on and isolates preference changes per user", async () => {
+    await asUser(db, memberId);
+    const defaults = await db.query<Record<string, boolean>>(
+      `select push_event_proposals_enabled, push_consensus_ready_enabled,
+              push_event_confirmed_enabled, push_host_assignment_enabled,
+              push_contribution_changes_enabled
+       from public.profiles where id = $1`,
+      [memberId],
+    );
+    expect(defaults.rows[0]).toEqual({
+      push_event_proposals_enabled: true,
+      push_consensus_ready_enabled: true,
+      push_event_confirmed_enabled: true,
+      push_host_assignment_enabled: true,
+      push_contribution_changes_enabled: true,
+    });
+
+    await db.query(
+      `update public.profiles
+       set push_event_proposals_enabled = false
+       where id = $1`,
+      [memberId],
+    );
+    await asUser(db, ownerId);
+    const owner = await db.query<{ push_event_proposals_enabled: boolean }>(
+      `select push_event_proposals_enabled from public.profiles where id = $1`,
+      [ownerId],
+    );
+    expect(owner.rows[0]?.push_event_proposals_enabled).toBe(true);
+  });
+
+  it("keeps the in-app row while gating only the matching push category", async () => {
+    await asUser(db, memberId);
+    await db.query(
+      `update public.profiles
+       set push_event_proposals_enabled = false,
+           push_consensus_ready_enabled = true
+       where id = $1`,
+      [memberId],
+    );
+
+    await asUser(db, null);
+    const disabled = await db.query<{ id: string }>(
+      `select public.queue_member_notification(
+        $1, 'event_proposed', 'Proposal', 'A proposal', $2, null, 'prefs:disabled'
+      ) as id`,
+      [memberId, groupId],
+    );
+    const enabled = await db.query<{ id: string }>(
+      `select public.queue_member_notification(
+        $1, 'consensus_ready', 'Decision', 'Ready to decide', $2, null, 'prefs:enabled'
+      ) as id`,
+      [memberId, groupId],
+    );
+    expect(disabled.rows[0]?.id).toBeTruthy();
+    expect(enabled.rows[0]?.id).toBeTruthy();
+
+    await asUser(db, memberId);
+    const notifications = await db.query<{ kind: string }>(
+      `select kind::text from public.member_notifications
+       where user_id = $1 and dedupe_key like 'prefs:%'
+       order by dedupe_key`,
+      [memberId],
+    );
+    expect(notifications.rows.map((row) => row.kind)).toEqual([
+      "event_proposed",
+      "consensus_ready",
+    ]);
+
+    await asUser(db, null, "service_role");
+    const outbox = await db.query<{ notification_id: string }>(
+      `select o.notification_id
+       from public.notification_push_outbox o
+       join public.member_notifications n on n.id = o.notification_id
+       where n.dedupe_key like 'prefs:%'
+       order by n.dedupe_key`,
+    );
+    expect(outbox.rows).toHaveLength(1);
+
+    await asUser(db, memberId);
+    await db.query(
+      `update public.profiles set push_event_proposals_enabled = true where id = $1`,
+      [memberId],
+    );
+    await asUser(db, null);
+    const reenabled = await db.query<{ id: string }>(
+      `select public.queue_member_notification(
+        $1, 'event_proposed', 'Proposal 2', 'A new proposal', $2, null, 'prefs:reenabled'
+      ) as id`,
+      [memberId, groupId],
+    );
+    expect(reenabled.rows[0]?.id).toBeTruthy();
+    const reenabledOutbox = await db.query(
+      `select o.id
+       from public.notification_push_outbox o
+       join public.member_notifications n on n.id = o.notification_id
+       where n.dedupe_key = 'prefs:reenabled'`,
+    );
+    expect(reenabledOutbox.rows).toHaveLength(1);
+  });
+
   it("keeps in-app notifications when push is off and enqueues one outbox row", async () => {
     await asUser(db, memberId);
-    await db.query(`update public.profiles set web_push_enabled = false where id = $1`, [memberId]);
+    await db.query(
+      `update public.profiles
+       set web_push_enabled = false, push_event_proposals_enabled = true
+       where id = $1`,
+      [memberId],
+    );
 
     await asUser(db, ownerId);
     const event = await db.query<{ id: string }>(
@@ -257,9 +363,10 @@ describe("web push subscriptions (HUI-023)", () => {
     expect(notes.rows).toHaveLength(1);
 
     await asUser(db, null, "service_role");
+    const notificationId = (notes.rows[0] as { id: string }).id;
     const outbox = await db.query(
       `select status from public.notification_push_outbox where notification_id = $1`,
-      [notes.rows[0] ? (notes.rows[0] as { id: string }).id : null],
+      [notificationId],
     );
     expect(outbox.rows).toEqual([{ status: "pending" }]);
 
@@ -273,8 +380,8 @@ describe("web push subscriptions (HUI-023)", () => {
     );
     expect(again.rows[0].queue_member_notification).toBeNull();
     const stillOne = await db.query(
-      `select 1 from public.notification_push_outbox where user_id = $1`,
-      [memberId],
+      `select 1 from public.notification_push_outbox where notification_id = $1`,
+      [notificationId],
     );
     expect(stillOne.rows).toHaveLength(1);
   });
