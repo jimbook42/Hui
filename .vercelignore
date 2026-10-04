@@ -1,0 +1,10 @@
+.tmp.driveupload
+.next
+node_modules
+coverage
+test-results
+playwright-report
+blob-report
+*.txt
+Hui GDD_*.txt
+Test Accounts.txt
