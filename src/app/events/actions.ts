@@ -16,7 +16,7 @@ import {
   canProposeEvents,
   groupAllowsEventKind,
 } from "@/domain/events/permissions";
-import { parseOptionalCoordinates } from "@/domain/events/location";
+import { parseOptionalCoordinates, roundCoordinate } from "@/domain/events/location";
 import {
   normalizeEventLocation,
   normalizeEventNotes,
@@ -296,10 +296,31 @@ export async function updateEventAction(
     patch.ends_at = endsAt;
   }
 
-  const { error } = await supabase.from("events").update(patch).eq("id", eventId);
+  if (!canEditAll && canEditLocation) {
+    const { error } = await supabase.rpc("update_event_place", {
+      p_event_id: eventId,
+      p_location: location,
+      p_location_lat: hasCoordinateFields
+        ? coordinates.coordinates
+          ? roundCoordinate(coordinates.coordinates.lat)
+          : null
+        : null,
+      p_location_lng: hasCoordinateFields
+        ? coordinates.coordinates
+          ? roundCoordinate(coordinates.coordinates.lng)
+          : null
+        : null,
+    });
 
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      return { error: error.message };
+    }
+  } else {
+    const { error } = await supabase.from("events").update(patch).eq("id", eventId);
+
+    if (error) {
+      return { error: error.message };
+    }
   }
 
   revalidatePath(`/events/${eventId}`);
