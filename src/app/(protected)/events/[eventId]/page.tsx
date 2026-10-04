@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 
 import { updateEventAction } from "@/app/events/actions";
 import { AppShell } from "@/components/app/app-shell";
-import { CancelEventButton } from "@/components/events/cancel-event-button";
-import { EditEventForm } from "@/components/events/event-form";
+import { EventDetailManagement } from "@/components/events/event-detail-management";
+import { EventDetailSummary } from "@/components/events/event-detail-summary";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
 import { EventContributionsSection } from "@/components/contributions/event-contributions-section";
 import { EventDietarySection } from "@/components/dietary/event-dietary-section";
@@ -48,7 +48,6 @@ import {
   getEventConsensusSummary,
   getEventSchedulingContext,
 } from "@/lib/scheduling/queries";
-import { eventKindLabel, eventStatusLabel } from "@/lib/events/labels";
 import { createClient } from "@/lib/supabase/server";
 
 type PageProps = {
@@ -213,48 +212,11 @@ export default async function EventDetailPage({ params }: PageProps) {
         </div>
       ) : null}
 
-      <dl className="mt-8 grid gap-3 text-sm text-zinc-800 dark:text-zinc-200">
-        <div>
-          <dt className="text-zinc-500">Status</dt>
-          <dd>{eventStatusLabel(detail.status)}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">Type</dt>
-          <dd>{eventKindLabel(detail.kind)}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">Proposed by</dt>
-          <dd>{detail.creatorDisplayName}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">When</dt>
-          <dd>
-            {formatWhen(detail.startsAt, detail.endsAt, displayTimeZone)}
-          </dd>
-        </div>
-        {detail.location ? (
-          <div>
-            <dt className="text-zinc-500">Location</dt>
-            <dd>{detail.location}</dd>
-          </div>
-        ) : null}
-        {detail.notes ? (
-          <div>
-            <dt className="text-zinc-500">Notes</dt>
-            <dd className="whitespace-pre-wrap">{detail.notes}</dd>
-          </div>
-        ) : null}
-        {detail.recurrenceSeries ? (
-          <div>
-            <dt className="text-zinc-500">Recurrence series</dt>
-            <dd>
-              {detail.recurrenceSeries.title} — every {detail.recurrenceSeries.intervalCount}{" "}
-              {detail.recurrenceSeries.intervalUnit}(s) from {detail.recurrenceSeries.startsOn}
-              {detail.recurrenceSeries.archivedAt ? " (inactive)" : ""}
-            </dd>
-          </div>
-        ) : null}
-      </dl>
+      <EventDetailSummary
+        detail={detail}
+        displayTimeZone={displayTimeZone}
+        formatWhen={formatWhen}
+      />
 
       {showScheduling ? (
         <EventScheduling
@@ -315,34 +277,19 @@ export default async function EventDetailPage({ params }: PageProps) {
         sharedDietaryCount={sharedDietary.length}
       />
 
-      {canEdit ? (
-        <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Edit</h2>
-          <div className="mt-4 max-w-lg">
-            <EditEventForm
-              action={updateEventAction}
-              eventId={detail.id}
-              defaultTitle={detail.title}
-              defaultLocation={detail.location}
-              defaultNotes={detail.notes}
-              defaultStartsAt={detail.startsAt}
-              defaultEndsAt={detail.endsAt}
-              scheduleLocked={detail.status === "confirmed"}
-              timeZone={displayTimeZone}
-            />
-          </div>
-        </section>
-      ) : null}
-
-      {canCancel ? (
-        <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Cancel</h2>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Cancelling keeps the event record but marks it as cancelled.
-          </p>
-          <CancelEventButton eventId={detail.id} />
-        </section>
-      ) : null}
+      <EventDetailManagement
+        canEdit={canEdit}
+        canCancel={canCancel}
+        eventId={detail.id}
+        updateAction={updateEventAction}
+        defaultTitle={detail.title}
+        defaultLocation={detail.location}
+        defaultNotes={detail.notes}
+        defaultStartsAt={detail.startsAt}
+        defaultEndsAt={detail.endsAt}
+        status={detail.status}
+        timeZone={displayTimeZone}
+      />
     </AppShell>
   );
 }

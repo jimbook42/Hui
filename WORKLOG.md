@@ -2,6 +2,23 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-026A staged event proposal
+
+- Replaced single-page group event creation with a staged creator flow: Name → Time → Place → What to bring → Review → **Propose event**. Draft data stays client-side until submit; no partial group-visible event is created while the creator is still editing.
+- Migration `20261004100000_propose_group_event.sql` — `propose_group_event` RPC atomically creates a `proposing` event, inserts candidate times, optionally sets first-event initial host, and leaves `events.starts_at` / `ends_at` unset until `finalise_event`.
+- Time step uses separate `date` + `time` inputs and `formatCompactEventTimeRange` instead of `datetime-local` on the creation path. Event detail page: extracted `EventDetailSummary` and `EventDetailManagement` for later 026B–D work.
+- Tests: `src/domain/events/proposal.test.ts`, `src/db/event-proposal.test.ts`. `createEventAction` retained for edits/legacy but no longer used on `/groups/[groupId]/events/new`.
+- Deferred to HUI-026B–E: invitee response flow, dashboard cards, `/manage`, contribution redesign, full event page visual redesign.
+
+## 2026-10-04 — HUI-026 architecture planning
+
+- Architecture diagnosis: the current event page is a long-scroll “god page” combining summary, scheduling, responses, consensus, host coordination, dietary information, contributions, administration, and history.
+- Decision: separate concise event summary, participant response, and proposer/admin management surfaces; use a staged creator flow (**Name → Time → Place → What to bring → Review → Propose**) and invitee flow (**This time → Answer → Place → What you're bringing → Done**).
+- Direction: make the dashboard event-oriented around “What Hui things need my attention?” and require deterministic interaction feedback from acknowledgement through reconciled success/error, including investigation of latency, refreshes, query volume, re-renders, stale props, duplicate submissions, idempotency, and reconciliation.
+- Planned implementation workstream: **HUI-026A–E** — event-flow foundation/proposal, invitee response, dashboard/event entry, management/admin surface, and contribution flow redesign.
+- Existing GDD capability tickets **HUI-025–030 remain unchanged**; the event-flow work uses the HUI-026A–E sub-series and does not renumber historical tickets.
+- No application code, database migrations, or tests were changed by HUI-026 architecture planning.
+
 ## 2026-10-04 — HUI-024 Web Push notification preferences
 
 - Added five default-on profile preferences for event proposals, decision-ready, event confirmation, host assignment, and contribution changes. Profile settings can independently update them; the existing master Web Push control and browser permission flow are unchanged.

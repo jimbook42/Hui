@@ -2,13 +2,13 @@
 
 **Phase:** Core MVP — recurring planning, invitations, and delivery  
 **Milestone:** GDD definition of done (not yet reached)  
-**Current ticket:** **HUI-024** — Per-notification-type Web Push preferences on `feat/hui-023-web-push-notifications`. Not merged to main.
-**Last completed ticket:** **HUI-024** — Per-notification-type Web Push preferences
+**Current branch state:** **HUI-024** — Per-notification-type Web Push preferences are implemented on `feat/hui-023-web-push-notifications`. This branch is not merged to `main`; this document does not claim a production deployment for HUI-024.
+**Latest Web Push implementation record:** **HUI-023A** — cleanup/finalisation after the HUI-023 production deploy. HUI-023 Web Push delivery was production-verified; HUI-022B share-link invitations are implemented; HUI-022A.4 remains pending live QA.
 **Overall progress:** Foundation through HUI-023A shipped event, scheduling, host, contribution, dietary, in-app notification, Web Push, and share-link foundations. Core GDD loop (recurring planning cycles, recurrence UX, persistent availability, scheduling recommendations, email delivery, calendar/memories, completed-event → next cycle) remains **open**.
 
 **North star:** HuI proposes, coordinates and remembers. **The group decides.**
 
-**Next implementation ticket:** Recurring planning / cycle engine (open; this item was previously numbered HUI-023 before Web Push took that id)
+**Next implementation area:** The focused HUI-026A–E event-flow workstream below, alongside the existing GDD roadmap tickets. It does not replace or renumber HUI-025–030.
 
 ---
 
@@ -151,8 +151,8 @@ Persistent recurring constraints/preferences with privacy; per-event override; W
 | 5 — Host coordination | [~] Partial | HUI-020 foundation + **HUI-022A**: auto-propose on confirm, accept/swap, optional hosting, no auto-accept, consecutive-host setting, member “I don’t host”; **not** household rotation or full fairness engine |
 | 6 — Contributions & dietary | [~] Partial | HUI-018/019 + **HUI-022A**: seed categories on confirm, host-bound categories, default assignee column; **not** full standing-preference editor or admin reassignment flows |
 | 7 — Notifications | [x] In-app + Web Push deployed and verified | HUI-021 canonical in-app records plus **HUI-023** opt-in Web Push delivery. **Not** email. |
-| 8 — Recurring planning & invitations | [ ] Not started | HUI-022–026 (and related) |
-| 9 — Delivery, calendar, memories | [ ] Not started | HUI-027–029 |
+| 8 — Recurring planning & invitations | [~] Partial | HUI-022B share-link invitations shipped; recurring cycle, recurrence UX, HUI-025, and HUI-026 remain open |
+| 9 — Delivery, calendar, memories | [~] Partial | Web Push shipped as HUI-023; email, calendar, memories, and next-cycle integration remain open |
 | 10 — Production MVP | [ ] Not started | HUI-030 |
 
 ---
@@ -277,7 +277,7 @@ Previously listed as HUI-023. That number is now **Web Push** (see HUI-023 above
 
 - **Planning due** from group recurrence (not auto-confirmed event chains)
 - Open/close planning cycle; normally one active next cycle
-- Tie to group recurrence configuration (consumes HUI-024 model)
+- Tie to the extended group recurrence configuration model
 - Skipped cycle, moved event, insufficient attendance, consensus failure hooks
 - **Complete event** → memory/history triggers → fairness state → next cycle due
 - Integrate host recommendation timing and contribution phase into cycle states
@@ -341,6 +341,57 @@ Previously listed as HUI-023. That number is now **Web Push** (see HUI-023 above
 
 ---
 
+## Event flow / interaction architecture workstream
+
+This is a focused implementation workstream around the existing GDD roadmap. It does **not** replace or renumber HUI-025–030.
+
+The current event domain is substantially implemented, but the live event experience is too long and interactionally slow. The existing `/events/[eventId]` page combines event summary, scheduling, attendance responses, consensus, host coordination, dietary information, contributions, owner/admin controls, and history into a long-scroll “god page”.
+
+### Target interaction architecture
+
+- `/events/[eventId]` — concise event summary and next action
+- `/events/[eventId]/respond` — participant response flow
+- `/events/[eventId]/manage` — proposer/admin management
+- `/groups/[groupId]/events/new` — staged proposal flow
+
+Creator flow:
+
+**Name → Time → Place → What to bring → Review → Propose**
+
+A public proposal must have at least one candidate time. The final proposal action should create and publish the event atomically rather than creating an incomplete public proposal and adding candidates afterward.
+
+Invitee flow:
+
+**This time → Answer → Place → What you're bringing → Done**
+
+“Another time” is an action, not an attendance status. It supports a specific alternative time, free all day, or cannot make the date.
+
+The dashboard should become event-oriented and answer: **“What Hui things need my attention?”** Relevant proposed, decision-ready, and upcoming confirmed events should be directly discoverable after sign-in.
+
+Owner/admin actions belong on a separate management path from the normal participant task path. Management includes editing, cancelling, candidate management, finalisation, and other administrative controls required by the existing domain; this does not imply a generic admin system.
+
+### Interaction and performance requirement
+
+Every primary interaction needs a deterministic lifecycle:
+
+**Tap → immediate acknowledgement → pending → success/error → reconciled UI**
+
+Implementation must investigate server-action latency, unnecessary refreshes, excessive queries, full-page re-renders, stale server props overwriting client state, uncontrolled/controlled form transitions, duplicate submissions, idempotency, loading-state behaviour, client/server reconciliation, and N+1 queries. A spinner alone is not a solution.
+
+### Workstream sequence
+
+| Ticket | Scope | Status |
+| --- | --- | --- |
+| **HUI-026A** | Event flow foundation + staged proposal | Complete (branch `feat/hui-026a-event-proposal-flow`) |
+| **HUI-026B** | Invitee response flow + alternative-time intent | Planned |
+| **HUI-026C** | Dashboard + event entry | Planned |
+| **HUI-026D** | Event management/admin surface | Planned |
+| **HUI-026E** | Contribution flow redesign | Planned |
+
+The original GDD capabilities remain separately tracked: HUI-025 persistent availability, HUI-026 scheduling/recommendations, HUI-027 notification delivery follow-on, HUI-028 email/actionable notification flows, HUI-029 calendar/memories/next-cycle integration, and HUI-030 production hardening/MVP validation.
+
+---
+
 ## MVP definition of done (GDD checklist)
 
 | Capability | Status |
@@ -349,7 +400,7 @@ Previously listed as HUI-023. That number is now **Web Push** (see HUI-023 above
 | Groups, roles, households | [x] Foundation |
 | Invitations + frictionless invite acceptance + signup continuation | [ ] HUI-022 |
 | Recurring groups + casual groups + one-off events | [~] Settings/one-off/recurring **anchor** only |
-| Recurrence: weeks, months, N intervals, weekday patterns, multi-weekday, time windows, nominal preview | [ ] HUI-024 |
+| Recurrence: weeks, months, N intervals, weekday patterns, multi-weekday, time windows, nominal preview | [ ] Open recurrence configuration work |
 | Recurrence schedules **planning**, not confirmed future chain | [ ] cycle engine (open) |
 | Persistent availability + event overrides + private availability | [ ] HUI-025 |
 | Works / Can make work / Can’t attend | [~] maybe/yes/no mechanics; copy/rules incomplete |
@@ -395,7 +446,7 @@ Also exercise: minimum attendance, deadline, admin override, host veto, never-ho
 | --- | --- |
 | Supabase migrations in production | **Applied through `20261004020000`** on linked project `xmvzzypefpiethefrfka` (`jimbook42's Project`, the Hui production database). Local and remote migration history match. **Live multi-user product QA** for coordination, invitations, and Web Push is still required. |
 | Invitation + delivery | Share links shipped (HUI-022B). Invitation notifications for non-members are not part of Web Push. Email delivery is HUI-028. |
-| Recurring engine | The cycle engine (previously numbered HUI-023) depends on the extended recurrence model (HUI-024) and benefits from HUI-025/026 |
+| Recurring engine | The cycle engine (previously numbered HUI-023) depends on the extended recurrence model and benefits from HUI-025/026 |
 | Web Push production | Deployed and real Android browser delivery verified. No VAPID or schema changes in HUI-023A. |
 | Event completion | Schema supports `completed` and `event_memories`; app workflow required before next-cycle loop is real |
 | OAuth production | Google/Microsoft/Facebook enabled in Supabase dashboard; live sign-in retest recommended |

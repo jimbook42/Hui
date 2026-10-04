@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { createEventAction } from "@/app/events/actions";
 import { AppShell } from "@/components/app/app-shell";
-import { CreateEventForm } from "@/components/events/event-form";
+import { CreateEventProposalFlow } from "@/components/events/create-event-proposal-flow";
+import { listContributionCategories } from "@/lib/contributions/queries";
 import {
   canProposeEvents,
   groupAllowsEventKind,
@@ -46,6 +46,7 @@ export default async function NewGroupEventPage({ params }: PageProps) {
   const hostEligibleMembers = detail.members.filter(
     (member) => member.hostingStanding !== "never",
   );
+  const contributionCategories = await listContributionCategories(supabase, groupId);
 
   return (
     <AppShell title={`Propose event — ${detail.name}`}>
@@ -58,12 +59,12 @@ export default async function NewGroupEventPage({ params }: PageProps) {
         </Link>
       </p>
       <div className="mt-8 max-w-lg">
-        <CreateEventForm
-          action={createEventAction}
+        <CreateEventProposalFlow
           groupId={groupId}
           settings={detail.settings}
           isFirstGroupEvent={isFirstGroupEvent}
           members={hostEligibleMembers}
+          contributionCategories={contributionCategories}
         />
       </div>
     </AppShell>
