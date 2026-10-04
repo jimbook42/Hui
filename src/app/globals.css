@@ -1,26 +1,175 @@
 @import "tailwindcss";
 
+/* Hui design tokens — warm, calm, mobile-first */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf8f5;
+  --foreground: #2c2825;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --muted: #f3efe9;
+  --muted-foreground: #6b6560;
+  --border: #e8e2db;
+  --border-strong: #d4ccc3;
+
+  --primary: #b85c42;
+  --primary-hover: #a04f38;
+  --primary-foreground: #fffaf7;
+
+  --secondary: #e8f0ea;
+  --secondary-foreground: #2d4a38;
+
+  --destructive: #b42318;
+  --destructive-foreground: #fff5f4;
+  --success: #2f6f4e;
+  --success-foreground: #f4faf6;
+  --warning: #9a6b1a;
+  --warning-foreground: #fffaf0;
+  --info: #3d6b8c;
+  --info-foreground: #f5f9fc;
+
+  --attendance-yes: #3d7a57;
+  --attendance-maybe: #a67c3a;
+  --attendance-no: #8a8278;
+  --attendance-pending: #b5aea4;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+
+  --shadow-sm: 0 1px 2px rgb(44 40 37 / 0.06);
+  --shadow-md: 0 4px 12px rgb(44 40 37 / 0.08);
+
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #141210;
+    --foreground: #f5f0ea;
+    --surface: #1c1916;
+    --surface-elevated: #25211d;
+    --muted: #221f1c;
+    --muted-foreground: #a8a095;
+    --border: #342f2a;
+    --border-strong: #453f38;
+
+    --primary: #d4846a;
+    --primary-hover: #e0957a;
+    --primary-foreground: #1a120e;
+
+    --secondary: #243328;
+    --secondary-foreground: #d8ebe0;
+
+    --destructive: #f87171;
+    --destructive-foreground: #1a0a0a;
+    --success: #6ecf96;
+    --success-foreground: #0d1a12;
+    --warning: #e5b85c;
+    --warning-foreground: #1a1408;
+    --info: #7eb8db;
+    --info-foreground: #0a141a;
+
+    --attendance-yes: #6ecf96;
+    --attendance-maybe: #e5b85c;
+    --attendance-no: #9a9288;
+    --attendance-pending: #6b6560;
+
+    color-scheme: dark;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-attendance-yes: var(--attendance-yes);
+  --color-attendance-maybe: var(--attendance-maybe);
+  --color-attendance-no: var(--attendance-no);
+  --color-attendance-pending: var(--attendance-pending);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius-hui-sm: var(--radius-sm);
+  --radius-hui-md: var(--radius-md);
+  --radius-hui-lg: var(--radius-lg);
+  --radius-hui-xl: var(--radius-xl);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.hui-type-display {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.hui-type-page-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.hui-type-section {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.hui-type-body {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.hui-type-supporting {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.hui-type-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+
+.hui-focus-ring:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.hui-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }

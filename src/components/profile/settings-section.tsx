@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 
+import { HuiSurface } from "@/components/hui/hui-surface";
+import { SectionHeader } from "@/components/hui/section-header";
+
 type SettingsSectionProps = {
   title: string;
   description?: string;
@@ -12,18 +15,9 @@ export function SettingsSection({
   children,
 }: SettingsSectionProps) {
   return (
-    <section
-      className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-    >
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-        {title}
-      </h2>
-      {description ? (
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          {description}
-        </p>
-      ) : null}
-      <div className="mt-5">{children}</div>
-    </section>
+    <HuiSurface elevated padding="md" className="space-y-5">
+      <SectionHeader title={title} description={description} />
+      <div>{children}</div>
+    </HuiSurface>
   );
 }

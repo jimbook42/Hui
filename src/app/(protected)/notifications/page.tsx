@@ -22,7 +22,7 @@ export default async function NotificationsPage() {
 
   return (
     <AppShell title="Notifications">
-      <p className="mb-8 text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mb-6 hui-type-supporting">
         Updates about events and groups you belong to. Hui does not expose private
         availability or dietary details in notifications.
       </p>

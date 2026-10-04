@@ -57,12 +57,12 @@ type EventParticipantRespondFlowProps = {
 };
 
 const choiceButtonBase =
-  "w-full rounded-xl border px-4 py-3.5 text-left text-sm font-medium transition active:scale-[0.99] disabled:opacity-60";
+  "hui-focus-ring w-full rounded-hui-xl border px-4 py-3.5 text-left text-sm font-medium transition active:scale-[0.99] disabled:opacity-60";
 
 function selectedChoiceClass(selected: boolean): string {
   return selected
-    ? `${choiceButtonBase} border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900`
-    : `${choiceButtonBase} border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900`;
+    ? `${choiceButtonBase} border-primary bg-primary text-primary-foreground`
+    : `${choiceButtonBase} border-border bg-surface text-foreground hover:bg-muted`;
 }
 
 function contributionBoardLine(

@@ -176,11 +176,11 @@ export async function EventDetailHeavySections({
         <div className="mt-6">
           <Link
             href={participantRespondPath(detail.id)}
-            className="inline-flex w-full max-w-md items-center justify-center rounded-xl bg-zinc-900 px-4 py-3.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="hui-focus-ring inline-flex w-full max-w-md items-center justify-center rounded-hui-xl bg-primary px-4 py-3.5 text-sm font-medium text-primary-foreground transition hover:bg-primary-hover active:scale-[0.99]"
           >
             Respond to this event
           </Link>
-          <p className="mt-2 max-w-md text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-2 max-w-md hui-type-supporting">
             Answer attendance, place, and contributions in a short mobile-friendly flow.
           </p>
         </div>
@@ -190,6 +190,7 @@ export async function EventDetailHeavySections({
         detail={detail}
         displayTimeZone={displayTimeZone}
         formatWhen={formatWhen}
+        attendanceRoster={primaryAttendanceRoster}
       />
 
       {showScheduling ? (

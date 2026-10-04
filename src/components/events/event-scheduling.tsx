@@ -37,6 +37,9 @@ import type {
   EventCandidateRow,
   EventConsensusSummary,
 } from "@/lib/scheduling/types";
+import { GatheringVisual } from "@/components/hui/gathering-visual";
+import { AttendanceLegend } from "@/components/hui/attendance-legend";
+import { HuiSurface } from "@/components/hui/hui-surface";
 
 type EventSchedulingProps = {
   eventId: string;
@@ -74,8 +77,17 @@ function AttendanceSummary({
   const namedGroups = roster ? groupAttendanceByResponse(roster) : [];
 
   return (
-    <div className="mt-3 rounded-md bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-900/60">
-      <p className="font-medium text-zinc-800 dark:text-zinc-200">Attendance</p>
+    <HuiSurface className="mt-3" padding="sm">
+      <p className="hui-type-section text-foreground">Attendance</p>
+      {roster && roster.members.length > 0 ? (
+        <GatheringVisual
+          roster={roster}
+          eventTitle="This time"
+          compact
+          className="mt-3"
+        />
+      ) : null}
+      <AttendanceLegend maybeEnabled={maybeResponsesEnabled} />
       {namedGroups.length > 0 ? (
         <div className="mt-2 space-y-2 text-zinc-600 dark:text-zinc-400">
           {namedGroups.map((group) => (
@@ -112,7 +124,7 @@ function AttendanceSummary({
           required participants available.
         </p>
       ) : null}
-    </div>
+    </HuiSurface>
   );
 }
 

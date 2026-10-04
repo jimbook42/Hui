@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 
 import { signOutAction } from "@/app/auth/actions";
+import { MobileNav } from "@/components/hui/mobile-nav";
 import { NotificationsNavLink } from "@/components/notifications/notifications-nav-link";
 
 type AppShellProps = {
@@ -11,23 +12,28 @@ type AppShellProps = {
 
 export function AppShell({ title, children }: AppShellProps) {
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-4">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Hui</p>
-            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{title}</h1>
+    <div className="flex min-h-full flex-1 flex-col bg-background">
+      <header className="border-b border-border bg-surface">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
+          <div className="min-w-0">
+            <Link href="/dashboard" className="hui-type-label text-primary">
+              Hui
+            </Link>
+            <h1 className="hui-type-page-title truncate text-foreground">{title}</h1>
           </div>
-          <nav className="flex items-center gap-4 text-sm">
+          <nav
+            className="hidden items-center gap-3 text-sm md:flex"
+            aria-label="Account"
+          >
             <Link
               href="/dashboard"
-              className="text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-300"
+              className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
               Dashboard
             </Link>
             <Link
               href="/groups"
-              className="text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-300"
+              className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
               Groups
             </Link>
@@ -35,7 +41,7 @@ export function AppShell({ title, children }: AppShellProps) {
               fallback={
                 <Link
                   href="/notifications"
-                  className="text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-300"
+                  className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                 >
                   Notifications
                 </Link>
@@ -45,14 +51,14 @@ export function AppShell({ title, children }: AppShellProps) {
             </Suspense>
             <Link
               href="/profile"
-              className="text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-300"
+              className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
               Profile
             </Link>
             <form action={signOutAction}>
               <button
                 type="submit"
-                className="text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-300"
+                className="hui-focus-ring text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
               >
                 Sign out
               </button>
@@ -60,7 +66,10 @@ export function AppShell({ title, children }: AppShellProps) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">{children}</main>
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 pb-24 sm:px-6 sm:py-8 md:pb-10">
+        {children}
+      </main>
+      <MobileNav />
     </div>
   );
 }

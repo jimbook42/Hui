@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-026U visual design system & UX foundation
+
+- Warm token system in `globals.css`, Hui primitives under `src/components/hui/`, documented in `docs/DESIGN_SYSTEM.md`.
+- Gathering ring (`GatheringVisual`) wired to real `AttendanceRoster` data on event detail and scheduling; static `EventLocationPanel` for place context (no map SDK).
+- Mobile bottom nav + refreshed shell, groups, dashboard, notifications, profile sections, respond/detail primary actions.
+- HUI-026P.2 optimistic attendance and P.3 Suspense/loading paths unchanged.
+
 ## 2026-10-04 — HUI-026P.3 navigation & data-loading performance
 
 **Before:** Respond route awaited full `getGroupDetail` (member roster), host history, contributions, and categories before first paint. Groups page and AppShell blocked on group list / notification unread queries.

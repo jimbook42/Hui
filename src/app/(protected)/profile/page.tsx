@@ -86,7 +86,7 @@ export default async function ProfilePage() {
 
   return (
     <AppShell title="Account settings">
-      <p className="mb-8 text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mb-6 hui-type-supporting">
         Manage your Hui profile and sign-in details.
       </p>
 

@@ -7,7 +7,7 @@ Hui is a privacy-first PWA backed by Supabase. This document describes intended 
 | Layer | Choice |
 | --- | --- |
 | Frontend | Next.js (App Router), TypeScript, Tailwind CSS |
-| UI components | shadcn/ui when UI work needs shared primitives |
+| UI components | Hui primitives (`src/components/hui/`, `docs/DESIGN_SYSTEM.md`); extend with shadcn-style pieces when needed |
 | Backend | Supabase (Postgres, Auth, RLS, Storage, Edge Functions as needed) |
 | Unit/domain tests | Vitest |
 | E2E tests | Playwright |

@@ -7,13 +7,13 @@ import { GroupsList, GroupsListSkeleton } from "@/components/groups/groups-list"
 export default function GroupsPage() {
   return (
     <AppShell title="Your groups">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Groups you belong to right now.
+      <div className="flex items-start justify-between gap-4">
+        <p className="hui-type-supporting max-w-prose">
+          Gathering circles you belong to. Tap a group to plan the next hui.
         </p>
         <Link
           href="/groups/new"
-          className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
+          className="hui-focus-ring shrink-0 inline-flex items-center justify-center rounded-hui-sm bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary-hover"
         >
           New group
         </Link>

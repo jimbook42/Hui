@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AppShell } from "@/components/app/app-shell";
+import { HuiSurface } from "@/components/hui/hui-surface";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardPage() {
@@ -15,33 +16,42 @@ export default async function DashboardPage() {
     .eq("id", user!.id)
     .maybeSingle();
 
+  const displayName = profile?.display_name ?? user?.email ?? "there";
+
   return (
-    <AppShell title="Dashboard">
-      <p className="text-zinc-600 dark:text-zinc-400">
-        Signed in as{" "}
-        <span className="font-medium text-zinc-900 dark:text-zinc-100">
-          {profile?.display_name ?? user?.email}
-        </span>
-        .
-      </p>
-      <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-        Manage your gathering circles from the groups area.
-      </p>
-      <p className="mt-6 text-sm">
+    <AppShell title="Home">
+      <HuiSurface elevated className="space-y-3">
+        <p className="hui-type-display text-foreground">Kia ora, {displayName}</p>
+        <p className="hui-type-body text-muted-foreground">
+          Hui proposes, coordinates, and remembers. Your groups decide when and how you
+          gather.
+        </p>
+      </HuiSurface>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <Link
           href="/groups"
-          className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
+          className="hui-focus-ring rounded-hui-lg border border-border bg-surface px-4 py-4 transition hover:bg-muted"
         >
-          View your groups
+          <p className="hui-type-section text-foreground">Your groups</p>
+          <p className="hui-type-supporting mt-1">
+            See circles, members, and upcoming planning.
+          </p>
         </Link>
-      </p>
-      <p className="mt-6 text-sm">
         <Link
-          href="/profile"
-          className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
+          href="/notifications"
+          className="hui-focus-ring rounded-hui-lg border border-border bg-surface px-4 py-4 transition hover:bg-muted"
         >
-          Edit your profile
+          <p className="hui-type-section text-foreground">Notifications</p>
+          <p className="hui-type-supporting mt-1">
+            What needs your attention across gatherings.
+          </p>
         </Link>
+      </div>
+
+      <p className="mt-8 hui-type-supporting">
+        Event-oriented dashboard improvements are planned in{" "}
+        <span className="font-medium text-foreground">HUI-026C</span>.
       </p>
     </AppShell>
   );
