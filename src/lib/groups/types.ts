@@ -6,7 +6,7 @@ export type GroupListItem = {
   role: MembershipRole;
 };
 
-export type MemberHostingStanding = "default" | "prefer_not" | "never";
+export type MemberHostingStanding = "default" | "always" | "prefer_not" | "never";
 
 export type GroupMemberRow = {
   userId: string;

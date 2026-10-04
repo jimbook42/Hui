@@ -162,7 +162,12 @@ export async function setMyHostingStandingAction(
   if (!groupId) {
     return { error: "Missing group." };
   }
-  if (standing !== "default" && standing !== "prefer_not" && standing !== "never") {
+  if (
+    standing !== "default" &&
+    standing !== "always" &&
+    standing !== "prefer_not" &&
+    standing !== "never"
+  ) {
     return { error: "Choose a valid hosting preference." };
   }
 

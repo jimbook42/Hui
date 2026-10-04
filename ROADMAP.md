@@ -127,7 +127,7 @@ Hui combines group recurrence, preferred days/windows, persistent preferences, a
 
 Per cycle: eligible hosts (member/household rotation units), history, recent hosting, standing preferences/exclusions, temporary unavailability, deferred turns, prior swaps → recommend host → accept/decline → swap/volunteer → record final host → feed completed event back into rotation.
 
-Standing rules: never hosts, cannot host currently, prefers not to, happy to host, no consecutive hosts, deferred turn, admin override. **Never hosts** must not accrue implied hosting debt. Swaps must preserve rotation fairness state (proposed, declined, swap accepted, who actually hosted).
+Standing rules: never hosts, cannot host currently, prefers not to, happy to host, **always host** (strong preference to propose when eligible — still propose/accept, not auto-assign), no consecutive hosts, deferred turn, admin override. **Never hosts** must not accrue implied hosting debt. Swaps must preserve rotation fairness state (proposed, declined, swap accepted, who actually hosted).
 
 ### Contribution coordination (target — beyond HUI-018 foundation)
 
@@ -148,7 +148,7 @@ Persistent recurring constraints/preferences with privacy; per-event override; W
 | 2 — Group settings | [~] Partial | Settings UI (HUI-007); some fields unused in app (e.g. proposal deadline) |
 | 3 — Event domain | [~] Foundation | HUI-008: CRUD, cancel; recurrence **series anchor only** |
 | 4 — Scheduling & consensus | [~] Partial | HUI-009/010/017: manual candidates, consensus, finalise; **no** recommendation engine or persistent availability |
-| 5 — Host coordination | [~] Partial | HUI-020 foundation + **HUI-022A**: auto-propose on confirm, accept/swap, optional hosting, no auto-accept, consecutive-host setting, member “I don’t host”; **not** household rotation or full fairness engine |
+| 5 — Host coordination | [~] Partial | HUI-020 foundation + **HUI-022A**: auto-propose on confirm, accept/swap, optional hosting, no auto-accept, consecutive-host setting, member standings (`default`, `always`, `prefer_not`, `never`); **not** household rotation or full fairness engine |
 | 6 — Contributions & dietary | [~] Partial | HUI-018/019 + **HUI-022A**: seed categories on confirm, host-bound categories, default assignee column; **not** full standing-preference editor or admin reassignment flows |
 | 7 — Notifications | [x] In-app + Web Push deployed and verified | HUI-021 canonical in-app records plus **HUI-023** opt-in Web Push delivery. **Not** email. |
 | 8 — Recurring planning & invitations | [~] Partial | HUI-022B share-link invitations shipped; recurring cycle, recurrence UX, HUI-025, and HUI-026 remain open |

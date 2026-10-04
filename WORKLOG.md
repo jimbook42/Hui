@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — Member hosting standing “always”
+
+- Migration `20261004120000_member_hosting_standing_always.sql`: enum value `always` on `member_hosting_standing`; `pick_host_candidate` prefers eligible `always` members before `default`, then unchanged `prefer_not` fallback and consecutive-host passes.
+- Group settings UI: fourth option **I always host** (standing preference only; proposal/accept/swap lifecycle unchanged).
+- Tests: `src/db/coordination-host-selection.test.ts` (persistence + selection). `npm run validate` passed.
+
 ## 2026-10-04 — HUI-026B invitee participation flow
 
 - Added `/events/[eventId]/respond`: staged invitee flow (proposed time → attendance yes/maybe/no → place → contributions → done; declined and alternative-time branches).
