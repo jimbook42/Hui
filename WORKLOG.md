@@ -6,7 +6,7 @@ Lightweight record of completed tickets. One entry per ticket.
 
 - Located reference mockups and brand assets at repo root; indexed in `docs/reference/REFERENCE_INDEX.md`.
 - Shifted primary palette from terracotta to reference forest green; added date badge, `HuiGatheringMark`, refined gathering/location/shell from `example-screen-*` and logo files.
-- Brand wordmark in `public/brand/`; production deploy from `feat/hui-026u-visual-design-system`.
+- Brand wordmark in `public/brand/`; production deploy `dpl_3Jq5HKEorhtnUnwoc21upe52Nn8L` **READY** — https://hui-seven-gamma.vercel.app (git `69b1515`).
 
 ## 2026-10-04 — HUI-026U visual design system & UX foundation
 
