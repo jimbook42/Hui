@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  candidatesForRpc,
   parseWallClockCandidate,
   validateEventProposalDraft,
 } from "@/domain/events/proposal";
@@ -99,6 +100,44 @@ describe("event proposal validation (HUI-026A)", () => {
     if (result.ok) {
       expect(result.payload.location).toBe("Alex's place");
       expect(result.payload.recurrence).toBeNull();
+    }
+  });
+
+  it("maps candidates to RPC snake_case keys", () => {
+    const rpc = candidatesForRpc([
+      {
+        startsAt: "2026-10-31T23:00:00.000Z",
+        endsAt: "2026-11-01T02:00:00.000Z",
+      },
+    ]);
+    expect(rpc[0]).toEqual({
+      starts_at: "2026-10-31T23:00:00.000Z",
+      ends_at: "2026-11-01T02:00:00.000Z",
+    });
+  });
+
+  it("valid payload includes RPC-shaped candidates", () => {
+    const result = validateEventProposalDraft(
+      {
+        title: "Family dinner",
+        location: "",
+        notes: "",
+        eventKind: "one_off",
+        recurrence: null,
+        candidates: [
+          {
+            startsAt: "2026-10-31T23:00:00.000Z",
+            endsAt: "2026-11-01T02:00:00.000Z",
+          },
+        ],
+        initialHostUserId: "suggest",
+      },
+      baseOptions,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.payload.candidates[0]).toHaveProperty("starts_at");
+      expect(result.payload.candidates[0]).not.toHaveProperty("startsAt");
     }
   });
 

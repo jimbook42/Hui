@@ -35,6 +35,11 @@ export type ProposalValidationResult =
   | { ok: true; payload: ProposeGroupEventPayload }
   | { ok: false; error: string };
 
+export type RpcProposalCandidate = {
+  starts_at: string;
+  ends_at: string;
+};
+
 export type ProposeGroupEventPayload = {
   title: string;
   location: string | null;
@@ -45,10 +50,19 @@ export type ProposeGroupEventPayload = {
     interval_count: number;
     starts_on: string;
   } | null;
-  candidates: ProposalCandidateInput[];
+  candidates: RpcProposalCandidate[];
   setInitialHost: boolean;
   initialHostUserId: string | null;
 };
+
+export function candidatesForRpc(
+  candidates: ProposalCandidateInput[],
+): RpcProposalCandidate[] {
+  return candidates.map((candidate) => ({
+    starts_at: candidate.startsAt,
+    ends_at: candidate.endsAt,
+  }));
+}
 
 export function parseWallClockCandidate(
   date: string,
@@ -160,7 +174,7 @@ export function validateEventProposalDraft(
       location,
       notes,
       recurrence,
-      candidates: draft.candidates,
+      candidates: candidatesForRpc(draft.candidates),
       setInitialHost,
       initialHostUserId,
     },
