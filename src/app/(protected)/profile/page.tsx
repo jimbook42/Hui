@@ -9,6 +9,7 @@ import { NotificationPreferencesSection } from "@/components/profile/notificatio
 import { PushNotificationsControl } from "@/components/profile/push-notifications-control";
 import { getMemberReconnectPreference } from "@/lib/notifications/queries";
 import { getVapidPublicKey } from "@/lib/push/config";
+import { InstallHuiSettings } from "@/components/pwa/install-hui";
 import { SettingsSection } from "@/components/profile/settings-section";
 import { HostingPreferencesSection, type HostingPreference } from "@/components/profile/hosting-preferences-section";
 import { ThemeToggle } from "@/components/profile/theme-toggle";
@@ -200,6 +201,13 @@ export default async function ProfilePage() {
           description="Choose how Hui looks on this device."
         >
           <ThemeToggle />
+        </SettingsSection>
+
+        <SettingsSection
+          title="Add Hui to your home screen"
+          description="Hui works as an app on your phone or computer. No app store needed."
+        >
+          <InstallHuiSettings />
         </SettingsSection>
 
         <SettingsSection

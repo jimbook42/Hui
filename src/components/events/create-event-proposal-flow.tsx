@@ -9,6 +9,7 @@ import {
   WallClockTimeField,
 } from "@/components/events/wall-clock-picker-field";
 import { ChevronDownIcon } from "@/components/hui/icons";
+import { LocationPicker } from "@/components/map/location-picker";
 import { PendingButton } from "@/components/ui/pending-button";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import type { EventProposalDraft } from "@/domain/events/proposal";
@@ -88,7 +89,8 @@ export function CreateEventProposalFlow({
   const [stepError, setStepError] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState("");
   const [timeStart, setTimeStart] = useState("12:00");
-  const [timeEnd, setTimeEnd] = useState("15:00");
+  // The end time is optional: an empty value means "start only".
+  const [timeEnd, setTimeEnd] = useState("");
 
   const [actionState, formAction] = useActionState(
     proposeGroupEventAction,
@@ -144,11 +146,15 @@ export function CreateEventProposalFlow({
     setStepError(null);
     const parsed = parseWallClockCandidate(timeDate, timeStart, timeEnd, settings.timezone);
     if (!parsed) {
-      setStepError("Enter a valid date and start/end times.");
+      setStepError(
+        timeEnd.trim()
+          ? "Enter a valid date and times. The end must be after the start."
+          : "Enter a valid date and start time.",
+      );
       return;
     }
     const duplicate = draft.candidates.some(
-      (row) => row.startsAt === parsed.startsAt && row.endsAt === parsed.endsAt,
+      (row) => row.startsAt === parsed.startsAt && (row.endsAt ?? null) === parsed.endsAt,
     );
     if (duplicate) {
       setStepError("That time is already in your proposal.");
@@ -246,6 +252,13 @@ export function CreateEventProposalFlow({
                 This is the event place, not a member&apos;s home address. Hosting is coordinated
                 separately.
               </p>
+              <LocationPicker
+                value={draft.locationCoordinates ?? null}
+                placeLabel={draft.location.trim() || null}
+                onChange={(coordinates) =>
+                  setDraft((current) => ({ ...current, locationCoordinates: coordinates }))
+                }
+              />
               <label className="hui-label">
                 <span>Notes for the group</span>
                 <textarea
@@ -383,7 +396,7 @@ export function CreateEventProposalFlow({
             <ul className="space-y-2">
               {draft.candidates.map((candidate, index) => (
                 <li
-                  key={`${candidate.startsAt}-${candidate.endsAt}`}
+                  key={`${candidate.startsAt}-${candidate.endsAt ?? ""}`}
                   className="flex min-h-14 items-center justify-between gap-3 rounded-hui-lg bg-sage-soft px-4 py-2 text-sm font-extrabold text-foreground"
                 >
                   <span>
@@ -422,9 +435,10 @@ export function CreateEventProposalFlow({
                 onChange={setTimeStart}
               />
               <WallClockTimeField
-                label="Ends"
+                label="Ends (optional)"
                 value={timeEnd}
                 onChange={setTimeEnd}
+                clearable
               />
             </div>
             <PendingButton type="button" variant="secondary" onClick={addCandidate}>
@@ -452,7 +466,7 @@ export function CreateEventProposalFlow({
               <dd>
                 {draft.candidates.length > 0
                   ? draft.candidates.map((candidate) => (
-                      <div key={`${candidate.startsAt}-${candidate.endsAt}`}>
+                      <div key={`${candidate.startsAt}-${candidate.endsAt ?? ""}`}>
                         {formatCompactEventTimeRange(
                           candidate.startsAt,
                           candidate.endsAt,
@@ -465,7 +479,14 @@ export function CreateEventProposalFlow({
             </div>
             <div>
               <dt>Proposed place</dt>
-              <dd>{draft.location.trim() || "Not specified"}</dd>
+              <dd>
+                {draft.location.trim() || (draft.locationCoordinates ? "Pinned on the map" : "Not specified")}
+                {draft.location.trim() && draft.locationCoordinates ? (
+                  <span className="block text-sm font-semibold text-muted-foreground">
+                    Pinned on the map
+                  </span>
+                ) : null}
+              </dd>
             </div>
             <div>
               <dt>Host</dt>

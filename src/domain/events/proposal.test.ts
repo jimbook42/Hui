@@ -150,7 +150,65 @@ describe("event proposal validation (HUI-026A)", () => {
     );
     expect(parsed).not.toBeNull();
     if (parsed) {
-      expect(parsed.endsAt > parsed.startsAt).toBe(true);
+      expect(parsed.endsAt && parsed.endsAt > parsed.startsAt).toBe(true);
     }
+  });
+
+  it("treats the end time as optional", () => {
+    const withoutEnd = parseWallClockCandidate("2026-10-31", "18:00", "", "Pacific/Auckland");
+    expect(withoutEnd).not.toBeNull();
+    expect(withoutEnd?.endsAt).toBeNull();
+    expect(withoutEnd?.startsAt).toBe("2026-10-31T05:00:00.000Z");
+  });
+
+  it("still requires a start time and a valid date", () => {
+    expect(parseWallClockCandidate("2026-10-31", "", "", "Pacific/Auckland")).toBeNull();
+    expect(parseWallClockCandidate("", "18:00", "", "Pacific/Auckland")).toBeNull();
+  });
+
+  it("rejects an end that is not after the start", () => {
+    expect(parseWallClockCandidate("2026-10-31", "18:00", "18:00", "Pacific/Auckland")).toBeNull();
+    expect(parseWallClockCandidate("2026-10-31", "18:00", "17:00", "Pacific/Auckland")).toBeNull();
+  });
+
+  it("sends start-only candidates to the database with a null end", () => {
+    const result = validateEventProposalDraft(
+      {
+        title: "Dinner",
+        location: "",
+        notes: "",
+        eventKind: "one_off",
+        recurrence: null,
+        candidates: [{ startsAt: "2026-10-31T05:00:00.000Z", endsAt: null }],
+        initialHostUserId: "suggest",
+      },
+      baseOptions,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.payload.candidates[0]).toEqual({
+        starts_at: "2026-10-31T05:00:00.000Z",
+        ends_at: null,
+      });
+    }
+  });
+
+  it("rejects duplicate start-only candidates", () => {
+    const result = validateEventProposalDraft(
+      {
+        title: "Dinner",
+        location: "",
+        notes: "",
+        eventKind: "one_off",
+        recurrence: null,
+        candidates: [
+          { startsAt: "2026-10-31T05:00:00.000Z", endsAt: null },
+          { startsAt: "2026-10-31T05:00:00.000Z", endsAt: null },
+        ],
+        initialHostUserId: "suggest",
+      },
+      baseOptions,
+    );
+    expect(result.ok).toBe(false);
   });
 });

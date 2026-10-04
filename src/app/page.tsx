@@ -1,6 +1,6 @@
 import { HuiBotanical } from "@/components/hui/botanical";
 import { HuiLinkButton } from "@/components/hui/hui-button";
-import { HuiGatheringMark } from "@/components/hui/hui-gathering-mark";
+import { HuiLogo } from "@/components/hui/hui-logo";
 import { HuiWordmark } from "@/components/hui/hui-wordmark";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,8 +14,8 @@ export default async function Home() {
     <div className="hui-canvas relative flex min-h-full flex-1 flex-col items-center justify-center px-6 py-16">
       <HuiBotanical />
       <main className="relative z-10 w-full max-w-lg text-center">
-        <div className="hui-pop mx-auto flex h-28 w-28 items-center justify-center hui-shape-blob-a bg-[var(--blob-sage)] text-foreground">
-          <HuiGatheringMark size={64} />
+        <div className="hui-pop mx-auto flex h-36 w-36 items-center justify-center">
+          <HuiLogo size={144} priority />
         </div>
         <h1 className="hui-rise mt-8 flex justify-center">
           <HuiWordmark height={72} priority />

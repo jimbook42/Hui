@@ -2,11 +2,12 @@ import { cn } from "@/lib/ui/cn";
 
 const CENTER = 24;
 const RADIUS = 16.5;
-const MEMBER_ANGLES = [-90, 30, 150];
+// Matches the Hui logo: nodes at 10, 2 and 6 o'clock.
+const MEMBER_ANGLES = [-150, -30, 90];
 const MEMBER_COLORS = [
   "var(--gathering-member-a)",
-  "var(--gathering-member-c)",
   "var(--gathering-member-b)",
+  "var(--gathering-member-c)",
 ];
 
 function point(angleDeg: number, r = RADIUS) {

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { coordinatesFromRow } from "@/domain/events/location";
 import type { EventStatus } from "@/domain/events/types";
 import type { MembershipRole } from "@/domain/groups/permissions";
 
@@ -74,6 +75,8 @@ export async function getEventDetail(
       title,
       status,
       location,
+      location_lat,
+      location_lng,
       notes,
       starts_at,
       ends_at,
@@ -154,6 +157,10 @@ export async function getEventDetail(
     status: event.status as EventStatus,
     kind: event.recurrence_series_id ? "recurring" : "one_off",
     location: event.location as string | null,
+    locationCoordinates: coordinatesFromRow(
+      event.location_lat as number | null,
+      event.location_lng as number | null,
+    ),
     notes: event.notes as string | null,
     startsAt: event.starts_at as string | null,
     endsAt: event.ends_at as string | null,

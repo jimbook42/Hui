@@ -37,15 +37,21 @@ describe("participant flow (HUI-026B)", () => {
     expect(nextStepAfterAttendanceSave("unavailable")).toBe("declined");
   });
 
-  it("requires proposing status and a candidate for the respond flow", () => {
+  it("is open while proposing or confirmed (HUI-026U.3) and needs a candidate", () => {
     expect(
       canUseParticipantRespondFlow({ eventStatus: "proposing", hasCandidate: true }),
     ).toBe(true);
     expect(
       canUseParticipantRespondFlow({ eventStatus: "confirmed", hasCandidate: true }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       canUseParticipantRespondFlow({ eventStatus: "proposing", hasCandidate: false }),
+    ).toBe(false);
+    expect(
+      canUseParticipantRespondFlow({ eventStatus: "completed", hasCandidate: true }),
+    ).toBe(false);
+    expect(
+      canUseParticipantRespondFlow({ eventStatus: "cancelled", hasCandidate: true }),
     ).toBe(false);
   });
 

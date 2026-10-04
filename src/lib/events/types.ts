@@ -1,3 +1,4 @@
+import type { EventCoordinates } from "@/domain/events/location";
 import type { CadenceUnit, EventStatus } from "@/domain/events/types";
 
 export type EventListItem = {
@@ -27,6 +28,8 @@ export type EventDetail = {
   status: EventStatus;
   kind: "one_off" | "recurring";
   location: string | null;
+  /** Hui's own stored pin for the place (provider-independent); null when none was set. */
+  locationCoordinates: EventCoordinates | null;
   notes: string | null;
   startsAt: string | null;
   endsAt: string | null;

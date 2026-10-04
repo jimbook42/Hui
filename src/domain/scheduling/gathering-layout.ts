@@ -2,9 +2,9 @@ export const GATHERING_MAX_RING_MEMBERS = 12;
 
 export type GatheringSlot = {
   memberIndex: number;
-  /** 0–100, percentage of container width */
+  /** 0-100, percentage of container width */
   x: number;
-  /** 0–100, percentage of container height */
+  /** 0-100, percentage of container height */
   y: number;
 };
 
@@ -45,14 +45,44 @@ export function layoutGatheringRing(
 export type GatheringStageSlot = {
   /** Index into the (ordered) member list. */
   memberIndex: number;
-  /** 0–100, percentage of the square stage. */
+  /** 0-100, percentage of the square stage. */
   x: number;
   y: number;
   ring: "inner" | "outer";
 };
 
+export type GatheringRing = {
+  ring: GatheringStageSlot["ring"];
+  /** Radius in the 0-100 stage space. */
+  radius: number;
+  /** Number of members on this ring. */
+  count: number;
+  /** Index of the first member on this ring in the ordered member list. */
+  offset: number;
+  /** Extra angular offset (radians) added to the ring's start angle. */
+  angleShift: number;
+};
+
+export type GatheringStageLayout = {
+  slots: GatheringStageSlot[];
+  overflowCount: number;
+  denseRing: boolean;
+  rings: GatheringRing[];
+};
+
 export const GATHERING_STAGE_CAPACITY = 24;
 const INNER_RING_MAX = 8;
+
+const DEGREES = 180 / Math.PI;
+
+/**
+ * Where a ring starts. Matches the Hui logo: with three members the nodes sit at 10, 2 and
+ * 6 o'clock, i.e. the first node is half a step anticlockwise of 12 o'clock
+ * (-90 degrees - 180 degrees / n).
+ */
+function ringStartAngle(count: number, angleShift: number): number {
+  return -Math.PI / 2 - Math.PI / count + angleShift;
+}
 
 /**
  * Place members around a central gathering point on a square stage.
@@ -63,15 +93,15 @@ const INNER_RING_MAX = 8;
 export function layoutGatheringStage(
   memberCount: number,
   capacity = GATHERING_STAGE_CAPACITY,
-): { slots: GatheringStageSlot[]; overflowCount: number; denseRing: boolean } {
+): GatheringStageLayout {
   const visible = Math.min(memberCount, capacity);
   const overflowCount = Math.max(0, memberCount - capacity);
   if (visible === 0) {
-    return { slots: [], overflowCount: 0, denseRing: false };
+    return { slots: [], overflowCount: 0, denseRing: false, rings: [] };
   }
 
-  const startAngle = -Math.PI / 2;
   const slots: GatheringStageSlot[] = [];
+  const rings: GatheringRing[] = [];
 
   const place = (
     count: number,
@@ -80,8 +110,9 @@ export function layoutGatheringStage(
     offset: number,
     angleShift: number,
   ) => {
+    rings.push({ ring, radius, count, offset, angleShift });
     for (let i = 0; i < count; i += 1) {
-      const angle = startAngle + angleShift + (2 * Math.PI * i) / count;
+      const angle = ringStartAngle(count, angleShift) + (2 * Math.PI * i) / count;
       slots.push({
         memberIndex: offset + i,
         x: 50 + radius * Math.cos(angle),
@@ -93,14 +124,77 @@ export function layoutGatheringStage(
 
   if (visible <= INNER_RING_MAX) {
     place(visible, 35, "outer", 0, 0);
-    return { slots, overflowCount, denseRing: false };
+    return { slots, overflowCount, denseRing: false, rings };
   }
 
   const inner = Math.min(INNER_RING_MAX, Math.ceil(visible / 3));
   const outer = visible - inner;
   place(inner, 22, "inner", 0, Math.PI / inner);
   place(outer, 40, "outer", inner, 0);
-  return { slots, overflowCount, denseRing: true };
+  return { slots, overflowCount, denseRing: true, rings };
+}
+
+export type GatheringArc = {
+  /** Index into the ordered member list of the node this arc starts at. */
+  fromMemberIndex: number;
+  /** Index of the node this arc ends at (next around the ring). */
+  toMemberIndex: number;
+  /** SVG path in the 0-100 stage space, clockwise, between the two nodes. */
+  d: string;
+  ring: GatheringStageSlot["ring"];
+};
+
+export type GatheringArcStrength = "solid" | "partial" | "open";
+
+/**
+ * Strength of the arc between two neighbours (the logo's ring, filling in as people say yes):
+ * solid when both are coming, partial when both are at least "maybe", otherwise open.
+ */
+export function gatheringArcStrength(a: string, b: string): GatheringArcStrength {
+  if (a === "yes" && b === "yes") {
+    return "solid";
+  }
+  const ok = (state: string) => state === "yes" || state === "maybe";
+  return ok(a) && ok(b) ? "partial" : "open";
+}
+
+const ARC_PADDING_UNITS = 2.4;
+const MIN_ARC_DEGREES = 8;
+
+function polar(radius: number, degrees: number): { x: number; y: number } {
+  const rad = degrees / DEGREES;
+  return { x: 50 + radius * Math.cos(rad), y: 50 + radius * Math.sin(rad) };
+}
+
+/**
+ * Arcs joining consecutive members on a ring, leaving room (in stage units) around each node so
+ * the arcs never touch the nodes - like the gaps in the Hui logo. Rings too crowded to show a
+ * readable arc yield none.
+ */
+export function layoutGatheringArcs(ring: GatheringRing, nodeRadiusUnits: number): GatheringArc[] {
+  if (ring.count < 2) {
+    return [];
+  }
+  const stepDegrees = 360 / ring.count;
+  const gapDegrees = ((nodeRadiusUnits + ARC_PADDING_UNITS) / ring.radius) * DEGREES;
+  if (stepDegrees - 2 * gapDegrees < MIN_ARC_DEGREES) {
+    return [];
+  }
+
+  const startDegrees = ringStartAngle(ring.count, ring.angleShift) * DEGREES;
+  const arcs: GatheringArc[] = [];
+  for (let i = 0; i < ring.count; i += 1) {
+    const nodeAngle = startDegrees + stepDegrees * i;
+    const from = polar(ring.radius, nodeAngle + gapDegrees);
+    const to = polar(ring.radius, nodeAngle + stepDegrees - gapDegrees);
+    arcs.push({
+      fromMemberIndex: ring.offset + i,
+      toMemberIndex: ring.offset + ((i + 1) % ring.count),
+      d: `M ${from.x.toFixed(2)} ${from.y.toFixed(2)} A ${ring.radius} ${ring.radius} 0 0 1 ${to.x.toFixed(2)} ${to.y.toFixed(2)}`,
+      ring: ring.ring,
+    });
+  }
+  return arcs;
 }
 
 const STATE_PRIORITY: Record<string, number> = { yes: 0, maybe: 1, pending: 2, no: 3 };

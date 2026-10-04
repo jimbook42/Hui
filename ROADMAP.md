@@ -387,7 +387,7 @@ Implementation must investigate server-action latency, unnecessary refreshes, ex
 | **HUI-026C** | Dashboard + event entry | Planned |
 | **HUI-026D** | Event management/admin surface | Planned |
 | **HUI-026E** | Contribution flow redesign | Planned |
-| **HUI-026U** | Visual design system & UX foundation | Complete (branch `feat/hui-026u-visual-design-system`; full redesign: tokens light/dark, organic primitives, new IA, event hero/map, respond/proposal re-skin, profile theme + hosting — see `docs/DESIGN_SYSTEM.md`) |
+| **HUI-026U** | Visual design system & UX foundation | Complete (branch `feat/hui-026u-visual-design-system`; full redesign + follow-up: tokens light/dark, organic primitives, new IA, MapLibre event map + picker, optional end time, attendance edits after confirmation, dietary “all groups” share, PWA install UX + refreshed icons/logo — see `docs/DESIGN_SYSTEM.md`; deploy required to match production DB migrations) |
 | **HUI-026P** | Performance audit + core interaction speed | Complete (branch `feat/hui-026p-performance`; parallel fetches, lighter attendance action, streamed event sections, route loading UI) |
 | **HUI-026P.1** | Systemic latency diagnosis + common path fixes | Complete (branch `feat/hui-026p-performance`; request-scoped auth dedupe, profile ensure skip, household query batching, lighter profile save path) |
 | **HUI-026P.2** | End-to-end interaction latency audit | Complete (branch `feat/hui-026p-performance`; tap-to-visible instrumentation, optimistic attendance step, notification navigate-first, profile loading shell; see `docs/performance/HUI-026P.2-audit.md`) |

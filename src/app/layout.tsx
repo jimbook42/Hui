@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Nunito } from "next/font/google";
 
+import { InstallBootstrap } from "@/components/pwa/install-bootstrap";
 import { InteractionPerfBootstrap } from "@/components/perf/interaction-perf-bootstrap";
 import { HuiSerwistProvider } from "@/components/serwist-provider";
 import { THEME_INIT_SCRIPT } from "@/lib/ui/theme";
@@ -23,6 +24,13 @@ export const metadata: Metadata = {
   title: "Hui",
   description: HUI_PWA_DESCRIPTION,
   applicationName: "Hui",
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     title: "Hui",
@@ -59,6 +67,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <HuiSerwistProvider>
           <InteractionPerfBootstrap />
+          <InstallBootstrap />
           {children}
         </HuiSerwistProvider>
       </body>

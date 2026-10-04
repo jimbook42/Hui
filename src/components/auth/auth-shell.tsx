@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { HuiBotanical } from "@/components/hui/botanical";
 import { HuiSurface } from "@/components/hui/hui-surface";
+import { HuiLogo } from "@/components/hui/hui-logo";
 import { HuiWordmark } from "@/components/hui/hui-wordmark";
 
 type AuthShellProps = {
@@ -20,9 +21,10 @@ export function AuthShell({ title, description, children, footer }: AuthShellPro
         <Link
           href="/"
           aria-label="Hui home"
-          className="hui-focus-ring mx-auto mb-7 block w-fit rounded-hui-lg p-1"
+          className="hui-focus-ring mx-auto mb-7 flex w-fit flex-col items-center gap-2 rounded-hui-lg p-1"
         >
-          <HuiWordmark height={40} priority />
+          <HuiLogo size={64} priority />
+          <HuiWordmark height={36} priority />
         </Link>
         <h1 className="hui-type-display hui-rise text-center text-foreground">{title}</h1>
         {description ? (

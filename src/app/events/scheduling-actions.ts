@@ -63,10 +63,16 @@ export async function addCandidateAction(
     String(formData.get("starts_at") ?? ""),
     timeZone,
   );
-  const endsAt = parseRequiredDateTime(String(formData.get("ends_at") ?? ""), timeZone);
+  // End is optional: blank means a start-only time. A non-blank value must still parse.
+  const endsAtRaw = String(formData.get("ends_at") ?? "");
+  const endsAt =
+    endsAtRaw.trim().length === 0 ? null : parseRequiredDateTime(endsAtRaw, timeZone);
 
-  if (!eventId || !groupId || !startsAt || !endsAt) {
-    return { error: "Enter a valid start and end time." };
+  if (!eventId || !groupId || !startsAt) {
+    return { error: "Enter a valid start time." };
+  }
+  if (endsAtRaw.trim().length > 0 && !endsAt) {
+    return { error: "Enter a valid end time, or leave it blank." };
   }
 
   const windowError = validateCandidateWindow(startsAt, endsAt);
@@ -225,6 +231,9 @@ export async function setAvailabilityResponseAction(
       return { error: maybeError };
     }
 
+    // Only touch the private note when the caller sent one, so changing an answer from the event
+    // page never wipes a note saved elsewhere.
+    const hasNoteField = formData.has("private_note");
     const privateNoteRaw = String(formData.get("private_note") ?? "");
     const privateNote = normalizePrivateAttendanceNote(privateNoteRaw);
     if (privateNoteRaw.trim().length > 0 && privateNote === null) {
@@ -261,7 +270,7 @@ export async function setAvailabilityResponseAction(
           user_id: user.id,
           response: dbResponse,
           visibility: "group",
-          note: privateNote,
+          ...(hasNoteField ? { note: privateNote } : {}),
         },
         { onConflict: "candidate_id,user_id" },
       ),

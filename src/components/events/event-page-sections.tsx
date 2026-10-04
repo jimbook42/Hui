@@ -4,10 +4,9 @@ import { EventDietarySection } from "@/components/dietary/event-dietary-section"
 import { EventDetailManagement } from "@/components/events/event-detail-management";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
 import { EventScheduling } from "@/components/events/event-scheduling";
-import { AttendanceDot } from "@/components/hui/attendance-dot";
+import { LiveGatheringVisual, ViewerResponseCard } from "@/components/events/attendance-live";
 import { DisclosureCard } from "@/components/hui/disclosure-card";
 import { EventDateBadge } from "@/components/hui/event-date-badge";
-import { GatheringVisual } from "@/components/hui/gathering-visual";
 import { HashDisclosureOpener } from "@/components/hui/hash-disclosure-opener";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
@@ -30,10 +29,8 @@ import {
   formatTimeSpan,
   relativeDayLabel,
 } from "@/domain/datetime/display";
-import { viewerStatusLabel } from "@/domain/events/home";
 import { eventKindLabel } from "@/lib/events/labels";
 import { loadEventPage } from "@/lib/events/event-page-data";
-import { participantRespondPath } from "@/lib/events/paths";
 import type { EventDetail } from "@/lib/events/types";
 
 type SectionProps = { detail: EventDetail; userId: string };
@@ -51,7 +48,16 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
   const when = startsAt && !closed ? relativeDayLabel(startsAt, tz) : null;
 
   const respondable = data.canRespond && data.primaryCandidate !== null;
-  const pending = data.viewerState === "pending";
+  // Contributions that would be released if the viewer declined (host-following categories stay).
+  const followsHostCategoryIds = new Set(
+    data.contributionCategories.filter((category) => category.followsHost).map((category) => category.id),
+  );
+  const viewerReleasableContributions = data.eventContributions.filter(
+    (row) =>
+      row.userId === userId &&
+      row.status === "accepted" &&
+      !(row.categoryId && followsHostCategoryIds.has(row.categoryId)),
+  ).length;
 
   return (
     <div className="mt-5 space-y-5">
@@ -129,42 +135,16 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
         <HuiSurface tone="subtle" shape="soft" padding="md" role="status">
           <p className="font-bold text-foreground">This hui has happened.</p>
         </HuiSurface>
-      ) : respondable ? (
-        <HuiSurface
-          tone={
-            data.viewerState === "yes"
-              ? "sage"
-              : data.viewerState === "no"
-                ? "subtle"
-                : "clay"
-          }
-          shape="organic-alt"
-          padding="md"
-        >
-          <div className="flex items-center gap-4">
-            <AttendanceDot state={data.viewerState} label={viewerStatusLabel(data.viewerState)} size="lg" />
-            <div className="min-w-0 flex-1">
-              <p className="hui-type-label text-muted-foreground">Your answer</p>
-              <p className="text-lg font-extrabold leading-tight text-foreground">
-                {viewerStatusLabel(data.viewerState)}
-              </p>
-              {pending ? (
-                <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
-                  The group is waiting to hear from you.
-                </p>
-              ) : null}
-            </div>
-          </div>
-          <HuiLinkButton
-            href={participantRespondPath(detail.id)}
-            variant={pending ? "primary" : "secondary"}
-            shape="melt"
-            size="touch"
-            className="mt-4 w-full"
-          >
-            {pending ? "Reply" : "Change my answer"}
-          </HuiLinkButton>
-        </HuiSurface>
+      ) : respondable && data.primaryCandidate ? (
+        <ViewerResponseCard
+          eventId={detail.id}
+          candidateId={data.primaryCandidate.id}
+          serverResponse={data.viewerResponse}
+          maybeResponsesEnabled={data.scheduling.maybeResponsesEnabled}
+          confirmed={confirmed}
+          hasContribution={viewerReleasableContributions > 0}
+          isAcceptedHost={acceptedHost?.userId === userId}
+        />
       ) : null}
     </div>
   );
@@ -202,7 +182,12 @@ export async function EventPeopleCard({ detail, userId }: SectionProps) {
       />
       {roster && roster.members.length > 0 ? (
         <>
-          <GatheringVisual roster={roster} eventTitle={detail.title} className="mt-4" />
+          <LiveGatheringVisual
+            roster={roster}
+            viewerUserId={userId}
+            eventTitle={detail.title}
+            className="mt-4"
+          />
           <p className="hui-type-supporting mt-4 text-center">
             Shapes show how people answered. Private notes are never shown.
           </p>
@@ -463,6 +448,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             defaultNotes={detail.notes}
             defaultStartsAt={detail.startsAt}
             defaultEndsAt={detail.endsAt}
+            defaultCoordinates={detail.locationCoordinates}
             status={detail.status}
             timeZone={data.displayTimeZone}
           />

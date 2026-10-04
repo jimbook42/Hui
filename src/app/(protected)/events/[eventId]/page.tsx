@@ -9,6 +9,7 @@ import {
   EventHeroMeta,
   EventPeopleCard,
 } from "@/components/events/event-page-sections";
+import { AttendanceLiveProvider } from "@/components/events/attendance-live";
 import { EventHero, EventHeroMetaSkeleton } from "@/components/hui/event-hero";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { getEventDetail } from "@/lib/events/queries";
@@ -34,25 +35,28 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   return (
     <AppShell title={detail.title} hideTitle back={{ href: "/events", label: "Hui" }}>
-      <div className="space-y-5">
-        <EventHero
-          title={detail.title}
-          status={detail.status}
-          groupName={detail.groupName}
-          groupHref={`/groups/${detail.groupId}`}
-          location={detail.location}
-        >
-          <Suspense fallback={<EventHeroMetaSkeleton />}>
-            <EventHeroMeta detail={detail} userId={userId} />
-          </Suspense>
-        </EventHero>
+      <AttendanceLiveProvider>
+        <div className="space-y-5">
+          <EventHero
+            title={detail.title}
+            status={detail.status}
+            groupName={detail.groupName}
+            groupHref={`/groups/${detail.groupId}`}
+            location={detail.location}
+            coordinates={detail.locationCoordinates}
+          >
+            <Suspense fallback={<EventHeroMetaSkeleton />}>
+              <EventHeroMeta detail={detail} userId={userId} />
+            </Suspense>
+          </EventHero>
 
-        <Suspense fallback={<EventBodySkeleton />}>
-          <EventAttentionCard detail={detail} userId={userId} />
-          <EventPeopleCard detail={detail} userId={userId} />
-          <EventDetailsList detail={detail} userId={userId} />
-        </Suspense>
-      </div>
+          <Suspense fallback={<EventBodySkeleton />}>
+            <EventAttentionCard detail={detail} userId={userId} />
+            <EventPeopleCard detail={detail} userId={userId} />
+            <EventDetailsList detail={detail} userId={userId} />
+          </Suspense>
+        </div>
+      </AttendanceLiveProvider>
     </AppShell>
   );
 }

@@ -38,7 +38,9 @@ Interaction: `hui-focus-ring` for keyboard focus; `prefers-reduced-motion` respe
 | `GatheringVisual` | Members around a central gathering |
 | `AttendanceLegend` | Non-colour-only key for attendance shapes |
 | `EventHero` | Event summary hierarchy (what / when / who / where) |
-| `EventLocationPanel` | Static map-style **event location** context (no tracking) |
+| `EventLocationPanel` | Event location: MapLibre map when coordinates exist, else address-only |
+| `HuiLogo` | Wordmark / mark for auth shell and headers |
+| `EventMap` / `LocationPicker` (`src/components/map/`) | Interactive map read/pick (provider via `src/lib/maps/config.ts`) |
 | `EmptyState` | Calm empty surfaces |
 | `MobileNav` | Mobile bottom navigation (desktop keeps header links) |
 
@@ -53,7 +55,9 @@ Domain helpers: `gathering-layout.ts`, `attendance-visual.ts` (Vitest covered).
 
 ## Map / location
 
-`EventLocationPanel` is decorative topography plus pin — it reinforces **where the gathering is**, not live maps or member geography. No new map provider or dependency.
+Event maps show **where the gathering is** (stored lat/lng + place text), not member locations or distance. MapLibre GL JS renders vector tiles; style URLs are env-configurable (default OpenFreeMap). Set `NEXT_PUBLIC_MAP_ENABLED=false` to hide maps and show the address only. Map chrome uses Hui forest greens (`globals.css` map tokens). The old decorative SVG-only panel was removed in favour of `EventMap` + `EventLocationPanel` wrapping the same data.
+
+Location picking (propose/edit event) uses `LocationPicker` with pin placement and optional geocoding — still no tracking of people.
 
 ## Reference material (HUI-026U.2)
 
@@ -63,13 +67,13 @@ See `docs/reference/REFERENCE_INDEX.md` for paths. The first 026U pass did **not
 | --- | --- | --- | --- |
 | Gathering | Logo ring + map avatar rings | Ellipse + generic hub | `HuiGatheringMark` hub, outer ring, initials on dots |
 | Attendance | Photo piles + RSVP pills | State rings | Initials in dots; Hui labels (not “RSVP’d”) |
-| Location | Illustrated map + sheet | Simple topo SVG | Richer illustrated `EventLocationPanel` (still static) |
+| Location | Illustrated map + sheet | Simple topo SVG | MapLibre event map + picker (026U.3) |
 | Event hierarchy | Date blob + card | Text-first hero | `EventDateBadge` + gathering block above metadata |
 | Navigation | 5-tab bar incl. Messages | 4-tab product nav | Kept 4 destinations; reference styling only |
 | Typography / colour | Forest green + cream | Terracotta primary | Forest green primary, parchment background |
 | Surfaces | Soft cards, large radius | Modest radius | `rounded-hui-xl`, softer elevation |
 
-Features shown in references but **not** in Hui (Messages tab, live map, distance, profile photos as attendance) were **not** built.
+Features shown in references but **not** in Hui (Messages tab, member-distance / live geography, profile photos as attendance) were **not** built. Event **venue** maps are in scope; people maps are not.
 
 ## Accessibility
 
@@ -93,4 +97,6 @@ Features shown in references but **not** in Hui (Messages tab, live map, distanc
 - **Information architecture:** bottom nav Home, Hui (`/events`), Groups, Alerts (`/notifications`), You (`/profile`). `/events` and `/events/new` (group picker) are new. Event detail answers what/when/where/my status/who/attention first; everything else sits behind "Details" disclosures (legacy sections are embedded via `.hui-embedded`).
 - **Motion:** CSS only (`hui-rise`, `hui-pop`, `hui-breathe`), all disabled under `prefers-reduced-motion`.
 - **Tailwind scanning** is limited to `src/` (`@import "tailwindcss" source("../")`) — scanning repo-root temp/binary files corrupts the CSS.
-- **Deferred:** live system-theme change without reload, map tiles / geocoding (intentionally none), refreshing the stale legacy e2e specs.
+- **Brand assets:** `public/brand/hui-logo-*.png`, regenerated `public/icons/*` (192/512, maskable, apple-touch, notification badge).
+- **PWA:** install prompt component; manifest name/icons aligned with brand.
+- **Deferred:** live system-theme change without reload, refreshing the stale legacy e2e specs.

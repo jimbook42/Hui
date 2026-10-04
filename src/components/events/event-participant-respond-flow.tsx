@@ -13,7 +13,7 @@ import {
   WallClockTimeField,
 } from "@/components/events/wall-clock-picker-field";
 import { AttendanceChoice } from "@/components/hui/attendance-choice";
-import { LocationMap } from "@/components/hui/event-location-panel";
+import { EventPlaceMap } from "@/components/hui/event-location-panel";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { AttendanceDot } from "@/components/hui/attendance-dot";
@@ -28,6 +28,7 @@ import {
   type ParticipantFlowStep,
 } from "@/domain/events/participant-flow";
 import { participantPlaceView } from "@/domain/events/participant-place";
+import type { EventCoordinates } from "@/domain/events/location";
 import { parseWallClockCandidate } from "@/domain/events/proposal";
 import { availabilityResponseOptions } from "@/domain/scheduling/consensus-display";
 import {
@@ -57,6 +58,8 @@ type EventParticipantRespondFlowProps = {
   canSuggestTime: boolean;
   candidate: EventCandidateRow;
   placeView: ReturnType<typeof participantPlaceView>;
+  /** Hui's stored pin for the place, when the organiser set one. */
+  coordinates: EventCoordinates | null;
   hostingEnabled: boolean;
   viewerUserId: string;
   initialViewerResponse: AvailabilityChoice | null;
@@ -104,6 +107,7 @@ export function EventParticipantRespondFlow({
   canSuggestTime,
   candidate,
   placeView,
+  coordinates,
   viewerUserId,
   initialViewerResponse,
   secondaryDataPromise,
@@ -117,7 +121,8 @@ export function EventParticipantRespondFlow({
   const [suggestSubmittedRange, setSuggestSubmittedRange] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState("");
   const [timeStart, setTimeStart] = useState("12:00");
-  const [timeEnd, setTimeEnd] = useState("15:00");
+  // The end time is optional: an empty value means "start only".
+  const [timeEnd, setTimeEnd] = useState("");
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [isSavingAttendance, startSaveAttendance] = useTransition();
   const [isSubmittingSuggest, startSubmitSuggest] = useTransition();
@@ -215,6 +220,11 @@ export function EventParticipantRespondFlow({
     if (!canRespond || isSavingAttendance) {
       return;
     }
+    if (choice === viewerResponse) {
+      // Already saved: just move on without another round trip.
+      pushStep(nextStepAfterAttendanceSave(choice));
+      return;
+    }
     const interaction = `attendance_${choice}`;
     beginInteraction(interaction);
     markInteraction(interaction, "handler-start");
@@ -274,7 +284,9 @@ export function EventParticipantRespondFlow({
       formData.set("event_id", eventId);
       formData.set("group_id", groupId);
       formData.set("starts_at", parsed.startsAt);
-      formData.set("ends_at", parsed.endsAt);
+      if (parsed.endsAt) {
+        formData.set("ends_at", parsed.endsAt);
+      }
       const result = await addCandidateAction({}, formData);
       if (result.error) {
         setSuggestError(result.error);
@@ -331,6 +343,27 @@ export function EventParticipantRespondFlow({
           <ArrowLeftIcon size={18} />
           Back
         </button>
+      ) : null}
+
+      {viewerResponse && (step === "declined" || step === "place" || step === "bring" || step === "done") ? (
+        <div className="mt-4 flex items-center gap-3 rounded-hui-xl bg-surface px-4 py-2 hui-shadow-sm">
+          <AttendanceDot
+            state={chosenState}
+            label={participantAttendanceSummaryLabel(viewerResponse)}
+            size="sm"
+          />
+          <p className="min-w-0 flex-1 text-sm font-extrabold text-foreground">
+            Your answer: {participantAttendanceSummaryLabel(viewerResponse)}
+          </p>
+          <button
+            type="button"
+            onClick={() => pushStep("time")}
+            disabled={!canRespond}
+            className="hui-focus-ring inline-flex min-h-11 items-center rounded-full px-3 text-sm font-extrabold text-accent underline underline-offset-4 disabled:opacity-50"
+          >
+            Change response
+          </button>
+        </div>
       ) : null}
 
       {step === "time" ? (
@@ -416,7 +449,12 @@ export function EventParticipantRespondFlow({
             <WallClockDateField label="Date" value={timeDate} onChange={setTimeDate} />
             <div className="grid grid-cols-2 gap-3">
               <WallClockTimeField label="Starts" value={timeStart} onChange={setTimeStart} />
-              <WallClockTimeField label="Ends" value={timeEnd} onChange={setTimeEnd} />
+              <WallClockTimeField
+                label="Ends (optional)"
+                value={timeEnd}
+                onChange={setTimeEnd}
+                clearable
+              />
             </div>
             {suggestPreview ? (
               <p className="rounded-hui-md bg-sage-soft px-4 py-3 text-sm font-bold text-foreground">
@@ -463,10 +501,10 @@ export function EventParticipantRespondFlow({
         <section className="hui-rise mt-6 space-y-5">
           <h1 className="hui-type-page-title text-foreground">Where it is</h1>
           <div className="overflow-hidden rounded-hui-xl bg-surface hui-shadow-md">
-            <LocationMap
+            <EventPlaceMap
               location={placeView.kind === "known" ? placeView.line : null}
-              showLabel={false}
-              className="h-40"
+              coordinates={placeView.kind === "known" ? coordinates : null}
+              className={placeView.kind === "known" && coordinates ? "h-44" : "h-20"}
             />
             <div className="flex items-start gap-3 px-5 py-4">
               <PinIcon size={20} className="mt-0.5 shrink-0 text-accent" />

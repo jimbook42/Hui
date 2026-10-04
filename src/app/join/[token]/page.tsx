@@ -1,6 +1,7 @@
 import { HuiBotanical } from "@/components/hui/botanical";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
+import { HuiLogo } from "@/components/hui/hui-logo";
 import { HuiWordmark } from "@/components/hui/hui-wordmark";
 import { JoinAuthLinks, JoinInviteButton } from "@/components/join/join-invite-actions";
 import { parseInviteResolvePayload } from "@/domain/invites/resolve";
@@ -28,8 +29,9 @@ export default async function JoinInvitePage({ params }: PageProps) {
     <div className="hui-canvas relative flex min-h-dvh flex-col items-center justify-center px-5 py-12">
       <HuiBotanical />
       <main className="relative z-10 w-full max-w-md">
-        <div className="mx-auto mb-7 w-fit">
-          <HuiWordmark height={40} priority />
+        <div className="mx-auto mb-7 flex w-fit flex-col items-center gap-2">
+          <HuiLogo size={64} priority />
+          <HuiWordmark height={36} priority />
         </div>
         <HuiSurface shape="organic" padding="lg" elevated className="hui-rise text-center">
           {resolved.status === "invalid" ? (

@@ -7,11 +7,13 @@ import {
   parseIntervalCount,
   parseStartsOnDate,
 } from "@/domain/events/validation";
+import { isValidCoordinates, type EventCoordinates } from "@/domain/events/location";
 import { validateCandidateWindow } from "@/domain/scheduling/validation";
 
 export type ProposalCandidateInput = {
   startsAt: string;
-  endsAt: string;
+  /** Optional: a proposed time can be start-only. */
+  endsAt: string | null;
 };
 
 export type ProposalRecurrenceInput = {
@@ -24,6 +26,8 @@ export type ProposalRecurrenceInput = {
 export type EventProposalDraft = {
   title: string;
   location: string;
+  /** Optional pin chosen on the map. Independent of the place text. */
+  locationCoordinates?: EventCoordinates | null;
   notes: string;
   eventKind: "one_off" | "recurring";
   recurrence: ProposalRecurrenceInput | null;
@@ -37,12 +41,13 @@ export type ProposalValidationResult =
 
 export type RpcProposalCandidate = {
   starts_at: string;
-  ends_at: string;
+  ends_at: string | null;
 };
 
 export type ProposeGroupEventPayload = {
   title: string;
   location: string | null;
+  locationCoordinates: EventCoordinates | null;
   notes: string | null;
   recurrence: {
     series_title: string;
@@ -72,17 +77,27 @@ export function parseWallClockCandidate(
 ): ProposalCandidateInput | null {
   const dateTrimmed = date.trim();
   const startTrimmed = startTime.trim();
-  const endTrimmed = endTime.trim();
+  const endTrimmed = (endTime ?? "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateTrimmed)) {
     return null;
   }
-  if (!/^\d{2}:\d{2}$/.test(startTrimmed) || !/^\d{2}:\d{2}$/.test(endTrimmed)) {
+  if (!/^\d{2}:\d{2}$/.test(startTrimmed)) {
+    return null;
+  }
+  // End time is optional. An empty value means "start only"; anything else must be a valid time.
+  if (endTrimmed.length > 0 && !/^\d{2}:\d{2}$/.test(endTrimmed)) {
     return null;
   }
 
   const startsAt = wallClockToUtcIso(`${dateTrimmed}T${startTrimmed}`, timeZone);
+  if (!startsAt) {
+    return null;
+  }
+  if (endTrimmed.length === 0) {
+    return { startsAt, endsAt: null };
+  }
   const endsAt = wallClockToUtcIso(`${dateTrimmed}T${endTrimmed}`, timeZone);
-  if (!startsAt || !endsAt) {
+  if (!endsAt) {
     return null;
   }
   if (validateCandidateWindow(startsAt, endsAt)) {
@@ -115,6 +130,11 @@ export function validateEventProposalDraft(
     return { ok: false, error: "Notes are too long." };
   }
 
+  const locationCoordinates = draft.locationCoordinates ?? null;
+  if (locationCoordinates !== null && !isValidCoordinates(locationCoordinates)) {
+    return { ok: false, error: "Choose a valid spot on the map." };
+  }
+
   if (draft.candidates.length < 1) {
     return { ok: false, error: "Add at least one proposed time." };
   }
@@ -125,7 +145,7 @@ export function validateEventProposalDraft(
     if (windowError) {
       return { ok: false, error: windowError };
     }
-    const key = `${candidate.startsAt}|${candidate.endsAt}`;
+    const key = `${candidate.startsAt}|${candidate.endsAt ?? ""}`;
     if (seen.has(key)) {
       return { ok: false, error: "That time slot is already in your proposal." };
     }
@@ -172,6 +192,7 @@ export function validateEventProposalDraft(
     payload: {
       title,
       location,
+      locationCoordinates,
       notes,
       recurrence,
       candidates: candidatesForRpc(draft.candidates),

@@ -2,6 +2,18 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026U.3 follow-up (ship with production DB)
+
+- **Attendance after confirmation:** members can change Yes/Maybe/No on the confirmed time (`set_availability_response` + `attendance-override` domain rules); respond flow and `AttendanceLive` on event detail; DB tests in `attendance-after-confirmation.test.ts`.
+- **Optional event end time:** proposals, candidates, and confirmed events may omit `ends_at`; validation and display updated across scheduling and proposal flows.
+- **Real event map:** MapLibre GL JS (`src/components/map/`, `src/lib/maps/config.ts`) with replaceable tile/style provider (default OpenFreeMap via env); geocoding helper; event hero + `EventLocationPanel` use coordinates when present; location picker on propose/edit. Worker assets copied at `prebuild` (`public/vendor/` gitignored).
+- **Gathering / brand:** `HuiLogo`, refreshed PWA manifest icons (maskable + apple-touch), push notification badge asset, forest-green map styling in `globals.css`.
+- **PWA install:** `InstallHuiPrompt` + `install-store` (beforeinstallprompt / iOS guidance); manifest name/shortcuts updated.
+- **Dietary:** profile “Share with all groups” scope (`dietary_entry_shares` sentinel group + app actions); `dietary-all-groups.test.ts`.
+- **Migrations** (already applied in production before app deploy): `20261005000000_optional_end_time_and_location_coordinates`, `20261005010000_attendance_changes_after_confirmation`, `20261005020000_dietary_share_with_all_groups`.
+- HUI-026P optimistic attendance, respond primary/deferred split, and Suspense shells unchanged.
+- `npm run lint`, `npx tsc --noEmit`, `npm test` (444 passed, 2 skipped), `npm run build` passed.
+
 ## 2026-10-04 — HUI-026U redesign (full UI/UX rewrite)
 
 - Redesigned every route from the reference screens: forest/clay/blue tokens (light + dark), ~32px organic shapes, no bordered cards or dividers. Theme preference is device-local (`hui-theme` in localStorage, set in Profile → Appearance).

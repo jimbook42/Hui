@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
+import { InstallHuiCard } from "@/components/pwa/install-hui";
 import { DashboardEvents, DashboardEventsSkeleton } from "@/components/home/home-sections";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 
@@ -36,6 +37,7 @@ export default function DashboardPage() {
       <Suspense fallback={<GreetingText />}>
         <Greeting />
       </Suspense>
+      <InstallHuiCard />
       <Suspense fallback={<DashboardEventsSkeleton />}>
         <DashboardEvents />
       </Suspense>

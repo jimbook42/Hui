@@ -3,6 +3,7 @@
 import {
   createDietaryEntryAction,
   deleteDietaryEntryAction,
+  setDietaryShareAllGroupsAction,
   shareDietaryEntryAction,
   unshareDietaryEntryAction,
   updateDietaryEntryAction,
@@ -41,6 +42,16 @@ function CategoryField({ defaultValue }: { defaultValue?: DietaryCategory }) {
   );
 }
 
+function sharingSummary(entry: UserDietaryEntry): string {
+  if (entry.shareWithAllGroups) {
+    return "All my groups";
+  }
+  if (entry.shares.length === 0) {
+    return "Private";
+  }
+  return entry.shares.length === 1 ? "1 group" : ` groups`;
+}
+
 function DietaryEntryCard({
   entry,
   groups,
@@ -61,9 +72,31 @@ function DietaryEntryCard({
           ) : null}
           <p className="mt-1 text-xs text-muted-foreground">{dietaryCategoryLabel(entry.category)}</p>
         </div>
-        <p className="text-xs font-medium text-muted-foreground">
-          {entry.shares.length === 0 ? "Private" : "Shared"}
+        <p className="text-xs font-medium text-muted-foreground">{sharingSummary(entry)}</p>
+      </div>
+
+      <div className="mt-4 rounded-hui-md bg-surface p-3">
+        <p className="text-sm font-extrabold text-foreground">Share with all my groups</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {entry.shareWithAllGroups
+            ? "On. Members of every group you are in can see this, including groups you join later. Turn it off to go back to only the groups you chose below."
+            : "Off. Only you, and the groups you pick below, can see this. Turning it on shows it to every group you are in, including groups you join later."}
         </p>
+        <div className="mt-2">
+          <AuthForm
+            action={setDietaryShareAllGroupsAction}
+            submitLabel={entry.shareWithAllGroups ? "Stop sharing with all my groups" : "Share with all my groups"}
+            hiddenFields={{
+              entry_id: entry.id,
+              enabled: entry.shareWithAllGroups ? "false" : "true",
+            }}
+            refreshOnSuccess
+          >
+            <span className="sr-only">
+              {entry.shareWithAllGroups ? "Stop sharing" : "Share"} {entry.label} with all my groups
+            </span>
+          </AuthForm>
+        </div>
       </div>
 
       {entry.shares.length > 0 ? (
@@ -86,9 +119,11 @@ function DietaryEntryCard({
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-sm text-muted-foreground">
-          Only you can see this until you share it with a group.
-        </p>
+        !entry.shareWithAllGroups ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Only you can see this until you share it with a group.
+          </p>
+        ) : null
       )}
 
       {unsharedGroups.length > 0 ? (

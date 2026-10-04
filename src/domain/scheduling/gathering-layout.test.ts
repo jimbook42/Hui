@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   GATHERING_MAX_RING_MEMBERS,
   GATHERING_STAGE_CAPACITY,
+  gatheringArcStrength,
+  layoutGatheringArcs,
   layoutGatheringRing,
   layoutGatheringStage,
   orderMembersForStage,
@@ -30,7 +32,7 @@ describe("layoutGatheringRing", () => {
 
 describe("layoutGatheringStage", () => {
   it("returns nothing for an empty group", () => {
-    expect(layoutGatheringStage(0)).toEqual({ slots: [], overflowCount: 0, denseRing: false });
+    expect(layoutGatheringStage(0)).toEqual({ slots: [], overflowCount: 0, denseRing: false, rings: [] });
   });
 
   it("uses a single ring for small groups", () => {
@@ -87,5 +89,76 @@ describe("orderMembersForStage", () => {
     const lastYes = ordered.map((m) => m.state).lastIndexOf("yes");
     const firstNo = ordered.map((m) => m.state).indexOf("no");
     expect(lastYes).toBeLessThan(firstNo);
+  });
+});
+
+describe("logo geometry", () => {
+  it("places three members at 10, 2 and 6 o'clock like the Hui logo", () => {
+    const { slots } = layoutGatheringStage(3);
+    const [a, b, c] = slots;
+    // 10 o'clock: left of and above centre; 2 o'clock: right of and above; 6 o'clock: directly below.
+    expect(a.x).toBeLessThan(50);
+    expect(a.y).toBeLessThan(50);
+    expect(b.x).toBeGreaterThan(50);
+    expect(b.y).toBeLessThan(50);
+    expect(c.x).toBeCloseTo(50, 5);
+    expect(c.y).toBeGreaterThan(50);
+  });
+
+  it("starts two members at 9 and 3 o'clock", () => {
+    const { slots } = layoutGatheringStage(2);
+    expect(slots[0].x).toBeCloseTo(15, 5);
+    expect(slots[0].y).toBeCloseTo(50, 5);
+  });
+});
+
+describe("layoutGatheringArcs", () => {
+  it("yields one arc per member, joining neighbours around the ring", () => {
+    const { rings } = layoutGatheringStage(3);
+    const arcs = layoutGatheringArcs(rings[0], 6.5);
+    expect(arcs).toHaveLength(3);
+    expect(arcs.map((arc) => [arc.fromMemberIndex, arc.toMemberIndex])).toEqual([
+      [0, 1],
+      [1, 2],
+      [2, 0],
+    ]);
+    for (const arc of arcs) {
+      expect(arc.d).toMatch(/^M [\d.]+ [\d.]+ A 35 35 0 0 1 [\d.]+ [\d.]+$/);
+    }
+  });
+
+  it("draws nothing for a single member", () => {
+    const { rings } = layoutGatheringStage(1);
+    expect(layoutGatheringArcs(rings[0], 6.5)).toEqual([]);
+  });
+
+  it("drops arcs on a ring too crowded to read", () => {
+    const { rings } = layoutGatheringStage(GATHERING_STAGE_CAPACITY);
+    const outer = rings.find((ring) => ring.ring === "outer")!;
+    expect(layoutGatheringArcs(outer, 7)).toEqual([]);
+  });
+
+  it("indexes arcs on the outer ring after the inner members", () => {
+    const { rings } = layoutGatheringStage(10);
+    const outer = rings.find((ring) => ring.ring === "outer")!;
+    const arcs = layoutGatheringArcs(outer, 4);
+    expect(arcs[0].fromMemberIndex).toBe(outer.offset);
+    expect(arcs[arcs.length - 1].toMemberIndex).toBe(outer.offset);
+  });
+});
+
+describe("gatheringArcStrength", () => {
+  it("is solid only when both neighbours are coming", () => {
+    expect(gatheringArcStrength("yes", "yes")).toBe("solid");
+  });
+
+  it("is partial when everyone is at least a maybe", () => {
+    expect(gatheringArcStrength("yes", "maybe")).toBe("partial");
+    expect(gatheringArcStrength("maybe", "maybe")).toBe("partial");
+  });
+
+  it("stays open when someone is out or has not answered", () => {
+    expect(gatheringArcStrength("yes", "no")).toBe("open");
+    expect(gatheringArcStrength("pending", "yes")).toBe("open");
   });
 });

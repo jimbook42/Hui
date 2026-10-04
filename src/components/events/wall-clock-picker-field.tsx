@@ -29,6 +29,9 @@ type WallClockTimeFieldProps = {
   emptyHint?: string;
   min?: string;
   max?: string;
+  /** Show a Clear control so the field can go back to empty (optional times). */
+  clearable?: boolean;
+  clearLabel?: string;
 };
 
 function openNativePicker(input: HTMLInputElement | null) {
@@ -94,9 +97,12 @@ export function WallClockTimeField({
   emptyHint = "Choose a time",
   min,
   max,
+  clearable = false,
+  clearLabel = "Clear",
 }: WallClockTimeFieldProps) {
   const labelId = useId();
   const display = formatWallClockTimeLabel(value) ?? (value ? value : null);
+  const showClear = clearable && value.length > 0;
 
   return (
     <div className="hui-label">
@@ -112,7 +118,7 @@ export function WallClockTimeField({
         <input
           type="time"
           aria-labelledby={labelId}
-          className={overlayInputClass}
+          className={`${overlayInputClass}${showClear ? " !w-[calc(100%-4.5rem)]" : ""}`}
           value={value}
           min={min}
           max={max}
@@ -122,6 +128,15 @@ export function WallClockTimeField({
             openNativePicker(event.currentTarget);
           }}
         />
+        {showClear ? (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="hui-focus-ring absolute inset-y-1 right-1 z-20 inline-flex min-w-11 items-center justify-center rounded-full bg-muted px-3 text-xs font-extrabold text-foreground"
+          >
+            {clearLabel}
+          </button>
+        ) : null}
       </div>
     </div>
   );

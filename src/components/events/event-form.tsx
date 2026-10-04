@@ -2,7 +2,9 @@
 
 import type { EventActionState } from "@/app/events/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
+import { LocationPinField } from "@/components/map/location-pin-field";
 import { formatDateTimeLocalInTimeZone } from "@/domain/datetime/timezone";
+import type { EventCoordinates } from "@/domain/events/location";
 import type { GroupMemberRow, GroupSettingsRow } from "@/lib/groups/types";
 
 type CreateEventFormProps = {
@@ -120,6 +122,7 @@ type EditEventFormProps = {
   defaultNotes: string | null;
   defaultStartsAt: string | null;
   defaultEndsAt: string | null;
+  defaultCoordinates?: EventCoordinates | null;
   scheduleLocked?: boolean;
   timeZone: string;
 };
@@ -132,6 +135,7 @@ export function EditEventForm({
   defaultNotes,
   defaultStartsAt,
   defaultEndsAt,
+  defaultCoordinates = null,
   scheduleLocked = false,
   timeZone,
 }: EditEventFormProps) {
@@ -144,6 +148,7 @@ export function EditEventForm({
         required={false}
         defaultValue={defaultLocation ?? ""}
       />
+      <LocationPinField defaultValue={defaultCoordinates} placeLabel={defaultLocation} />
       <label className="hui-label">
         <span>Notes (optional)</span>
         <textarea

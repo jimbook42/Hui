@@ -166,3 +166,43 @@ export async function unshareDietaryEntryAction(
   revalidateDietaryPaths(groupId);
   return { message: "No longer shared with that group." };
 }
+
+/**
+ * Turn "share with all my groups" on or off for one entry. Off by default and never inferred:
+ * only an explicit request from the owner changes it. Existing group-specific shares are left
+ * exactly as they were in both directions, so turning it off returns the entry to its
+ * group-only state. The database (RLS) only lets the owner update their own entry.
+ */
+export async function setDietaryShareAllGroupsAction(
+  _prev: DietaryActionState,
+  formData: FormData,
+): Promise<DietaryActionState> {
+  const entryId = parseDietaryEntryId(String(formData.get("entry_id") ?? ""));
+  const enabledRaw = String(formData.get("enabled") ?? "");
+  if (!entryId || (enabledRaw !== "true" && enabledRaw !== "false")) {
+    return { error: "Could not change sharing for that entry." };
+  }
+  const enabled = enabledRaw === "true";
+
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase
+    .from("dietary_entries")
+    .update({ share_with_all_groups: enabled })
+    .eq("id", entryId)
+    .select("id");
+
+  if (error) {
+    return { error: error.message };
+  }
+  if (!data || data.length === 0) {
+    return { error: "Could not change sharing for that entry." };
+  }
+
+  revalidateDietaryPaths();
+  // Group and event pages read this setting, so refresh them wherever they are cached.
+  revalidatePath("/groups/[groupId]", "page");
+  revalidatePath("/events/[eventId]", "page");
+  return {
+    message: enabled ? "Shared with all your groups." : "No longer shared with all your groups.",
+  };
+}

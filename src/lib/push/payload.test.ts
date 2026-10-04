@@ -106,4 +106,15 @@ describe("push payload", () => {
     expect(display.options.data.url).toBe(`/events/${EVENT_ID}#host`);
     expect(JSON.stringify(display)).not.toContain("secret");
   });
+
+  it("uses the colour app icon and the monochrome notification badge", () => {
+    const display = pushEventDisplay({
+      notificationId: NOTE_ID,
+      title: "Host request",
+      body: "You have been asked to host.",
+      url: "/notifications",
+    });
+    expect(display.options.icon).toBe("/icons/icon-192.png");
+    expect(display.options.badge).toBe("/icons/notification-badge-96.png");
+  });
 });

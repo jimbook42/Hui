@@ -1,6 +1,7 @@
 import type { EventActionState } from "@/app/events/actions";
 import { CancelEventButton } from "@/components/events/cancel-event-button";
 import { EditEventForm } from "@/components/events/event-form";
+import type { EventCoordinates } from "@/domain/events/location";
 import type { EventStatus } from "@/domain/events/types";
 
 type EventDetailManagementProps = {
@@ -16,6 +17,7 @@ type EventDetailManagementProps = {
   defaultNotes: string | null;
   defaultStartsAt: string | null;
   defaultEndsAt: string | null;
+  defaultCoordinates: EventCoordinates | null;
   status: EventStatus;
   timeZone: string;
 };
@@ -30,6 +32,7 @@ export function EventDetailManagement({
   defaultNotes,
   defaultStartsAt,
   defaultEndsAt,
+  defaultCoordinates,
   status,
   timeZone,
 }: EventDetailManagementProps) {
@@ -51,6 +54,7 @@ export function EventDetailManagement({
               defaultNotes={defaultNotes}
               defaultStartsAt={defaultStartsAt}
               defaultEndsAt={defaultEndsAt}
+              defaultCoordinates={defaultCoordinates}
               scheduleLocked={status === "confirmed"}
               timeZone={timeZone}
             />

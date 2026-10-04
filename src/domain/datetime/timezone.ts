@@ -74,7 +74,7 @@ export function formatInstantInTimeZone(
 /** Compact range for proposal UI, e.g. "Sat 31 Oct, 12:00 pm – 3:00 pm". */
 export function formatCompactEventTimeRange(
   startsAt: string,
-  endsAt: string,
+  endsAt: string | null,
   timeZone: string,
 ): string {
   const startDate = formatInstantInTimeZone(startsAt, timeZone, {
@@ -86,6 +86,9 @@ export function formatCompactEventTimeRange(
     hour: "numeric",
     minute: "2-digit",
   });
+  if (!endsAt) {
+    return `${startDate}, ${startTime}`;
+  }
   const endTime = formatInstantInTimeZone(endsAt, timeZone, {
     hour: "numeric",
     minute: "2-digit",
@@ -103,13 +106,16 @@ export function formatCompactEventTimeRange(
 
 export function formatEventTimeRange(
   startsAt: string,
-  endsAt: string,
+  endsAt: string | null,
   timeZone: string,
 ): string {
   const start = formatInstantInTimeZone(startsAt, timeZone, {
     dateStyle: "medium",
     timeStyle: "short",
   });
+  if (!endsAt) {
+    return start;
+  }
   const end = formatInstantInTimeZone(endsAt, timeZone, {
     timeStyle: "short",
   });

@@ -7,6 +7,7 @@ import {
   type EventProposalDraft,
   validateEventProposalDraft,
 } from "@/domain/events/proposal";
+import { roundCoordinate } from "@/domain/events/location";
 import { canProposeEvents, groupAllowsEventKind } from "@/domain/events/permissions";
 import { parseEventKind } from "@/domain/events/validation";
 import { getGroupDetail } from "@/lib/groups/queries";
@@ -96,6 +97,12 @@ export async function proposeGroupEventAction(
     p_candidates: payload.candidates,
     p_set_initial_host: payload.setInitialHost,
     p_initial_host_user_id: payload.initialHostUserId,
+    p_location_lat: payload.locationCoordinates
+      ? roundCoordinate(payload.locationCoordinates.lat)
+      : null,
+    p_location_lng: payload.locationCoordinates
+      ? roundCoordinate(payload.locationCoordinates.lng)
+      : null,
   });
 
   if (error) {

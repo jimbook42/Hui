@@ -15,6 +15,7 @@ import {
   canProposeEvents,
   groupAllowsEventKind,
 } from "@/domain/events/permissions";
+import { parseOptionalCoordinates } from "@/domain/events/location";
 import {
   normalizeEventLocation,
   normalizeEventNotes,
@@ -213,6 +214,19 @@ export async function updateEventAction(
   if (startsAt && endsAt && endsAt <= startsAt) {
     return { error: "End time must be after start time." };
   }
+  if (endsAt && !startsAt) {
+    return { error: "Add a start time before an end time." };
+  }
+
+  // The pin is optional and only touched when the form sent it (so older forms never clear it).
+  const hasCoordinateFields = formData.has("location_lat") || formData.has("location_lng");
+  const coordinates = parseOptionalCoordinates(
+    formData.get("location_lat"),
+    formData.get("location_lng"),
+  );
+  if (!coordinates.ok) {
+    return { error: coordinates.error };
+  }
 
   if (
     !canEditEventMetadata(
@@ -236,11 +250,17 @@ export async function updateEventAction(
     notes: string | null;
     starts_at?: string | null;
     ends_at?: string | null;
+    location_lat?: number | null;
+    location_lng?: number | null;
   } = {
     title,
     location,
     notes,
   };
+  if (hasCoordinateFields) {
+    patch.location_lat = coordinates.coordinates?.lat ?? null;
+    patch.location_lng = coordinates.coordinates?.lng ?? null;
+  }
   if (canChangeEventSchedule(existing.status)) {
     patch.starts_at = startsAt;
     patch.ends_at = endsAt;

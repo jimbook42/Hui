@@ -174,12 +174,22 @@ export function notificationClickPath(raw: unknown): string {
   }
 }
 
+/**
+ * Notification artwork. "icon" is the full-colour Hui app icon (shown as the large image).
+ * "badge" is the supplied monochrome white-on-transparent notification asset: browsers mask it
+ * with their own colour in the status bar, so it must stay white-on-transparent. 96px is the
+ * size Chrome recommends for badges, so it is used rather than the 24px status-bar glyph.
+ */
+export const PUSH_ICON = "/icons/icon-192.png";
+export const PUSH_BADGE = "/icons/notification-badge-96.png";
+
 export type PushDisplay = {
   title: string;
   options: {
     body: string;
     tag: string;
     icon: string;
+    badge: string;
     data: { url: string; notificationId: string };
   };
 };
@@ -192,7 +202,8 @@ export function pushEventDisplay(raw: unknown): PushDisplay {
       options: {
         body: "You have a new notification.",
         tag: "hui-notification",
-        icon: "/icons/icon-192.png",
+        icon: PUSH_ICON,
+        badge: PUSH_BADGE,
         data: { url: "/notifications", notificationId: "" },
       },
     };
@@ -202,7 +213,8 @@ export function pushEventDisplay(raw: unknown): PushDisplay {
     options: {
       body: payload.body,
       tag: payload.notificationId,
-      icon: "/icons/icon-192.png",
+      icon: PUSH_ICON,
+      badge: PUSH_BADGE,
       data: { url: payload.url, notificationId: payload.notificationId },
     },
   };

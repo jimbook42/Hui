@@ -61,7 +61,7 @@ type EventSchedulingProps = {
 
 const initialState: EventActionState = {};
 
-function formatSlot(startsAt: string, endsAt: string, timeZone: string): string {
+function formatSlot(startsAt: string, endsAt: string | null, timeZone: string): string {
   return formatEventTimeRange(startsAt, endsAt, timeZone);
 }
 
@@ -524,7 +524,12 @@ export function EventScheduling({
               hiddenFields={{ event_id: eventId, group_id: groupId }}
             >
               <AuthField label="Starts" name="starts_at" type="datetime-local" required />
-              <AuthField label="Ends" name="ends_at" type="datetime-local" required />
+              <AuthField
+                label="Ends (optional)"
+                name="ends_at"
+                type="datetime-local"
+                required={false}
+              />
             </AuthForm>
           </div>
         </div>

@@ -610,3 +610,121 @@ body {
   animation: hui-breathe 4.5s ease-in-out infinite;
 }
 }
+
+/* ---------- Event map (MapLibre) ----------
+   Hui-styled controls, pin and attribution. Kept outside @layer so these rules reliably win over
+   maplibre-gl.css, which is imported alongside the lazily loaded map chunk. */
+
+/* maplibre-gl.css sets `.maplibregl-map { position: relative }`, which beats the `absolute inset-0`
+   utilities on the container and collapses it to zero height. Re-assert the fill. */
+.hui-map.maplibregl-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hui-map .maplibregl-canvas {
+  outline: none;
+}
+
+.hui-map .maplibregl-canvas:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent-blue) 85%, var(--text-primary));
+  outline-offset: -3px;
+  border-radius: inherit;
+}
+
+.hui-map .maplibregl-ctrl-group {
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--bg-surface) 94%, transparent);
+  box-shadow: var(--soft-shadow);
+  backdrop-filter: blur(6px);
+}
+
+.hui-map .maplibregl-ctrl-group button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.hui-map .maplibregl-ctrl-group button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent-blue) 85%, var(--text-primary));
+  outline-offset: -3px;
+}
+
+[data-theme="dark"] .hui-map .maplibregl-ctrl-icon {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.hui-map .maplibregl-ctrl-attrib {
+  border-radius: 0.75rem 0 0 0;
+  background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.hui-map .maplibregl-ctrl-attrib a {
+  color: var(--accent-link);
+}
+
+.hui-map .maplibregl-cooperative-gesture-screen {
+  background: color-mix(in srgb, var(--bg-canvas) 78%, transparent);
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+.hui-map-pin {
+  position: relative;
+  width: 40px;
+  height: 52px;
+  pointer-events: auto;
+}
+
+.hui-map-pin svg {
+  position: relative;
+  display: block;
+  filter: drop-shadow(0 6px 6px rgb(0 0 0 / 0.28));
+}
+
+.hui-map-pin-body {
+  fill: var(--accent-primary);
+  stroke: var(--bg-surface);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.hui-map-pin-dot {
+  fill: var(--bg-surface);
+}
+
+.hui-map-pin-pulse {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 44px;
+  height: 18px;
+  margin-left: -22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-primary) 28%, transparent);
+  animation: hui-pin-pulse 2.6s ease-out infinite;
+}
+
+@keyframes hui-pin-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hui-map-pin-pulse {
+    animation: none;
+    opacity: 0.5;
+  }
+}
