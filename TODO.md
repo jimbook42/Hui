@@ -3,7 +3,7 @@
 Unresolved implementation questions only. Add items when a real decision or task is blocked.
 
 - [x] **HUI-026A** — Event flow foundation + staged proposal (staged creator flow + atomic `propose_group_event`).
-- [ ] **HUI-026B** — Invitee response flow + structured alternative-time intent.
+- [x] **HUI-026B** — Invitee response flow + structured alternative-time intent (`/events/[eventId]/respond`).
 - [ ] **HUI-026C** — Event-oriented dashboard + event entry.
 - [ ] **HUI-026D** — Separate event management/admin surface.
 - [ ] **HUI-026E** — Contribution flow redesign.

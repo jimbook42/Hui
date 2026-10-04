@@ -108,6 +108,7 @@ export async function addCandidateAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/respond`);
   schedulePushDelivery();
   return { message: "Candidate time added." };
 }
@@ -249,6 +250,7 @@ export async function setAvailabilityResponseAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/respond`);
   schedulePushDelivery();
   return { message: "Response saved." };
 }

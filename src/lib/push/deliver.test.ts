@@ -32,7 +32,7 @@ describe("push delivery", () => {
     const seen: string[] = [];
     const sender: PushSender = async (target, payload) => {
       seen.push(target.id);
-      expect(payload.url).toBe(`/events/${EVENT_ID}`);
+      expect(payload.url).toBe(`/events/${EVENT_ID}/respond`);
       expect(JSON.stringify(payload)).not.toContain("private");
     };
     const result = await deliverNotificationPush({

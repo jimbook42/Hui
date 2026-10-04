@@ -15,6 +15,7 @@ export type PushEligibleKind = (typeof PUSH_ELIGIBLE_KINDS)[number];
 
 const ELIGIBLE = new Set<string>(PUSH_ELIGIBLE_KINDS);
 const HOST_KINDS = new Set(["host_proposed", "host_accepted", "host_declined"]);
+const PARTICIPANT_RESPOND_KINDS = new Set(["event_proposed", "consensus_ready"]);
 
 export const PUSH_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
@@ -43,6 +44,9 @@ export function pushDeepLink(input: {
   }
   if (isUuid(input.eventId)) {
     const base = `/events/${input.eventId}`;
+    if (PARTICIPANT_RESPOND_KINDS.has(input.kind)) {
+      return `${base}/respond`;
+    }
     if (input.kind === "contribution_changed") {
       return `${base}#contributions`;
     }

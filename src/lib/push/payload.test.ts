@@ -32,12 +32,14 @@ describe("push payload", () => {
       notificationId: NOTE_ID,
       title: "New event proposal",
       body: "Potluck was proposed in Family.",
-      url: `/events/${EVENT_ID}`,
+      url: `/events/${EVENT_ID}/respond`,
     });
     expect(Object.keys(payload ?? {}).sort()).toEqual(["body", "notificationId", "title", "url"]);
-    expect(payload?.url.startsWith(notificationHref({ eventId: EVENT_ID, groupId: GROUP_ID }))).toBe(
-      true,
-    );
+    expect(
+      payload?.url.startsWith(
+        notificationHref({ eventId: EVENT_ID, groupId: GROUP_ID, kind: "event_proposed" }),
+      ),
+    ).toBe(true);
   });
 
   it("does not copy private attendance or dietary fields into the payload", () => {

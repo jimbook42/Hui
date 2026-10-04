@@ -39,6 +39,7 @@ import {
   canWithdrawCandidate,
 } from "@/domain/scheduling/permissions";
 import { getEventDetail } from "@/lib/events/queries";
+import { participantRespondPath } from "@/lib/events/paths";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getGroupHouseholdMemberView } from "@/lib/households/queries";
 import { formatEventTimeRange } from "@/domain/datetime/timezone";
@@ -209,6 +210,20 @@ export default async function EventDetailPage({ params }: PageProps) {
           role="status"
         >
           This event was cancelled. Scheduling and confirmation are closed.
+        </div>
+      ) : null}
+
+      {canRespond && scheduling.candidates.length > 0 ? (
+        <div className="mt-6">
+          <Link
+            href={participantRespondPath(detail.id)}
+            className="inline-flex w-full max-w-md items-center justify-center rounded-xl bg-zinc-900 px-4 py-3.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            Respond to this event
+          </Link>
+          <p className="mt-2 max-w-md text-sm text-zinc-600 dark:text-zinc-400">
+            Answer attendance, place, and contributions in a short mobile-friendly flow.
+          </p>
         </div>
       ) : null}
 

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { notificationHref } from "@/lib/notifications/types";
+import { notificationHref, type MemberNotification } from "@/lib/notifications/types";
 import { createClient } from "@/lib/supabase/server";
 
 export type NotificationActionState = {
@@ -133,6 +133,8 @@ export async function openNotificationAction(formData: FormData): Promise<void> 
   const groupId = String(formData.get("group_id") ?? "").trim();
   const eventIdRaw = String(formData.get("event_id") ?? "").trim();
   const eventId = eventIdRaw.length > 0 ? eventIdRaw : null;
+  const kindRaw = String(formData.get("kind") ?? "").trim();
+  const kind = (kindRaw || "event_confirmed") as MemberNotification["kind"];
 
   if (!notificationId || !groupId) {
     redirect("/notifications");
@@ -151,5 +153,5 @@ export async function openNotificationAction(formData: FormData): Promise<void> 
   });
 
   revalidatePath("/notifications");
-  redirect(notificationHref({ groupId, eventId }));
+  redirect(notificationHref({ groupId, eventId, kind }));
 }

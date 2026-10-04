@@ -194,6 +194,7 @@ export async function claimContributionAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/respond`);
   schedulePushDelivery();
   return { message: "Contribution claimed." };
 }

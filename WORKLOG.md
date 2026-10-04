@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-026B invitee participation flow
+
+- Added `/events/[eventId]/respond`: staged invitee flow (proposed time → attendance yes/maybe/no → place → contributions → done; declined and alternative-time branches).
+- Reuses `event_responses` / `setAvailabilityResponseAction` and `event_candidates` for structured alternative times (no new attendance state).
+- Participant-facing attendance copy (`Can come` / `Can't come` / …) separate from coordination-page labels.
+- Web Push + in-app notification links for `event_proposed` and `consensus_ready` open the respond route; event page links participants into the flow.
+
 ## 2026-10-04 — HUI-026A Android date/time picker (production fix)
 
 - Time step (and recurrence “Series starts on”) used visible native `date`/`time` inputs with `text-sm` styling inside labels. On Android Chrome the picker affordance is easy to miss and empty fields show unusable `mm/dd/yyyy`-style placeholders.
