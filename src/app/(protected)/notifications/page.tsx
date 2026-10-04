@@ -21,11 +21,10 @@ export default async function NotificationsPage() {
     : [];
 
   return (
-    <AppShell title="Notifications">
-      <p className="mb-6 hui-type-supporting">
-        Updates about events and groups you belong to. Hui does not expose private
-        availability or dietary details in notifications.
-      </p>
+    <AppShell
+      title="Notifications"
+      subtitle="What needs you, and what has changed. Private availability and dietary details never appear here."
+    >
       <NotificationsList notifications={notifications} />
     </AppShell>
   );

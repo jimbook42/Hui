@@ -1,30 +1,52 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import Link from "next/link";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/ui/cn";
 
-type HuiButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
-type HuiButtonSize = "default" | "sm" | "lg" | "touch";
+export type HuiButtonVariant = "primary" | "secondary" | "soft" | "ghost" | "destructive";
+export type HuiButtonSize = "default" | "sm" | "lg" | "touch";
+export type HuiButtonShape = "pill" | "melt";
 
 const variantClass: Record<HuiButtonVariant, string> = {
-  primary:
-    "rounded-full bg-primary text-primary-foreground hui-shadow-sm hover:bg-primary-hover active:scale-[0.98]",
-  secondary:
-    "border border-border bg-surface text-foreground hover:bg-muted active:scale-[0.98]",
-  ghost: "text-foreground hover:bg-muted active:scale-[0.98]",
-  destructive:
-    "bg-destructive text-destructive-foreground hover:opacity-90 active:scale-[0.98]",
+  primary: "hui-btn-primary",
+  secondary: "hui-btn-secondary",
+  soft: "hui-btn-soft",
+  ghost: "hui-btn-ghost",
+  destructive: "hui-btn-danger",
 };
 
 const sizeClass: Record<HuiButtonSize, string> = {
-  sm: "rounded-hui-sm px-3 py-1.5 text-xs font-medium",
-  default: "rounded-hui-md px-4 py-2.5 text-sm font-medium",
-  lg: "rounded-hui-lg px-5 py-3 text-sm font-medium",
-  touch: "rounded-hui-xl px-4 py-3.5 text-sm font-medium min-h-11 w-full",
+  sm: "hui-btn-sm",
+  default: "",
+  lg: "hui-btn-lg",
+  touch: "hui-btn-lg w-full",
 };
+
+/** Shared class builder so links, form buttons and client buttons look identical. */
+export function huiButtonClass({
+  variant = "primary",
+  size = "default",
+  shape = "pill",
+  className,
+}: {
+  variant?: HuiButtonVariant;
+  size?: HuiButtonSize;
+  shape?: HuiButtonShape;
+  className?: string;
+} = {}): string {
+  return cn(
+    "hui-btn hui-focus-ring",
+    shape === "melt" ? "hui-shape-melt" : "rounded-full",
+    variantClass[variant],
+    sizeClass[size],
+    className,
+  );
+}
 
 type HuiButtonProps = {
   variant?: HuiButtonVariant;
   size?: HuiButtonSize;
+  shape?: HuiButtonShape;
   className?: string;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
@@ -34,6 +56,7 @@ type HuiButtonProps = {
 export function HuiButton({
   variant = "primary",
   size = "default",
+  shape = "pill",
   className,
   type = "button",
   disabled,
@@ -44,15 +67,39 @@ export function HuiButton({
     <button
       type={type}
       disabled={disabled}
-      className={cn(
-        "hui-focus-ring inline-flex items-center justify-center transition disabled:opacity-60 disabled:active:scale-100",
-        variantClass[variant],
-        sizeClass[size],
-        className,
-      )}
+      className={huiButtonClass({ variant, size, shape, className })}
       {...rest}
     >
       {children}
     </button>
+  );
+}
+
+type HuiLinkButtonProps = {
+  href: string;
+  variant?: HuiButtonVariant;
+  size?: HuiButtonSize;
+  shape?: HuiButtonShape;
+  className?: string;
+  children: ReactNode;
+} & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "className">;
+
+export function HuiLinkButton({
+  href,
+  variant = "primary",
+  size = "default",
+  shape = "pill",
+  className,
+  children,
+  ...rest
+}: HuiLinkButtonProps) {
+  return (
+    <Link
+      href={href}
+      className={huiButtonClass({ variant, size, shape, className })}
+      {...rest}
+    >
+      {children}
+    </Link>
   );
 }

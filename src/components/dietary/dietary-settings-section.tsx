@@ -20,13 +20,13 @@ type DietarySettingsSectionProps = {
 function CategoryField({ defaultValue }: { defaultValue?: DietaryCategory }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+      <label className="mb-1 block text-sm font-medium text-foreground">
         Type
       </label>
       <select
         name="category"
         defaultValue={defaultValue ?? "requirement"}
-        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+        className="hui-input"
       >
         {DIETARY_CATEGORIES.map((category) => (
           <option key={category} value={category}>
@@ -34,7 +34,7 @@ function CategoryField({ defaultValue }: { defaultValue?: DietaryCategory }) {
           </option>
         ))}
       </select>
-      <p className="mt-1 text-xs text-zinc-500">
+      <p className="mt-1 text-xs text-muted-foreground">
         Self-reported labels only — not a medical record.
       </p>
     </div>
@@ -52,22 +52,22 @@ function DietaryEntryCard({
   const unsharedGroups = groups.filter((group) => !sharedGroupIds.has(group.groupId));
 
   return (
-    <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+    <li className="rounded-hui-md p-4 bg-muted">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{entry.label}</p>
+          <p className="text-sm font-extrabold text-foreground">{entry.label}</p>
           {entry.notes ? (
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{entry.notes}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{entry.notes}</p>
           ) : null}
-          <p className="mt-1 text-xs text-zinc-500">{dietaryCategoryLabel(entry.category)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{dietaryCategoryLabel(entry.category)}</p>
         </div>
-        <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+        <p className="text-xs font-medium text-muted-foreground">
           {entry.shares.length === 0 ? "Private" : "Shared"}
         </p>
       </div>
 
       {entry.shares.length > 0 ? (
-        <ul className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+        <ul className="mt-3 space-y-2 text-sm text-foreground">
           {entry.shares.map((share) => (
             <li key={share.groupId} className="flex flex-wrap items-center gap-2">
               <span>Shared with {share.groupName}</span>
@@ -86,14 +86,14 @@ function DietaryEntryCard({
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-3 text-sm text-muted-foreground">
           Only you can see this until you share it with a group.
         </p>
       )}
 
       {unsharedGroups.length > 0 ? (
         <div className="mt-4 space-y-2">
-          <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Share with a group</p>
+          <p className="text-xs font-medium text-foreground">Share with a group</p>
           {unsharedGroups.map((group) => (
             <AuthForm
               key={group.groupId}
@@ -111,8 +111,8 @@ function DietaryEntryCard({
         </div>
       ) : null}
 
-      <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-        <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Edit</p>
+      <div className="mt-6 pt-4">
+        <p className="text-xs font-medium text-foreground">Edit</p>
         <div className="mt-2 max-w-md">
           <AuthForm
             action={updateDietaryEntryAction}
@@ -139,7 +139,7 @@ function DietaryEntryCard({
           hiddenFields={{ entry_id: entry.id }}
           refreshOnSuccess
         >
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             Remove this entry from your account. Shared copies disappear from groups immediately.
           </p>
         </AuthForm>
@@ -152,7 +152,7 @@ export function DietarySettingsSection({ entries, groups }: DietarySettingsSecti
   return (
     <div className="space-y-6">
       {entries.length === 0 ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           You haven&apos;t added any dietary information.
         </p>
       ) : (
@@ -163,11 +163,11 @@ export function DietarySettingsSection({ entries, groups }: DietarySettingsSecti
         </ul>
       )}
 
-      <div className="rounded-lg border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+      <div className="rounded-hui-md border-dashed p-4 bg-muted">
+        <h3 className="text-sm font-extrabold text-foreground">
           Add dietary information
         </h3>
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           Examples: Vegetarian, Gluten-free, Nut allergy. New entries are private until you share them.
         </p>
         <div className="mt-4 max-w-md">

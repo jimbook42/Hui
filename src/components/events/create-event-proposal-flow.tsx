@@ -8,6 +8,7 @@ import {
   WallClockDateField,
   WallClockTimeField,
 } from "@/components/events/wall-clock-picker-field";
+import { ChevronDownIcon } from "@/components/hui/icons";
 import { PendingButton } from "@/components/ui/pending-button";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import type { EventProposalDraft } from "@/domain/events/proposal";
@@ -15,14 +16,16 @@ import { parseWallClockCandidate } from "@/domain/events/proposal";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
 import type { GroupMemberRow, GroupSettingsRow } from "@/lib/groups/types";
 
-const STEPS = ["name", "time", "place", "bring", "review"] as const;
+/**
+ * Three calm steps. Place, notes and contributions are optional extras (HUI-026U): the place and
+ * notes live under the name step, and the contribution categories are summarised in review.
+ */
+const STEPS = ["name", "time", "review"] as const;
 type Step = (typeof STEPS)[number];
 
 const stepLabels: Record<Step, string> = {
   name: "Name",
   time: "Time",
-  place: "Place",
-  bring: "What to bring",
   review: "Review",
 };
 
@@ -125,14 +128,6 @@ export function CreateEventProposalFlow({
         setStepError("Add at least one proposed time.");
         return;
       }
-      goTo("place");
-      return;
-    }
-    if (step === "place") {
-      goTo("bring");
-      return;
-    }
-    if (step === "bring") {
       goTo("review");
     }
   }
@@ -185,46 +180,90 @@ export function CreateEventProposalFlow({
 
   return (
     <div className="space-y-6">
-      <nav aria-label="Proposal steps" className="flex flex-wrap gap-2 text-xs">
-        {STEPS.map((id, index) => {
-          const isActive = id === step;
-          const isDone = index < stepIndex;
-          return (
-            <span
+      <nav aria-label="Proposal steps">
+        <ol className="flex gap-1.5">
+          {STEPS.map((id, index) => (
+            <li
               key={id}
-              className={`rounded-full px-2.5 py-1 ${
-                isActive
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : isDone
-                    ? "bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
-                    : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-500"
-              }`}
+              aria-current={id === step ? "step" : undefined}
+              className="min-w-0 flex-1"
             >
-              {stepLabels[id]}
-            </span>
-          );
-        })}
+              <span
+                className={`block h-1.5 rounded-full transition-colors duration-300 ${
+                  index <= stepIndex ? "bg-primary" : "bg-muted"
+                }`}
+              />
+              <span
+                className={`mt-1.5 block text-xs font-extrabold ${
+                  id === step ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {index + 1}. {stepLabels[id]}
+              </span>
+            </li>
+          ))}
+        </ol>
       </nav>
 
       {step === "name" ? (
-        <section className="space-y-4">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Name</h2>
-          <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
-            <span>Event name</span>
+        <section className="hui-rise space-y-5">
+          <h2 className="hui-type-page-title text-foreground">What shall we call it?</h2>
+          <label className="hui-label">
+            <span>Name</span>
             <input
-              className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+              className="hui-input text-lg font-bold"
               value={draft.title}
+              placeholder="Sunday roast, hot pot night…"
               onChange={(event) =>
                 setDraft((current) => ({ ...current, title: event.target.value }))
               }
               required
             />
           </label>
+          <details className="hui-details rounded-hui-lg bg-surface hui-shadow-sm">
+            <summary className="hui-focus-ring flex min-h-14 items-center justify-between gap-3 rounded-hui-lg px-5 py-3">
+              <span>
+                <span className="block font-extrabold text-foreground">Add a place or note</span>
+                <span className="block text-sm font-semibold text-muted-foreground">Optional</span>
+              </span>
+              <span className="hui-details-chevron text-muted-foreground" aria-hidden="true">
+                <ChevronDownIcon size={20} />
+              </span>
+            </summary>
+            <div className="space-y-4 px-5 pb-5">
+              <label className="hui-label">
+                <span>Proposed place</span>
+                <input
+                  className="hui-input"
+                  value={draft.location}
+                  placeholder="e.g. Central Park picnic area"
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, location: event.target.value }))
+                  }
+                />
+              </label>
+              <p className="text-xs font-semibold text-muted-foreground">
+                This is the event place, not a member&apos;s home address. Hosting is coordinated
+                separately.
+              </p>
+              <label className="hui-label">
+                <span>Notes for the group</span>
+                <textarea
+                  rows={3}
+                  className="hui-input"
+                  value={draft.notes}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, notes: event.target.value }))
+                  }
+                />
+              </label>
+            </div>
+          </details>
           {canOneOff || canRecurring ? (
-            <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+            <label className="hui-label">
               <span>Event type</span>
               <select
-                className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+                className="hui-input"
                 value={draft.eventKind}
                 onChange={(event) =>
                   setDraft((current) => ({
@@ -239,12 +278,12 @@ export function CreateEventProposalFlow({
             </label>
           ) : null}
           {draft.eventKind === "recurring" && canRecurring ? (
-            <fieldset className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-              <legend className="px-1 text-sm font-medium">Recurrence</legend>
-              <label className="block text-sm">
+            <fieldset className="space-y-4 rounded-hui-lg bg-muted p-5">
+              <legend className="px-1 text-sm font-extrabold">Recurrence</legend>
+              <label className="hui-label">
                 <span>Series title</span>
                 <input
-                  className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+                  className="hui-input"
                   value={draft.recurrence?.seriesTitle ?? ""}
                   onChange={(event) =>
                     setDraft((current) => ({
@@ -262,10 +301,10 @@ export function CreateEventProposalFlow({
                   }
                 />
               </label>
-              <label className="block text-sm">
+              <label className="hui-label">
                 <span>Cadence</span>
                 <select
-                  className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+                  className="hui-input"
                   value={draft.recurrence?.intervalUnit ?? "month"}
                   onChange={(event) =>
                     setDraft((current) => ({
@@ -286,12 +325,12 @@ export function CreateEventProposalFlow({
                   <option value="month">Monthly</option>
                 </select>
               </label>
-              <label className="block text-sm">
+              <label className="hui-label">
                 <span>Every (interval)</span>
                 <input
                   type="number"
                   min={1}
-                  className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+                  className="hui-input"
                   value={draft.recurrence?.intervalCount ?? 1}
                   onChange={(event) =>
                     setDraft((current) => ({
@@ -333,18 +372,19 @@ export function CreateEventProposalFlow({
       ) : null}
 
       {step === "time" ? (
-        <section className="space-y-4">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Time</h2>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Propose when this gathering could happen. The group will respond before anything is
-            confirmed.
-          </p>
+        <section className="hui-rise space-y-5">
+          <div>
+            <h2 className="hui-type-page-title text-foreground">When could it happen?</h2>
+            <p className="hui-type-supporting mt-2">
+              Suggest a time. The group answers before anything is confirmed.
+            </p>
+          </div>
           {draft.candidates.length > 0 ? (
             <ul className="space-y-2">
               {draft.candidates.map((candidate, index) => (
                 <li
                   key={`${candidate.startsAt}-${candidate.endsAt}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800"
+                  className="flex min-h-14 items-center justify-between gap-3 rounded-hui-lg bg-sage-soft px-4 py-2 text-sm font-extrabold text-foreground"
                 >
                   <span>
                     {formatCompactEventTimeRange(
@@ -355,7 +395,7 @@ export function CreateEventProposalFlow({
                   </span>
                   <button
                     type="button"
-                    className="text-sm text-red-600 underline-offset-2 hover:underline dark:text-red-400"
+                    className="hui-link-danger text-sm"
                     onClick={() => removeCandidate(index)}
                   >
                     Remove
@@ -364,12 +404,12 @@ export function CreateEventProposalFlow({
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-amber-800 dark:text-amber-200" role="status">
+            <p className="hui-message-note" role="status">
               Add at least one time before you can propose this event.
             </p>
           )}
-          <div className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Add a time</p>
+          <div className="space-y-4 rounded-hui-xl bg-surface p-5 hui-shadow-md">
+            <p className="font-extrabold text-foreground">Add a time</p>
             <WallClockDateField
               label="Date"
               value={timeDate}
@@ -394,79 +434,21 @@ export function CreateEventProposalFlow({
         </section>
       ) : null}
 
-      {step === "place" ? (
-        <section className="space-y-4">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Place</h2>
-          <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
-            <span>Proposed place (optional)</span>
-            <input
-              className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
-              value={draft.location}
-              placeholder="e.g. Central Park picnic area"
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, location: event.target.value }))
-              }
-            />
-          </label>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">
-            This is the event place, not a member&apos;s home address. Hosting is coordinated
-            separately.
-          </p>
-          <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
-            <span>Notes for the group (optional)</span>
-            <textarea
-              rows={3}
-              className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
-              value={draft.notes}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, notes: event.target.value }))
-              }
-            />
-          </label>
-        </section>
-      ) : null}
-
-      {step === "bring" ? (
-        <section className="space-y-4">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-            What to bring
-          </h2>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            After the event is confirmed, the group coordinates contributions using these
-            categories. You do not need to assign everything now.
-          </p>
-          {activeCategories.length > 0 ? (
-            <ul className="list-inside list-disc text-sm text-zinc-800 dark:text-zinc-200">
-              {activeCategories.map((category) => (
-                <li key={category.id}>
-                  {category.name}
-                  {category.followsHost ? " (follows host)" : ""}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              No contribution categories yet. Group admins can add categories from group settings.
-            </p>
-          )}
-        </section>
-      ) : null}
-
       {step === "review" ? (
-        <section className="space-y-4">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Review</h2>
+        <section className="hui-rise space-y-5">
+          <h2 className="hui-type-page-title text-foreground">Ready to propose?</h2>
           {reviewMissing.length > 0 ? (
-            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+            <p className="hui-message-error" role="alert">
               Still needed: {reviewMissing.join(", ")}
             </p>
           ) : null}
-          <dl className="grid gap-3 text-sm text-zinc-800 dark:text-zinc-200">
+          <dl className="grid gap-4 rounded-hui-xl bg-surface p-5 text-sm font-semibold text-foreground hui-shadow-md [&_dt]:hui-type-label [&_dt]:text-muted-foreground [&_dd]:mt-1 [&_dd]:text-base [&_dd]:font-extrabold">
             <div>
-              <dt className="text-zinc-500">Name</dt>
+              <dt>Name</dt>
               <dd>{draft.title.trim() || "—"}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Proposed times</dt>
+              <dt>Proposed times</dt>
               <dd>
                 {draft.candidates.length > 0
                   ? draft.candidates.map((candidate) => (
@@ -482,15 +464,15 @@ export function CreateEventProposalFlow({
               </dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Proposed place</dt>
+              <dt>Proposed place</dt>
               <dd>{draft.location.trim() || "Not specified"}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Host</dt>
+              <dt>Host</dt>
               <dd>{hostSummary(draft, members, isFirstGroupEvent, settings.hostingEnabled)}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Contributions</dt>
+              <dt>Contributions</dt>
               <dd>
                 {activeCategories.length > 0
                   ? `${activeCategories.length} categories ready after confirmation`
@@ -499,13 +481,13 @@ export function CreateEventProposalFlow({
             </div>
           </dl>
           {isFirstGroupEvent && settings.hostingEnabled ? (
-            <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+            <label className="hui-label">
               <span>Initial host (first gathering)</span>
-              <p className="mt-1 text-xs font-normal text-zinc-600 dark:text-zinc-400">
+              <p className="mt-1 text-xs font-normal text-muted-foreground">
                 Your choice is a proposal — they still accept or ask to swap.
               </p>
               <select
-                className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+                className="hui-input"
                 value={
                   draft.initialHostUserId === "suggest"
                     ? ""
@@ -540,7 +522,7 @@ export function CreateEventProposalFlow({
             <input type="hidden" name="group_id" value={groupId} />
             <input type="hidden" name="proposal_draft" value={JSON.stringify(draft)} />
             {actionState.error ? (
-              <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              <p className="hui-message-error" role="alert">
                 {actionState.error}
               </p>
             ) : null}
@@ -548,31 +530,31 @@ export function CreateEventProposalFlow({
               type="submit"
               disabled={reviewMissing.length > 0}
               pendingLabel="Proposing…"
-              className="w-full"
+              size="touch"
             >
-              Propose event
+              Propose this hui
             </PendingButton>
           </form>
         </section>
       ) : null}
 
       {stepError ? (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">{stepError}</p>
+        <p className="hui-message-error" role="alert">{stepError}</p>
       ) : null}
 
       {step !== "review" ? (
         <div className="flex gap-3">
           {stepIndex > 0 ? (
-            <PendingButton type="button" variant="secondary" onClick={goBack}>
+            <PendingButton type="button" variant="soft" size="lg" onClick={goBack}>
               Back
             </PendingButton>
           ) : null}
-          <PendingButton type="button" onClick={goNext} className="flex-1">
+          <PendingButton type="button" size="lg" onClick={goNext} className="flex-1">
             Continue
           </PendingButton>
         </div>
       ) : (
-        <PendingButton type="button" variant="secondary" onClick={goBack}>
+        <PendingButton type="button" variant="soft" onClick={goBack}>
           Back
         </PendingButton>
       )}

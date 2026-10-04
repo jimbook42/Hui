@@ -33,3 +33,17 @@ export function attendanceVisualAccessibleLabel(
       return `${displayName}, no answer yet`;
   }
 }
+
+export type AttendanceCounts = Record<AttendanceVisualState, number> & { total: number };
+
+/** Aggregate roster responses into the four visual states (maybe collapses to pending when disabled). */
+export function countAttendance(
+  members: readonly Pick<RosterMember, "response">[],
+  maybeResponsesEnabled: boolean,
+): AttendanceCounts {
+  const counts: AttendanceCounts = { yes: 0, maybe: 0, no: 0, pending: 0, total: members.length };
+  for (const member of members) {
+    counts[rosterResponseToVisualState(member.response, maybeResponsesEnabled)] += 1;
+  }
+  return counts;
+}

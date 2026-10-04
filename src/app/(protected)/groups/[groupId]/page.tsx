@@ -1,36 +1,57 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { updateGroupNameAction } from "@/app/groups/actions";
 import { AppShell } from "@/components/app/app-shell";
-import { GroupForm, GroupNameField } from "@/components/groups/group-form";
-import { GroupSettingsForm } from "@/components/groups/group-settings-form";
 import { ContributionCategoriesAdmin } from "@/components/contributions/contribution-categories-admin";
 import { GroupContributionHistorySection } from "@/components/contributions/group-contribution-history";
-import { GroupHostHistorySection } from "@/components/hosts/group-host-history";
 import { GroupDietarySection } from "@/components/dietary/group-dietary-section";
+import {
+  GroupUpcoming,
+  GroupUpcomingSkeleton,
+} from "@/components/groups/group-detail-sections";
+import { GroupForm, GroupNameField } from "@/components/groups/group-form";
+import { GroupInviteSection } from "@/components/groups/group-invite-section";
 import { GroupMemberCoordination } from "@/components/groups/group-member-coordination";
 import { GroupMembersHouseholds } from "@/components/groups/group-members-households";
-import { listGroupSharedDietary } from "@/lib/dietary/queries";
-import { canManageContributionCategories } from "@/domain/contributions/permissions";
-import { listContributionCategories, getGroupContributionHistory } from "@/lib/contributions/queries";
-import { getGroupHostHistory } from "@/lib/hosts/queries";
+import { GroupSettingsForm } from "@/components/groups/group-settings-form";
 import {
   AddMemberForm,
   LeaveGroupForm,
   RemoveMemberButton,
   TransferOwnershipForm,
 } from "@/components/groups/member-actions";
+import { GroupHostHistorySection } from "@/components/hosts/group-host-history";
+import { AvatarStack } from "@/components/hui/avatar-stack";
+import { DisclosureCard } from "@/components/hui/disclosure-card";
+import { HuiLinkButton } from "@/components/hui/hui-button";
+import { HuiSurface } from "@/components/hui/hui-surface";
+import {
+  BowlIcon,
+  CalendarIcon,
+  LeafIcon,
+  PeopleIcon,
+  PlusIcon,
+  SparkIcon,
+  UserIcon,
+} from "@/components/hui/icons";
+import { SectionHeader } from "@/components/hui/section-header";
+import { StatusPill } from "@/components/hui/status-pill";
+import { canManageContributionCategories } from "@/domain/contributions/permissions";
+import { canProposeEvents, groupAllowsEventKind } from "@/domain/events/permissions";
 import {
   canEditSettings,
   canManageMembers,
   canRenameGroup,
   canTransferOwnership,
 } from "@/domain/groups/permissions";
-import { getGroupDetail } from "@/lib/groups/queries";
-import { getGroupHouseholdMemberView } from "@/lib/households/queries";
-import { GroupInviteSection } from "@/components/groups/group-invite-section";
 import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
+import { getGroupContributionHistory, listContributionCategories } from "@/lib/contributions/queries";
+import { listGroupSharedDietary } from "@/lib/dietary/queries";
+import { getGroupDetail } from "@/lib/groups/queries";
+import { getGroupHostHistory } from "@/lib/hosts/queries";
+import { getGroupHouseholdMemberView } from "@/lib/households/queries";
 import { createClient } from "@/lib/supabase/server";
 
 function roleLabel(role: string): string {
@@ -60,6 +81,10 @@ export default async function GroupDetailPage({ params }: PageProps) {
   const viewerCanRename = canRenameGroup(detail.viewerRole);
   const viewerCanTransfer = canTransferOwnership(detail.viewerRole);
   const viewerCanLeave = detail.viewerRole !== "owner";
+  const viewerCanPropose =
+    canProposeEvents(detail.viewerRole, detail.settings) &&
+    (groupAllowsEventKind("one_off", detail.settings) ||
+      groupAllowsEventKind("recurring", detail.settings));
   const [householdView, contributionCategories, contributionHistory, hostHistory, sharedDietary] =
     await Promise.all([
       getGroupHouseholdMemberView(supabase, groupId, detail.members),
@@ -72,184 +97,276 @@ export default async function GroupDetailPage({ params }: PageProps) {
 
   let inviteToken: string | null = null;
   if (viewerCanManage) {
-    const { data: tokenData, error: inviteError } = await supabase.rpc(
-      "get_group_invite_link",
-      { p_group_id: groupId },
-    );
+    const { data: tokenData, error: inviteError } = await supabase.rpc("get_group_invite_link", {
+      p_group_id: groupId,
+    });
     if (!inviteError && typeof tokenData === "string") {
       inviteToken = tokenData;
     }
   }
   const appOrigin = await resolveAuthRedirectOrigin();
 
+  const memberCount = detail.members.length;
+  const removable = detail.members.filter(
+    (member) => member.userId !== detail.ownerId && member.userId !== user!.id,
+  );
+
   return (
-    <AppShell title={detail.name}>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Your role: <span className="font-medium">{roleLabel(detail.viewerRole)}</span>
-      </p>
-
-      <p className="mt-4 text-sm">
-        <Link
-          href={`/groups/${groupId}/events`}
-          className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
+    <AppShell title={detail.name} hideTitle back={{ href: "/groups", label: "Groups" }}>
+      <div className="space-y-6">
+        <HuiSurface
+          tone="primary"
+          shape="organic"
+          padding="lg"
+          elevated
+          className="hui-rise overflow-hidden"
         >
-          View events
-        </Link>
-      </p>
-
-      <section className="mt-10">
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Members</h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Group members are listed by household where set. Manage your household from{" "}
-          <Link
-            href="/profile"
-            className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
-          >
-            account settings
-          </Link>
-          .
-        </p>
-        <div className="mt-4">
-          <GroupMembersHouseholds
-            view={householdView}
-            members={detail.members}
-            currentUserId={user!.id}
-          />
-        </div>
-        {viewerCanManage ? (
-          <ul className="mt-6 space-y-2 text-sm">
-            {detail.members
-              .filter(
-                (member) =>
-                  member.userId !== detail.ownerId && member.userId !== user!.id,
-              )
-              .map((member) => (
-                <li key={member.userId} className="flex flex-wrap items-center gap-2">
-                  <span className="text-zinc-700 dark:text-zinc-300">
-                    Remove {member.displayName} from group:
-                  </span>
-                  <RemoveMemberButton
-                    groupId={detail.id}
-                    userId={member.userId}
-                    displayName={member.displayName}
-                  />
-                </li>
-              ))}
-          </ul>
-        ) : null}
-      </section>
-
-      <GroupMemberCoordination
-        groupId={detail.id}
-        settings={detail.settings}
-        members={detail.members}
-        viewerUserId={user!.id}
-        canManageMembers={viewerCanManage}
-      />
-
-      {viewerCanManage && inviteToken ? (
-        <GroupInviteSection
-          groupId={detail.id}
-          inviteToken={inviteToken}
-          appOrigin={appOrigin}
-        />
-      ) : null}
-
-      {viewerCanManage ? (
-        <section className="mt-10">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Add member</h2>
-          <div className="mt-4 max-w-md">
-            <AddMemberForm groupId={detail.id} />
-          </div>
-        </section>
-      ) : null}
-
-      {viewerCanRename ? (
-        <section className="mt-10">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Group name</h2>
-          <div className="mt-4 max-w-md">
-            <GroupForm
-              action={updateGroupNameAction}
-              submitLabel="Save name"
-              hiddenFields={{ group_id: detail.id }}
+          <div className="flex items-start gap-4">
+            <span
+              aria-hidden="true"
+              className="hui-shape-blob-a flex h-16 w-16 shrink-0 items-center justify-center bg-[var(--accent-clay)] text-2xl font-black text-[#1a4331]"
             >
-              <GroupNameField defaultValue={detail.name} />
-            </GroupForm>
-          </div>
-        </section>
-      ) : null}
-
-      {viewerCanManageCategories ? (
-        <section className="mt-10">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-            Contribution categories
-          </h2>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Categories members can claim on events. Deactivating keeps past event records intact.
-          </p>
-          <div className="mt-4 max-w-lg">
-            <ContributionCategoriesAdmin groupId={detail.id} categories={contributionCategories} />
-          </div>
-        </section>
-      ) : null}
-
-      <GroupDietarySection rows={sharedDietary} />
-
-      <GroupContributionHistorySection history={contributionHistory} />
-
-      <GroupHostHistorySection history={hostHistory} />
-
-      <section className="mt-10">
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Settings</h2>
-        {viewerCanEditSettings ? (
-          <div className="mt-4 max-w-lg">
-            <GroupSettingsForm groupId={detail.id} settings={detail.settings} />
-          </div>
-        ) : (
-          <dl className="mt-4 grid gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <div>
-              <dt className="text-zinc-500">Who may propose</dt>
-              <dd>{detail.settings.whoMayPropose}</dd>
+              {detail.name.trim().charAt(0).toUpperCase() || "G"}
+            </span>
+            <div className="min-w-0 flex-1">
+              <h1 className="hui-type-display break-words text-primary-foreground">{detail.name}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <StatusPill label={roleLabel(detail.viewerRole)} tone="clay" />
+                <span className="text-sm font-bold opacity-90">
+                  {memberCount} {memberCount === 1 ? "member" : "members"}
+                </span>
+              </div>
             </div>
-            <div>
-              <dt className="text-zinc-500">Minimum attendees</dt>
-              <dd>{detail.settings.minimumAttendees}</dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500">Maybe responses</dt>
-              <dd>{detail.settings.maybeResponsesEnabled ? "Enabled" : "Disabled"}</dd>
-            </div>
-          </dl>
-        )}
-      </section>
-
-      {viewerCanTransfer ? (
-        <section className="mt-10">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-            Transfer ownership
-          </h2>
-          <div className="mt-4 max-w-md">
-            <TransferOwnershipForm
-              groupId={detail.id}
-              members={detail.members}
-              ownerId={detail.ownerId}
+          </div>
+          <div className="mt-5">
+            <AvatarStack
+              people={detail.members.map((member) => ({ id: member.userId, name: member.displayName }))}
+              max={7}
+              size="md"
+              label={`${memberCount} ${memberCount === 1 ? "member" : "members"}`}
             />
           </div>
-        </section>
-      ) : null}
-
-      {viewerCanLeave ? (
-        <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Leave group</h2>
-          <div className="mt-4 max-w-md">
-            <LeaveGroupForm groupId={detail.id} />
+          <div className="mt-6 flex flex-wrap gap-3">
+            {viewerCanPropose ? (
+              <HuiLinkButton
+                href={`/groups/${groupId}/events/new`}
+                variant="secondary"
+                shape="melt"
+              >
+                <PlusIcon size={18} />
+                Propose a hui
+              </HuiLinkButton>
+            ) : null}
+            <HuiLinkButton
+              href={`/groups/${groupId}/events`}
+              variant="ghost"
+              className="!text-primary-foreground hover:!bg-white/10"
+            >
+              <CalendarIcon size={18} />
+              All events
+            </HuiLinkButton>
           </div>
+        </HuiSurface>
+
+        <Suspense fallback={<GroupUpcomingSkeleton />}>
+          <GroupUpcoming groupId={groupId} />
+        </Suspense>
+
+        <HuiSurface padding="lg" shape="organic-alt" elevated className="hui-rise-3">
+          <SectionHeader
+            title="People"
+            description="Listed by household where one is set."
+          />
+          <div className="mt-4">
+            <GroupMembersHouseholds
+              view={householdView}
+              members={detail.members}
+              currentUserId={user!.id}
+            />
+          </div>
+          <p className="hui-type-supporting mt-5">
+            Manage your own household from{" "}
+            <Link href="/profile" className="hui-link">
+              your profile
+            </Link>
+            .
+          </p>
+        </HuiSurface>
+
+        <section aria-labelledby="group-more" className="space-y-3">
+          <SectionHeader
+            id="group-more"
+            title="More"
+            description="Preferences, history and admin tools."
+          />
+
+          <DisclosureCard
+            title="Hosting and consensus"
+            summary="Your hosting preference"
+            icon={<UserIcon size={20} />}
+          >
+            <GroupMemberCoordination
+              groupId={detail.id}
+              settings={detail.settings}
+              members={detail.members}
+              viewerUserId={user!.id}
+              canManageMembers={viewerCanManage}
+            />
+          </DisclosureCard>
+
+          <DisclosureCard
+            title="Dietary needs"
+            summary={
+              sharedDietary.length === 0 ? "Nothing shared yet" : `${sharedDietary.length} shared`
+            }
+            icon={<LeafIcon size={20} />}
+          >
+            <GroupDietarySection rows={sharedDietary} />
+          </DisclosureCard>
+
+          <DisclosureCard
+            title="History"
+            summary="Who has hosted and brought things"
+            icon={<BowlIcon size={20} />}
+          >
+            <div className="space-y-8">
+              <GroupContributionHistorySection history={contributionHistory} />
+              <GroupHostHistorySection history={hostHistory} />
+            </div>
+          </DisclosureCard>
+
+          {viewerCanManage && inviteToken ? (
+            <DisclosureCard
+              title="Invite people"
+              summary="Share the invite link"
+              icon={<PeopleIcon size={20} />}
+            >
+              <div className="space-y-8">
+                <GroupInviteSection
+                  groupId={detail.id}
+                  inviteToken={inviteToken}
+                  appOrigin={appOrigin}
+                />
+                <div className="max-w-md">
+                  <h3 className="hui-type-section text-foreground">Add by member ID</h3>
+                  <div className="mt-3">
+                    <AddMemberForm groupId={detail.id} />
+                  </div>
+                </div>
+              </div>
+            </DisclosureCard>
+          ) : null}
+
+          {viewerCanManage && removable.length > 0 ? (
+            <DisclosureCard
+              title="Remove members"
+              summary="Admins only"
+              icon={<PeopleIcon size={20} />}
+            >
+              <ul className="space-y-2 text-sm">
+                {removable.map((member) => (
+                  <li key={member.userId} className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-foreground">
+                      Remove {member.displayName} from group:
+                    </span>
+                    <RemoveMemberButton
+                      groupId={detail.id}
+                      userId={member.userId}
+                      displayName={member.displayName}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </DisclosureCard>
+          ) : null}
+
+          {viewerCanManageCategories ? (
+            <DisclosureCard
+              title="Contribution categories"
+              summary="What people can bring"
+              icon={<BowlIcon size={20} />}
+            >
+              <p className="hui-type-supporting mb-4">
+                Categories members can claim on events. Deactivating keeps past event records intact.
+              </p>
+              <div className="max-w-lg">
+                <ContributionCategoriesAdmin groupId={detail.id} categories={contributionCategories} />
+              </div>
+            </DisclosureCard>
+          ) : null}
+
+          <DisclosureCard
+            title="Group settings"
+            summary={viewerCanEditSettings ? "Rules for proposing and agreeing" : "How this group decides"}
+            icon={<SparkIcon size={20} />}
+          >
+            {viewerCanEditSettings ? (
+              <div className="max-w-lg">
+                <GroupSettingsForm groupId={detail.id} settings={detail.settings} />
+              </div>
+            ) : (
+              <dl className="grid gap-4 text-sm text-foreground">
+                <div>
+                  <dt className="hui-type-label text-muted-foreground">Who may propose</dt>
+                  <dd className="mt-1 font-extrabold">{detail.settings.whoMayPropose}</dd>
+                </div>
+                <div>
+                  <dt className="hui-type-label text-muted-foreground">Minimum attendees</dt>
+                  <dd className="mt-1 font-extrabold">{detail.settings.minimumAttendees}</dd>
+                </div>
+                <div>
+                  <dt className="hui-type-label text-muted-foreground">Maybe responses</dt>
+                  <dd className="mt-1 font-extrabold">
+                    {detail.settings.maybeResponsesEnabled ? "Enabled" : "Disabled"}
+                  </dd>
+                </div>
+              </dl>
+            )}
+          </DisclosureCard>
+
+          {viewerCanRename ? (
+            <DisclosureCard title="Group name" summary={detail.name} icon={<SparkIcon size={20} />}>
+              <div className="max-w-md">
+                <GroupForm
+                  action={updateGroupNameAction}
+                  submitLabel="Save name"
+                  hiddenFields={{ group_id: detail.id }}
+                >
+                  <GroupNameField defaultValue={detail.name} />
+                </GroupForm>
+              </div>
+            </DisclosureCard>
+          ) : null}
+
+          {viewerCanTransfer ? (
+            <DisclosureCard
+              title="Transfer ownership"
+              summary="Hand the group to someone else"
+              icon={<UserIcon size={20} />}
+            >
+              <div className="max-w-md">
+                <TransferOwnershipForm
+                  groupId={detail.id}
+                  members={detail.members}
+                  ownerId={detail.ownerId}
+                />
+              </div>
+            </DisclosureCard>
+          ) : null}
+
+          {viewerCanLeave ? (
+            <DisclosureCard title="Leave group" summary="You can rejoin by invite" icon={<UserIcon size={20} />}>
+              <div className="max-w-md">
+                <LeaveGroupForm groupId={detail.id} />
+              </div>
+            </DisclosureCard>
+          ) : (
+            <p className="hui-type-supporting px-2">
+              As owner, transfer ownership before you can leave this group.
+            </p>
+          )}
         </section>
-      ) : (
-        <p className="mt-10 text-sm text-zinc-600 dark:text-zinc-400">
-          As owner, transfer ownership before you can leave this group.
-        </p>
-      )}
+      </div>
     </AppShell>
   );
 }

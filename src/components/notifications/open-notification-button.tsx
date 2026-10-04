@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 import { markNotificationReadByIdAction } from "@/app/notifications/actions";
+import { huiButtonClass } from "@/components/hui/hui-button";
 import { notificationHref, type MemberNotification } from "@/lib/notifications/types";
 import {
   beginInteraction,
@@ -13,9 +14,15 @@ import {
 
 type OpenNotificationButtonProps = {
   notification: MemberNotification;
+  label?: string;
+  variant?: "primary" | "soft";
 };
 
-export function OpenNotificationButton({ notification }: OpenNotificationButtonProps) {
+export function OpenNotificationButton({
+  notification,
+  label = "Open",
+  variant = "soft",
+}: OpenNotificationButtonProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const href = notificationHref(notification);
@@ -24,7 +31,7 @@ export function OpenNotificationButton({ notification }: OpenNotificationButtonP
     <button
       type="button"
       disabled={pending}
-      className="shrink-0 text-sm font-medium text-sky-700 underline-offset-4 hover:underline disabled:opacity-60 dark:text-sky-400"
+      className={huiButtonClass({ variant, size: "sm", shape: "melt", className: "shrink-0" })}
       onClick={() => {
         beginInteraction("notification_open");
         markInteraction("notification_open", "handler-start");
@@ -39,7 +46,7 @@ export function OpenNotificationButton({ notification }: OpenNotificationButtonP
         });
       }}
     >
-      {pending ? "Opening…" : "Open"}
+      {pending ? "Opening…" : label}
     </button>
   );
 }

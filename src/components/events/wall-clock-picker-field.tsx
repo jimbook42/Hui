@@ -8,7 +8,7 @@ import {
 } from "@/domain/datetime/wall-clock-display";
 
 const fieldShellClass =
-  "flex min-h-11 w-full items-center rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "hui-input !mt-0 flex items-center";
 
 const overlayInputClass =
   "absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 text-base [color-scheme:light] dark:[color-scheme:dark]";
@@ -59,14 +59,14 @@ export function WallClockDateField({
   const display = formatWallClockDateLabel(value) ?? (value ? value : null);
 
   return (
-    <div className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+    <div className="hui-label">
       <span id={labelId}>{label}</span>
       <div className="relative mt-1.5">
         <div aria-hidden className={`pointer-events-none ${fieldShellClass}`}>
           {display ? (
             <span>{display}</span>
           ) : (
-            <span className="text-zinc-500 dark:text-zinc-400">{emptyHint}</span>
+            <span className="text-muted-foreground">{emptyHint}</span>
           )}
         </div>
         <input
@@ -99,14 +99,14 @@ export function WallClockTimeField({
   const display = formatWallClockTimeLabel(value) ?? (value ? value : null);
 
   return (
-    <div className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+    <div className="hui-label">
       <span id={labelId}>{label}</span>
       <div className="relative mt-1.5">
         <div aria-hidden className={`pointer-events-none ${fieldShellClass}`}>
           {display ? (
             <span>{display}</span>
           ) : (
-            <span className="text-zinc-500 dark:text-zinc-400">{emptyHint}</span>
+            <span className="text-muted-foreground">{emptyHint}</span>
           )}
         </div>
         <input

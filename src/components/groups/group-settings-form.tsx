@@ -20,7 +20,7 @@ function Checkbox({
   checked: boolean;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
+    <label className="flex items-center gap-2 text-sm text-foreground">
       <input type="checkbox" name={name} defaultChecked={checked} className="rounded" />
       <span>{label}</span>
     </label>
@@ -35,15 +35,15 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
       hiddenFields={{ group_id: groupId }}
     >
       <fieldset className="space-y-4">
-        <legend className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <legend className="text-sm font-bold text-foreground">
           Event rules
         </legend>
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Who may propose events</span>
           <select
             name="who_may_propose"
             defaultValue={settings.whoMayPropose}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           >
             <option value="any_member">Any member</option>
             <option value="admins_only">Admins only</option>
@@ -64,32 +64,32 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
           label="Maybe responses enabled"
           checked={settings.maybeResponsesEnabled}
         />
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Minimum attendees</span>
           <input
             type="number"
             name="minimum_attendees"
             min={1}
             defaultValue={settings.minimumAttendees}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           />
         </label>
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Proposal deadline (hours, optional)</span>
           <input
             type="number"
             name="proposal_deadline_hours"
             min={1}
             defaultValue={settings.proposalDeadlineHours ?? ""}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           />
         </label>
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Consensus rule</span>
           <select
             name="consensus_rule"
             defaultValue={settings.consensusRule}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           >
             <option value="required_participants">Required participants</option>
             <option value="minimum_attendees">Minimum attendees</option>
@@ -103,13 +103,13 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
           label="Don't ask the same person to host twice in a row"
           checked={settings.avoidConsecutiveHosts}
         />
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Timezone for event times</span>
           <input
             type="text"
             name="timezone"
             defaultValue={settings.timezone}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           />
         </label>
         <Checkbox
@@ -117,14 +117,14 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
           label="Reconnect reminders"
           checked={settings.reconnectRemindersEnabled}
         />
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Reconnect after (days, when enabled)</span>
           <input
             type="number"
             name="reconnect_after_days"
             min={1}
             defaultValue={settings.reconnectAfterDays ?? ""}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           />
         </label>
       </fieldset>

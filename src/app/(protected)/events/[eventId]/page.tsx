@@ -1,34 +1,22 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
 import {
-  EventDetailHeavyFallback,
-  EventDetailHeavySections,
-} from "@/components/events/event-detail-heavy-sections";
-import { formatEventTimeRange } from "@/domain/datetime/timezone";
-import { getEventDetail } from "@/lib/events/queries";
+  EventAttentionCard,
+  EventBodySkeleton,
+  EventDetailsList,
+  EventHeroMeta,
+  EventPeopleCard,
+} from "@/components/events/event-page-sections";
+import { EventHero, EventHeroMetaSkeleton } from "@/components/hui/event-hero";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { getEventDetail } from "@/lib/events/queries";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 
 type PageProps = {
   params: Promise<{ eventId: string }>;
 };
-
-function formatWhen(
-  startsAt: string | null,
-  endsAt: string | null,
-  timeZone: string,
-): string {
-  if (!startsAt) {
-    return "Not set";
-  }
-  if (endsAt) {
-    return formatEventTimeRange(startsAt, endsAt, timeZone);
-  }
-  return formatEventTimeRange(startsAt, startsAt, timeZone);
-}
 
 export default async function EventDetailPage({ params }: PageProps) {
   const { eventId } = await params;
@@ -42,31 +30,29 @@ export default async function EventDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  return (
-    <AppShell title={detail.title}>
-      <p className="hui-type-supporting">
-        <Link
-          href={`/groups/${detail.groupId}`}
-          className="underline-offset-4 hover:underline"
-        >
-          {detail.groupName}
-        </Link>
-        {" · "}
-        <Link
-          href={`/groups/${detail.groupId}/events`}
-          className="underline-offset-4 hover:underline"
-        >
-          Events
-        </Link>
-      </p>
+  const userId = user!.id;
 
-      <Suspense fallback={<EventDetailHeavyFallback />}>
-        <EventDetailHeavySections
-          detail={detail}
-          userId={user!.id}
-          formatWhen={formatWhen}
-        />
-      </Suspense>
+  return (
+    <AppShell title={detail.title} hideTitle back={{ href: "/events", label: "Hui" }}>
+      <div className="space-y-5">
+        <EventHero
+          title={detail.title}
+          status={detail.status}
+          groupName={detail.groupName}
+          groupHref={`/groups/${detail.groupId}`}
+          location={detail.location}
+        >
+          <Suspense fallback={<EventHeroMetaSkeleton />}>
+            <EventHeroMeta detail={detail} userId={userId} />
+          </Suspense>
+        </EventHero>
+
+        <Suspense fallback={<EventBodySkeleton />}>
+          <EventAttentionCard detail={detail} userId={userId} />
+          <EventPeopleCard detail={detail} userId={userId} />
+          <EventDetailsList detail={detail} userId={userId} />
+        </Suspense>
+      </div>
     </AppShell>
   );
 }

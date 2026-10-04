@@ -2,6 +2,16 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-026U redesign (full UI/UX rewrite)
+
+- Redesigned every route from the reference screens: forest/clay/blue tokens (light + dark), ~32px organic shapes, no bordered cards or dividers. Theme preference is device-local (`hui-theme` in localStorage, set in Profile → Appearance).
+- New IA: bottom nav Home / Hui (`/events`) / Groups / Alerts / You (`/profile`); `/events` lists all gatherings; `/events/new` is a group picker into the existing `/groups/[id]/events/new` proposal flow.
+- Event detail: static map hero, answer strip, "Who is coming" gathering visual, attention card, then a "Details" disclosure list (times, hosting, bring, dietary, members, about, manage). `HashDisclosureOpener` keeps `#host` / `#contributions` / `#scheduling` deep links working.
+- Respond (HUI-026B stages + P optimistic attendance) and proposal (HUI-026A: Name → Time → Review) re-skinned; logic unchanged.
+- Profile gains per-group hosting preference (existing `setMyHostingStandingAction`) and theme toggle.
+- Fixed pre-existing bugs found in QA: locale-dependent date formatting caused hydration mismatches (`formatInstantInTimeZone` now fixed to en-NZ); respond flow called `.catch` on a streamed promise (crashed page).
+- No Supabase schema/RLS/server action/lifecycle changes. `npm run validate` passed. Checked 360/390/412/1280 light + 390 dark: no horizontal overflow.
+
 ## 2026-10-04 — HUI-026U.2 visual reference integration
 
 - Located reference mockups and brand assets at repo root; indexed in `docs/reference/REFERENCE_INDEX.md`.

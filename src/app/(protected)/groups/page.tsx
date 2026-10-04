@@ -1,22 +1,21 @@
-import Link from "next/link";
 import { Suspense } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
 import { GroupsList, GroupsListSkeleton } from "@/components/groups/groups-list";
+import { HuiLinkButton } from "@/components/hui/hui-button";
+import { PlusIcon } from "@/components/hui/icons";
 
 export default function GroupsPage() {
   return (
-    <AppShell title="Your groups">
-      <div className="flex items-start justify-between gap-4">
-        <p className="hui-type-supporting max-w-prose">
-          Gathering circles you belong to. Tap a group to plan the next hui.
-        </p>
-        <Link
-          href="/groups/new"
-          className="hui-focus-ring shrink-0 inline-flex items-center justify-center rounded-hui-sm bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary-hover"
-        >
+    <AppShell
+      title="Your groups"
+      subtitle="The circles you gather with. Open one to see who is in it and what is coming up."
+    >
+      <div className="mb-4 flex">
+        <HuiLinkButton href="/groups/new" variant="soft" size="sm" shape="melt">
+          <PlusIcon size={16} />
           New group
-        </Link>
+        </HuiLinkButton>
       </div>
 
       <Suspense fallback={<GroupsListSkeleton />}>

@@ -84,3 +84,13 @@ Features shown in references but **not** in Hui (Messages tab, live map, distanc
 - **026D:** Dedicated manage surface styling.
 - **026E:** Contribution flow visual pass.
 - Host/dietary/group admin pages: partial token adoption only in 026U; full migration deferred.
+
+## Redesign update (HUI-026U full rewrite)
+
+- **Palette:** light `#F7F4EE` canvas / `#1A4331` forest primary / `#7DA1B5` blue / `#D8BCA8` clay; dark is a deep green family (`#0D1612`, `#15221C`, `#1E2E26`), not neutral grey. Theme = `data-theme` on `<html>`, device-local preference in `localStorage["hui-theme"]` (system | light | dark), applied by an inline head script.
+- **Geometry:** `hui-shape-*` organic radii (~32px, asymmetric), tint blobs, `color-mix()` tints, no thin borders or dividers. Component classes (`hui-btn`, `hui-input`, `hui-card-section` …) live in `@layer components` so Tailwind utilities can override them.
+- **Primitives (`src/components/hui/`):** HuiSurface, HuiButton, EventCard, EventHero, GatheringVisual, AttendanceDot, AttendanceChoice, LocationPanel (static seeded SVG map), SectionHeader, EmptyState, AvatarStack, BottomNavigation, StatusPill, DisclosureCard.
+- **Information architecture:** bottom nav Home, Hui (`/events`), Groups, Alerts (`/notifications`), You (`/profile`). `/events` and `/events/new` (group picker) are new. Event detail answers what/when/where/my status/who/attention first; everything else sits behind "Details" disclosures (legacy sections are embedded via `.hui-embedded`).
+- **Motion:** CSS only (`hui-rise`, `hui-pop`, `hui-breathe`), all disabled under `prefers-reduced-motion`.
+- **Tailwind scanning** is limited to `src/` (`@import "tailwindcss" source("../")`) — scanning repo-root temp/binary files corrupts the CSS.
+- **Deferred:** live system-theme change without reload, map tiles / geocoding (intentionally none), refreshing the stale legacy e2e specs.

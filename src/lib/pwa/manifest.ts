@@ -10,8 +10,8 @@ export function getHuiWebManifest(): MetadataRoute.Manifest {
     description: HUI_PWA_DESCRIPTION,
     start_url: "/",
     display: "standalone",
-    background_color: "#fafafa",
-    theme_color: "#18181b",
+    background_color: "#f7f4ee",
+    theme_color: "#1a4331",
     lang: "en",
     icons: [
       {

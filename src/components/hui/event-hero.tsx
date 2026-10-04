@@ -1,88 +1,74 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
+
 import type { EventStatus } from "@/domain/events/types";
-import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
-import { EventDateBadge } from "@/components/hui/event-date-badge";
+import { LocationMap } from "@/components/hui/event-location-panel";
 import { EventStatusPill } from "@/components/hui/status-pill";
-import { GatheringVisual } from "@/components/hui/gathering-visual";
-import { EventLocationPanel } from "@/components/hui/event-location-panel";
-import { HuiSurface } from "@/components/hui/hui-surface";
 import { cn } from "@/lib/ui/cn";
 
 type EventHeroProps = {
   title: string;
   status: EventStatus;
-  whenLabel: string;
-  startsAt: string | null;
-  timeZone: string;
-  location: string | null;
   groupName: string;
-  proposerName: string;
-  attendanceRoster?: AttendanceRoster | null;
-  confirmedWhen?: string | null;
+  groupHref: string;
+  location: string | null;
   className?: string;
+  /** Streamed facts (when, where, my status). Rendered inside the sheet under the title. */
+  children?: ReactNode;
 };
 
+/**
+ * The visual centrepiece of an event: the place first (illustrated map, no SDK), then a
+ * soft sheet that rises over it carrying the title and the facts that matter.
+ * The shell (map + title) renders immediately; `children` can stream in.
+ */
 export function EventHero({
   title,
   status,
-  whenLabel,
-  startsAt,
-  timeZone,
-  location,
   groupName,
-  proposerName,
-  attendanceRoster,
-  confirmedWhen,
+  groupHref,
+  location,
   className,
+  children,
 }: EventHeroProps) {
-  const showConfirmedTime = status === "confirmed" && confirmedWhen;
-
   return (
-    <HuiSurface className={cn("mt-6 space-y-4", className)} elevated padding="md">
-      <div className="flex gap-4">
-        <EventDateBadge startsAt={startsAt} timeZone={timeZone} />
-        <div className="min-w-0 flex-1">
-          <p className="hui-type-label text-primary">{groupName}</p>
-          <div className="mt-1 flex flex-wrap items-start justify-between gap-2">
-            <h2 className="hui-type-display text-foreground">{title}</h2>
-            <EventStatusPill status={status} />
-          </div>
+    <section
+      aria-labelledby="event-title"
+      className={cn("hui-rise overflow-hidden rounded-hui-2xl bg-surface hui-shadow-lg", className)}
+    >
+      <LocationMap location={location} showLabel={false} className="h-52 sm:h-64">
+        <div className="absolute left-4 top-4 z-10">
+          <EventStatusPill status={status} />
+        </div>
+      </LocationMap>
+
+      <div className="relative -mt-7 rounded-t-[2rem] bg-surface px-6 pb-7 pt-7">
+        <Link
+          href={groupHref}
+          className="hui-type-label hui-focus-ring -my-2 inline-flex min-h-11 items-center rounded-full text-accent underline-offset-4 hover:underline"
+        >
+          {groupName}
+        </Link>
+        <h1 id="event-title" className="hui-type-display mt-1 text-foreground">
+          {title}
+        </h1>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+export function EventHeroMetaSkeleton() {
+  return (
+    <div className="mt-5 space-y-3" aria-busy="true" aria-label="Loading event details">
+      <div className="flex items-center gap-4">
+        <div className="hui-skeleton hui-shape-blob-a h-16 w-16 shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="hui-skeleton h-5 w-2/3 !rounded-full" />
+          <div className="hui-skeleton h-4 w-1/2 !rounded-full" />
         </div>
       </div>
-
-      {attendanceRoster && attendanceRoster.members.length > 0 ? (
-        <div className="rounded-hui-xl border border-border/60 bg-muted/30 px-2 py-3">
-          <p className="px-2 hui-type-label text-muted-foreground">People gathering</p>
-          <GatheringVisual roster={attendanceRoster} eventTitle={title} className="mt-1" />
-          <p className="px-2 mt-2 hui-type-supporting">
-            Initials show who answered — rings show how (not private notes).
-          </p>
-        </div>
-      ) : null}
-
-      {showConfirmedTime ? (
-        <p className="hui-type-body text-success" role="status">
-          <span className="font-medium">Confirmed:</span> {confirmedWhen}
-        </p>
-      ) : null}
-
-      {status === "cancelled" ? (
-        <p className="hui-type-body text-muted-foreground" role="status">
-          This gathering was cancelled. Scheduling and confirmation are closed.
-        </p>
-      ) : null}
-
-      <dl className="grid gap-2 text-sm">
-        <div>
-          <dt className="hui-type-label text-muted-foreground">When</dt>
-          <dd className="hui-type-body text-foreground">{whenLabel}</dd>
-        </div>
-        <div>
-          <dt className="hui-type-label text-muted-foreground">Proposed by</dt>
-          <dd className="hui-type-body text-foreground">{proposerName}</dd>
-        </div>
-      </dl>
-
-      <EventLocationPanel location={location} />
-    </HuiSurface>
+      <div className="hui-skeleton h-16 !rounded-hui-xl" />
+    </div>
   );
 }

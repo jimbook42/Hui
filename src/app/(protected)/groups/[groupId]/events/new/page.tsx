@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app/app-shell";
@@ -49,24 +48,19 @@ export default async function NewGroupEventPage({ params }: PageProps) {
   const contributionCategories = await listContributionCategories(supabase, groupId);
 
   return (
-    <AppShell title={`Propose event — ${detail.name}`}>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        <Link
-          href={`/groups/${groupId}/events`}
-          className="underline-offset-4 hover:underline"
-        >
-          Back to events
-        </Link>
-      </p>
-      <div className="mt-8 max-w-lg">
-        <CreateEventProposalFlow
-          groupId={groupId}
-          settings={detail.settings}
-          isFirstGroupEvent={isFirstGroupEvent}
-          members={hostEligibleMembers}
-          contributionCategories={contributionCategories}
-        />
-      </div>
+    <AppShell
+      title="Propose a hui"
+      subtitle={`With ${detail.name}`}
+      back={{ href: `/groups/${groupId}`, label: detail.name }}
+      narrow
+    >
+      <CreateEventProposalFlow
+        groupId={groupId}
+        settings={detail.settings}
+        isFirstGroupEvent={isFirstGroupEvent}
+        members={hostEligibleMembers}
+        contributionCategories={contributionCategories}
+      />
     </AppShell>
   );
 }

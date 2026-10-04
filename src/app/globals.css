@@ -1,106 +1,138 @@
-@import "tailwindcss";
+/* Scan only src/. Temp upload dirs and reference art in the repo root otherwise end up in the class scan. */
+@import "tailwindcss" source("../");
 
-/* Hui design tokens — warm, calm, mobile-first */
+/* `dark:` follows the Hui theme attribute (see src/lib/ui/theme.ts), not only the OS setting. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Hui visual language (HUI-026U).
+ * Warm cream canvas, deep forest green, muted sage, soft clay, restrained powder blue.
+ * Theme is driven by `data-theme` on <html> (set before paint by the inline theme script).
+ */
+
 :root {
-  /* Reference-aligned: cream parchment, forest green primary (hui-word / app icon) */
-  --background: #f6f3ec;
-  --foreground: #1a3328;
-  --surface: #fffcf7;
-  --surface-elevated: #ffffff;
-  --muted: #ebe6dc;
-  --muted-foreground: #5c655f;
-  --border: #e0dbd0;
-  --border-strong: #ccc4b6;
+  /* Core palette — light */
+  --bg-canvas: #f7f4ee;
+  --bg-surface: #ffffff;
+  --bg-surface-subtle: #efebe4;
 
-  --primary: #1f4d3a;
-  --primary-hover: #163a2c;
-  --primary-foreground: #f7faf8;
+  --text-primary: #1a4331;
+  --text-secondary: #5c6b61;
 
-  --secondary: #dce8e0;
-  --secondary-foreground: #1f4d3a;
+  --accent-blue: #7da1b5;
+  --accent-clay: #d8bca8;
+  --accent-primary: #1a4331;
+  --accent-primary-text: #ffffff;
 
-  --gathering-ring: #1f4d3a;
-  --gathering-member-a: #6b8f7a;
-  --gathering-member-b: #5a7d6c;
-  --gathering-member-c: #8eb4c4;
+  --card-shadow: 0 12px 40px -12px rgba(26, 67, 49, 0.08);
+  --card-shadow-lift: 0 18px 48px -14px rgba(26, 67, 49, 0.16);
+  --soft-shadow: 0 4px 16px -6px rgba(26, 67, 49, 0.1);
 
-  --date-badge-primary: #a8d4e6;
-  --date-badge-primary-fg: #1a3328;
-  --date-badge-secondary: #dcc9a8;
-  --date-badge-secondary-fg: #1a3328;
+  /* Derived */
+  --accent-sage: #a9bfae;
+  --blue-soft: #dce8ee;
+  --clay-soft: #f2e6db;
+  --sage-soft: #e4ece3;
+  --accent-link: #1a4331;
+  --primary-hover: #123324;
+  --border-soft: rgba(26, 67, 49, 0.1);
+  --border-strong-soft: rgba(26, 67, 49, 0.2);
+  --paper-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .26 0 0 0 0 .19 0 0 0 .055 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --leaf-opacity: 0.55;
 
-  --destructive: #b42318;
-  --destructive-foreground: #fff5f4;
   --success: #2f6f4e;
-  --success-foreground: #f4faf6;
-  --warning: #9a6b1a;
-  --warning-foreground: #fffaf0;
+  --warning: #8f6418;
+  --destructive: #a63d2f;
   --info: #3d6b8c;
-  --info-foreground: #f5f9fc;
 
-  --attendance-yes: #3d7a57;
-  --attendance-maybe: #a67c3a;
-  --attendance-no: #8a8278;
-  --attendance-pending: #b5aea4;
+  --attendance-yes: #2f7a52;
+  --attendance-maybe: #b9852f;
+  --attendance-no: #8f867b;
+  --attendance-pending: #a2aea6;
 
-  --radius-sm: 0.625rem;
-  --radius-md: 0.875rem;
-  --radius-lg: 1.125rem;
-  --radius-xl: 1.5rem;
-
-  --shadow-sm: 0 1px 2px rgb(44 40 37 / 0.06);
-  --shadow-md: 0 4px 12px rgb(44 40 37 / 0.08);
+  --map-land: #efe8d9;
+  --map-block: #e6dcc7;
+  --map-park: #c9d9c3;
+  --map-water: #bcd3df;
+  --map-road: #fffdf8;
 
   --motion-fast: 120ms;
-  --motion-base: 200ms;
+  --motion-base: 220ms;
 
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #141210;
-    --foreground: #f5f0ea;
-    --surface: #1c1916;
-    --surface-elevated: #25211d;
-    --muted: #221f1c;
-    --muted-foreground: #a8a095;
-    --border: #342f2a;
-    --border-strong: #453f38;
+:root[data-theme="dark"] {
+  --bg-canvas: #0d1612;
+  --bg-surface: #15221c;
+  --bg-surface-subtle: #1e2e26;
 
-    --primary: #6ecf96;
-    --primary-hover: #5bb882;
-    --primary-foreground: #0d1a12;
+  --text-primary: #f0f4f1;
+  --text-secondary: #9db0a4;
 
-    --secondary: #243328;
-    --secondary-foreground: #d8ebe0;
+  --accent-blue: #3a6278;
+  --accent-clay: #8c6853;
+  --accent-primary: #2d5a44;
+  --accent-primary-text: #f0f4f1;
 
-    --gathering-ring: #6ecf96;
-    --gathering-member-a: #6b8f7a;
-    --gathering-member-b: #5a7d6c;
-    --gathering-member-c: #8eb4c4;
+  --card-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.45);
+  --card-shadow-lift: 0 22px 56px -14px rgba(0, 0, 0, 0.6);
+  --soft-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.5);
 
-    --date-badge-primary: #3d5a6b;
-    --date-badge-primary-fg: #e8f4fa;
-    --date-badge-secondary: #5a4d3a;
-    --date-badge-secondary-fg: #f5efe6;
+  --accent-sage: #4a6b58;
+  --blue-soft: #1f3441;
+  --clay-soft: #33271f;
+  --sage-soft: #1c3025;
+  --accent-link: #a9d9bd;
+  --primary-hover: #38694f;
+  --border-soft: rgba(240, 244, 241, 0.09);
+  --border-strong-soft: rgba(240, 244, 241, 0.18);
+  --paper-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .75 0 0 0 0 .9 0 0 0 0 .8 0 0 0 .03 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --leaf-opacity: 0.4;
 
-    --destructive: #f87171;
-    --destructive-foreground: #1a0a0a;
-    --success: #6ecf96;
-    --success-foreground: #0d1a12;
-    --warning: #e5b85c;
-    --warning-foreground: #1a1408;
-    --info: #7eb8db;
-    --info-foreground: #0a141a;
+  --success: #7bd0a0;
+  --warning: #e3b867;
+  --destructive: #f0907f;
+  --info: #8dbad3;
 
-    --attendance-yes: #6ecf96;
-    --attendance-maybe: #e5b85c;
-    --attendance-no: #9a9288;
-    --attendance-pending: #6b6560;
+  --attendance-yes: #6fcb98;
+  --attendance-maybe: #e3b867;
+  --attendance-no: #7f8a84;
+  --attendance-pending: #5c6b61;
 
-    color-scheme: dark;
-  }
+  --map-land: #1a2b23;
+  --map-block: #22362c;
+  --map-park: #2b4a38;
+  --map-water: #27475a;
+  --map-road: #2e4438;
+
+  color-scheme: dark;
+}
+
+/* Aliases used throughout the app (Tailwind theme maps these). */
+:root {
+  --background: var(--bg-canvas);
+  --foreground: var(--text-primary);
+  --surface: var(--bg-surface);
+  --surface-elevated: var(--bg-surface);
+  --muted: var(--bg-surface-subtle);
+  --muted-foreground: var(--text-secondary);
+  --border: var(--border-soft);
+  --border-strong: var(--border-strong-soft);
+  --primary: var(--accent-primary);
+  --primary-foreground: var(--accent-primary-text);
+  --secondary: var(--sage-soft);
+  --secondary-foreground: var(--text-primary);
+  --destructive-foreground: #ffffff;
+
+  --gathering-ring: var(--accent-primary);
+  --gathering-member-a: var(--accent-sage);
+  --gathering-member-b: var(--accent-sage);
+  --gathering-member-c: var(--accent-blue);
+
+  --blob-blue: color-mix(in srgb, var(--accent-blue) 52%, var(--bg-surface));
+  --blob-clay: color-mix(in srgb, var(--accent-clay) 62%, var(--bg-surface));
+  --blob-sage: color-mix(in srgb, var(--accent-sage) 70%, var(--bg-surface));
 }
 
 @theme inline {
@@ -117,7 +149,15 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent-link);
+  --color-sage: var(--accent-sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-blue: var(--accent-blue);
+  --color-blue-soft: var(--blue-soft);
+  --color-clay: var(--accent-clay);
+  --color-clay-soft: var(--clay-soft);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
@@ -125,12 +165,13 @@
   --color-attendance-maybe: var(--attendance-maybe);
   --color-attendance-no: var(--attendance-no);
   --color-attendance-pending: var(--attendance-pending);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-  --radius-hui-sm: var(--radius-sm);
-  --radius-hui-md: var(--radius-md);
-  --radius-hui-lg: var(--radius-lg);
-  --radius-hui-xl: var(--radius-xl);
+  --radius-hui-sm: 0.875rem;
+  --radius-hui-md: 1.25rem;
+  --radius-hui-lg: 1.625rem;
+  --radius-hui-xl: 2rem;
+  --radius-hui-2xl: 2.5rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -140,65 +181,87 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-body {
-  background-color: var(--background);
-  background-image:
-    radial-gradient(ellipse 120% 80% at 100% 0%, rgb(111 143 122 / 0.08), transparent 55%),
-    radial-gradient(ellipse 90% 70% at 0% 100%, rgb(142 180 196 / 0.07), transparent 50%);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+html {
+  background-color: var(--bg-canvas);
 }
 
-.hui-page-canvas {
-  background-color: var(--background);
-  background-image:
-    radial-gradient(ellipse 120% 80% at 100% 0%, rgb(111 143 122 / 0.08), transparent 55%),
-    radial-gradient(ellipse 90% 70% at 0% 100%, rgb(142 180 196 / 0.07), transparent 50%);
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.hui-canvas {
+  position: relative;
+  background-color: var(--bg-canvas);
+  background-image: var(--paper-texture);
+}
+
+@layer components {
+/* ---------- Typography ---------- */
+
+.hui-type-hero {
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
 }
 
 .hui-type-display {
-  font-size: 1.375rem;
-  font-weight: 600;
+  font-size: 1.625rem;
+  font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1.25;
+  line-height: 1.15;
 }
 
 .hui-type-page-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
 }
 
 .hui-type-section {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
 .hui-type-body {
-  font-size: 0.875rem;
-  line-height: 1.5;
+  font-size: 0.9375rem;
+  line-height: 1.55;
 }
 
 .hui-type-supporting {
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
 }
 
 .hui-type-label {
   font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   line-height: 1.3;
+  text-transform: uppercase;
 }
 
+.hui-type-clay {
+  color: color-mix(in srgb, var(--accent-clay) 78%, var(--text-primary) 22%);
+}
+
+/* ---------- Interaction ---------- */
+
 .hui-focus-ring:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
+  outline: 3px solid color-mix(in srgb, var(--accent-blue) 85%, var(--text-primary));
+  outline-offset: 3px;
 }
 
 .hui-safe-bottom {
@@ -206,9 +269,344 @@ body {
 }
 
 .hui-shadow-sm {
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--soft-shadow);
 }
 
 .hui-shadow-md {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--card-shadow);
+}
+
+.hui-shadow-lg {
+  box-shadow: var(--card-shadow-lift);
+}
+
+/* ---------- Organic geometry ---------- */
+
+.hui-shape-organic {
+  border-radius: 2.25rem 1.75rem 2.1rem 1.9rem / 2rem 2.2rem 1.8rem 2.25rem;
+}
+
+.hui-shape-organic-alt {
+  border-radius: 1.9rem 2.25rem 1.75rem 2.2rem / 2.2rem 1.8rem 2.25rem 2rem;
+}
+
+.hui-shape-blob-a {
+  border-radius: 58% 42% 54% 46% / 48% 56% 44% 52%;
+}
+
+.hui-shape-blob-b {
+  border-radius: 44% 56% 46% 54% / 55% 45% 55% 45%;
+}
+
+.hui-shape-melt {
+  border-radius: 1.75rem 2.25rem 1.9rem 2.5rem / 2rem 1.75rem 2.4rem 1.85rem;
+}
+
+/* ---------- Controls ---------- */
+
+.hui-btn {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-base) ease,
+    transform var(--motion-fast) ease,
+    box-shadow var(--motion-base) ease;
+}
+
+.hui-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.hui-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.hui-btn-primary {
+  background-color: var(--accent-primary);
+  color: var(--accent-primary-text);
+  box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--accent-primary) 80%, transparent);
+}
+
+.hui-btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.hui-btn-secondary {
+  background-color: var(--bg-surface-subtle);
+  color: var(--text-primary);
+}
+
+.hui-btn-secondary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--bg-surface-subtle) 80%, var(--text-primary) 8%);
+}
+
+.hui-btn-soft {
+  background-color: var(--blue-soft);
+  color: var(--text-primary);
+}
+
+.hui-btn-soft:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--blue-soft) 82%, var(--accent-blue));
+}
+
+.hui-btn-ghost {
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+.hui-btn-ghost:hover:not(:disabled) {
+  background-color: var(--bg-surface-subtle);
+}
+
+.hui-btn-danger {
+  background-color: color-mix(in srgb, var(--destructive) 12%, var(--bg-surface));
+  color: var(--destructive);
+}
+
+.hui-btn-danger:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--destructive) 20%, var(--bg-surface));
+}
+
+.hui-btn-sm {
+  min-height: 2.75rem;
+  padding: 0.45rem 1rem;
+  font-size: 0.8125rem;
+}
+
+.hui-btn-lg {
+  min-height: 3.5rem;
+  padding: 0.9rem 1.75rem;
+  font-size: 1.0625rem;
+}
+
+.hui-input {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  margin-top: 0.4rem;
+  border: 1.5px solid var(--border-strong-soft);
+  border-radius: 1.125rem;
+  background-color: var(--bg-surface);
+  padding: 0.7rem 1rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.4;
+  outline: none;
+  transition:
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+.hui-input::placeholder {
+  color: color-mix(in srgb, var(--text-secondary) 75%, transparent);
+}
+
+.hui-input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-blue) 28%, transparent);
+}
+
+.hui-input:disabled {
+  opacity: 0.6;
+}
+
+.hui-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hui-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  accent-color: var(--accent-primary);
+}
+
+.hui-link {
+  color: var(--accent-link);
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+
+.hui-link:hover {
+  text-decoration: underline;
+}
+
+.hui-link-danger {
+  color: var(--destructive);
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+
+.hui-link-danger:hover {
+  text-decoration: underline;
+}
+
+.hui-message-error {
+  border-radius: 1rem;
+  background-color: color-mix(in srgb, var(--destructive) 10%, var(--bg-surface));
+  padding: 0.65rem 0.9rem;
+  color: var(--destructive);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.hui-message-success {
+  border-radius: 1rem;
+  background-color: color-mix(in srgb, var(--success) 12%, var(--bg-surface));
+  padding: 0.65rem 0.9rem;
+  color: var(--success);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.hui-message-note {
+  border-radius: 1rem;
+  background-color: color-mix(in srgb, var(--warning) 12%, var(--bg-surface));
+  padding: 0.65rem 0.9rem;
+  color: var(--warning);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.hui-skeleton {
+  border-radius: 1.5rem;
+  background: linear-gradient(
+    100deg,
+    var(--bg-surface-subtle) 30%,
+    color-mix(in srgb, var(--bg-surface-subtle) 55%, var(--bg-surface)) 50%,
+    var(--bg-surface-subtle) 70%
+  );
+  background-size: 220% 100%;
+  animation: hui-shimmer 1.6s ease-in-out infinite;
+}
+
+/* ---------- Progressive disclosure ---------- */
+
+.hui-details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.hui-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.hui-details[open] > summary .hui-details-chevron {
+  transform: rotate(180deg);
+}
+
+.hui-details-chevron {
+  transition: transform var(--motion-base) ease;
+}
+
+.hui-scroll-x {
+  scrollbar-width: none;
+}
+
+.hui-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- Card sections ----------
+   Legacy section components render `<section class="hui-card-section"><h2>...`.
+   On their own they become a soft surface; inside a disclosure (`.hui-embedded`)
+   they go flat and drop their duplicate heading. */
+.hui-card-section {
+  margin-top: 1.5rem;
+  border-radius: 2rem;
+  background: var(--bg-surface);
+  padding: 1.5rem;
+  box-shadow: var(--card-shadow);
+}
+
+.hui-embedded .hui-card-section {
+  margin-top: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.hui-embedded .hui-card-section > h2:first-child {
+  display: none;
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes hui-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hui-pop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes hui-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@keyframes hui-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.hui-rise {
+  animation: hui-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hui-rise-2 {
+  animation: hui-rise 420ms 70ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hui-rise-3 {
+  animation: hui-rise 420ms 140ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hui-pop {
+  animation: hui-pop 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hui-breathe {
+  animation: hui-breathe 4.5s ease-in-out infinite;
+}
 }

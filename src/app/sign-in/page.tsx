@@ -54,18 +54,18 @@ export default async function SignInPage({
       }
     >
       {accountDeleted ? (
-        <p className="mb-4 text-sm text-emerald-800 dark:text-emerald-300" role="status">
+        <p className="hui-message-success mb-4" role="status">
           Your account was deleted. You can sign up again with the same email if you choose.
         </p>
       ) : null}
       {deletionIncomplete ? (
-        <p className="mb-4 text-sm text-amber-800 dark:text-amber-200" role="status">
+        <p className="hui-message-note mb-4" role="status">
           Your account deletion did not finish last time. Sign in and use Delete my account on
           your profile to try again.
         </p>
       ) : null}
       {oauthNotice ? (
-        <p className="mb-4 text-sm text-amber-800 dark:text-amber-200" role="status">
+        <p className="hui-message-note mb-4" role="status">
           {oauthNotice}
         </p>
       ) : null}

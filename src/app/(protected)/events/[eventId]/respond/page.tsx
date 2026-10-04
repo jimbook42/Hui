@@ -33,12 +33,12 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
     return (
       <AppShell title="Respond">
         <div className="mx-auto max-w-md space-y-4">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             This event is not waiting for an attendance response right now.
           </p>
           <Link
             href={eventDetailPath(eventId)}
-            className="text-sm font-medium text-sky-700 underline-offset-4 hover:underline dark:text-sky-400"
+            className="hui-link text-sm font-medium"
           >
             View event details
           </Link>

@@ -19,7 +19,7 @@ type PushNotificationsControlProps = {
 };
 
 const buttonClassName =
-  "rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800/50";
+  "hui-btn hui-btn-secondary rounded-full hui-focus-ring";
 
 function browserSupportsPush(): boolean {
   return (
@@ -188,38 +188,38 @@ export function PushNotificationsControl({
   };
 
   return (
-    <div className="space-y-4 text-sm text-zinc-700 dark:text-zinc-300">
+    <div className="space-y-4 text-sm text-foreground">
       <p>
-        <span className="font-medium text-zinc-900 dark:text-zinc-100">In-app: </span>
+        <span className="font-medium text-foreground">In-app: </span>
         On
       </p>
       <p>
-        <span className="font-medium text-zinc-900 dark:text-zinc-100">Push notifications: </span>
+        <span className="font-medium text-foreground">Push notifications: </span>
         {statusCopy[view.status]}
       </p>
       {view.status === "denied" ? (
-        <p className="text-zinc-600 dark:text-zinc-400">
+        <p className="text-muted-foreground">
           Hui cannot ask again. Allow notifications for this site in your browser settings, then
           return here.
         </p>
       ) : null}
       {view.status === "off" || view.status === "on" || view.status === "other-device" ? (
-        <p className="text-zinc-600 dark:text-zinc-400">
+        <p className="text-muted-foreground">
           Turning push off does not turn off in-app notifications.
         </p>
       ) : null}
       {savedCount > 0 ? (
-        <p className="text-zinc-600 dark:text-zinc-400">
+        <p className="text-muted-foreground">
           Saved on {savedCount} browser{savedCount === 1 ? "" : "s"}.
         </p>
       ) : null}
       {error ? (
-        <p className="text-red-600 dark:text-red-400" role="alert">
+        <p className="hui-message-error" role="alert">
           {error}
         </p>
       ) : null}
       {message ? (
-        <p className="text-emerald-700 dark:text-emerald-400" role="status">
+        <p className="hui-message-success" role="status">
           {message}
         </p>
       ) : null}

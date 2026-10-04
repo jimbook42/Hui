@@ -46,7 +46,7 @@ export default async function SignUpPage({
           type="password"
           autoComplete="new-password"
         />
-        <p className="text-xs text-zinc-500">Use at least 8 characters.</p>
+        <p className="text-xs text-muted-foreground">Use at least 8 characters.</p>
       </AuthForm>
     </AuthShell>
   );

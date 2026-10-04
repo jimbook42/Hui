@@ -29,11 +29,11 @@ export function CreateEventForm({
 
   return (
     <AuthForm action={action} submitLabel="Create event" hiddenFields={{ group_id: groupId }}>
-      <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+      <label className="hui-label">
         <span>Event type</span>
         <select
           name="event_kind"
-          className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+          className="hui-input"
           defaultValue={defaultKind}
         >
           {canOneOff ? <option value="one_off">One-off</option> : null}
@@ -42,12 +42,12 @@ export function CreateEventForm({
       </label>
       <AuthField label="Title" name="title" required />
       <AuthField label="Location (optional)" name="location" required={false} />
-      <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+      <label className="hui-label">
         <span>Notes (optional)</span>
         <textarea
           name="notes"
           rows={3}
-          className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+          className="hui-input"
         />
       </label>
       <AuthField
@@ -63,15 +63,15 @@ export function CreateEventForm({
         required={false}
       />
       {isFirstGroupEvent && settings.hostingEnabled ? (
-        <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Initial host (first gathering)</span>
-          <p className="mt-1 text-xs font-normal text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-xs font-normal text-muted-foreground">
             Your choice is a proposal — they still accept or ask to swap. Later events use
             Hui&apos;s usual host suggestions.
           </p>
           <select
             name="initial_host_user_id"
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+            className="hui-input"
             defaultValue=""
           >
             <option value="">Let Hui suggest when people respond</option>
@@ -85,16 +85,16 @@ export function CreateEventForm({
         </label>
       ) : null}
       {canRecurring ? (
-        <fieldset className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-          <legend className="px-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+        <fieldset className="space-y-3 rounded-hui-md p-4 bg-muted">
+          <legend className="px-1 text-sm font-medium text-foreground">
             Recurrence (for recurring events)
           </legend>
           <AuthField label="Series title" name="series_title" required={false} />
-          <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+          <label className="hui-label">
             <span>Cadence</span>
             <select
               name="interval_unit"
-              className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+              className="hui-input"
               defaultValue="month"
             >
               <option value="week">Weekly</option>
@@ -144,17 +144,17 @@ export function EditEventForm({
         required={false}
         defaultValue={defaultLocation ?? ""}
       />
-      <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+      <label className="hui-label">
         <span>Notes (optional)</span>
         <textarea
           name="notes"
           rows={3}
           defaultValue={defaultNotes ?? ""}
-          className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+          className="hui-input"
         />
       </label>
       {scheduleLocked ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           The confirmed time stays as agreed. Title, location, and notes can still be edited.
         </p>
       ) : (

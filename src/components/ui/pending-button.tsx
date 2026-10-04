@@ -2,7 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 
-import { cn } from "@/lib/ui/cn";
+import { huiButtonClass } from "@/components/hui/hui-button";
 
 type PendingButtonProps = {
   type?: "button" | "submit";
@@ -11,17 +11,8 @@ type PendingButtonProps = {
   pendingLabel?: string;
   children: React.ReactNode;
   className?: string;
-  variant?: "primary" | "secondary";
-};
-
-const baseClass =
-  "hui-focus-ring rounded-hui-md px-4 py-2.5 text-sm font-medium transition active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100";
-
-const variants = {
-  primary:
-    "rounded-full bg-primary text-primary-foreground hui-shadow-sm hover:bg-primary-hover",
-  secondary:
-    "border border-border bg-surface text-foreground hover:bg-muted",
+  variant?: "primary" | "secondary" | "soft" | "destructive";
+  size?: "default" | "sm" | "lg" | "touch";
 };
 
 export function PendingButton({
@@ -32,6 +23,7 @@ export function PendingButton({
   children,
   className = "",
   variant = "primary",
+  size = "default",
 }: PendingButtonProps) {
   const { pending } = useFormStatus();
   const isBusy = pending || disabled;
@@ -42,7 +34,7 @@ export function PendingButton({
       onClick={onClick}
       disabled={isBusy}
       aria-busy={pending || undefined}
-      className={cn(baseClass, variants[variant], className)}
+      className={huiButtonClass({ variant, size, shape: "pill", className })}
     >
       {pending ? pendingLabel : children}
     </button>

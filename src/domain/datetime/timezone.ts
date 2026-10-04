@@ -64,7 +64,8 @@ export function formatInstantInTimeZone(
   timeZone: string,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  return new Intl.DateTimeFormat(undefined, {
+  // Fixed locale so server and client render identical text (avoids hydration mismatches).
+  return new Intl.DateTimeFormat("en-NZ", {
     timeZone,
     ...options,
   }).format(new Date(iso));

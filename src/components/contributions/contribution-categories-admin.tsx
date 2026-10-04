@@ -33,7 +33,7 @@ export function ContributionCategoriesAdmin({
       </AuthForm>
 
       {active.length === 0 ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           No contribution categories yet. Add categories your group can claim on events.
         </p>
       ) : (
@@ -41,7 +41,7 @@ export function ContributionCategoriesAdmin({
           {active.map((category) => (
             <li
               key={category.id}
-              className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+              className="rounded-hui-md p-4 bg-muted"
             >
               <CategoryRow groupId={groupId} category={category} />
             </li>
@@ -51,8 +51,8 @@ export function ContributionCategoriesAdmin({
 
       {archived.length > 0 ? (
         <div>
-          <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Inactive</h3>
-          <ul className="mt-2 space-y-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <h3 className="text-sm font-bold text-foreground">Inactive</h3>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
             {archived.map((category) => (
               <li key={category.id}>{category.name}</li>
             ))}
@@ -72,7 +72,7 @@ function CategoryRow({
 }) {
   return (
     <div className="space-y-3">
-      <p className="font-medium text-zinc-900 dark:text-zinc-50">{category.name}</p>
+      <p className="font-medium text-foreground">{category.name}</p>
       <AuthForm
         action={renameContributionCategoryAction}
         submitLabel="Rename"
@@ -87,7 +87,7 @@ function CategoryRow({
         hiddenFields={{ group_id: groupId, category_id: category.id }}
         refreshOnSuccess
       >
-        <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
             name="follows_host"
@@ -103,7 +103,7 @@ function CategoryRow({
         hiddenFields={{ group_id: groupId, category_id: category.id }}
         refreshOnSuccess
       >
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           Deactivated categories stay on past events but cannot be claimed on new ones.
         </p>
       </AuthForm>

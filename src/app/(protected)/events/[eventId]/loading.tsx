@@ -1,5 +1,10 @@
-import { EventDetailHeavyFallback } from "@/components/events/event-detail-heavy-sections";
+import { AppShell } from "@/components/app/app-shell";
+import { EventBodySkeleton } from "@/components/events/event-page-sections";
 
 export default function EventDetailLoading() {
-  return <EventDetailHeavyFallback />;
+  return (
+    <AppShell title="Hui" hideTitle back={{ href: "/events", label: "Hui" }}>
+      <EventBodySkeleton />
+    </AppShell>
+  );
 }

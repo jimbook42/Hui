@@ -22,10 +22,10 @@ export function NotificationPreferencesSection({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <h3 className="text-sm font-bold text-foreground">
           Push notification types
         </h3>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           Choose which Hui notifications can interrupt you. In-app notifications remain available.
         </p>
         <AuthForm
@@ -63,24 +63,24 @@ export function NotificationPreferencesSection({
         </AuthForm>
       </div>
 
-      <div className="border-t border-zinc-200 pt-6 dark:border-zinc-800">
+      <div className="pt-6">
         <AuthForm
           action={updateReconnectReminderPreferenceAction}
           submitLabel="Save in-app preferences"
           refreshOnSuccess
         >
-          <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+          <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
             <input
               type="checkbox"
               name="member_reconnect_reminders_enabled"
               defaultChecked={reconnectRemindersEnabled}
-              className="mt-1 h-4 w-4 rounded border-zinc-300"
+              className="mt-1 h-4 w-4 rounded"
             />
             <span>
-              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+              <span className="font-medium text-foreground">
                 Reconnect reminders
               </span>
-              <span className="mt-1 block text-zinc-600 dark:text-zinc-400">
+              <span className="mt-1 block text-muted-foreground">
                 When a group you belong to enables reconnect reminders and has been inactive, Hui
                 can show an in-app reminder here.
               </span>
@@ -102,13 +102,13 @@ function PushPreference({
   defaultChecked: boolean;
 }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-4 text-sm text-zinc-700 dark:text-zinc-300">
+    <label className="flex cursor-pointer items-center justify-between gap-4 text-sm text-foreground">
       <span>{label}</span>
       <input
         type="checkbox"
         name={name}
         defaultChecked={defaultChecked}
-        className="h-4 w-4 rounded border-zinc-300"
+        className="h-4 w-4 rounded"
       />
     </label>
   );

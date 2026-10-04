@@ -33,7 +33,7 @@ export function AuthOAuthButtons({ providers, next }: AuthOAuthButtonsProps) {
               <button
                 type="submit"
                 disabled={pending}
-                className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800/50"
+                className="hui-btn hui-btn-secondary rounded-full hui-focus-ring w-full"
               >
                 {provider.id !== "email" ? (
                   <AuthOAuthProviderIcon
@@ -47,7 +47,7 @@ export function AuthOAuthButtons({ providers, next }: AuthOAuthButtonsProps) {
         ))}
       </ul>
       {state.error ? (
-        <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
+        <p className="hui-message-error mt-3" role="alert">
           {state.error}
         </p>
       ) : null}
@@ -63,10 +63,10 @@ function AuthMethodDivider() {
         className="absolute inset-0 flex items-center"
         aria-hidden="true"
       >
-        <div className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+        <div className="w-full" />
       </div>
       <div className="relative flex justify-center text-xs uppercase tracking-wide">
-        <span className="bg-white px-2 text-zinc-500 dark:bg-zinc-900">
+        <span className="bg-surface px-2 text-muted-foreground">
           or
         </span>
       </div>

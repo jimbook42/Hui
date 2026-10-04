@@ -51,13 +51,13 @@ export function EventContributionsSection({
 
   if (eventStatus === "cancelled") {
     return (
-      <section id="contributions" className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Contributions</h2>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+      <section id="contributions" className="hui-card-section">
+        <h2 className="hui-type-section text-foreground">Contributions</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           This event was cancelled. Contribution coordination is closed.
         </p>
         {board.claimed.length > 0 ? (
-          <ul className="mt-4 space-y-1 text-sm text-zinc-700 dark:text-zinc-300">
+          <ul className="mt-4 space-y-1 text-sm text-foreground">
             {board.claimed.map((c) => (
               <li key={c.id}>{contributionLine(c)}</li>
             ))}
@@ -68,37 +68,37 @@ export function EventContributionsSection({
   }
 
   return (
-    <section id="contributions" className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Contributions</h2>
+    <section id="contributions" className="hui-card-section">
+      <h2 className="hui-type-section text-foreground">Contributions</h2>
       {isProposed ? (
-        <p className="mt-2 text-sm text-amber-800 dark:text-amber-200/90">
+        <p className="hui-message-note mt-2">
           This event is not confirmed yet. Claims help the group coordinate, but plans may still change.
         </p>
       ) : null}
       {!hasActiveCategories ? (
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-sm text-muted-foreground">
           This group has no contribution categories yet. Group admins can add categories from the group
           page.
         </p>
       ) : null}
 
       {viewerHistoryCount !== null && viewerHistoryCount > 0 ? (
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-sm text-muted-foreground">
           You&apos;ve contributed {viewerHistoryCount} time{viewerHistoryCount === 1 ? "" : "s"} across
           recent confirmed events in this group.
         </p>
       ) : null}
 
       {dietaryReminder ? (
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{dietaryReminder}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{dietaryReminder}</p>
       ) : null}
 
       {hasActiveCategories ? (
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           <div>
-            <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Still needed</h3>
+            <h3 className="text-sm font-bold text-foreground">Still needed</h3>
             {board.stillNeeded.length === 0 ? (
-              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="mt-2 text-sm text-muted-foreground">
                 Every active category has someone bringing it.
               </p>
             ) : (
@@ -112,7 +112,7 @@ export function EventContributionsSection({
                         category={category}
                       />
                     ) : (
-                      <span className="text-sm text-zinc-700 dark:text-zinc-300">{category.name}</span>
+                      <span className="text-sm text-foreground">{category.name}</span>
                     )}
                   </li>
                 ))}
@@ -121,13 +121,13 @@ export function EventContributionsSection({
           </div>
 
           <div>
-            <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Claimed</h3>
+            <h3 className="text-sm font-bold text-foreground">Claimed</h3>
             {board.claimed.length === 0 ? (
-              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="mt-2 text-sm text-muted-foreground">
                 No one has claimed a contribution yet.
               </p>
             ) : (
-              <ul className="mt-2 space-y-1 text-sm text-zinc-700 dark:text-zinc-300">
+              <ul className="mt-2 space-y-1 text-sm text-foreground">
                 {board.claimed.map((c) => (
                   <li key={c.id}>{contributionLine(c)}</li>
                 ))}
@@ -139,14 +139,14 @@ export function EventContributionsSection({
 
       {board.mine.length > 0 && canCoordinate ? (
         <div className="mt-8">
-          <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Your contributions</h3>
+          <h3 className="text-sm font-bold text-foreground">Your contributions</h3>
           <ul className="mt-3 space-y-4">
             {board.mine.map((contribution) => (
               <li
                 key={contribution.id}
-                className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+                className="rounded-hui-md p-4 bg-muted"
               >
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                <p className="text-sm font-bold text-foreground">
                   {contribution.categoryName ?? "Contribution"}
                 </p>
                 <ManageContributionForm eventId={eventId} contribution={contribution} />
@@ -157,7 +157,7 @@ export function EventContributionsSection({
       ) : null}
 
       {!canCoordinate && board.claimed.length > 0 ? (
-        <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-4 text-sm text-muted-foreground">
           This event is complete. Contribution claims are read-only.
         </p>
       ) : null}
@@ -175,8 +175,8 @@ function ClaimForm({
   category: ContributionCategoryRow;
 }) {
   return (
-    <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
-      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{category.name}</p>
+    <div className="rounded-hui-md p-3 bg-muted">
+      <p className="text-sm font-bold text-foreground">{category.name}</p>
       <AuthForm
         action={claimContributionAction}
         submitLabel={`Claim ${category.name}`}
@@ -207,7 +207,7 @@ function ManageContributionForm({
 }) {
   return (
     <div className="mt-3 space-y-4">
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">{contribution.label}</p>
+      <p className="text-sm text-muted-foreground">{contribution.label}</p>
       <AuthForm
         action={updateContributionAction}
         submitLabel="Update description"
@@ -233,7 +233,7 @@ function ManageContributionForm({
         }}
         refreshOnSuccess
       >
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           Release this category so someone else can claim it.
         </p>
       </AuthForm>

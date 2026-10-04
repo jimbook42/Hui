@@ -12,7 +12,14 @@ import {
   WallClockDateField,
   WallClockTimeField,
 } from "@/components/events/wall-clock-picker-field";
+import { AttendanceChoice } from "@/components/hui/attendance-choice";
+import { LocationMap } from "@/components/hui/event-location-panel";
+import { HuiLinkButton } from "@/components/hui/hui-button";
+import { HuiSurface } from "@/components/hui/hui-surface";
+import { AttendanceDot } from "@/components/hui/attendance-dot";
+import { ArrowLeftIcon, BowlIcon, ClockIcon, PinIcon } from "@/components/hui/icons";
 import { PendingButton } from "@/components/ui/pending-button";
+import { attendanceStateFromChoice } from "@/domain/events/home";
 import { buildContributionBoard } from "@/domain/contributions/display";
 import { formatCompactEventTimeRange, formatEventTimeRange } from "@/domain/datetime/timezone";
 import {
@@ -56,14 +63,7 @@ type EventParticipantRespondFlowProps = {
   secondaryDataPromise?: Promise<RespondSecondaryData>;
 };
 
-const choiceButtonBase =
-  "hui-focus-ring w-full rounded-hui-xl border px-4 py-3.5 text-left text-sm font-medium transition active:scale-[0.99] disabled:opacity-60";
-
-function selectedChoiceClass(selected: boolean): string {
-  return selected
-    ? `${choiceButtonBase} border-primary bg-primary text-primary-foreground`
-    : `${choiceButtonBase} border-border bg-surface text-foreground hover:bg-muted`;
-}
+const FLOW_PROGRESS: ParticipantFlowStep[] = ["time", "place", "bring", "done"];
 
 function contributionBoardLine(
   categoryName: string,
@@ -129,17 +129,19 @@ export function EventParticipantRespondFlow({
       return;
     }
     let cancelled = false;
-    secondaryDataPromise
-      .then((data) => {
+    // Two-argument then: promises streamed from the server are thenables whose `.then` does not return a promise.
+    secondaryDataPromise.then(
+      (data) => {
         if (!cancelled) {
           setSecondary(data);
         }
-      })
-      .catch(() => {
+      },
+      () => {
         if (!cancelled) {
           setSecondaryError("Contribution details could not be loaded. Try again in a moment.");
         }
-      });
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -287,108 +289,113 @@ export function EventParticipantRespondFlow({
   }
 
   const showBack = participantFlowStepsForBack(step) !== null;
+  const stepIndex = FLOW_PROGRESS.indexOf(step);
+  const chosenState = attendanceStateFromChoice(viewerResponse, maybeResponsesEnabled);
 
   return (
     <div className="mx-auto w-full max-w-md pb-8">
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        {groupName}
-        {" · "}
-        <Link href={eventDetailPath(eventId)} className="underline-offset-4 hover:underline">
-          Full event page
+      <header className="hui-rise flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="hui-type-label text-accent">{groupName}</p>
+          <p className="mt-0.5 truncate text-lg font-extrabold leading-tight text-foreground">{eventTitle}</p>
+          <p className="mt-0.5 text-sm font-semibold text-muted-foreground">{timeLabel}</p>
+        </div>
+        <Link
+          href={eventDetailPath(eventId)}
+          className="hui-focus-ring inline-flex min-h-11 shrink-0 items-center rounded-full bg-surface px-4 text-sm font-extrabold text-foreground hui-shadow-sm"
+        >
+          Event
         </Link>
-      </p>
+      </header>
+
+      {stepIndex >= 0 ? (
+        <ol className="mt-5 flex gap-1.5" aria-label="Progress">
+          {FLOW_PROGRESS.map((name, index) => (
+            <li
+              key={name}
+              aria-current={index === stepIndex ? "step" : undefined}
+              className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                index <= stepIndex ? "bg-primary" : "bg-muted"
+              }`}
+            />
+          ))}
+        </ol>
+      ) : null}
 
       {showBack ? (
         <button
           type="button"
           onClick={goBack}
-          className="mt-4 text-sm font-medium text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
+          className="hui-focus-ring -ml-2 mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-extrabold text-muted-foreground transition-colors hover:text-foreground"
         >
+          <ArrowLeftIcon size={18} />
           Back
         </button>
       ) : null}
 
       {step === "time" ? (
-        <section className="mt-6 space-y-4">
-          <div>
-            <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">{eventTitle}</h1>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{timeLabel}</p>
+        <section className="hui-rise mt-6 space-y-5">
+          <h1 className="hui-type-page-title text-foreground">Can you make this?</h1>
+          <div className="space-y-3">
+            {attendanceOptions.map((option) => {
+              const isSelected = viewerResponse === option;
+              const isPending = pendingChoice === option && isSavingAttendance;
+              return (
+                <AttendanceChoice
+                  key={option}
+                  state={attendanceStateFromChoice(option, true)}
+                  label={participantAttendanceChoiceLabel(option)}
+                  selected={isSelected}
+                  pending={isPending}
+                  disabled={!canRespond || (isSavingAttendance && pendingChoice !== option)}
+                  onClick={() => saveAttendance(option)}
+                />
+              );
+            })}
+            {canSuggestTime ? (
+              <AttendanceChoice
+                state="action"
+                icon={<ClockIcon size={20} />}
+                label="Suggest another time"
+                onClick={() => openSuggestTime()}
+              />
+            ) : null}
           </div>
-          <div>
-            <p className="text-base font-medium text-zinc-900 dark:text-zinc-50">
-              Can you make this time?
+          {actionError ? (
+            <p className="hui-message-error" role="alert">
+              {actionError}
             </p>
-            <div className="mt-3 space-y-2">
-              {attendanceOptions.map((option) => {
-                const isSelected = viewerResponse === option;
-                const isPending = pendingChoice === option && isSavingAttendance;
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    disabled={!canRespond || (isSavingAttendance && pendingChoice !== option)}
-                    aria-pressed={isSelected}
-                    aria-busy={isPending || undefined}
-                    onClick={() => saveAttendance(option)}
-                    className={selectedChoiceClass(isSelected)}
-                  >
-                    {isPending ? "Saving…" : participantAttendanceChoiceLabel(option)}
-                  </button>
-                );
-              })}
-              {canSuggestTime ? (
-                <button
-                  type="button"
-                  className={selectedChoiceClass(false)}
-                  onClick={() => openSuggestTime()}
-                >
-                  Suggest another time
-                </button>
-              ) : null}
-            </div>
-            {actionError ? (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
-                {actionError}
-              </p>
-            ) : null}
-            {viewerResponse && !pendingChoice ? (
-              <p className="mt-3 text-sm text-emerald-700 dark:text-emerald-400" role="status">
-                Saved: {participantAttendanceSummaryLabel(viewerResponse)}
-              </p>
-            ) : null}
-            {viewerResponse === "available" || viewerResponse === "maybe" ? (
-              <PendingButton
-                type="button"
-                className="mt-4 w-full"
-                onClick={() => pushStep("place")}
-              >
-                Continue
-              </PendingButton>
-            ) : null}
-          </div>
+          ) : null}
+          {viewerResponse && !pendingChoice ? (
+            <p className="hui-message-success" role="status">
+              Saved: {participantAttendanceSummaryLabel(viewerResponse)}
+            </p>
+          ) : null}
+          {viewerResponse === "available" || viewerResponse === "maybe" ? (
+            <PendingButton type="button" size="touch" onClick={() => pushStep("place")}>
+              Continue
+            </PendingButton>
+          ) : null}
         </section>
       ) : null}
 
       {step === "declined" ? (
-        <section className="mt-6 space-y-4">
-          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            You can&apos;t make this time.
-          </h1>
-          {viewerResponse ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Your response: {participantAttendanceSummaryLabel(viewerResponse)}
-            </p>
-          ) : null}
-          <div className="space-y-2">
+        <section className="hui-rise mt-6 space-y-5">
+          <h1 className="hui-type-page-title text-foreground">You can&apos;t make it.</h1>
+          <p className="hui-type-supporting">
+            Thanks for letting the group know
+            {viewerResponse ? ` — ${participantAttendanceSummaryLabel(viewerResponse)}.` : "."}
+          </p>
+          <div className="space-y-3">
             {canSuggestTime ? (
-              <PendingButton type="button" className="w-full" onClick={() => openSuggestTime()}>
+              <PendingButton type="button" size="touch" onClick={() => openSuggestTime()}>
                 Suggest another time
               </PendingButton>
             ) : null}
             <PendingButton
               type="button"
-              variant="secondary"
-              className="w-full"
+              variant={canSuggestTime ? "soft" : "primary"}
+              size="touch"
               onClick={() => pushStep("done")}
             >
               Done
@@ -398,28 +405,33 @@ export function EventParticipantRespondFlow({
       ) : null}
 
       {step === "suggest-time" ? (
-        <section className="mt-6 space-y-4">
-          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Suggest another time
-          </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            This adds a new candidate for the group to consider. It does not change your attendance
-            response.
-          </p>
-          <WallClockDateField label="Date" value={timeDate} onChange={setTimeDate} />
-          <WallClockTimeField label="Starts" value={timeStart} onChange={setTimeStart} />
-          <WallClockTimeField label="Ends" value={timeEnd} onChange={setTimeEnd} />
-          {suggestPreview ? (
-            <p className="text-sm text-zinc-700 dark:text-zinc-300">{suggestPreview}</p>
-          ) : null}
+        <section className="hui-rise mt-6 space-y-5">
+          <div>
+            <h1 className="hui-type-page-title text-foreground">Suggest another time</h1>
+            <p className="hui-type-supporting mt-2">
+              This adds a new time for the group to consider. It does not change your answer.
+            </p>
+          </div>
+          <HuiSurface padding="md" shape="soft" className="space-y-4">
+            <WallClockDateField label="Date" value={timeDate} onChange={setTimeDate} />
+            <div className="grid grid-cols-2 gap-3">
+              <WallClockTimeField label="Starts" value={timeStart} onChange={setTimeStart} />
+              <WallClockTimeField label="Ends" value={timeEnd} onChange={setTimeEnd} />
+            </div>
+            {suggestPreview ? (
+              <p className="rounded-hui-md bg-sage-soft px-4 py-3 text-sm font-bold text-foreground">
+                {suggestPreview}
+              </p>
+            ) : null}
+          </HuiSurface>
           {suggestError ? (
-            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+            <p className="hui-message-error" role="alert">
               {suggestError}
             </p>
           ) : null}
           <PendingButton
             type="button"
-            className="w-full"
+            size="touch"
             pendingLabel="Submitting…"
             disabled={isSubmittingSuggest}
             onClick={submitSuggestedTime}
@@ -430,59 +442,62 @@ export function EventParticipantRespondFlow({
       ) : null}
 
       {step === "suggest-done" ? (
-        <section className="mt-6 space-y-4">
-          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Alternative time submitted
-          </h1>
-          {suggestSubmittedRange ? (
-            <p className="text-sm text-zinc-700 dark:text-zinc-300">{suggestSubmittedRange}</p>
-          ) : null}
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            The group still needs to agree on a time. Your attendance response stays separate.
-          </p>
-          {viewerResponse ? (
-            <p className="text-sm text-zinc-700 dark:text-zinc-300">
-              Your attendance: {participantAttendanceSummaryLabel(viewerResponse)}
+        <section className="hui-rise mt-6 space-y-5">
+          <h1 className="hui-type-page-title text-foreground">Suggestion sent</h1>
+          <HuiSurface tone="sage" shape="organic-alt" padding="md" className="space-y-1">
+            {suggestSubmittedRange ? (
+              <p className="text-lg font-extrabold text-foreground">{suggestSubmittedRange}</p>
+            ) : null}
+            <p className="text-sm font-semibold text-muted-foreground">
+              The group still needs to agree on a time. Your own answer stays separate
+              {viewerResponse ? ` (${participantAttendanceSummaryLabel(viewerResponse)}).` : " and is not set yet."}
             </p>
-          ) : (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">No attendance response yet.</p>
-          )}
-          <PendingButton type="button" className="w-full" onClick={() => pushStep("time")}>
-            Back to proposed time
+          </HuiSurface>
+          <PendingButton type="button" size="touch" onClick={() => pushStep("time")}>
+            Back to the proposed time
           </PendingButton>
         </section>
       ) : null}
 
       {step === "place" ? (
-        <section className="mt-6 space-y-4">
-          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">Place</h1>
-          <p className="text-sm text-zinc-700 dark:text-zinc-300">{placeView.line}</p>
-          <PendingButton type="button" className="w-full" onClick={() => pushStep("bring")}>
+        <section className="hui-rise mt-6 space-y-5">
+          <h1 className="hui-type-page-title text-foreground">Where it is</h1>
+          <div className="overflow-hidden rounded-hui-xl bg-surface hui-shadow-md">
+            <LocationMap
+              location={placeView.kind === "known" ? placeView.line : null}
+              showLabel={false}
+              className="h-40"
+            />
+            <div className="flex items-start gap-3 px-5 py-4">
+              <PinIcon size={20} className="mt-0.5 shrink-0 text-accent" />
+              <p className="text-lg font-extrabold leading-snug text-foreground">{placeView.line}</p>
+            </div>
+          </div>
+          <PendingButton type="button" size="touch" onClick={() => pushStep("bring")}>
             Continue
           </PendingButton>
         </section>
       ) : null}
 
       {step === "bring" ? (
-        <section className="mt-6 space-y-4">
-          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            What are you bringing?
-          </h1>
+        <section className="hui-rise mt-6 space-y-5">
+          <div>
+            <h1 className="hui-type-page-title text-foreground">What are you bringing?</h1>
+            <p className="hui-type-supporting mt-2">Totally optional. Pick one if it helps the group.</p>
+          </div>
           {secondaryError ? (
-            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+            <p className="hui-message-error" role="alert">
               {secondaryError}
             </p>
           ) : null}
           {!secondary && secondaryDataPromise ? (
             <div className="space-y-3" aria-busy="true">
-              <div className="h-16 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800" />
-              <div className="h-16 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800" />
+              <div className="hui-skeleton h-20 !rounded-hui-xl" />
+              <div className="hui-skeleton h-20 !rounded-hui-xl" />
             </div>
           ) : null}
           {secondary && categories.filter((c) => !c.archivedAt).length === 0 ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              This group has no contribution categories to claim.
-            </p>
+            <p className="hui-type-supporting">This group has no contribution categories to claim.</p>
           ) : null}
           {secondary && categories.filter((c) => !c.archivedAt).length > 0 ? (
             <ul className="space-y-3">
@@ -492,87 +507,111 @@ export function EventParticipantRespondFlow({
                   const claimed = board.claimed.find((c) => c.categoryId === category.id);
                   const isMine = claimed?.userId === viewerUserId;
                   return (
-                    <li
-                      key={category.id}
-                      className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800"
-                    >
-                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                        {contributionBoardLine(category.name, claimed)}
-                      </p>
-                      {!claimed && canCoordinateContributions ? (
-                        <div className="mt-2">
-                          <AuthForm
-                            action={claimContributionAction}
-                            submitLabel={`Claim ${category.name}`}
-                            hiddenFields={{
-                              event_id: eventId,
-                              group_id: groupId,
-                              category_id: category.id,
-                              category_name: category.name,
-                            }}
-                            refreshOnSuccess
+                    <li key={category.id}>
+                      <HuiSurface
+                        tone={isMine ? "sage" : claimed ? "subtle" : "default"}
+                        shape="soft"
+                        padding="md"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            aria-hidden="true"
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
                           >
-                            <AuthField
-                              label="What you're bringing (optional)"
-                              name="description"
-                              required={false}
-                            />
-                          </AuthForm>
+                            <BowlIcon size={20} />
+                          </span>
+                          <p className="min-w-0 flex-1 font-extrabold text-foreground">
+                            {contributionBoardLine(category.name, claimed)}
+                          </p>
                         </div>
-                      ) : null}
-                      {isMine ? (
-                        <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-400">
-                          You&apos;re bringing this.
-                        </p>
-                      ) : null}
+                        {!claimed && canCoordinateContributions ? (
+                          <div className="mt-3">
+                            <AuthForm
+                              action={claimContributionAction}
+                              submitLabel={`Claim ${category.name}`}
+                              hiddenFields={{
+                                event_id: eventId,
+                                group_id: groupId,
+                                category_id: category.id,
+                                category_name: category.name,
+                              }}
+                              refreshOnSuccess
+                            >
+                              <AuthField
+                                label="What you're bringing (optional)"
+                                name="description"
+                                required={false}
+                              />
+                            </AuthForm>
+                          </div>
+                        ) : null}
+                        {isMine ? (
+                          <p className="hui-message-success mt-2">You&apos;re bringing this.</p>
+                        ) : null}
+                      </HuiSurface>
                     </li>
                   );
                 })}
             </ul>
           ) : null}
-          <PendingButton type="button" className="w-full" onClick={() => pushStep("done")}>
+          <PendingButton type="button" size="touch" onClick={() => pushStep("done")}>
             Done
           </PendingButton>
         </section>
       ) : null}
 
       {step === "done" ? (
-        <section className="mt-6 space-y-4">
-          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">All set</h1>
-          <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <li>
-              <span className="text-zinc-500">Time:</span> {timeLabel}
-            </li>
-            <li>
-              <span className="text-zinc-500">Attendance:</span>{" "}
-              {viewerResponse
-                ? participantAttendanceSummaryLabel(viewerResponse)
-                : "No response yet"}
-            </li>
-            <li>
-              <span className="text-zinc-500">Place:</span> {placeView.line}
-            </li>
-            {board.mine.map((c) => (
-              <li key={c.id}>
-                <span className="text-zinc-500">You:</span> {c.categoryName ?? "Contribution"} —{" "}
-                {c.label}
-              </li>
-            ))}
-            {board.stillNeeded.length > 0 ? (
-              <li>
-                <span className="text-zinc-500">Still needed:</span>{" "}
-                {board.stillNeeded.map((c) => c.name).join(", ")}
-              </li>
-            ) : null}
-          </ul>
-          {suggestSubmittedRange ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Alternative suggested: {suggestSubmittedRange}
-            </p>
-          ) : null}
-          <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
-            Thanks — you&apos;re done for now.
-          </p>
+        <section className="hui-rise mt-6 space-y-5">
+          <HuiSurface tone={chosenState === "no" ? "subtle" : "sage"} shape="organic" padding="lg" className="text-center">
+            <div className="hui-pop mx-auto flex w-fit">
+              <AttendanceDot state={chosenState} label={participantAttendanceSummaryLabel(viewerResponse ?? "available")} size="lg" />
+            </div>
+            <h1 className="hui-type-page-title mt-4 text-foreground">All set</h1>
+            <p className="hui-type-supporting mt-1">Thanks — you&apos;re done for now.</p>
+          </HuiSurface>
+          <HuiSurface padding="md" shape="soft">
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="font-bold text-muted-foreground">Time</dt>
+                <dd className="text-right font-extrabold text-foreground">{timeLabel}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="font-bold text-muted-foreground">Your answer</dt>
+                <dd className="text-right font-extrabold text-foreground">
+                  {viewerResponse ? participantAttendanceSummaryLabel(viewerResponse) : "No response yet"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="font-bold text-muted-foreground">Place</dt>
+                <dd className="text-right font-extrabold text-foreground">{placeView.line}</dd>
+              </div>
+              {board.mine.map((c) => (
+                <div key={c.id} className="flex justify-between gap-4">
+                  <dt className="font-bold text-muted-foreground">You&apos;re bringing</dt>
+                  <dd className="text-right font-extrabold text-foreground">
+                    {c.categoryName ?? "Contribution"} — {c.label}
+                  </dd>
+                </div>
+              ))}
+              {board.stillNeeded.length > 0 ? (
+                <div className="flex justify-between gap-4">
+                  <dt className="font-bold text-muted-foreground">Still needed</dt>
+                  <dd className="text-right font-extrabold text-foreground">
+                    {board.stillNeeded.map((c) => c.name).join(", ")}
+                  </dd>
+                </div>
+              ) : null}
+              {suggestSubmittedRange ? (
+                <div className="flex justify-between gap-4">
+                  <dt className="font-bold text-muted-foreground">Suggested</dt>
+                  <dd className="text-right font-extrabold text-foreground">{suggestSubmittedRange}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </HuiSurface>
+          <HuiLinkButton href={eventDetailPath(eventId)} variant="soft" size="touch">
+            Back to the event
+          </HuiLinkButton>
         </section>
       ) : null}
     </div>

@@ -78,19 +78,19 @@ export function AuthForm({
         : null}
       {children}
       {state.error ? (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+        <p className="hui-message-error" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.message ? (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
+        <p className="hui-message-success" role="status">
           {state.message}
         </p>
       ) : null}
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        className="hui-btn hui-btn-primary rounded-full hui-focus-ring w-full"
       >
         {pending ? "Please wait…" : submitLabel}
       </button>
@@ -114,10 +114,10 @@ export function AuthField({
   defaultValue?: string;
 }) {
   return (
-    <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+    <label className="hui-label">
       <span>{label}</span>
       <input
-        className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+        className="hui-input"
         name={name}
         type={type}
         autoComplete={autoComplete}

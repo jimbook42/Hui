@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   attendanceVisualAccessibleLabel,
+  countAttendance,
   rosterResponseToVisualState,
 } from "./attendance-visual";
 
@@ -21,5 +22,13 @@ describe("attendanceVisualAccessibleLabel", () => {
     expect(attendanceVisualAccessibleLabel("Alex", "pending")).toBe(
       "Alex, no answer yet",
     );
+  });
+});
+
+describe("countAttendance", () => {
+  it("counts each state and collapses maybe when disabled", () => {
+    const members = [{ response: "yes" as const }, { response: "maybe" as const }, { response: "no" as const }, { response: null }];
+    expect(countAttendance(members, true)).toEqual({ yes: 1, maybe: 1, no: 1, pending: 1, total: 4 });
+    expect(countAttendance(members, false)).toEqual({ yes: 1, maybe: 0, no: 1, pending: 2, total: 4 });
   });
 });
