@@ -110,6 +110,18 @@ export function AddressSearchField({
           Address search is not configured yet. Enter the place below or pin it on the map.
         </p>
       ) : null}
+      {configured === true ? (
+        <p className="text-xs text-muted-foreground">
+          <a
+            href="https://www.geoapify.com/"
+            className="hui-focus-ring underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Powered by Geoapify
+          </a>
+        </p>
+      ) : null}
       {visibleResults.length > 0 ? (
         <ul
           id={listId}
