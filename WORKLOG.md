@@ -2,6 +2,19 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-023A Web Push finalisation
+
+- Removed temporary failed-delivery diagnostics from the profile control, Web Push delivery path, and delivery test; restored the permanent generic browser error handling and `WebPushError` status normalization.
+- HUI-023 production verification: canonical `member_notifications`, eligible push planning, safe outbox claiming, bounded retries, stale `sending` recovery, VAPID delivery, account opt-in, account-deletion subscription cleanup, notification click routing, signed-out `next` routing, cron backup drain, immediate drain, and no delivery for ineligible kinds.
+- Confirmed production Android Web Push delivery at https://hui-seven-gamma.vercel.app. No VAPID keys, schema, architecture, or HUI-024 notification preferences changed.
+- Validation: `npm run validate` passed — lint, typecheck, 299 tests passed / 2 skipped, and production build passed. Next.js reported its existing middleware-to-proxy deprecation warning.
+
+## 2026-10-04 — HUI-023 production deploy
+
+- Deployed `f0c35f8` to Vercel production without merging main. `dpl_6S5YZXGTMKnz14MwoYnG7N6o8dYQ` READY. Alias https://hui-seven-gamma.vercel.app. Smoke: `/` 200, `/sign-in` 200, `/profile` 307 to sign-in, `/serwist/sw.js` 200.
+- Production env names present: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET`, `SUPABASE_SECRET_KEY`. No `PUSH_DELIVERY_SECRET`.
+- Real browser Web Push delivery QA is still outstanding.
+
 ## 2026-10-03 — HUI-023
 
 - Changed: Web Push on the existing HUI-021 records. Migration `20261004020000_web_push_notifications.sql` adds `profiles.web_push_enabled`, `push_subscriptions`, `notification_push_outbox`, and extends `queue_member_notification`. Profile setting subscribes this browser. Serwist service worker shows the push and opens the event, host, contribution, or group path. Sign-in `next` is unchanged.

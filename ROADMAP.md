@@ -2,9 +2,9 @@
 
 **Phase:** Core MVP — recurring planning, invitations, and delivery  
 **Milestone:** GDD definition of done (not yet reached)  
-**Current ticket:** **HUI-023** — Web Push notifications implemented on `feat/hui-023-web-push-notifications` (migration `20261004020000`); not merged and not production-deployed
-**Last completed ticket:** **HUI-022B** — share-link group invitations (`20261004010000` + app)
-**Overall progress:** Foundation through HUI-022B shipped event, scheduling, host, contribution, dietary, in-app notification, and share-link foundations. **HUI-023** adds opt-in Web Push on top of those in-app records. Core GDD loop (recurring planning cycles, recurrence UX, persistent availability, scheduling recommendations, email delivery, calendar/memories, completed-event → next cycle) remains **open**.
+**Current ticket:** **HUI-023A** — Web Push cleanup/finalisation on `feat/hui-023-web-push-notifications`. Not merged to main.
+**Last completed ticket:** **HUI-023A** — Web Push cleanup/finalisation after HUI-023 production delivery
+**Overall progress:** Foundation through HUI-023A shipped event, scheduling, host, contribution, dietary, in-app notification, Web Push, and share-link foundations. Core GDD loop (recurring planning cycles, recurrence UX, persistent availability, scheduling recommendations, email delivery, calendar/memories, completed-event → next cycle) remains **open**.
 
 **North star:** HuI proposes, coordinates and remembers. **The group decides.**
 
@@ -150,7 +150,7 @@ Persistent recurring constraints/preferences with privacy; per-event override; W
 | 4 — Scheduling & consensus | [~] Partial | HUI-009/010/017: manual candidates, consensus, finalise; **no** recommendation engine or persistent availability |
 | 5 — Host coordination | [~] Partial | HUI-020 foundation + **HUI-022A**: auto-propose on confirm, accept/swap, optional hosting, no auto-accept, consecutive-host setting, member “I don’t host”; **not** household rotation or full fairness engine |
 | 6 — Contributions & dietary | [~] Partial | HUI-018/019 + **HUI-022A**: seed categories on confirm, host-bound categories, default assignee column; **not** full standing-preference editor or admin reassignment flows |
-| 7 — Notifications | [~] In-app + Web Push | HUI-021 in-app records; **HUI-023** opt-in Web Push, subscriptions, and outbox delivery. **Not** email. Cancel/reopen are not separate notification kinds. |
+| 7 — Notifications | [x] In-app + Web Push deployed and verified | HUI-021 canonical in-app records plus **HUI-023** opt-in Web Push delivery. **Not** email. |
 | 8 — Recurring planning & invitations | [ ] Not started | HUI-022–026 (and related) |
 | 9 — Delivery, calendar, memories | [ ] Not started | HUI-027–029 |
 | 10 — Production MVP | [ ] Not started | HUI-030 |
@@ -231,7 +231,8 @@ Do not treat these as completing the larger GDD capabilities listed in later sec
 ### Phase 7 — Notifications (foundation only)
 
 - [x] **HUI-021** — **Foundation:** `member_notifications`, read state, trigger-driven in-app messages for some domain events, reconnect reminders (`sync_reconnect_reminders_for_member`), profile opt-out; migration `20261002220000_notifications.sql`
-- [x] **HUI-023** — **Web Push:** opt-in `profiles.web_push_enabled`, multi-device `push_subscriptions`, `notification_push_outbox` written by `queue_member_notification`, server drain with VAPID, service-worker push/click. Migration `20261004020000_web_push_notifications.sql`. In-app rows stay canonical. Reconnect reminders are not pushed.
+- [x] **HUI-023** — **Web Push:** opt-in subscriptions, eligible notification outbox delivery, VAPID sending, service-worker push/click routing, retries, stale recovery, immediate drain, and cron backup. Production browser delivery verified. Migration `20261004020000` is applied. Not merged to main.
+- [x] **HUI-023A** — cleanup/finalisation: removed temporary Web Push delivery diagnostics while retaining production error handling, retry, delivery, and security behaviour.
 - [ ] **Not in HUI-021/023:** email; invitation notifications for people who are not already members; notification kinds for cancel/reopen beyond the existing trigger set
 
 ### Phase 8 — Calendar export
@@ -391,10 +392,10 @@ Also exercise: minimum attendance, deadline, admin override, host veto, never-ho
 
 | Item | Detail |
 | --- | --- |
-| Supabase migrations in production | **Applied 2026-10-03** on linked project `xmvzzypefpiethefrfka` via `supabase db push` (includes `20261002170000`–`20261003000000` through HUI-022A). **Live multi-user product QA** for coordination/notifications still required before treating flows as done. |
+| Supabase migrations in production | **Applied through `20261004020000`** on linked project `xmvzzypefpiethefrfka` (`jimbook42's Project`, the Hui production database). Local and remote migration history match. **Live multi-user product QA** for coordination, invitations, and Web Push is still required. |
 | Invitation + delivery | Share links shipped (HUI-022B). Invitation notifications for non-members are not part of Web Push. Email delivery is HUI-028. |
 | Recurring engine | The cycle engine (previously numbered HUI-023) depends on the extended recurrence model (HUI-024) and benefits from HUI-025/026 |
-| Web Push production | HUI-023 needs `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, and `SUPABASE_SECRET_KEY` on the server before any browser can subscribe. Do not commit the private key. |
+| Web Push production | Deployed and real Android browser delivery verified. No VAPID or schema changes in HUI-023A. |
 | Event completion | Schema supports `completed` and `event_memories`; app workflow required before next-cycle loop is real |
 | OAuth production | Google/Microsoft/Facebook enabled in Supabase dashboard; live sign-in retest recommended |
 
