@@ -2,6 +2,14 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026U.4 production deploy (partial)
+
+- **Deploy:** Vercel production `https://hui-seven-gamma.vercel.app` — deployments `dpl_CyY3uj3x9Vo48MAxPF7BQ5sV2nHP` then `dpl_*` (second deploy for env); git `d2add56` (Geoapify attribution + prior geocoder adapter).
+- **Vercel env:** `HUI_GEOCODING_PROVIDER=geoapify` set on Production, Preview, and Development. **`HUI_GEOCODING_HTTP_KEY` not set** (no Geoapify key in repo, `.env.local`, or Geoapify login session).
+- **Live smoke:** authenticated `/` → `/dashboard`; signed-out `/` shows landing; `/profile` hub loads; `/api/geocode?q=Wellington%20Cuba` returns `configured:false` until API key added; proposal form shows address search field (manual pin still available).
+- **DB:** `events.food_involvement` confirmed on linked production.
+- **Blocked for U.4 sign-off:** add free-tier Geoapify API key to Vercel, redeploy, re-test autocomplete + food UI on production.
+
 ## 2026-10-05 — HUI-026U.4 follow-up (production geocoder + migration)
 
 - **Geocoder:** Geoapify Address Autocomplete adapter (`GeoapifyGeocodingProvider`); configure `HUI_GEOCODING_PROVIDER=geoapify` and `HUI_GEOCODING_HTTP_KEY` (server-only). Chosen for NZ address search, commercial terms, low early-scale cost (3k credits/day free tier), no MapLibre coupling; `HttpGeocodingProvider` retained for custom backends.
