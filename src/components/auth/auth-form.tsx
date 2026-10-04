@@ -4,6 +4,11 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 
 import type { AuthActionState } from "@/app/auth/actions";
+import {
+  beginInteraction,
+  endInteraction,
+  markInteraction,
+} from "@/lib/perf/client-interaction-perf";
 
 type AuthFormProps = {
   action: (
@@ -30,6 +35,23 @@ export function AuthForm({
   const router = useRouter();
 
   useEffect(() => {
+    if (pending) {
+      markInteraction("form_save", "request-start");
+    }
+  }, [pending]);
+
+  useEffect(() => {
+    if (state.message) {
+      markInteraction("form_save", "request-end");
+      markInteraction("form_save", "usable-ui");
+      endInteraction("form_save");
+    }
+    if (state.error) {
+      endInteraction("form_save");
+    }
+  }, [state.message, state.error]);
+
+  useEffect(() => {
     if (!refreshOnSuccess || !state.message) {
       return;
     }
@@ -40,7 +62,15 @@ export function AuthForm({
   }, [refreshOnSuccess, state.message, router]);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form
+      action={formAction}
+      className="space-y-4"
+      onSubmit={() => {
+        beginInteraction("form_save");
+        markInteraction("form_save", "handler-start");
+        markInteraction("form_save", "optimistic-ui-visible");
+      }}
+    >
       {hiddenFields
         ? Object.entries(hiddenFields).map(([name, value]) => (
             <input key={name} type="hidden" name={name} value={value} />

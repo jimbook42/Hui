@@ -24,6 +24,8 @@ import { getGroupDetail } from "@/lib/groups/queries";
 import { getGroupResponseSettings } from "@/lib/groups/response-settings";
 import { getEventSchedulingContext } from "@/lib/scheduling/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
+import { devTimed } from "@/lib/perf/dev-server-timing";
+import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { createClient } from "@/lib/supabase/server";
 
 import type { EventActionState } from "./actions";
@@ -179,81 +181,101 @@ export async function setAvailabilityResponseAction(
   _prev: EventActionState,
   formData: FormData,
 ): Promise<EventActionState> {
-  const eventId = String(formData.get("event_id") ?? "");
-  const candidateId = String(formData.get("candidate_id") ?? "");
-  const choice = parseAvailabilityChoice(String(formData.get("response") ?? ""));
+  return devTimed("setAvailabilityResponseAction:total", async () => {
+    const eventId = String(formData.get("event_id") ?? "");
+    const candidateId = String(formData.get("candidate_id") ?? "");
+    const choice = parseAvailabilityChoice(String(formData.get("response") ?? ""));
 
-  if (!eventId || !candidateId || !choice) {
-    return { error: "Choose a valid response." };
-  }
+    if (!eventId || !candidateId || !choice) {
+      return { error: "Choose a valid response." };
+    }
 
-  const { supabase, user } = await requireUser();
-  const detail = await getEventDetail(supabase, eventId, user.id);
-  if (!detail) {
-    return { error: "Event not found." };
-  }
+    const user = await devTimed("setAvailabilityResponseAction:getUser", () =>
+      getServerAuthUser(),
+    );
+    if (!user) {
+      redirect("/sign-in");
+    }
+    const supabase = await getServerSupabase();
 
-  if (!canRespondToCandidates(detail.status)) {
-    return { error: "This event is no longer accepting availability responses." };
-  }
+    const detail = await devTimed("setAvailabilityResponseAction:getEventDetail", () =>
+      getEventDetail(supabase, eventId, user.id),
+    );
+    if (!detail) {
+      return { error: "Event not found." };
+    }
 
-  const responseSettings = await getGroupResponseSettings(supabase, detail.groupId);
-  if (!responseSettings) {
-    return { error: "You do not have access to this group." };
-  }
+    if (!canRespondToCandidates(detail.status)) {
+      return { error: "This event is no longer accepting availability responses." };
+    }
 
-  const maybeError = validateAvailabilityChoice(
-    choice,
-    responseSettings.maybeResponsesEnabled,
-  );
-  if (maybeError) {
-    return { error: maybeError };
-  }
+    const responseSettings = await devTimed(
+      "setAvailabilityResponseAction:response-settings",
+      () => getGroupResponseSettings(supabase, detail.groupId),
+    );
+    if (!responseSettings) {
+      return { error: "You do not have access to this group." };
+    }
 
-  const privateNoteRaw = String(formData.get("private_note") ?? "");
-  const privateNote = normalizePrivateAttendanceNote(privateNoteRaw);
-  if (privateNoteRaw.trim().length > 0 && privateNote === null) {
-    return { error: "Private note is too long (500 characters max)." };
-  }
+    const maybeError = validateAvailabilityChoice(
+      choice,
+      responseSettings.maybeResponsesEnabled,
+    );
+    if (maybeError) {
+      return { error: maybeError };
+    }
 
-  const { data: candidate, error: candidateError } = await supabase
-    .from("event_candidates")
-    .select("id, status")
-    .eq("id", candidateId)
-    .eq("event_id", eventId)
-    .eq("group_id", detail.groupId)
-    .maybeSingle();
+    const privateNoteRaw = String(formData.get("private_note") ?? "");
+    const privateNote = normalizePrivateAttendanceNote(privateNoteRaw);
+    if (privateNoteRaw.trim().length > 0 && privateNote === null) {
+      return { error: "Private note is too long (500 characters max)." };
+    }
 
-  if (candidateError) {
-    return { error: candidateError.message };
-  }
-  if (!candidate) {
-    return { error: "Candidate not found." };
-  }
-  if (candidate.status !== "proposed" && candidate.status !== "selected") {
-    return { error: "This candidate is no longer open for responses." };
-  }
+    const { data: candidate, error: candidateError } = await devTimed(
+      "setAvailabilityResponseAction:candidate",
+      async () =>
+        await supabase
+          .from("event_candidates")
+          .select("id, status")
+          .eq("id", candidateId)
+          .eq("event_id", eventId)
+          .eq("group_id", detail.groupId)
+          .maybeSingle(),
+    );
 
-  const dbResponse = availabilityToDbResponse(choice);
-  const { error } = await supabase.from("event_responses").upsert(
-    {
-      candidate_id: candidateId,
-      user_id: user.id,
-      response: dbResponse,
-      visibility: "group",
-      note: privateNote,
-    },
-    { onConflict: "candidate_id,user_id" },
-  );
+    if (candidateError) {
+      return { error: candidateError.message };
+    }
+    if (!candidate) {
+      return { error: "Candidate not found." };
+    }
+    if (candidate.status !== "proposed" && candidate.status !== "selected") {
+      return { error: "This candidate is no longer open for responses." };
+    }
 
-  if (error) {
-    return { error: error.message };
-  }
+    const dbResponse = availabilityToDbResponse(choice);
+    const { error } = await devTimed("setAvailabilityResponseAction:upsert", async () =>
+      await supabase.from("event_responses").upsert(
+        {
+          candidate_id: candidateId,
+          user_id: user.id,
+          response: dbResponse,
+          visibility: "group",
+          note: privateNote,
+        },
+        { onConflict: "candidate_id,user_id" },
+      ),
+    );
 
-  revalidatePath(`/events/${eventId}`);
-  revalidatePath(`/events/${eventId}/respond`);
-  schedulePushDelivery();
-  return { message: "Response saved." };
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath(`/events/${eventId}/respond`);
+    schedulePushDelivery();
+    return { message: "Response saved." };
+  });
 }
 
 export async function finaliseEventAction(

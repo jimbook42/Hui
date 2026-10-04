@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { InteractionPerfBootstrap } from "@/components/perf/interaction-perf-bootstrap";
 import { HuiSerwistProvider } from "@/components/serwist-provider";
 import { HUI_PWA_DESCRIPTION } from "@/lib/pwa/manifest";
 
@@ -45,7 +46,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-        <HuiSerwistProvider>{children}</HuiSerwistProvider>
+        <HuiSerwistProvider>
+          <InteractionPerfBootstrap />
+          {children}
+        </HuiSerwistProvider>
       </body>
     </html>
   );

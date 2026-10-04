@@ -2,6 +2,18 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-04 — HUI-026P.2 end-to-end interaction latency audit
+
+**Finding:** Server query improvements in P/P.1 did not fix perceived slowness because several flows still blocked visible acknowledgement on server completion + RSC refresh. Attendance waited for `setAvailabilityResponseAction` (including `getEventDetail`) before `pushStep`; notification Open awaited mark-read before `router.push`.
+
+**Instrumentation:** `src/lib/perf/client-interaction-perf.ts` (`?hui_perf=1`), `InteractionPerfBootstrap`, extended `HUI_DEV_PERF` spans on `setAvailabilityResponseAction`, audit doc `docs/performance/HUI-026P.2-audit.md` with Android procedure.
+
+**Fixes:** Optimistic attendance UI (immediate selected state + step advance, deferred `router.refresh`, rollback on error); notification navigate-first; profile `loading.tsx`; form save perf marks.
+
+**Not changed:** Heavy `getEventDetail` inside attendance action; dietary list still uses deferred `router.refresh`; Vercel `iad1` vs Supabase region unconfirmed in dashboard.
+
+- `npm run validate` passed.
+
 ## 2026-10-04 — HUI-026P.1 systemic latency (common paths)
 
 **Diagnosis (code + architecture; Android timings from ticket, not re-measured in Cursor):**

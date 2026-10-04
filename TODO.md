@@ -9,6 +9,7 @@ Unresolved implementation questions only. Add items when a real decision or task
 - [ ] **HUI-026E** — Contribution flow redesign.
 - [x] **HUI-026P** — Performance audit + core interaction speed (baseline documented in WORKLOG; dev perf via `HUI_DEV_PERF=1`).
 - [x] **HUI-026P.1** — Systemic latency diagnosis + common path fixes (see WORKLOG; physical Android re-measurement still required).
+- [x] **HUI-026P.2** — End-to-end interaction latency audit (`docs/performance/HUI-026P.2-audit.md`; Android timings still manual).
 - [ ] Decide when to add shadcn/ui (likely start of Phase 1 UI).
 - [x] Member hosting standing **I always host** (`always` enum + selection preference; not auto-accept).
 - [ ] **HUI-022A.4 live Grok QA** — Family Dinner: accept → Ask to swap (accepted host) → replacement accept → Main lifecycle while proposing.

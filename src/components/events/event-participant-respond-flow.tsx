@@ -29,6 +29,11 @@ import {
 } from "@/domain/scheduling/participant-labels";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 import { eventDetailPath } from "@/lib/events/paths";
+import {
+  beginInteraction,
+  endInteraction,
+  markInteraction,
+} from "@/lib/perf/client-interaction-perf";
 import type { ContributionCategoryRow, EventContributionRow } from "@/lib/contributions/types";
 import type { EventCandidateRow } from "@/lib/scheduling/types";
 
@@ -170,23 +175,41 @@ export function EventParticipantRespondFlow({
     if (!canRespond || isSavingAttendance) {
       return;
     }
+    const interaction = `attendance_${choice}`;
+    beginInteraction(interaction);
+    markInteraction(interaction, "handler-start");
     setActionError(null);
+    const priorOverride = responseOverride;
+    const nextStep = nextStepAfterAttendanceSave(choice);
     setPendingChoice(choice);
+    setResponseOverride(choice);
+    pushStep(nextStep);
+    markInteraction(interaction, "optimistic-ui-visible");
+    markInteraction(interaction, "usable-ui");
+
     startSaveAttendance(async () => {
+      markInteraction(interaction, "request-start");
       const formData = new FormData();
       formData.set("event_id", eventId);
       formData.set("candidate_id", candidate.id);
       formData.set("response", choice);
       const result: EventActionState = await setAvailabilityResponseAction({}, formData);
+      markInteraction(interaction, "request-end");
       if (result.error) {
         setActionError(result.error);
         setPendingChoice(null);
+        setResponseOverride(priorOverride);
+        pushStep("time");
+        endInteraction(interaction);
         return;
       }
-      setResponseOverride(choice);
       setPendingChoice(null);
-      pushStep(nextStepAfterAttendanceSave(choice));
-      router.refresh();
+      window.setTimeout(() => {
+        markInteraction(interaction, "navigation-start");
+        router.refresh();
+        markInteraction(interaction, "navigation-end");
+        endInteraction(interaction);
+      }, 0);
     });
   }
 
@@ -265,7 +288,7 @@ export function EventParticipantRespondFlow({
                   <button
                     key={option}
                     type="button"
-                    disabled={!canRespond || isSavingAttendance}
+                    disabled={!canRespond || (isSavingAttendance && pendingChoice !== option)}
                     aria-pressed={isSelected}
                     aria-busy={isPending || undefined}
                     onClick={() => saveAttendance(option)}
