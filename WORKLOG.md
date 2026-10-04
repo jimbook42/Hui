@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026U.4 host place persistence (release fix)
+
+- **Gap:** accepted host UI/actions allowed place edits but RLS blocked direct `events` updates for non-creators.
+- **Fix:** `update_event_place` RPC (migration `20261005040000_accepted_host_update_event_place`); `updateEventAction` routes host-only saves through RPC; PGlite tests in `host-event-place.test.ts`.
+- **Deploy:** `supabase db push` on `xmvzzypefpiethefrfka`; Vercel production `dpl_CB7Zgr7cCM3276dRR2gj8HDB8rL3` → https://hui-seven-gamma.vercel.app (git `b67ffb3`).
+
 ## 2026-10-05 — HUI-026U.4 final polish (sign-off)
 
 - **Geoapify:** global autocomplete with `bias=countrycode:auto` on every request; optional `bias=proximity:lon,lat` when the user already has a map pin (`proximityLat`/`proximityLng` on `/api/geocode`). No default country filter.
