@@ -47,3 +47,13 @@ export function subtractDaysFromDateOnly(dateOnly: string, days: number): string
   date.setUTCDate(date.getUTCDate() - days);
   return formatDateOnlyUtc(date);
 }
+
+export function addDaysToDateOnly(dateOnly: string, days: number): string {
+  if (!isDateOnly(dateOnly) || days < 0) {
+    throw new Error("invalid date add");
+  }
+  const [y, m, d] = dateOnly.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + days);
+  return formatDateOnlyUtc(date);
+}

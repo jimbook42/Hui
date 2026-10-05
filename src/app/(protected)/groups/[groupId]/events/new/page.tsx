@@ -9,6 +9,7 @@ import {
 } from "@/domain/events/permissions";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { loadGroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
+import { loadProposalTimeRecommendations } from "@/lib/scheduling/time-recommendations-data";
 import { createClient } from "@/lib/supabase/server";
 
 type PageProps = {
@@ -55,6 +56,21 @@ export default async function NewGroupEventPage({ params }: PageProps) {
     detail.viewerRole,
   );
 
+  const planningTargetDate = planningContext?.cycle.cycleTargetDate ?? null;
+
+  const todayDateOnly = new Date().toISOString().slice(0, 10);
+  const timeRecommendations = await loadProposalTimeRecommendations(
+    supabase,
+    user!.id,
+    groupId,
+    {
+      timeZone: detail.settings.timezone,
+      planningTargetDate,
+      maybeResponsesEnabled: detail.settings.maybeResponsesEnabled,
+      todayDateOnly,
+    },
+  );
+
   return (
     <AppShell
       title="Propose a hui"
@@ -70,6 +86,7 @@ export default async function NewGroupEventPage({ params }: PageProps) {
         members={hostEligibleMembers}
         contributionCategories={contributionCategories}
         planningCycle={planningContext?.cycle ?? null}
+        timeRecommendations={timeRecommendations}
       />
     </AppShell>
   );

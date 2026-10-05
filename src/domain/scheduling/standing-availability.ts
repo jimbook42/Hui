@@ -140,18 +140,20 @@ function rangesOverlap(
   return Math.max(aStart, bStart) < Math.min(aEnd, bEnd);
 }
 
+export type StandingAvailabilitySignal = "usually_available" | "usually_unavailable" | "unknown";
+
 /**
- * Infer a non-binding hint for one candidate from standing windows.
+ * Classify standing windows for one candidate (no per-user text — for aggregation only).
  * Unavailable overlaps win over available overlaps (safer default).
  */
-export function inferStandingAvailabilityHint(
+export function inferStandingAvailabilitySignal(
   windows: StandingAvailabilityWindow[],
   startsAt: string,
   endsAt: string | null,
   timeZone: string,
-): StandingAvailabilityHint | null {
+): StandingAvailabilitySignal {
   if (windows.length === 0) {
-    return null;
+    return "unknown";
   }
 
   const span = candidateMinuteSpan(startsAt, endsAt, timeZone);
@@ -173,18 +175,36 @@ export function inferStandingAvailabilityHint(
   }
 
   if (hasUnavailable) {
+    return "usually_unavailable";
+  }
+  if (hasAvailable) {
+    return "usually_available";
+  }
+  return "unknown";
+}
+
+/**
+ * Infer a non-binding hint for one candidate from standing windows.
+ * Unavailable overlaps win over available overlaps (safer default).
+ */
+export function inferStandingAvailabilityHint(
+  windows: StandingAvailabilityWindow[],
+  startsAt: string,
+  endsAt: string | null,
+  timeZone: string,
+): StandingAvailabilityHint | null {
+  const signal = inferStandingAvailabilitySignal(windows, startsAt, endsAt, timeZone);
+  if (signal === "usually_unavailable") {
     return {
       suggestedChoice: "unavailable",
       summary: "You're usually unavailable then",
     };
   }
-
-  if (hasAvailable) {
+  if (signal === "usually_available") {
     return {
       suggestedChoice: "available",
       summary: "Usually works for you",
     };
   }
-
   return null;
 }

@@ -147,11 +147,11 @@ Persistent recurring constraints/preferences with privacy; per-event override; W
 | 1 — Identity, groups, membership | [~] Partial | Auth, profiles, households, roles; **no** invitation/join flow |
 | 2 — Group settings | [~] Partial | Settings UI (HUI-007); some fields unused in app (e.g. proposal deadline) |
 | 3 — Event domain | [~] Foundation | HUI-008: CRUD, cancel; recurrence **series anchor only** |
-| 4 — Scheduling & consensus | [~] Partial | HUI-009/010/017: manual candidates, consensus, finalise; **HUI-025** standing availability (owner-only); **no** recommendation engine (HUI-026) |
+| 4 — Scheduling & consensus | [~] Partial | HUI-009/010/017: manual candidates, consensus, finalise; **HUI-025** standing availability; **HUI-026** explainable time recommendations in propose flow (deterministic, aggregate-only) |
 | 5 — Host coordination | [~] Partial | HUI-020 foundation + **HUI-022A**: auto-propose on confirm, accept/swap, optional hosting, no auto-accept, consecutive-host setting, member standings (`default`, `always`, `prefer_not`, `never`); **not** household rotation or full fairness engine |
 | 6 — Contributions & dietary | [~] Partial | HUI-018/019 + **HUI-022A** + **HUI-026E**: seed categories, host-bound sync, default assignee standing editor, manager assign/reassign/release, member status UX; **not** full GDD standing-preference matrix |
 | 7 — Notifications | [x] In-app + Web Push deployed and verified | HUI-021 canonical in-app records plus **HUI-023** opt-in Web Push delivery. **Not** email. |
-| 8 — Recurring planning & invitations | [~] Partial | HUI-022B share-link invitations + **HUI-028** cycle shipped; HUI-025 standing availability shipped; recurrence UX and HUI-026 remain open |
+| 8 — Recurring planning & invitations | [~] Partial | HUI-022B share-link invitations + **HUI-028** cycle shipped; HUI-025 standing availability shipped; **HUI-026** proposal-time recommendations shipped; broader recurrence UX remains open |
 | 9 — Delivery, calendar, memories | [~] Partial | Web Push shipped as HUI-023; email, calendar, memories, and next-cycle integration remain open |
 | 10 — Production MVP | [ ] Not started | HUI-030 |
 
@@ -295,9 +295,10 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 
 ### HUI-026 — Scheduling / recommendation engine
 
-- Combine recurrence, weekdays, windows, persistent + event availability, consensus thresholds
-- Surface strongest candidate options with **explainable** summaries (e.g. “7/7 can attend”)
-- Document recommendation algorithm; no opaque leaderboard scores
+- [x] **HUI-026 (alpha)** — Deterministic time recommendations in the **propose hui** flow: up to 3 suggested slots from standing availability (server-side only), planning target window (HUI-028), and optional per-slot event responses; event-specific responses dominate standing; aggregate explanations only (“Works for most of the group”); suggestions never auto-confirm, auto-attend, or auto-host.
+- **Deliberate limits:** no ML/LLM; no calendar import; no user-visible scores; no new recommendation tables; standing rows remain owner-private under RLS (ranking uses server secret client after membership check).
+- [ ] Combine full recurrence weekday patterns, time windows, and consensus-aware auto-proposal
+- [ ] Surface strongest options on open **existing** hui candidate lists (beyond new proposals)
 - Optional: auto-propose candidates for group review (group still confirms)
 
 **Host rotation (full GDD)** — implement within the cycle engine or HUI-026, or a focused slice:
@@ -420,7 +421,7 @@ The original GDD capabilities remain separately tracked: HUI-025 persistent avai
 | Candidate times + consensus + minimum attendance | [x] HUI-009/010/017 |
 | Deadlines + response reminders | [ ] |
 | Admin override, host veto, reopen, material changes | [~] Partial (veto, finalise; not full GDD) |
-| Hui finds strongest options (explainable) | [ ] HUI-026 |
+| Hui finds strongest options (explainable) | [~] HUI-026 alpha (propose flow) |
 | Host eligibility, never hosts, recommendation, accept/decline, swaps, deferred turns | [~] HUI-020 foundation only |
 | Contribution categories, standing rules, event assign/claim/reassign, history | [~] HUI-018 foundation only |
 | Dietary information (privacy tiers) | [x] HUI-019 |

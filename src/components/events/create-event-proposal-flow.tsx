@@ -21,6 +21,8 @@ import {
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
+import type { TimeRecommendation } from "@/domain/scheduling/time-recommendations";
+import { SuggestedTimesList } from "@/components/events/suggested-times-list";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
 import type { GroupMemberRow, GroupSettingsRow } from "@/lib/groups/types";
 import { cn } from "@/lib/ui/cn";
@@ -46,6 +48,7 @@ type CreateEventProposalFlowProps = {
   members: GroupMemberRow[];
   contributionCategories: ContributionCategoryRow[];
   planningCycle: GroupPlanningCycle | null;
+  timeRecommendations: TimeRecommendation[];
 };
 
 const initialActionState: EventActionState = {};
@@ -77,6 +80,7 @@ export function CreateEventProposalFlow({
   members,
   contributionCategories,
   planningCycle,
+  timeRecommendations,
 }: CreateEventProposalFlowProps) {
   const initialDraft = useMemo(
     () => buildInitialProposalDraft(settings, { groupName, cycle: planningCycle }),
@@ -186,6 +190,26 @@ export function CreateEventProposalFlow({
       ...current,
       candidates: current.candidates.filter((_, i) => i !== index),
     }));
+  }
+
+  const selectedSuggestionKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const candidate of draft.candidates) {
+      keys.add(`${candidate.startsAt}|${candidate.endsAt ?? ""}`);
+    }
+    return keys;
+  }, [draft.candidates]);
+
+  function applySuggestion(suggestion: TimeRecommendation) {
+    setStepError(null);
+    const merged = mergeWallClockIntoCandidates(draft.candidates, {
+      startsAt: suggestion.startsAt,
+      endsAt: suggestion.endsAt,
+    });
+    if (merged.candidates.length === draft.candidates.length) {
+      return;
+    }
+    setDraft((current) => ({ ...current, candidates: merged.candidates }));
   }
 
   const reviewMissing: string[] = [];
@@ -442,6 +466,12 @@ export function CreateEventProposalFlow({
               Suggest a time. The group answers before anything is confirmed.
             </p>
           </div>
+          <SuggestedTimesList
+            suggestions={timeRecommendations}
+            timeZone={settings.timezone}
+            selectedKeys={selectedSuggestionKeys}
+            onSelect={applySuggestion}
+          />
           {draft.candidates.length > 0 ? (
             <ul className="space-y-2">
               {draft.candidates.map((candidate, index) => (
@@ -466,12 +496,7 @@ export function CreateEventProposalFlow({
                 </li>
               ))}
             </ul>
-          ) : (
-            <p className="hui-message-note" role="status">
-              Choose a date and time, then tap Continue. Add another time only if you want more than
-              one option.
-            </p>
-          )}
+          ) : null}
           <div className="space-y-4 rounded-hui-xl bg-surface p-5 hui-shadow-md">
             <p className="font-extrabold text-foreground">Add a time</p>
             <WallClockDateField

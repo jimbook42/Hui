@@ -2,6 +2,15 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026 Explainable time recommendations
+
+- **Model:** `rankTimeRecommendations` in `src/domain/scheduling/time-recommendations.ts` — event response > standing signal > unknown; bounded slot generation around `planning_target_date` / 14-day fallback; deterministic sort; max 3 suggestions with human explanations.
+- **Privacy:** standing availability stays owner-only (RLS unchanged); `loadProposalTimeRecommendations` verifies active membership then reads standing via server secret client; UI receives aggregate slots + copy only.
+- **UX:** `SuggestedTimesList` on propose-hui Time step; proposer can use, ignore, or manually add times.
+- **Tests:** `time-recommendations.test.ts`, `time-recommendations-hui-026.test.ts` (RLS + aggregate payload).
+- **Migration:** none.
+- **Deferred:** recommendations on existing hui scheduling section; full weekday/window recurrence inputs; auto-propose candidates.
+
 ## 2026-10-05 — HUI UX follow-up: member decisions + Manage Hui navigation
 
 - **Decisions:** `create_event_decision` now requires active group membership (not event manager); creators may edit drafts with zero responses; finalize/cancel unchanged (event manager). Main hui **Group decisions** card shows empty state + **Ask the group**; reuse 026F form.
