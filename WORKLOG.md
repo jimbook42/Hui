@@ -2,6 +2,16 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-025 Persistent availability & preferences
+
+- **Before:** only per-candidate `event_responses` (yes/no/maybe); no standing weekly preferences; respond flow always cold-start.
+- **Data:** `group_member_standing_availability` + `standing_availability_kind` enum; owner-only RLS + membership trigger; migration `20261005210000_hui_025_persistent_availability.sql`.
+- **Domain:** `standing-availability.ts` (window labels, overlap, hint inference; unavailable overlaps beat available).
+- **UX:** Profile **Usual availability** hub + group **More → Usual availability**; `/events/.../respond` shows hint only when viewer has no response yet — explicit tap still required.
+- **Privacy:** members cannot SELECT another member's standing rows; no new group-visible schedule surface.
+- **Tests:** `standing-availability.test.ts`, `standing-availability-hui-025.test.ts`.
+- **Deferred:** HUI-026 recommendation engine, calendar import, prefer/maybe standing tier, personal timezone override per window.
+
 ## 2026-10-05 — HUI-028 Recurring planning cycle
 
 - **Before:** `recurrence_series` anchor per proposal only; no group cadence, planning window, cycle identity, or next-planning UX.

@@ -71,6 +71,7 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
         hostingEnabled={primary.hostingEnabled}
         viewerUserId={user.id}
         initialViewerResponse={primary.candidate.viewerResponse}
+        standingAvailabilityHint={primary.standingAvailabilityHint}
         secondaryDataPromise={secondaryDataPromise}
       />
     </AppShell>

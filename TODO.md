@@ -20,4 +20,5 @@ Unresolved implementation questions only. Add items when a real decision or task
 - [ ] **HUI-022B live QA** — share invite link → sign-up/sign-in return → join; regenerate invalidates old link.
 - [ ] HUI-022 remainder — named invites, invitation records/lifecycle, invitation notifications (email is HUI-028; Web Push does not notify non-members).
 - [x] **HUI-028** — Recurring planning cycle (see WORKLOG 2026-10-05).
+- [x] **HUI-025** — Persistent standing availability per group (see WORKLOG 2026-10-05).
 - [ ] Recurrence configuration and user-friendly recurrence UX (weeks/months/N intervals, weekday patterns, time windows, and previews).

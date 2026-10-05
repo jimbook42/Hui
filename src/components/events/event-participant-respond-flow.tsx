@@ -40,6 +40,7 @@ import {
   participantAttendanceChoiceLabel,
   participantAttendanceSummaryLabel,
 } from "@/domain/scheduling/participant-labels";
+import type { StandingAvailabilityHint } from "@/domain/scheduling/standing-availability";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 import { eventDetailPath } from "@/lib/events/paths";
 import {
@@ -67,6 +68,7 @@ type EventParticipantRespondFlowProps = {
   hostingEnabled: boolean;
   viewerUserId: string;
   initialViewerResponse: AvailabilityChoice | null;
+  standingAvailabilityHint: StandingAvailabilityHint | null;
   secondaryDataPromise?: Promise<RespondSecondaryData>;
 };
 
@@ -104,6 +106,7 @@ export function EventParticipantRespondFlow({
   coordinates,
   viewerUserId,
   initialViewerResponse,
+  standingAvailabilityHint,
   secondaryDataPromise,
 }: EventParticipantRespondFlowProps) {
   const router = useRouter();
@@ -376,6 +379,19 @@ export function EventParticipantRespondFlow({
       {step === "time" ? (
         <section className="hui-rise mt-6 space-y-5">
           <h1 className="hui-type-page-title text-foreground">Can you make this?</h1>
+          {standingAvailabilityHint && viewerResponse === null ? (
+            <HuiSurface padding="sm" className="border border-accent/20 bg-accent/5">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Your usual availability
+              </p>
+              <p className="mt-1 text-sm font-extrabold text-foreground">
+                {standingAvailabilityHint.summary}
+              </p>
+              <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                For this hui, choose what works — your answer below is what counts.
+              </p>
+            </HuiSurface>
+          ) : null}
           <div className="space-y-3">
             {attendanceOptions.map((option) => {
               const isSelected = viewerResponse === option;

@@ -15,6 +15,7 @@ import { GroupRecurrencePlanningCard } from "@/components/groups/group-recurrenc
 import { GroupForm, GroupNameField } from "@/components/groups/group-form";
 import { GroupInviteSection } from "@/components/groups/group-invite-section";
 import { GroupMemberCoordination } from "@/components/groups/group-member-coordination";
+import { StandingAvailabilityEditor } from "@/components/profile/standing-availability-editor";
 import { GroupMembersHouseholds } from "@/components/groups/group-members-households";
 import { GroupSettingsForm } from "@/components/groups/group-settings-form";
 import {
@@ -31,6 +32,7 @@ import { HuiSurface } from "@/components/hui/hui-surface";
 import {
   BowlIcon,
   CalendarIcon,
+  ClockIcon,
   LeafIcon,
   PeopleIcon,
   PlusIcon,
@@ -56,6 +58,7 @@ import { getGroupDetail } from "@/lib/groups/queries";
 import { getGroupHostHistory } from "@/lib/hosts/queries";
 import { getGroupHouseholdMemberView } from "@/lib/households/queries";
 import { loadGroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
+import { listMyStandingAvailabilityForGroup } from "@/lib/availability/queries";
 import { createClient } from "@/lib/supabase/server";
 
 function roleLabel(role: string): string {
@@ -90,14 +93,21 @@ export default async function GroupDetailPage({ params }: PageProps) {
     canProposeEvents(detail.viewerRole, detail.settings) &&
     (groupAllowsEventKind("one_off", detail.settings) ||
       groupAllowsEventKind("recurring", detail.settings));
-  const [householdView, contributionCategories, contributionHistory, hostHistory, sharedDietary] =
-    await Promise.all([
-      getGroupHouseholdMemberView(supabase, groupId, detail.members),
-      listContributionCategories(supabase, groupId),
-      getGroupContributionHistory(supabase, groupId, user!.id),
-      getGroupHostHistory(supabase, groupId, user!.id),
-      listGroupSharedDietary(supabase, groupId),
-    ]);
+  const [
+    householdView,
+    contributionCategories,
+    contributionHistory,
+    hostHistory,
+    sharedDietary,
+    standingAvailabilityWindows,
+  ] = await Promise.all([
+    getGroupHouseholdMemberView(supabase, groupId, detail.members),
+    listContributionCategories(supabase, groupId),
+    getGroupContributionHistory(supabase, groupId, user!.id),
+    getGroupHostHistory(supabase, groupId, user!.id),
+    listGroupSharedDietary(supabase, groupId),
+    listMyStandingAvailabilityForGroup(supabase, groupId, user!.id),
+  ]);
   const viewerCanManageCategories = canManageContributionCategories(detail.viewerRole);
 
   const planningContext = await loadGroupPlanningContext(
@@ -228,6 +238,23 @@ export default async function GroupDetailPage({ params }: PageProps) {
               members={detail.members}
               viewerUserId={user!.id}
               canManageMembers={viewerCanManage}
+            />
+          </DisclosureCard>
+
+          <DisclosureCard
+            title="Usual availability"
+            summary={
+              standingAvailabilityWindows.length === 0
+                ? "Set when you are usually free"
+                : `${standingAvailabilityWindows.length} saved`
+            }
+            icon={<ClockIcon size={20} />}
+          >
+            <StandingAvailabilityEditor
+              groupId={detail.id}
+              groupName={detail.name}
+              timeZone={detail.settings.timezone}
+              windows={standingAvailabilityWindows}
             />
           </DisclosureCard>
 

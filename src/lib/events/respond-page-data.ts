@@ -9,7 +9,12 @@ import {
   pickParticipantTimeCandidate,
 } from "@/domain/events/participant-flow";
 import { participantPlaceView } from "@/domain/events/participant-place";
+import {
+  inferStandingAvailabilityHint,
+  type StandingAvailabilityHint,
+} from "@/domain/scheduling/standing-availability";
 import { canRespondToCandidates } from "@/domain/scheduling/permissions";
+import { listMyStandingAvailabilityForGroup } from "@/lib/availability/queries";
 import { listContributionCategories, listEventContributions } from "@/lib/contributions/queries";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupSettingsByGroupId } from "@/lib/groups/settings-query";
@@ -29,6 +34,7 @@ export type RespondPrimaryData = {
   placeView: ReturnType<typeof participantPlaceView>;
   canCoordinateContributions: boolean;
   hostingEnabled: boolean;
+  standingAvailabilityHint: StandingAvailabilityHint | null;
 };
 
 export type RespondSecondaryData = {
@@ -82,6 +88,21 @@ export async function loadRespondPrimary(
     hostingEnabled: settings.hostingEnabled,
   });
 
+  const standingWindows = await listMyStandingAvailabilityForGroup(
+    supabase,
+    detail.groupId,
+    userId,
+  );
+  const standingAvailabilityHint =
+    candidate.viewerResponse === null
+      ? inferStandingAvailabilityHint(
+          standingWindows,
+          candidate.startsAt,
+          candidate.endsAt,
+          displayTimeZone,
+        )
+      : null;
+
   return {
     detail,
     candidate,
@@ -96,6 +117,7 @@ export async function loadRespondPrimary(
     placeView,
     canCoordinateContributions: canCoordinateContributions(detail.status),
     hostingEnabled: settings.hostingEnabled,
+    standingAvailabilityHint,
   };
 }
 

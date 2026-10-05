@@ -63,6 +63,11 @@ export default async function ProfilePage() {
             description="How you feel about hosting in each group"
           />
           <ProfileHubLink
+            href="/profile/availability"
+            title="Usual availability"
+            description="When you are usually free in each group"
+          />
+          <ProfileHubLink
             href="/profile/dietary"
             title="Dietary & food"
             description="Your dietary information and sharing"

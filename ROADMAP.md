@@ -147,11 +147,11 @@ Persistent recurring constraints/preferences with privacy; per-event override; W
 | 1 — Identity, groups, membership | [~] Partial | Auth, profiles, households, roles; **no** invitation/join flow |
 | 2 — Group settings | [~] Partial | Settings UI (HUI-007); some fields unused in app (e.g. proposal deadline) |
 | 3 — Event domain | [~] Foundation | HUI-008: CRUD, cancel; recurrence **series anchor only** |
-| 4 — Scheduling & consensus | [~] Partial | HUI-009/010/017: manual candidates, consensus, finalise; **no** recommendation engine or persistent availability |
+| 4 — Scheduling & consensus | [~] Partial | HUI-009/010/017: manual candidates, consensus, finalise; **HUI-025** standing availability (owner-only); **no** recommendation engine (HUI-026) |
 | 5 — Host coordination | [~] Partial | HUI-020 foundation + **HUI-022A**: auto-propose on confirm, accept/swap, optional hosting, no auto-accept, consecutive-host setting, member standings (`default`, `always`, `prefer_not`, `never`); **not** household rotation or full fairness engine |
 | 6 — Contributions & dietary | [~] Partial | HUI-018/019 + **HUI-022A** + **HUI-026E**: seed categories, host-bound sync, default assignee standing editor, manager assign/reassign/release, member status UX; **not** full GDD standing-preference matrix |
 | 7 — Notifications | [x] In-app + Web Push deployed and verified | HUI-021 canonical in-app records plus **HUI-023** opt-in Web Push delivery. **Not** email. |
-| 8 — Recurring planning & invitations | [~] Partial | HUI-022B share-link invitations shipped; recurring cycle, recurrence UX, HUI-025, and HUI-026 remain open |
+| 8 — Recurring planning & invitations | [~] Partial | HUI-022B share-link invitations + **HUI-028** cycle shipped; HUI-025 standing availability shipped; recurrence UX and HUI-026 remain open |
 | 9 — Delivery, calendar, memories | [~] Partial | Web Push shipped as HUI-023; email, calendar, memories, and next-cycle integration remain open |
 | 10 — Production MVP | [ ] Not started | HUI-030 |
 
@@ -288,10 +288,10 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 
 ### HUI-025 — Persistent personal availability / preferences
 
-- Store recurring constraints and preferences per member (privacy-preserving)
-- Per-event overrides
-- Works / Can make work / Can’t attend (align product copy and rules with maybe-enabled groups)
-- Feed HUI-026; do not re-prompt every cycle
+- [x] **HUI-025 (alpha)** — `group_member_standing_availability`: weekday + local time window + usually available/unavailable, scoped **per user per group**; owner-only RLS (no peer visibility of patterns); `/profile/availability` + group **Usual availability** disclosure; respond flow shows non-binding “Your usual availability” hint when no `event_responses` row yet; does **not** auto-write attendance.
+- **Deliberate limits:** no calendar import, no exception engine, no recommendation engine, no “prefer” tier, no cross-group global schedule; windows interpreted in **group timezone**; overlapping unavailable wins over available for hints only.
+- Per-event `event_responses` remain authoritative; historical responses unchanged when standing prefs change.
+- **Feeds HUI-026** (recommendation engine still open).
 
 ### HUI-026 — Scheduling / recommendation engine
 
@@ -415,7 +415,7 @@ The original GDD capabilities remain separately tracked: HUI-025 persistent avai
 | Recurring groups + casual groups + one-off events | [~] Settings/one-off/recurring **anchor** only |
 | Recurrence: weeks, months, N intervals, weekday patterns, multi-weekday, time windows, nominal preview | [ ] Open recurrence configuration work |
 | Recurrence schedules **planning**, not confirmed future chain | [ ] cycle engine (open) |
-| Persistent availability + event overrides + private availability | [ ] HUI-025 |
+| Persistent availability + event overrides + private availability | [x] HUI-025 (alpha; standing windows + hints) |
 | Works / Can make work / Can’t attend | [~] maybe/yes/no mechanics; copy/rules incomplete |
 | Candidate times + consensus + minimum attendance | [x] HUI-009/010/017 |
 | Deadlines + response reminders | [ ] |
