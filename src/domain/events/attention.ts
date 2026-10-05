@@ -82,8 +82,8 @@ export function buildEventAttention(facts: EventAttentionFacts): EventAttentionI
   ) {
     items.push({
       kind: "decision",
-      title: "A group decision needs your answer",
-      detail: "Pick an option for this hui.",
+      title: "A poll needs your answer",
+      detail: "Pick an option for this gathering.",
     });
   }
 

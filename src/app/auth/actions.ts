@@ -22,10 +22,16 @@ import { createSecretSupabaseClient } from "@/lib/supabase/admin";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { createClient } from "@/lib/supabase/server";
+import {
+  preservedFieldsOnSignInValidationError,
+  preservedFieldsOnSignUpValidationError,
+  type PreservedAuthFields,
+} from "@/domain/auth/form-field-preservation";
 
 export type AuthActionState = {
   error?: string;
   message?: string;
+  fields?: PreservedAuthFields;
 };
 
 export async function signUpAction(
@@ -39,13 +45,30 @@ export async function signUpAction(
   const next = sanitizeNextPath(String(formData.get("next") ?? ""));
 
   if (!email || !password) {
-    return { error: "Email and password are required." };
+    return {
+      error: "Email and password are required.",
+      fields: preservedFieldsOnSignUpValidationError({
+        email,
+        password,
+        displayName: displayNameRaw,
+      }),
+    };
   }
   if (!displayName) {
-    return { error: "Display name must be between 1 and 80 characters." };
+    return {
+      error: "Display name must be between 1 and 80 characters.",
+      fields: { display_name: displayNameRaw.trim(), email },
+    };
   }
   if (password.length < 8) {
-    return { error: "Password must be at least 8 characters." };
+    return {
+      error: "Password must be at least 8 characters.",
+      fields: preservedFieldsOnSignUpValidationError({
+        email,
+        password,
+        displayName,
+      }),
+    };
   }
 
   const supabase = await createClient();
@@ -81,7 +104,10 @@ export async function signInAction(
   const next = sanitizeNextPath(String(formData.get("next") ?? ""));
 
   if (!email || !password) {
-    return { error: "Email and password are required." };
+    return {
+      error: "Email and password are required.",
+      fields: preservedFieldsOnSignInValidationError({ email, password }),
+    };
   }
 
   const supabase = await createClient();

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { parseInviteJoinPayload } from "@/domain/invites/resolve";
+import { resolvePostInviteJoinPath } from "@/lib/invites/post-join-redirect";
 import { createClient } from "@/lib/supabase/server";
 
 export type JoinActionState = {
@@ -41,5 +42,6 @@ export async function joinGroupViaInviteAction(
     return { error: "This invite link is no longer valid." };
   }
 
-  redirect(`/groups/${result.groupId}`);
+  const destination = await resolvePostInviteJoinPath(supabase, result.groupId, user.id);
+  redirect(destination);
 }

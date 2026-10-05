@@ -9,6 +9,11 @@ import {
 } from "@/domain/events/validation";
 import { isValidCoordinates, type EventCoordinates } from "@/domain/events/location";
 import { parseEventFoodInvolvement, type EventFoodInvolvement } from "@/domain/events/food";
+import {
+  normalizeGatheringCustomDescription,
+  parseGatheringType,
+  type GatheringType,
+} from "@/domain/gathering/type";
 import { validateCandidateWindow } from "@/domain/scheduling/validation";
 
 export type ProposalCandidateInput = {
@@ -28,6 +33,8 @@ export type ProposalRecurrenceInput = {
 
 export type EventProposalDraft = {
   title: string;
+  gatheringType: GatheringType | null;
+  gatheringTypeCustom: string;
   location: string;
   /** Optional pin chosen on the map. Independent of the place text. */
   locationCoordinates?: EventCoordinates | null;
@@ -66,6 +73,8 @@ export type ProposeGroupEventPayload = {
   initialHostUserId: string | null;
   foodInvolvement: EventFoodInvolvement | null;
   hostPlaceRequired: boolean;
+  gatheringType: GatheringType;
+  gatheringTypeCustom: string | null;
 };
 
 export function candidatesForRpc(
@@ -169,6 +178,18 @@ export function validateEventProposalDraft(
     return { ok: false, error: "Say whether food is involved." };
   }
 
+  const gatheringType = parseGatheringType(draft.gatheringType);
+  if (!gatheringType) {
+    return { ok: false, error: "Choose what you are planning." };
+  }
+  let gatheringTypeCustom: string | null = null;
+  if (gatheringType === "other") {
+    gatheringTypeCustom = normalizeGatheringCustomDescription(draft.gatheringTypeCustom);
+    if (!gatheringTypeCustom) {
+      return { ok: false, error: "Describe what you are planning." };
+    }
+  }
+
   if (draft.candidates.length < 1) {
     return { ok: false, error: "Add at least one proposed time." };
   }
@@ -237,6 +258,8 @@ export function validateEventProposalDraft(
       initialHostUserId,
       foodInvolvement,
       hostPlaceRequired: options.hostingEnabled ? draft.hostPlaceRequired : false,
+      gatheringType,
+      gatheringTypeCustom,
     },
   };
 }

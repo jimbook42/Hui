@@ -18,13 +18,16 @@ import type { EventProposalDraft } from "@/domain/events/proposal";
 import { mergeWallClockIntoCandidates, parseWallClockCandidate } from "@/domain/events/proposal";
 import {
   buildInitialProposalDraft,
+  groupHasEstablishedRecurrence,
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
+import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
 import type { TimeRecommendation } from "@/domain/scheduling/time-recommendations";
 import { SuggestedTimesList } from "@/components/events/suggested-times-list";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
 import type { GroupMemberRow, GroupSettingsRow } from "@/lib/groups/types";
+import { formatNominalPlanningDate } from "@/lib/groups/planning-cycle";
 import { cn } from "@/lib/ui/cn";
 
 /**
@@ -119,9 +122,22 @@ export function CreateEventProposalFlow({
     setStep(next);
   }
 
+  const establishedRecurrence = groupHasEstablishedRecurrence(settings);
+
   function goNext() {
     setStepError(null);
     if (step === "name") {
+      if (!draft.gatheringType) {
+        setStepError("Choose what you are planning.");
+        return;
+      }
+      if (
+        draft.gatheringType === "other" &&
+        !draft.gatheringTypeCustom.trim()
+      ) {
+        setStepError("Describe what you are planning.");
+        return;
+      }
       if (!draft.title.trim()) {
         setStepError("Enter an event name.");
         return;
@@ -260,13 +276,57 @@ export function CreateEventProposalFlow({
 
       {step === "name" ? (
         <section className="hui-rise space-y-5">
-          <h2 className="hui-type-page-title text-foreground">What shall we call it?</h2>
+          <h2 className="hui-type-page-title text-foreground">What are you planning?</h2>
           <label className="hui-label">
-            <span>Name</span>
+            <span>Type of gathering</span>
+            <select
+              className="hui-input"
+              value={draft.gatheringType ?? ""}
+              onChange={(event) => {
+                const value = event.target.value as GatheringType | "";
+                setDraft((current) => ({
+                  ...current,
+                  gatheringType: value || null,
+                  gatheringTypeCustom:
+                    value === "other" ? current.gatheringTypeCustom : "",
+                }));
+              }}
+              required
+            >
+              <option value="" disabled>
+                Choose one…
+              </option>
+              {GATHERING_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {gatheringTypeLabel(type)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {draft.gatheringType === "other" ? (
+            <label className="hui-label">
+              <span>Describe it</span>
+              <input
+                className="hui-input"
+                value={draft.gatheringTypeCustom}
+                maxLength={80}
+                placeholder="Birthday picnic, book club…"
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    gatheringTypeCustom: event.target.value,
+                  }))
+                }
+                required
+              />
+            </label>
+          ) : null}
+          <label className="hui-label">
+            <span>Give it a name</span>
             <input
               className="hui-input text-lg font-bold"
               value={draft.title}
-              placeholder="Sunday roast, hot pot night…"
+              placeholder="Mum's birthday, Friday catch-up…"
               onChange={(event) =>
                 setDraft((current) => ({ ...current, title: event.target.value }))
               }
@@ -369,9 +429,12 @@ export function CreateEventProposalFlow({
               </div>
             </fieldset>
           ) : null}
-          {draft.eventKind === "recurring" && canRecurring ? (
+          {draft.eventKind === "recurring" && canRecurring && isFirstGroupEvent ? (
             <fieldset className="space-y-4 rounded-hui-lg bg-muted p-5">
               <legend className="px-1 text-sm font-extrabold">Recurrence</legend>
+              <p className="text-sm font-semibold text-muted-foreground">
+                This is when the rhythm starts — not necessarily when the first gathering happens.
+              </p>
               <label className="hui-label">
                 <span>Series title</span>
                 <input
@@ -441,7 +504,7 @@ export function CreateEventProposalFlow({
                 />
               </label>
               <WallClockDateField
-                label="Series starts on"
+                label="Cadence starts from"
                 value={draft.recurrence?.startsOn ?? ""}
                 onChange={(startsOn) =>
                   setDraft((current) => ({
@@ -460,6 +523,12 @@ export function CreateEventProposalFlow({
               />
             </fieldset>
           ) : null}
+          {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (
+            <p className="rounded-hui-lg bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
+              This hui continues {groupName}&apos;s usual gathering rhythm. Proposed times below are
+              when this gathering could happen — not confirmed dates yet.
+            </p>
+          ) : null}
         </section>
       ) : null}
 
@@ -470,6 +539,16 @@ export function CreateEventProposalFlow({
             <p className="hui-type-supporting mt-2">
               Suggest a time. The group answers before anything is confirmed.
             </p>
+            {draft.recurrence?.planningTargetDate ? (
+              <p className="hui-message-note mt-3" role="status">
+                Planning for around{" "}
+                {formatNominalPlanningDate(
+                  draft.recurrence.planningTargetDate,
+                  settings.timezone,
+                )}{" "}
+                — a target for this cycle, not a confirmed gathering time.
+              </p>
+            ) : null}
           </div>
           <SuggestedTimesList
             suggestions={timeRecommendations}

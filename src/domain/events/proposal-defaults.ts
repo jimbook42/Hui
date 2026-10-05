@@ -45,6 +45,8 @@ export function buildInitialProposalDraft(
 
   return {
     title: "",
+    gatheringType: null,
+    gatheringTypeCustom: "",
     location: "",
     notes: "",
     eventKind,

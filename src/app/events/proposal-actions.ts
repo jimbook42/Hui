@@ -128,6 +128,18 @@ export async function proposeGroupEventAction(
     }
   }
 
+  const { error: gatheringError } = await supabase
+    .from("events")
+    .update({
+      gathering_type: payload.gatheringType,
+      gathering_type_custom: payload.gatheringTypeCustom,
+    })
+    .eq("id", eventId)
+    .eq("group_id", groupId);
+  if (gatheringError) {
+    return { error: gatheringError.message };
+  }
+
   const { data: created, error: verifyError } = await supabase
     .from("events")
     .select("id, status, starts_at, ends_at")

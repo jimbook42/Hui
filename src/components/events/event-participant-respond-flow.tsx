@@ -381,7 +381,17 @@ export function EventParticipantRespondFlow({
 
       {step === "time" ? (
         <section className="hui-rise mt-6 space-y-5">
-          <h1 className="hui-type-page-title text-foreground">Can you make this?</h1>
+          {candidate.status === "proposed" ? (
+            <>
+              <h1 className="hui-type-page-title text-foreground">When could you make it?</h1>
+              <p className="hui-type-supporting">
+                Tell the group when you&apos;re available so everyone can work out a time that
+                suits.
+              </p>
+            </>
+          ) : (
+            <h1 className="hui-type-page-title text-foreground">Can you make this?</h1>
+          )}
           {standingAvailabilityHint && viewerResponse === null ? (
             <HuiSurface padding="sm" className="border border-accent/20 bg-accent/5">
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">

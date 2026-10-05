@@ -1,7 +1,8 @@
 "use client";
 
+import { createContext, useContext, useEffect, useId } from "react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { useActionState } from "react";
 
 import type { AuthActionState } from "@/app/auth/actions";
 import {
@@ -24,6 +25,13 @@ type AuthFormProps = {
 
 const initialState: AuthActionState = {};
 
+type AuthFormContextValue = {
+  fields: AuthActionState["fields"];
+  passwordFieldKey: string;
+};
+
+const AuthFormFieldContext = createContext<AuthFormContextValue | null>(null);
+
 export function AuthForm({
   action,
   submitLabel,
@@ -33,6 +41,10 @@ export function AuthForm({
 }: AuthFormProps) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const router = useRouter();
+  const formInstanceId = useId();
+  const passwordFieldKey = state.error
+    ? `${formInstanceId}-pw-${state.error}`
+    : `${formInstanceId}-pw`;
 
   useEffect(() => {
     if (pending) {
@@ -76,7 +88,11 @@ export function AuthForm({
             <input key={name} type="hidden" name={name} value={value} />
           ))
         : null}
-      {children}
+      <AuthFormFieldContext.Provider
+        value={{ fields: state.fields, passwordFieldKey }}
+      >
+        {children}
+      </AuthFormFieldContext.Provider>
       {state.error ? (
         <p className="hui-message-error" role="alert">
           {state.error}
@@ -113,16 +129,31 @@ export function AuthField({
   required?: boolean;
   defaultValue?: string;
 }) {
+  const ctx = useContext(AuthFormFieldContext);
+  const preserved = ctx?.fields;
+  const preservedValue =
+    name === "display_name"
+      ? preserved?.display_name
+      : name === "email"
+        ? preserved?.email
+        : undefined;
+  const resolvedDefault = preservedValue ?? defaultValue;
+  const remountKey =
+    name === "password"
+      ? ctx?.passwordFieldKey
+      : `${name}-${resolvedDefault ?? "empty"}`;
+
   return (
     <label className="hui-label">
       <span>{label}</span>
       <input
+        key={remountKey}
         className="hui-input"
         name={name}
         type={type}
         autoComplete={autoComplete}
         required={required}
-        defaultValue={defaultValue}
+        defaultValue={name === "password" ? undefined : resolvedDefault}
       />
     </label>
   );

@@ -7,8 +7,21 @@ import { joinGroupViaInviteAction, type JoinActionState } from "@/app/join/actio
 
 const initialState: JoinActionState = {};
 
-export function JoinInviteButton({ token }: { token: string }) {
+export function JoinInviteButton({
+  token,
+  groupName,
+  hasActivePlanning,
+}: {
+  token: string;
+  groupName: string;
+  hasActivePlanning: boolean;
+}) {
   const [state, formAction, pending] = useActionState(joinGroupViaInviteAction, initialState);
+  const label = hasActivePlanning
+    ? "Join the planning"
+    : groupName.trim()
+      ? `Join ${groupName.trim()}`
+      : "Join group";
 
   return (
     <form action={formAction} className="space-y-3">
@@ -21,7 +34,7 @@ export function JoinInviteButton({ token }: { token: string }) {
         disabled={pending}
         className="hui-btn hui-btn-primary rounded-full hui-focus-ring w-full"
       >
-        {pending ? "Joining…" : "Join group"}
+        {pending ? "Joining…" : label}
       </button>
     </form>
   );

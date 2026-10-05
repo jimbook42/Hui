@@ -324,7 +324,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
       {!closed ? (
         <DisclosureCard
           id="decisions"
-          title="Decisions"
+          title="Polls"
           summary={decisionsSummary}
           defaultOpen={sectionOpen("decisions")}
         >

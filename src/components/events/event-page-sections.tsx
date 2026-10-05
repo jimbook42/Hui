@@ -521,7 +521,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
       {detail.status !== "cancelled" && detail.status !== "completed" ? (
         <DisclosureCard
           id="decisions"
-          title="Decisions"
+          title="Polls"
           summary={decisionsSummary}
           icon={<HelpIcon size={20} />}
           attention={attentionKinds.has("decision")}

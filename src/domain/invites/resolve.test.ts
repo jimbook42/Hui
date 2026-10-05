@@ -17,6 +17,8 @@ describe("invite resolve payloads", () => {
       status: "valid",
       groupId: "g1",
       groupName: "Friends",
+      inviterDisplayName: null,
+      planning: null,
     });
   });
 

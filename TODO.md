@@ -7,6 +7,7 @@ Unresolved implementation questions only. Add items when a real decision or task
 - [x] **HUI-026C** — Event-oriented dashboard + event entry (shared attention taxonomy, section hierarchy, card CTAs).
 - [x] **HUI-026D** — Separate event management/admin surface (incl. hard event delete where policy allows).
 - [x] **HUI-027** — Onboarding & setup architecture (see WORKLOG 2026-10-05).
+- [x] **HUI-ONBOARDING-002** — Participant invite context, gathering type, auth preservation, recurring date clarity (see WORKLOG 2026-10-06).
 - [x] **HUI-026E** — Contribution coordination finish (see WORKLOG 2026-10-05).
 - [x] **HUI-026F** — Generic decision polls (see WORKLOG 2026-10-05).
 - [x] **HUI-026U (redesign + 026U.3–U.4)** — Full UI/UX rewrite plus map, optional end time, post-confirmation attendance, dietary scope UI, PWA install, profile settings hub, auth entry → dashboard, address-search seam, host-confirmed place, food-involvement gating (see WORKLOG). Follow-ups: refresh stale e2e specs; live system-theme change without reload; real-device PWA check after deploy. **U.4 polish:** Geoapify global bias, notification onboarding, propose-time Continue UX, food UI fixes (WORKLOG 2026-10-05).

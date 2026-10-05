@@ -2,6 +2,15 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-06 — HUI-ONBOARDING-002 Frictionless participant & event context
+
+- **Audit:** no reusable gathering-type field (only `eventKind` one-off/recurring + `food_involvement`); group-only invite RPC; post-join redirect to group page; `SuggestedTimesList` uses standing availability at propose time (not live re-rank after each response); recurring UX duplicated cadence anchor vs candidate dates; auth `useActionState` cleared fields on failed submit; contribution bring step requires open category (QA “only claimed items” = no open slots, not missing claim UI).
+- **Schema:** `gathering_type` enum + `gathering_type_custom` on `events`; extended `resolve_group_invite` with inviter + active planning snapshot (`20261006180000_hui_onboarding_002_gathering_invite.sql`).
+- **UX:** rich `/join/[token]` preview + “What is Hui?” card; “Join the planning” CTA; post-join → `/events/[id]/respond` when coordination open; proposal “What are you planning?”; recurring cadence vs proposed-time copy; polls terminology; availability copy aligned to behaviour.
+- **Tests:** gathering/invite presentation, auth field preservation, proposal gathering validation, resolve payload; `npm run validate` pass.
+- **Manual QA:** not run in session — use ticket QA-A–E runsheet.
+- **Deferred:** event-specific invite tokens; inviter attribution beyond link `created_by`; mandatory manual QA sign-off.
+
 ## 2026-10-05 — HUI-ONBOARDING-001 First Hui onboarding hardening
 
 - **Audit addressed:** group/hui conflation on invite/join/share copy; first proposal defaulting to recurring; missing post-propose orientation; personal setup discarding display name on skip and home on Continue; no first-run Group vs Hui explainer.

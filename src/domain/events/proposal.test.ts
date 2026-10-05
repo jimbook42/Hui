@@ -15,9 +15,15 @@ describe("event proposal validation (HUI-026A)", () => {
     memberUserIds: ["user-a", "user-b"],
   };
 
+  const baseDraft = {
+    gatheringType: "dinner_meal" as const,
+    gatheringTypeCustom: "",
+  };
+
   it("rejects proposal without a name", () => {
     const result = validateEventProposalDraft(
       {
+        ...baseDraft,
         title: "   ",
         location: "",
         notes: "",
@@ -44,6 +50,7 @@ describe("event proposal validation (HUI-026A)", () => {
   it("rejects proposal without candidates", () => {
     const result = validateEventProposalDraft(
       {
+        ...baseDraft,
         title: "Family dinner",
         location: "",
         notes: "",
@@ -65,6 +72,7 @@ describe("event proposal validation (HUI-026A)", () => {
   it("rejects invalid candidate windows", () => {
     const result = validateEventProposalDraft(
       {
+        ...baseDraft,
         title: "Family dinner",
         location: "",
         notes: "",
@@ -88,6 +96,7 @@ describe("event proposal validation (HUI-026A)", () => {
   it("accepts a valid one-off proposal payload", () => {
     const result = validateEventProposalDraft(
       {
+        ...baseDraft,
         title: "Family dinner",
         location: "Alex's place",
         notes: "",
@@ -128,6 +137,7 @@ describe("event proposal validation (HUI-026A)", () => {
   it("valid payload includes RPC-shaped candidates", () => {
     const result = validateEventProposalDraft(
       {
+        ...baseDraft,
         title: "Family dinner",
         location: "",
         notes: "",
@@ -185,6 +195,7 @@ describe("event proposal validation (HUI-026A)", () => {
   it("sends start-only candidates to the database with a null end", () => {
     const result = validateEventProposalDraft(
       {
+        ...baseDraft,
         title: "Dinner",
         location: "",
         notes: "",
@@ -209,6 +220,7 @@ describe("event proposal validation (HUI-026A)", () => {
   it("rejects duplicate start-only candidates", () => {
     const result = validateEventProposalDraft(
       {
+        ...baseDraft,
         title: "Dinner",
         location: "",
         notes: "",
