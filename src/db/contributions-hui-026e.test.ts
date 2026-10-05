@@ -92,6 +92,23 @@ async function createUser(database: PGlite, email: string, displayName: string) 
   return created.rows[0].id;
 }
 
+async function resetDessertOpenRow() {
+  await asUser(db, ids.owner);
+  const existing = await db.query<{ id: string }>(
+    `select id from public.event_contributions where event_id = $1 and category_id = $2`,
+    [eventId, dessertId],
+  );
+  if (existing.rows[0]) {
+    await db.query(`select public.release_event_contribution_as_manager($1)`, [existing.rows[0].id]);
+    return;
+  }
+  await db.query(
+    `insert into public.event_contributions (event_id, group_id, category_id, user_id, label, status, assigned_by)
+     values ($1, $2, $3, null, 'Dessert', 'open', $4)`,
+    [eventId, groupId, dessertId, ids.owner],
+  );
+}
+
 describe("contributions HUI-026E", () => {
   beforeAll(async () => {
     db = new PGlite();
@@ -212,6 +229,44 @@ describe("contributions HUI-026E", () => {
       [eventId, dessertId],
     );
     expect(row.rows[0]).toMatchObject({ user_id: ids.member, assigned_by: ids.owner });
+  });
+
+  it("lets members release their own claim", async () => {
+    await resetDessertOpenRow();
+
+    await asUser(db, ids.member);
+    const contributionId = (
+      await db.query<{ claim_event_contribution: string }>(
+        `select public.claim_event_contribution($1, $2, $3) as claim_event_contribution`,
+        [eventId, dessertId, "Brownies"],
+      )
+    ).rows[0].claim_event_contribution;
+
+    await db.query(`select public.release_event_contribution($1)`, [contributionId]);
+
+    const gone = await db.query<{ count: string }>(
+      `select count(*)::text as count from public.event_contributions where id = $1`,
+      [contributionId],
+    );
+    expect(Number(gone.rows[0].count)).toBe(0);
+  });
+
+  it("blocks members from releasing someone else's claim", async () => {
+    await resetDessertOpenRow();
+
+    await asUser(db, ids.member);
+    const contributionId = (
+      await db.query<{ claim_event_contribution: string }>(
+        `select public.claim_event_contribution($1, $2, null) as claim_event_contribution`,
+        [eventId, dessertId],
+      )
+    ).rows[0].claim_event_contribution;
+
+    await asUser(db, ids.owner);
+    const denied = await expectFail(() =>
+      db.query(`select public.release_event_contribution($1)`, [contributionId]),
+    );
+    expect(denied).toMatch(/cannot be released/i);
   });
 
   it("keeps standing default assignee separate from one-off reassignment", async () => {

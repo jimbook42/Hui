@@ -11,6 +11,7 @@ import { HashDisclosureOpener } from "@/components/hui/hash-disclosure-opener";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { OpenInMapsLink } from "@/components/map/open-in-maps-link";
+import { formatContributionDisclosureSummary } from "@/domain/contributions/display";
 import { isDietaryCoordinationRelevant } from "@/domain/events/food";
 import {
   BowlIcon,
@@ -380,13 +381,11 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
       : "No host yet";
 
   const activeCategories = data.contributionCategories.filter((category) => category.archivedAt === null);
-  const claimed = data.eventContributions.length;
-  const bringSummary =
-    activeCategories.length === 0
-      ? "No categories yet"
-      : data.unclaimedContributionCount > 0
-        ? `${claimed} claimed · ${data.unclaimedContributionCount} still needed`
-        : "Everything is covered";
+  const bringSummary = formatContributionDisclosureSummary(
+    activeCategories.length,
+    data.unclaimedContributionCount,
+    data.claimedContributionCount,
+  );
 
   const openDecisionCount = data.decisionPolls.filter((poll) => poll.status === "open").length;
   const decisionsSummary =

@@ -58,6 +58,20 @@ export type ContributionHistoryEntry = {
   count: number;
 };
 
+export function formatContributionDisclosureSummary(
+  activeCategoryCount: number,
+  unclaimedCount: number,
+  claimedCount: number,
+): string {
+  if (activeCategoryCount === 0) {
+    return "No categories yet";
+  }
+  if (unclaimedCount > 0) {
+    return `${claimedCount} claimed · ${unclaimedCount} still needed`;
+  }
+  return "Everything is covered";
+}
+
 export function buildContributionHistory(
   rows: { userId: string; displayName: string }[],
 ): ContributionHistoryEntry[] {

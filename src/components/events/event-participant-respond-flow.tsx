@@ -25,6 +25,7 @@ import {
   buildContributionSlots,
   contributionCategoryHeadline,
   isContributionSlotFilled,
+  sortContributionSlotsForDisplay,
 } from "@/domain/contributions/slots";
 import { formatCompactEventTimeRange, formatEventTimeRange } from "@/domain/datetime/timezone";
 import {
@@ -165,7 +166,9 @@ export function EventParticipantRespondFlow({
   const contributionSlots = useMemo(() => {
     const categories = secondary?.categories ?? [];
     const contributions = secondary?.contributions ?? [];
-    return buildContributionSlots(categories, contributions, viewerUserId, acceptedHostUserId);
+    return sortContributionSlotsForDisplay(
+      buildContributionSlots(categories, contributions, viewerUserId, acceptedHostUserId),
+    );
   }, [secondary, viewerUserId, acceptedHostUserId]);
 
   const categories = secondary?.categories ?? [];

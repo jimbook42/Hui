@@ -69,6 +69,7 @@ Lightweight record of completed tickets. One entry per ticket.
 - **Migration:** `20261005160000_hui_026e_contribution_coordination.sql`.
 - **Deferred:** per-hui contribution category overrides; full GDD standing-preference matrix beyond default assignee.
 - **Verification (autonomous):** `npx supabase db push` applied `20261005160000` to linked project; remote RPCs confirmed; `lint` / `typecheck` / 497 tests / `build` passed; Vercel Preview deployment for `d4c9848` **READY** (`https://hui-re8xmgfps-jimbook.vercel.app`). Authenticated browser smoke not run in CI (no `E2E_TEST_*` in agent env).
+- **Finish pass:** unclaimed slots sort first on detail/manage/respond; disclosure summaries use filled slot counts (`claimedContributionCount`); concise “All set” copy when every category is covered; release/unauthorised-release DB tests in `contributions-hui-026e.test.ts`.
 
 ## 2026-10-05 — UX foundation correction (pre–HUI-026E)
 

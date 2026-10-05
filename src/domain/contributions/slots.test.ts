@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildContributionSlots, isContributionSlotFilled } from "./slots";
+import { buildContributionSlots, isContributionSlotFilled, sortContributionSlotsForDisplay } from "./slots";
 
 const baseCategory = {
   groupId: "g",
@@ -77,5 +77,34 @@ describe("contribution slots", () => {
     );
     expect(slots[0]?.state).toBe("assigned");
     expect(slots[0]?.statusLabel).toMatch(/Assigned to Mia/);
+  });
+
+  it("lists unclaimed slots before claimed ones", () => {
+    const sorted = sortContributionSlotsForDisplay(
+      buildContributionSlots(
+        [
+          { id: "main", name: "Main", ...baseCategory },
+          { id: "dessert", name: "Dessert", ...baseCategory },
+        ],
+        [
+          {
+            id: "ec1",
+            eventId: "e",
+            groupId: "g",
+            categoryId: "main",
+            categoryName: "Main",
+            userId: "u1",
+            label: "Main",
+            status: "accepted",
+            displayName: "Alex",
+            assignedByUserId: "u1",
+            assignedByDisplayName: "Alex",
+          },
+        ],
+        "viewer",
+        null,
+      ),
+    );
+    expect(sorted.map((slot) => slot.category.name)).toEqual(["Dessert", "Main"]);
   });
 });

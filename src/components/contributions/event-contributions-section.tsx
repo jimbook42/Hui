@@ -12,7 +12,12 @@ import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { BowlIcon } from "@/components/hui/icons";
 import { buildContributionBoard } from "@/domain/contributions/display";
-import { buildContributionSlots, type ContributionSlot } from "@/domain/contributions/slots";
+import {
+  buildContributionSlots,
+  isContributionSlotFilled,
+  sortContributionSlotsForDisplay,
+  type ContributionSlot,
+} from "@/domain/contributions/slots";
 import { sharedDietaryReminder } from "@/domain/dietary/display";
 import type { ContributionCategoryRow, EventContributionRow } from "@/lib/contributions/types";
 
@@ -52,11 +57,13 @@ export function EventContributionsSection({
   viewerHistoryCount,
   sharedDietaryCount,
 }: EventContributionsSectionProps) {
-  const slots = buildContributionSlots(
-    categories,
-    contributions,
-    viewerUserId,
-    acceptedHostUserId,
+  const slots = sortContributionSlotsForDisplay(
+    buildContributionSlots(
+      categories,
+      contributions,
+      viewerUserId,
+      acceptedHostUserId,
+    ),
   );
   const board = buildContributionBoard(
     categories,
@@ -103,7 +110,9 @@ export function EventContributionsSection({
         </p>
       ) : null}
 
-      {hasActiveCategories ? (
+      {hasActiveCategories && openCount === 0 && canCoordinate ? (
+        <p className="mt-2 text-sm font-semibold text-foreground">All set — every category is covered.</p>
+      ) : hasActiveCategories ? (
         <p className="mt-2 text-sm text-muted-foreground">
           {openCount > 0
             ? `${openCount} still open · ${board.claimed.length} claimed`
@@ -164,7 +173,7 @@ function ContributionSlotCard({
 }) {
   const { category, contribution, state, statusLabel } = slot;
   const isMine = state === "yours" || (state === "host" && contribution?.userId !== null);
-  const tone = isMine ? "sage" : state === "open" ? "default" : "subtle";
+  const tone = isMine ? "sage" : state === "open" && !isContributionSlotFilled(contribution) ? "default" : "subtle";
 
   return (
     <li>

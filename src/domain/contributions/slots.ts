@@ -128,3 +128,28 @@ export function contributionCategoryHeadline(
   }
   return `${categoryName} — ${contribution.displayName ?? "Member"}`;
 }
+
+const SLOT_DISPLAY_PRIORITY: Record<ContributionSlotState, number> = {
+  open: 0,
+  host_pending: 1,
+  yours: 2,
+  host: 2,
+  claimed: 3,
+  assigned: 3,
+};
+
+/** Unclaimed slots first so needed items stand out on mobile. */
+export function sortContributionSlotsForDisplay(slots: ContributionSlot[]): ContributionSlot[] {
+  return [...slots].sort((a, b) => {
+    const aOpen = !isContributionSlotFilled(a.contribution);
+    const bOpen = !isContributionSlotFilled(b.contribution);
+    if (aOpen !== bOpen) {
+      return aOpen ? -1 : 1;
+    }
+    const priorityDiff = SLOT_DISPLAY_PRIORITY[a.state] - SLOT_DISPLAY_PRIORITY[b.state];
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+    return a.category.name.localeCompare(b.category.name);
+  });
+}

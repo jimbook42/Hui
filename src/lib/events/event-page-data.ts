@@ -194,6 +194,9 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
   const unclaimedContributionCount = contributionSlots.filter(
     (slot) => !isContributionSlotFilled(slot.contribution),
   ).length;
+  const claimedContributionCount = contributionSlots.filter((slot) =>
+    isContributionSlotFilled(slot.contribution),
+  ).length;
   const viewerHasContribution = eventContributions.some((row) => row.userId === userId);
 
   const groupMembers = group?.members ?? [];
@@ -269,6 +272,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     counts,
     attention,
     unclaimedContributionCount,
+    claimedContributionCount,
     canEdit,
     canEditLocation,
     canCancel,

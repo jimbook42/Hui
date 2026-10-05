@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildContributionBoard, buildContributionHistory } from "./display";
+import { buildContributionBoard, buildContributionHistory, formatContributionDisclosureSummary } from "./display";
 
 describe("contribution display", () => {
   it("partitions still needed and claimed categories", () => {
@@ -42,6 +42,12 @@ describe("contribution display", () => {
     expect(board.stillNeeded.map((c) => c.name)).toEqual(["Main"]);
     expect(board.claimed).toHaveLength(1);
     expect(board.mine).toHaveLength(0);
+  });
+
+  it("formats disclosure summaries from slot counts", () => {
+    expect(formatContributionDisclosureSummary(0, 0, 0)).toBe("No categories yet");
+    expect(formatContributionDisclosureSummary(3, 2, 1)).toBe("1 claimed · 2 still needed");
+    expect(formatContributionDisclosureSummary(3, 0, 3)).toBe("Everything is covered");
   });
 
   it("aggregates contribution history counts", () => {
