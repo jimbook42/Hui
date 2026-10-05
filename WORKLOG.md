@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — Contribution notification noise fix
+
+- **Problem:** Row-level contribution INSERT/DELETE triggers notified every group member and queued Web Push for each mutation (claim, release, assign, reassign, clear), producing duplicate “claimed” / “slot changed” interrupts.
+- **Fix:** Migration `20261005180000_contribution_notification_policy.sql` — targeted coordinator in-app notifications from contribution RPCs; assignee-only selective push with per-event coalescing; `queue_member_notification` `p_deliver_push` flag; removed `event_contributions_notifications` trigger.
+- **Tests:** `src/db/contribution-notifications.test.ts` (rapid production-style sequence).
+
 ## 2026-10-05 — HUI-026E Contribution coordination finish
 
 - **Member UX:** per-category contribution cards with clear status (open, claimed, yours, host-bound, manager-assigned) on hui detail, manage, and respond **What are you bringing?** steps.

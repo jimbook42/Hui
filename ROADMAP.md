@@ -395,7 +395,7 @@ Implementation must investigate server-action latency, unnecessary refreshes, ex
 | **HUI-026B** | Invitee response flow + alternative-time intent | Complete (branch `feat/hui-026a-event-proposal-flow`; `/events/[eventId]/respond`) |
 | **HUI-026C** | Dashboard + event entry | Planned |
 | **HUI-026D** | Event management/admin surface | Complete (`/events/[eventId]/manage`, `delete_event`, migration `20261005140000_hui_026d_delete_event`) |
-| **HUI-026E** | Contribution coordination finish | Complete (`feat/hui-026u-visual-design-system`; migration `20261005160000_hui_026e_contribution_coordination`) |
+| **HUI-026E** | Contribution coordination finish | Complete (`feat/hui-026u-visual-design-system`; migration `20261005160000_hui_026e_contribution_coordination`; contribution push policy `20261005180000_contribution_notification_policy`) |
 | **UX foundation (pre-026E)** | Manage discoverability, sectional manage layout, host place on main hui page, recurring default on propose, My home host place path, System theme OS sync | Complete on `feat/hui-026u-visual-design-system` |
 | **HUI-026U** | Visual design system & UX foundation | Complete (branch `feat/hui-026u-visual-design-system`; … **HUI-026U.4** production-verified; migrations through `20261005050000_host_accept_place`) |
 | **HUI-027** | Onboarding & setup architecture | Complete on `feat/hui-026u-visual-design-system` — personal setup (`/profile/setup`, dashboard prompt), profile home + “At my home” host accept, progressive group creation wizard, `HuiSwitch` boolean controls, owner `delete_group`, ownership semantics documented; migration `20261005120000_hui_027_profile_home_delete_group` |
