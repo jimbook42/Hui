@@ -28,8 +28,18 @@ function normalise(value: EventCoordinates): EventCoordinates {
  * Hui never reads the device location unless the user taps "Use my location", and does not store it
  * beyond the pin they choose to keep.
  */
+function shouldShowMapByDefault(
+  defaultOpen: boolean,
+  value: EventCoordinates | null,
+  placeLabel: string | null | undefined,
+): boolean {
+  return defaultOpen || value !== null || Boolean(placeLabel?.trim());
+}
+
 export function LocationPicker({ value, onChange, placeLabel, defaultOpen = false }: LocationPickerProps) {
-  const [open, setOpen] = useState(defaultOpen || value !== null);
+  const [manualOpen, setManualOpen] = useState(false);
+  const open =
+    manualOpen || shouldShowMapByDefault(defaultOpen, value, placeLabel);
   const [api, setApi] = useState<MapCanvasApi | null>(null);
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -81,7 +91,7 @@ export function LocationPicker({ value, onChange, placeLabel, defaultOpen = fals
   if (!open) {
     return (
       <div>
-        <PendingButton type="button" variant="soft" size="touch" onClick={() => setOpen(true)}>
+        <PendingButton type="button" variant="soft" size="touch" onClick={() => setManualOpen(true)}>
           <span className="inline-flex items-center gap-2">
             <PinIcon size={18} />
             Pin it on the map

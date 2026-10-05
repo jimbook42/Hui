@@ -31,6 +31,7 @@ describe("event proposal validation (HUI-026A)", () => {
         ],
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
+        hostPlaceRequired: true,
       },
       baseOptions,
     );
@@ -51,6 +52,7 @@ describe("event proposal validation (HUI-026A)", () => {
         candidates: [],
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
+        hostPlaceRequired: true,
       },
       baseOptions,
     );
@@ -76,6 +78,7 @@ describe("event proposal validation (HUI-026A)", () => {
         ],
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
+        hostPlaceRequired: true,
       },
       baseOptions,
     );
@@ -98,6 +101,7 @@ describe("event proposal validation (HUI-026A)", () => {
         ],
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
+        hostPlaceRequired: true,
       },
       baseOptions,
     );
@@ -137,6 +141,7 @@ describe("event proposal validation (HUI-026A)", () => {
         ],
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
+        hostPlaceRequired: true,
       },
       baseOptions,
     );
@@ -188,6 +193,7 @@ describe("event proposal validation (HUI-026A)", () => {
         candidates: [{ startsAt: "2026-10-31T05:00:00.000Z", endsAt: null }],
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
+        hostPlaceRequired: true,
       },
       baseOptions,
     );
@@ -214,6 +220,7 @@ describe("event proposal validation (HUI-026A)", () => {
         ],
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
+        hostPlaceRequired: true,
       },
       baseOptions,
     );

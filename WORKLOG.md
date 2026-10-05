@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026U.4 final production polish
+
+- **Host accept:** `host_place_required` on events; accept flow uses `EventLocationFields` (confirm vs choose copy); `respond_to_host_assignment` optionally persists place atomically on accept.
+- **Maps:** address-first Open in Maps; map/pin opens when address or coordinates exist (no extra toggle).
+- **Food step:** mobile overflow fix on “Will food be involved?”
+- **Production:** accepted-host location edit verified on https://hui-seven-gamma.vercel.app (manage → confirm place, persist, participant read-only).
+
 ## 2026-10-05 — HUI-026U.4 host place persistence (release fix)
 
 - **Gap:** accepted host UI/actions allowed place edits but RLS blocked direct `events` updates for non-creators.

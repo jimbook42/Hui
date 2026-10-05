@@ -350,6 +350,9 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             attendanceRoster={data.primaryRoster}
             view={data.hostContext.view}
             viewerHistoryCount={data.hostContext.history.viewerCount}
+            eventLocation={detail.location}
+            eventCoordinates={detail.locationCoordinates}
+            hostPlaceRequired={detail.hostPlaceRequired}
           />
         </DisclosureCard>
       ) : null}

@@ -50,9 +50,14 @@ describe("event location coordinates", () => {
     expect(describeMapLocation(null)).toBe("Map showing the pinned spot");
   });
 
-  it("builds external maps links from coordinates or place text", () => {
+  it("builds external maps links with address before coordinates", () => {
+    const both = buildExternalMapsUrl("Central Park", { lat: -41.28, lng: 174.77 });
+    expect(both).toContain("Central%20Park");
+    expect(both).not.toContain("-41.28");
+
     expect(buildExternalMapsUrl(null, { lat: -41.28, lng: 174.77 })).toContain("-41.28");
     expect(buildExternalMapsUrl("Central Park", null)).toContain("Central%20Park");
     expect(buildExternalMapsUrl(null, null)).toBeNull();
+    expect(buildExternalMapsUrl("   ", { lat: -41.28, lng: 174.77 })).toContain("-41.28");
   });
 });

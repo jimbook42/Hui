@@ -112,14 +112,19 @@ export async function proposeGroupEventAction(
     return { error: "Proposal could not be created. Try again." };
   }
 
-  if (payload.foodInvolvement) {
-    const { error: foodError } = await supabase
+  if (payload.foodInvolvement || detail.settings.hostingEnabled) {
+    const { error: metaError } = await supabase
       .from("events")
-      .update({ food_involvement: payload.foodInvolvement })
+      .update({
+        ...(payload.foodInvolvement ? { food_involvement: payload.foodInvolvement } : {}),
+        ...(detail.settings.hostingEnabled
+          ? { host_place_required: payload.hostPlaceRequired }
+          : {}),
+      })
       .eq("id", eventId)
       .eq("group_id", groupId);
-    if (foodError) {
-      return { error: foodError.message };
+    if (metaError) {
+      return { error: metaError.message };
     }
   }
 

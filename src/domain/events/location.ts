@@ -96,13 +96,13 @@ export function buildExternalMapsUrl(
   location: string | null | undefined,
   coordinates: EventCoordinates | null,
 ): string | null {
-  if (coordinates && isValidCoordinates(coordinates)) {
-    const { lat, lng } = coordinates;
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lng}`)}`;
-  }
   const place = location?.trim();
   if (place) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+  }
+  if (coordinates && isValidCoordinates(coordinates)) {
+    const { lat, lng } = coordinates;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lng}`)}`;
   }
   return null;
 }

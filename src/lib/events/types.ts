@@ -33,6 +33,7 @@ export type EventDetail = {
   locationCoordinates: EventCoordinates | null;
   /** Null on legacy events — dietary UI stays visible unless explicitly "no". */
   foodInvolvement: EventFoodInvolvement | null;
+  hostPlaceRequired: boolean | null;
   notes: string | null;
   startsAt: string | null;
   endsAt: string | null;

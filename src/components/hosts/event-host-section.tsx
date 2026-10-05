@@ -5,7 +5,9 @@ import {
   assignEventHostAction,
   requestHostSwapAction,
 } from "@/app/hosts/actions";
+import { AcceptHostWithPlaceForm } from "@/components/hosts/accept-host-with-place-form";
 import { AuthForm } from "@/components/auth/auth-form";
+import type { EventCoordinates } from "@/domain/events/location";
 import { filterHostAssignableMembers } from "@/domain/hosts/attendance-eligibility";
 import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 import type { EventHostView } from "@/lib/hosts/queries";
@@ -24,6 +26,9 @@ type EventHostSectionProps = {
   attendanceRoster: AttendanceRoster | null;
   view: EventHostView;
   viewerHistoryCount: number | null;
+  eventLocation: string | null;
+  eventCoordinates: EventCoordinates | null;
+  hostPlaceRequired: boolean | null;
 };
 
 export function EventHostSection({
@@ -39,6 +44,9 @@ export function EventHostSection({
   attendanceRoster,
   view,
   viewerHistoryCount,
+  eventLocation,
+  eventCoordinates,
+  hostPlaceRequired,
 }: EventHostSectionProps) {
   const assignableMembers = filterHostAssignableMembers(
     eligibleMembers,
@@ -127,14 +135,15 @@ export function EventHostSection({
           {canRespond || canRequestSwap ? (
             <div className="mt-3 flex flex-wrap gap-3">
               {canRespond ? (
-                <AuthForm
+                <AcceptHostWithPlaceForm
                   action={acceptHostProposalAction}
-                  submitLabel="I can host"
-                  hiddenFields={{ event_id: eventId }}
-                  refreshOnSuccess
-                >
-                  {null}
-                </AuthForm>
+                  eventId={eventId}
+                  hostingEnabled={hostingEnabled}
+                  hostPlaceRequired={hostPlaceRequired}
+                  defaultLocation={eventLocation}
+                  defaultCoordinates={eventCoordinates}
+                  suggestedHostName={suggestedName ?? "You"}
+                />
               ) : null}
               {canRequestSwap ? (
                 <AuthForm

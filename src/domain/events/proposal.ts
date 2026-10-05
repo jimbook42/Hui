@@ -35,6 +35,7 @@ export type EventProposalDraft = {
   candidates: ProposalCandidateInput[];
   initialHostUserId: string | null | "suggest";
   foodInvolvement: EventFoodInvolvement | null;
+  hostPlaceRequired: boolean;
 };
 
 export type ProposalValidationResult =
@@ -61,6 +62,7 @@ export type ProposeGroupEventPayload = {
   setInitialHost: boolean;
   initialHostUserId: string | null;
   foodInvolvement: EventFoodInvolvement | null;
+  hostPlaceRequired: boolean;
 };
 
 export function candidatesForRpc(
@@ -228,6 +230,7 @@ export function validateEventProposalDraft(
       setInitialHost,
       initialHostUserId,
       foodInvolvement,
+      hostPlaceRequired: options.hostingEnabled ? draft.hostPlaceRequired : false,
     },
   };
 }

@@ -52,7 +52,7 @@ export function EventLocationFields({
         value={coordinates}
         placeLabel={location.trim() || null}
         onChange={onCoordinatesChange}
-        defaultOpen={defaultMapOpen || coordinates !== null}
+        defaultOpen={defaultMapOpen || coordinates !== null || location.trim().length > 0}
       />
     </div>
   );

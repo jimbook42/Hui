@@ -58,6 +58,7 @@ function emptyDraft(settings: GroupSettingsRow): EventProposalDraft {
     candidates: [],
     initialHostUserId: "suggest",
     foodInvolvement: null,
+    hostPlaceRequired: true,
   };
 }
 
@@ -469,14 +470,14 @@ export function CreateEventProposalFlow({
               Still needed: {reviewMissing.join(", ")}
             </p>
           ) : null}
-          <fieldset className="min-w-0 space-y-3 overflow-hidden rounded-hui-xl bg-surface p-5 hui-shadow-md">
-            <legend className="max-w-full px-1 text-sm font-extrabold text-foreground break-words">
+          <fieldset className="w-full min-w-0 max-w-full space-y-3 overflow-hidden rounded-hui-xl bg-surface p-4 sm:p-5 hui-shadow-md">
+            <legend className="block w-full min-w-0 px-1 text-sm font-extrabold text-foreground [text-wrap:pretty]">
               Will food be involved?
             </legend>
-            <p className="text-xs font-semibold text-muted-foreground break-words">
+            <p className="w-full min-w-0 text-xs font-semibold text-muted-foreground [text-wrap:pretty]">
               Helps the group know whether dietary coordination matters for this hui.
             </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="grid w-full min-w-0 grid-cols-1 gap-2">
               {(
                 [
                   ["yes", "Yes"],
@@ -489,7 +490,7 @@ export function CreateEventProposalFlow({
                   <label
                     key={value}
                     className={cn(
-                      "hui-focus-ring flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-hui-lg px-4 py-3 text-sm font-extrabold",
+                      "hui-focus-ring flex min-h-12 w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-hui-lg px-3 py-3 text-sm font-extrabold sm:px-4",
                       selected
                         ? "border-2 border-primary bg-sage-soft text-foreground"
                         : "border border-transparent bg-muted text-foreground",
@@ -514,6 +515,30 @@ export function CreateEventProposalFlow({
               })}
             </div>
           </fieldset>
+          {settings.hostingEnabled ? (
+            <label className="flex min-w-0 cursor-pointer items-start gap-3 rounded-hui-xl bg-surface p-4 hui-shadow-md">
+              <input
+                type="checkbox"
+                className="mt-1 size-4 shrink-0 accent-primary"
+                checked={draft.hostPlaceRequired}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    hostPlaceRequired: event.target.checked,
+                  }))
+                }
+              />
+              <span className="min-w-0 [text-wrap:pretty]">
+                <span className="block text-sm font-extrabold text-foreground">
+                  Host confirms the venue
+                </span>
+                <span className="mt-1 block text-xs font-semibold text-muted-foreground">
+                  When on, whoever accepts hosting sets or confirms the place as part of accepting.
+                  Turn off for gatherings where the venue does not matter yet.
+                </span>
+              </span>
+            </label>
+          ) : null}
           <dl className="grid gap-4 rounded-hui-xl bg-surface p-5 text-sm font-semibold text-foreground hui-shadow-md [&_dt]:hui-type-label [&_dt]:text-muted-foreground [&_dd]:mt-1 [&_dd]:text-base [&_dd]:font-extrabold">
             <div>
               <dt>Name</dt>

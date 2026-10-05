@@ -185,6 +185,35 @@ describe("update_event_place (HUI-026U.4)", () => {
     });
   });
 
+  it("requires a place when accepting hosting on a place-required event", async () => {
+    const { eventId, candidateId } = await createProposingEvent("Place on accept");
+    await asUser(db, ids.owner);
+    await db.query(`update public.events set host_place_required = true where id = $1`, [eventId]);
+    await respondYes(ids.host, candidateId);
+
+    await asUser(db, ids.host);
+    const missingPlace = await expectFail(async () => {
+      await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);
+    });
+    expect(missingPlace).toMatch(/confirm where|place/i);
+
+    await db.query(`select public.respond_to_host_assignment($1, true, $2, $3, $4)`, [
+      eventId,
+      "Host home",
+      -43.5321,
+      172.6362,
+    ]);
+
+    const row = await db.query<{ location: string | null; status: string }>(
+      `select e.location, ha.status::text as status
+       from public.events e
+       join public.host_assignments ha on ha.event_id = e.id and ha.user_id = $2
+       where e.id = $1`,
+      [eventId, ids.host],
+    );
+    expect(row.rows[0]).toMatchObject({ location: "Host home", status: "accepted" });
+  });
+
   it("rejects proposed-only hosts and ordinary members", async () => {
     const { eventId, candidateId } = await createProposingEvent("Pending host");
     await respondYes(ids.host, candidateId);

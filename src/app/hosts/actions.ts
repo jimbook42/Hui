@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
+  hasConfirmableEventPlace,
+  hostPlaceRequiredOnAccept,
+} from "@/domain/events/host-place";
+import { parseOptionalCoordinates, roundCoordinate } from "@/domain/events/location";
+import { normalizeEventLocation } from "@/domain/events/validation";
+import {
   canAssignEventHost,
   canRequestHostSwap,
   canRespondToHostProposal,
@@ -135,10 +141,52 @@ export async function acceptHostProposalAction(
     return { error: "You cannot respond to this host proposal." };
   }
 
-  const { error } = await supabase.rpc("respond_to_host_assignment", {
+  const group = await getGroupDetail(supabase, detail.groupId, user.id);
+  const hostingEnabled = group?.settings.hostingEnabled ?? false;
+  const placeRequired = hostPlaceRequiredOnAccept(hostingEnabled, detail.hostPlaceRequired);
+
+  const location = normalizeEventLocation(String(formData.get("location") ?? ""));
+  const coordinates = parseOptionalCoordinates(
+    formData.get("location_lat"),
+    formData.get("location_lng"),
+  );
+
+  if (location === null && String(formData.get("location") ?? "").trim().length > 0) {
+    return { error: "Location is too long." };
+  }
+  if (!coordinates.ok) {
+    return { error: coordinates.error };
+  }
+
+  const resolvedLocation = location ?? detail.location;
+  const resolvedCoordinates = coordinates.coordinates ?? detail.locationCoordinates;
+
+  if (placeRequired && !hasConfirmableEventPlace(resolvedLocation, resolvedCoordinates)) {
+    return { error: "Confirm where this hui happens before accepting hosting." };
+  }
+
+  const rpcArgs: {
+    p_event_id: string;
+    p_accept: boolean;
+    p_location?: string | null;
+    p_location_lat?: number | null;
+    p_location_lng?: number | null;
+  } = {
     p_event_id: eventId,
     p_accept: true,
-  });
+  };
+
+  if (placeRequired) {
+    rpcArgs.p_location = resolvedLocation;
+    rpcArgs.p_location_lat = resolvedCoordinates
+      ? roundCoordinate(resolvedCoordinates.lat)
+      : null;
+    rpcArgs.p_location_lng = resolvedCoordinates
+      ? roundCoordinate(resolvedCoordinates.lng)
+      : null;
+  }
+
+  const { error } = await supabase.rpc("respond_to_host_assignment", rpcArgs);
 
   if (error) {
     return { error: error.message };
