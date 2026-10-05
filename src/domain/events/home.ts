@@ -1,13 +1,16 @@
+import { canCoordinateContributions } from "@/domain/contributions/permissions";
+import { buildEventAttention, type EventAttentionKind } from "@/domain/events/attention";
 import { isSchedulingOpen } from "@/domain/events/lifecycle";
 import type { EventStatus } from "@/domain/events/types";
 import type { AttendanceVisualState } from "@/domain/scheduling/attendance-visual";
+import { canRespondToCandidates } from "@/domain/scheduling/permissions";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 
 /** Where a gathering belongs on the Home / Hui surfaces. */
 export type HomeBucket = "attention" | "upcoming" | "planning" | "past";
 
 /** The one thing the viewer should do next, when there is something. */
-export type HomeAttention = "respond" | "host";
+export type HomeAttention = EventAttentionKind;
 
 export type HomeEventFacts = {
   status: EventStatus;
@@ -17,7 +20,13 @@ export type HomeEventFacts = {
   viewerResponse: AvailabilityChoice | null;
   /** There is a time on the table the viewer could respond to. */
   hasCandidate: boolean;
+  /** Viewer has a pending "please host" suggestion they can accept. */
   hasPendingHostProposal: boolean;
+  /** Proposer/admin may confirm and at least one candidate meets group rules. */
+  canConfirmTime?: boolean;
+  /** Active contribution categories nobody has claimed yet. */
+  unclaimedContributionCount?: number;
+  viewerHasContribution?: boolean;
 };
 
 export type HomeClassification = {
@@ -45,22 +54,33 @@ export function classifyHomeEvent(facts: HomeEventFacts, now: Date = new Date())
     return { bucket: "past", attention: null };
   }
 
+  if (facts.status === "confirmed" && hasEventEnded(facts.startsAt, facts.endsAt, now)) {
+    return { bucket: "past", attention: null };
+  }
+
+  const unclaimed = facts.unclaimedContributionCount ?? 0;
+  const attentionItems = buildEventAttention({
+    status: facts.status,
+    hasCandidate: facts.hasCandidate,
+    canRespond: canRespondToCandidates(facts.status),
+    viewerResponse: facts.viewerResponse,
+    canAcceptHostProposal: facts.hasPendingHostProposal,
+    canConfirmTime: facts.canConfirmTime ?? false,
+    unclaimedContributionCount: unclaimed,
+    canCoordinateContributions: canCoordinateContributions(facts.status),
+    viewerHasContribution: facts.viewerHasContribution ?? false,
+  });
+  const attention = attentionItems[0]?.kind ?? null;
+
+  if (attention) {
+    return { bucket: "attention", attention };
+  }
+
   if (facts.status === "confirmed") {
-    if (hasEventEnded(facts.startsAt, facts.endsAt, now)) {
-      return { bucket: "past", attention: null };
-    }
-    return facts.hasPendingHostProposal
-      ? { bucket: "attention", attention: "host" }
-      : { bucket: "upcoming", attention: null };
+    return { bucket: "upcoming", attention: null };
   }
 
   if (isSchedulingOpen(facts.status)) {
-    if (facts.hasCandidate && facts.viewerResponse === null) {
-      return { bucket: "attention", attention: "respond" };
-    }
-    if (facts.hasPendingHostProposal) {
-      return { bucket: "attention", attention: "host" };
-    }
     return { bucket: "planning", attention: null };
   }
 

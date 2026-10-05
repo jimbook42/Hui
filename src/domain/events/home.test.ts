@@ -58,8 +58,47 @@ describe("classifyHomeEvent", () => {
 
   it("surfaces hosting requests on confirmed gatherings", () => {
     expect(
-      classifyHomeEvent(facts({ status: "confirmed", hasPendingHostProposal: true }), NOW).attention,
+      classifyHomeEvent(
+        facts({ status: "confirmed", viewerResponse: "available", hasPendingHostProposal: true }),
+        NOW,
+      ).attention,
     ).toBe("host");
+  });
+
+  it("surfaces confirm when a proposer can lock a passing time", () => {
+    expect(
+      classifyHomeEvent(
+        facts({ status: "proposing", viewerResponse: "available", canConfirmTime: true }),
+        NOW,
+      ),
+    ).toEqual({ bucket: "attention", attention: "confirm" });
+  });
+
+  it("surfaces open contributions on confirmed gatherings", () => {
+    expect(
+      classifyHomeEvent(
+        facts({
+          status: "confirmed",
+          viewerResponse: "available",
+          unclaimedContributionCount: 2,
+        }),
+        NOW,
+      ),
+    ).toEqual({ bucket: "attention", attention: "contribute" });
+  });
+
+  it("does not nudge contributions when the viewer already claimed something", () => {
+    expect(
+      classifyHomeEvent(
+        facts({
+          status: "confirmed",
+          viewerResponse: "available",
+          unclaimedContributionCount: 2,
+          viewerHasContribution: true,
+        }),
+        NOW,
+      ),
+    ).toEqual({ bucket: "upcoming", attention: null });
   });
 
   it("sends finished and cancelled gatherings to the past", () => {

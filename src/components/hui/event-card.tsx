@@ -13,7 +13,7 @@ import {
 } from "@/domain/datetime/display";
 import { viewerStatusLabel } from "@/domain/events/home";
 import { eventStatusLabel } from "@/lib/events/labels";
-import { eventDetailPath, participantRespondPath } from "@/lib/events/paths";
+import { eventAttentionPath, eventDetailPath, participantRespondPath } from "@/lib/events/paths";
 import type { HomeEvent } from "@/lib/events/home-data";
 import { cn } from "@/lib/ui/cn";
 
@@ -177,12 +177,32 @@ export function EventCard({ event, variant = "standard", tone = "primary", class
         ) : null}
         {event.attention === "host" ? (
           <HuiLinkButton
-            href={eventDetailPath(event.id)}
+            href={eventAttentionPath(event.id, "host")}
             size="sm"
             shape="melt"
             className="relative z-10 ml-auto"
           >
             Hosting request
+          </HuiLinkButton>
+        ) : null}
+        {event.attention === "confirm" ? (
+          <HuiLinkButton
+            href={eventAttentionPath(event.id, "confirm")}
+            size="sm"
+            shape="melt"
+            className="relative z-10 ml-auto"
+          >
+            Review times
+          </HuiLinkButton>
+        ) : null}
+        {event.attention === "contribute" ? (
+          <HuiLinkButton
+            href={eventAttentionPath(event.id, "contribute")}
+            size="sm"
+            shape="melt"
+            className="relative z-10 ml-auto"
+          >
+            Pick something
           </HuiLinkButton>
         ) : null}
       </div>

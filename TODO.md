@@ -4,7 +4,7 @@ Unresolved implementation questions only. Add items when a real decision or task
 
 - [x] **HUI-026A** — Event flow foundation + staged proposal (staged creator flow + atomic `propose_group_event`).
 - [x] **HUI-026B** — Invitee response flow + structured alternative-time intent (`/events/[eventId]/respond`).
-- [ ] **HUI-026C** — Event-oriented dashboard + event entry.
+- [x] **HUI-026C** — Event-oriented dashboard + event entry (shared attention taxonomy, section hierarchy, card CTAs).
 - [x] **HUI-026D** — Separate event management/admin surface (incl. hard event delete where policy allows).
 - [x] **HUI-027** — Onboarding & setup architecture (see WORKLOG 2026-10-05).
 - [x] **HUI-026E** — Contribution coordination finish (see WORKLOG 2026-10-05).

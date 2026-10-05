@@ -64,8 +64,7 @@ export async function DashboardEvents() {
   const createHref = createHuiHref(proposableGroups);
 
   const [featured, ...restUpcoming] = sections.upcoming;
-  const others = [...restUpcoming, ...sections.planning];
-  const shownOthers = others.slice(0, 4);
+  const shownPlanning = sections.planning.slice(0, 4);
 
   if (groups.length === 0) {
     return (
@@ -82,18 +81,20 @@ export async function DashboardEvents() {
   }
 
   const nothingPlanned =
-    sections.attention.length === 0 && !featured && sections.planning.length === 0;
+    sections.attention.length === 0 &&
+    sections.upcoming.length === 0 &&
+    sections.planning.length === 0;
 
   return (
     <div className="space-y-9">
       {sections.attention.length > 0 ? (
-        <section aria-labelledby="needs-you" className="hui-rise">
+        <section aria-labelledby="needs-attention" className="hui-rise">
           <SectionHeader
-            id="needs-you"
-            title="Needs you"
+            id="needs-attention"
+            title="Needs attention"
             description={
               sections.attention.length === 1
-                ? "One thing is waiting on your reply."
+                ? "One thing is waiting on you."
                 : `${sections.attention.length} things are waiting on you.`
             }
           />
@@ -105,20 +106,24 @@ export async function DashboardEvents() {
 
       {featured ? (
         <section aria-labelledby="upcoming-hui" className="hui-rise-2">
-          <SectionHeader id="upcoming-hui" title="Upcoming Hui" />
-          <div className="mt-4">
+          <SectionHeader id="upcoming-hui" title="Upcoming" description="Confirmed by the group." />
+          <div className="mt-4 space-y-4">
             <EventCard event={featured} variant="featured" tone="primary" />
+            {restUpcoming.length > 0 ? (
+              <CardList events={restUpcoming.slice(0, 3)} startTone={2} />
+            ) : null}
           </div>
         </section>
       ) : null}
 
-      {shownOthers.length > 0 ? (
-        <section aria-labelledby="other-gatherings" className="hui-rise-3">
+      {shownPlanning.length > 0 ? (
+        <section aria-labelledby="being-planned" className="hui-rise-3">
           <SectionHeader
-            id="other-gatherings"
-            title={featured ? "Other gatherings" : "Being planned"}
+            id="being-planned"
+            title="Being planned"
+            description="Waiting for the group to agree on a time."
             action={
-              others.length > shownOthers.length ? (
+              sections.planning.length > shownPlanning.length ? (
                 <Link href="/events" className="hui-link inline-flex min-h-11 items-center gap-1 text-sm">
                   See all
                   <ChevronRightIcon size={16} />
@@ -127,7 +132,7 @@ export async function DashboardEvents() {
             }
           />
           <div className="mt-4">
-            <CardList events={shownOthers} startTone={1} />
+            <CardList events={shownPlanning} startTone={1} />
           </div>
         </section>
       ) : null}
@@ -247,8 +252,8 @@ export async function EventsOverview({ groupId }: { groupId?: string } = {}) {
       ) : null}
 
       {sections.attention.length > 0 ? (
-        <section aria-labelledby="events-needs-you">
-          <SectionHeader id="events-needs-you" title="Needs you" />
+        <section aria-labelledby="events-needs-attention">
+          <SectionHeader id="events-needs-attention" title="Needs attention" />
           <div className="mt-4">
             <CardList events={sections.attention} startTone={1} />
           </div>

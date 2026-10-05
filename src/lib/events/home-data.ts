@@ -19,7 +19,15 @@ import {
   type AttendanceCounts,
   type AttendanceVisualState,
 } from "@/domain/scheduling/attendance-visual";
+import {
+  evaluateCandidateConsensus,
+  isConsensusRule,
+  type ConsensusMember,
+  type ConsensusResponse,
+  type ConsensusRule,
+} from "@/domain/scheduling/consensus";
 import { dbResponseToAvailability } from "@/domain/scheduling/mapping";
+import { canFinaliseEvent } from "@/domain/scheduling/permissions";
 import type {
   AvailabilityChoice,
   CandidateStatus,
@@ -70,12 +78,24 @@ type EventRow = {
   title: string;
   status: EventStatus;
   group_id: string;
+  created_by: string;
   location: string | null;
   starts_at: string | null;
   ends_at: string | null;
   timezone: string | null;
   groups: { name: string } | { name: string }[] | null;
 };
+
+function dbResponseToConsensus(response: DbResponseValue): ConsensusResponse {
+  switch (response) {
+    case "yes":
+      return "yes";
+    case "no":
+      return "no";
+    case "maybe":
+      return "maybe";
+  }
+}
 
 type CandidateRow = {
   id: string;
@@ -120,7 +140,7 @@ export async function loadHomeData(
   let eventsQuery = supabase
     .from("events")
     .select(
-      "id, title, status, group_id, location, starts_at, ends_at, timezone, groups:group_id ( name )",
+      "id, title, status, group_id, created_by, location, starts_at, ends_at, timezone, groups:group_id ( name )",
     )
     .in("status", statuses)
     .order("starts_at", { ascending: true, nullsFirst: false })
@@ -160,7 +180,9 @@ export async function loadHomeData(
   const eventIds = eventRows.map((row) => row.id);
   const groupIds = [...new Set([...eventRows.map((row) => row.group_id), ...groups.map((g) => g.id)])];
 
-  const [candidatesResult, settingsResult, hostResult, categoriesResult, contributionsResult] =
+  const roleByGroup = new Map(groups.map((group) => [group.id, group.role]));
+
+  const [candidatesResult, settingsResult, hostResult, categoriesResult, contributionsResult, membersResult] =
     await Promise.all([
       eventIds.length > 0
         ? supabase
@@ -173,7 +195,7 @@ export async function loadHomeData(
         ? supabase
             .from("group_settings")
             .select(
-              "group_id, timezone, maybe_responses_enabled, who_may_propose, one_off_events_allowed, recurring_events_enabled",
+              "group_id, timezone, maybe_responses_enabled, who_may_propose, one_off_events_allowed, recurring_events_enabled, minimum_attendees, consensus_rule",
             )
             .in("group_id", groupIds)
         : Promise.resolve({ data: [], error: null }),
@@ -195,13 +217,27 @@ export async function loadHomeData(
       eventIds.length > 0
         ? supabase
             .from("event_contributions")
-            .select("event_id, category_id, status")
+            .select("event_id, category_id, status, user_id")
             .in("event_id", eventIds)
             .eq("status", "accepted")
         : Promise.resolve({ data: [], error: null }),
+      groupIds.length > 0
+        ? supabase
+            .from("group_memberships")
+            .select("group_id, user_id, consensus_required")
+            .in("group_id", groupIds)
+            .eq("status", "active")
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
-  for (const result of [candidatesResult, settingsResult, hostResult, categoriesResult, contributionsResult]) {
+  for (const result of [
+    candidatesResult,
+    settingsResult,
+    hostResult,
+    categoriesResult,
+    contributionsResult,
+    membersResult,
+  ]) {
     if (result.error) {
       throw new Error(result.error.message);
     }
@@ -216,15 +252,40 @@ export async function loadHomeData(
 
   const settingsByGroup = new Map<
     string,
-    { timezone: string; maybe: boolean; raw: Record<string, unknown> }
+    {
+      timezone: string;
+      maybe: boolean;
+      minimumAttendees: number;
+      consensusRule: ConsensusRule;
+      raw: Record<string, unknown>;
+    }
   >();
   for (const row of (settingsResult.data ?? []) as Array<Record<string, unknown>>) {
+    const ruleRaw = row.consensus_rule;
+    const consensusRule =
+      typeof ruleRaw === "string" && isConsensusRule(ruleRaw) ? ruleRaw : "minimum_attendees";
     settingsByGroup.set(row.group_id as string, {
       timezone:
         typeof row.timezone === "string" && row.timezone.length > 0 ? row.timezone : DEFAULT_TIME_ZONE,
       maybe: row.maybe_responses_enabled !== false,
+      minimumAttendees: Number(row.minimum_attendees ?? 1),
+      consensusRule,
       raw: row,
     });
+  }
+
+  const membersByGroup = new Map<string, ConsensusMember[]>();
+  for (const row of (membersResult.data ?? []) as Array<{
+    group_id: string;
+    user_id: string;
+    consensus_required: boolean | null;
+  }>) {
+    const list = membersByGroup.get(row.group_id) ?? [];
+    list.push({
+      userId: row.user_id,
+      consensusRequired: row.consensus_required === true,
+    });
+    membersByGroup.set(row.group_id, list);
   }
 
   const pickedByEvent = new Map<string, CandidateRow | null>();
@@ -276,11 +337,75 @@ export async function loadHomeData(
     categoriesByGroup.set(row.group_id, set);
   }
   const claimedByEvent = new Map<string, Set<string>>();
-  for (const row of (contributionsResult.data ?? []) as Array<{ event_id: string; category_id: string | null }>) {
+  const viewerHasContributionByEvent = new Map<string, boolean>();
+  for (const row of (contributionsResult.data ?? []) as Array<{
+    event_id: string;
+    category_id: string | null;
+    user_id: string;
+  }>) {
+    if (row.user_id === userId) {
+      viewerHasContributionByEvent.set(row.event_id, true);
+    }
     if (!row.category_id) continue;
     const set = claimedByEvent.get(row.event_id) ?? new Set<string>();
     set.add(row.category_id);
     claimedByEvent.set(row.event_id, set);
+  }
+
+  const finalisableEvents = eventRows.filter((row) => {
+    const role = roleByGroup.get(row.group_id);
+    return (
+      row.status === "proposing" &&
+      role &&
+      canFinaliseEvent(role, userId, row.created_by, row.status)
+    );
+  });
+  const decisionReadyByEvent = new Map<string, boolean>();
+  if (finalisableEvents.length > 0) {
+    const finalisableCandidateIds = finalisableEvents.flatMap((row) =>
+      (candidatesByEvent.get(row.id) ?? []).map((candidate) => candidate.id),
+    );
+    const consensusResponsesResult =
+      finalisableCandidateIds.length > 0
+        ? await supabase
+            .from("event_responses")
+            .select("candidate_id, user_id, response")
+            .in("candidate_id", finalisableCandidateIds)
+        : { data: [], error: null };
+    if (consensusResponsesResult.error) {
+      throw new Error(consensusResponsesResult.error.message);
+    }
+    const responsesByCandidate = new Map<string, { userId: string; response: ConsensusResponse }[]>();
+    for (const row of (consensusResponsesResult.data ?? []) as Array<{
+      candidate_id: string;
+      user_id: string;
+      response: DbResponseValue;
+    }>) {
+      const list = responsesByCandidate.get(row.candidate_id) ?? [];
+      list.push({ userId: row.user_id, response: dbResponseToConsensus(row.response) });
+      responsesByCandidate.set(row.candidate_id, list);
+    }
+
+    for (const row of finalisableEvents) {
+      const groupSettings = settingsByGroup.get(row.group_id);
+      const members = membersByGroup.get(row.group_id) ?? [];
+      const candidates = candidatesByEvent.get(row.id) ?? [];
+      let ready = false;
+      for (const candidate of candidates) {
+        const evaluation = evaluateCandidateConsensus({
+          consensusRule: groupSettings?.consensusRule ?? "minimum_attendees",
+          minimumAttendees: groupSettings?.minimumAttendees ?? 1,
+          maybeResponsesEnabled: groupSettings?.maybe ?? true,
+          members,
+          responses: responsesByCandidate.get(candidate.id) ?? [],
+        });
+        if (evaluation.passes) {
+          ready = true;
+          break;
+        }
+      }
+      decisionReadyByEvent.set(row.id, ready);
+    }
   }
 
   const now = new Date();
@@ -291,6 +416,15 @@ export async function loadHomeData(
     const startsAt = row.starts_at ?? picked?.starts_at ?? null;
     const endsAt = row.ends_at ?? picked?.ends_at ?? null;
     const maybeEnabled = groupSettings?.maybe ?? true;
+    let contributionsOpen: number | null = null;
+    if (row.status === "confirmed") {
+      const categories = categoriesByGroup.get(row.group_id);
+      if (categories && categories.size > 0) {
+        const claimed = claimedByEvent.get(row.id) ?? new Set<string>();
+        contributionsOpen = [...categories].filter((id) => !claimed.has(id)).length;
+      }
+    }
+
     const { bucket, attention } = classifyHomeEvent(
       {
         status: row.status,
@@ -299,18 +433,12 @@ export async function loadHomeData(
         viewerResponse,
         hasCandidate: picked !== null,
         hasPendingHostProposal: pendingHostEvents.has(row.id),
+        canConfirmTime: decisionReadyByEvent.get(row.id) === true,
+        unclaimedContributionCount: contributionsOpen ?? 0,
+        viewerHasContribution: viewerHasContributionByEvent.get(row.id) === true,
       },
       now,
     );
-
-    let contributionsOpen: number | null = null;
-    if (row.status === "confirmed" && bucket !== "past") {
-      const categories = categoriesByGroup.get(row.group_id);
-      if (categories && categories.size > 0) {
-        const claimed = claimedByEvent.get(row.id) ?? new Set<string>();
-        contributionsOpen = [...categories].filter((id) => !claimed.has(id)).length;
-      }
-    }
 
     return {
       id: row.id,
