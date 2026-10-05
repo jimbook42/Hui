@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — Manage Hui sectional UX (finish)
+
+- **Problem:** Manage domains were grouped by `SectionHeader` + `HuiSurface`, but legacy section components still rendered nested `hui-card-section` surfaces and duplicate h2 titles — the page read as one long list.
+- **Fix:** `ManageDomainSection` + `.hui-embedded` on manage surfaces (same pattern as `DisclosureCard`) so Time, Host, Contributions, Dietary, and lifecycle forms flatten inside each domain card; `space-y-6` between domains; semantic `section` + heading ids.
+- **Verification:** `lint` / `typecheck` / 502 tests / `build` passed. Authenticated mobile browser smoke not run in agent env.
+
 ## 2026-10-05 — Contribution notification noise fix
 
 - **Problem:** Row-level contribution INSERT/DELETE triggers notified every group member and queued Web Push for each mutation (claim, release, assign, reassign, clear), producing duplicate “claimed” / “slot changed” interrupts.
