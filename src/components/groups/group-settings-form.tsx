@@ -2,6 +2,7 @@
 
 import { updateGroupSettingsAction } from "@/app/groups/actions";
 import { AuthForm } from "@/components/auth/auth-form";
+import { HuiSwitchField } from "@/components/hui/hui-switch";
 
 import type { GroupSettingsRow } from "@/lib/groups/types";
 
@@ -9,23 +10,6 @@ type GroupSettingsFormProps = {
   groupId: string;
   settings: GroupSettingsRow;
 };
-
-function Checkbox({
-  name,
-  label,
-  checked,
-}: {
-  name: string;
-  label: string;
-  checked: boolean;
-}) {
-  return (
-    <label className="flex items-center gap-2 text-sm text-foreground">
-      <input type="checkbox" name={name} defaultChecked={checked} className="rounded" />
-      <span>{label}</span>
-    </label>
-  );
-}
 
 export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps) {
   return (
@@ -49,20 +33,20 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
             <option value="admins_only">Admins only</option>
           </select>
         </label>
-        <Checkbox
+        <HuiSwitchField
           name="one_off_events_allowed"
           label="One-off events allowed"
-          checked={settings.oneOffEventsAllowed}
+          defaultChecked={settings.oneOffEventsAllowed}
         />
-        <Checkbox
+        <HuiSwitchField
           name="recurring_events_enabled"
           label="Recurring events enabled"
-          checked={settings.recurringEventsEnabled}
+          defaultChecked={settings.recurringEventsEnabled}
         />
-        <Checkbox
+        <HuiSwitchField
           name="maybe_responses_enabled"
           label="Maybe responses enabled"
-          checked={settings.maybeResponsesEnabled}
+          defaultChecked={settings.maybeResponsesEnabled}
         />
         <label className="hui-label">
           <span>Minimum attendees</span>
@@ -96,12 +80,20 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
             <option value="all_active_members">All active members</option>
           </select>
         </label>
-        <Checkbox name="admin_veto_enabled" label="Admin veto" checked={settings.adminVetoEnabled} />
-        <Checkbox name="hosting_enabled" label="Use a host for gatherings" checked={settings.hostingEnabled} />
-        <Checkbox
+        <HuiSwitchField
+          name="admin_veto_enabled"
+          label="Admin veto"
+          defaultChecked={settings.adminVetoEnabled}
+        />
+        <HuiSwitchField
+          name="hosting_enabled"
+          label="Use a host for gatherings"
+          defaultChecked={settings.hostingEnabled}
+        />
+        <HuiSwitchField
           name="avoid_consecutive_hosts"
           label="Don't ask the same person to host twice in a row"
-          checked={settings.avoidConsecutiveHosts}
+          defaultChecked={settings.avoidConsecutiveHosts}
         />
         <label className="hui-label">
           <span>Timezone for event times</span>
@@ -112,10 +104,10 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
             className="hui-input"
           />
         </label>
-        <Checkbox
+        <HuiSwitchField
           name="reconnect_reminders_enabled"
           label="Reconnect reminders"
-          checked={settings.reconnectRemindersEnabled}
+          defaultChecked={settings.reconnectRemindersEnabled}
         />
         <label className="hui-label">
           <span>Reconnect after (days, when enabled)</span>

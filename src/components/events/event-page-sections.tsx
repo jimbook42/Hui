@@ -353,6 +353,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             eventLocation={detail.location}
             eventCoordinates={detail.locationCoordinates}
             hostPlaceRequired={detail.hostPlaceRequired}
+            viewerHomeLocation={data.viewerHomeLocation}
           />
         </DisclosureCard>
       ) : null}

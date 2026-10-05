@@ -313,7 +313,16 @@ Previously listed as HUI-023. That number is now **Web Push** (see HUI-023 above
 
 - Standing rules vs event assignments; assign/reassign/gaps; household-level rules
 
-### HUI-027 — Notification delivery follow-on
+### HUI-027 — Onboarding & setup architecture
+
+- [x] Audit ownership: **User** (profile, dietary, home, notifications, hosting standing per group), **Group** (people, settings, contribution category templates), **Hui/event** (time, food, host, place, contributions seeded per event). Recurring contribution categories are **group templates** copied into `event_contributions` on finalise — per-hui category overrides deferred.
+- [x] Lightweight personal setup (skippable); group creation people → invite → essentials → ready.
+- [x] Profile home location; host accept “At my home” / “Somewhere else”.
+- [x] Boolean settings → `HuiSwitch` (group settings, notifications, contributions, propose flow).
+- [x] Owner group delete (`delete_group` RPC); transfer ownership does not move accepted hosting.
+- [ ] Hard **delete** for individual events (RLS/policy) — **HUI-026D**; cancel remains the supported path today.
+
+### Notification delivery follow-on (formerly numbered HUI-027 in GDD list)
 
 - [x] Web Push channel, outbox, and deep links for existing HUI-021 kinds — shipped as **HUI-023**
 - Email remains **HUI-028**
@@ -387,13 +396,14 @@ Implementation must investigate server-action latency, unnecessary refreshes, ex
 | **HUI-026C** | Dashboard + event entry | Planned |
 | **HUI-026D** | Event management/admin surface | Planned |
 | **HUI-026E** | Contribution flow redesign | Planned |
-| **HUI-026U** | Visual design system & UX foundation | Complete (branch `feat/hui-026u-visual-design-system`; … **HUI-026U.4**: auth entry → dashboard, profile settings hub, address-search seam + Open in Maps, host-confirmed place, dietary scope UI, food-involvement gating — see `docs/ARCHITECTURE.md`; production geocoder: Geoapify via `HUI_GEOCODING_PROVIDER=geoapify` + global `countrycode:auto` / proximity bias (U.4 polish); migrations through `20261005050000_host_accept_place` applied to linked Supabase; production host-location flow verified) |
+| **HUI-026U** | Visual design system & UX foundation | Complete (branch `feat/hui-026u-visual-design-system`; … **HUI-026U.4** production-verified; migrations through `20261005050000_host_accept_place`) |
+| **HUI-027** | Onboarding & setup architecture | Complete on `feat/hui-026u-visual-design-system` — personal setup (`/profile/setup`, dashboard prompt), profile home + “At my home” host accept, progressive group creation wizard, `HuiSwitch` boolean controls, owner `delete_group`, ownership semantics documented; migration `20261005120000_hui_027_profile_home_delete_group` |
 | **HUI-026P** | Performance audit + core interaction speed | Complete (branch `feat/hui-026p-performance`; parallel fetches, lighter attendance action, streamed event sections, route loading UI) |
 | **HUI-026P.1** | Systemic latency diagnosis + common path fixes | Complete (branch `feat/hui-026p-performance`; request-scoped auth dedupe, profile ensure skip, household query batching, lighter profile save path) |
 | **HUI-026P.2** | End-to-end interaction latency audit | Complete (branch `feat/hui-026p-performance`; tap-to-visible instrumentation, optimistic attendance step, notification navigate-first, profile loading shell; see `docs/performance/HUI-026P.2-audit.md`) |
 | **HUI-026P.3** | Navigation & data-loading performance | Complete (branch `feat/hui-026p-performance`; respond primary/secondary split, groups Suspense, shell notification Suspense; see `docs/performance/HUI-026P.3-audit.md`) |
 
-The original GDD capabilities remain separately tracked: HUI-025 persistent availability, HUI-026 scheduling/recommendations, HUI-027 notification delivery follow-on, HUI-028 email/actionable notification flows, HUI-029 calendar/memories/next-cycle integration, and HUI-030 production hardening/MVP validation.
+The original GDD capabilities remain separately tracked: HUI-025 persistent availability, HUI-026 scheduling/recommendations, HUI-028 email/actionable notification flows, HUI-029 calendar/memories/next-cycle integration, and HUI-030 production hardening/MVP validation. (Web Push follow-on shipped as HUI-023; onboarding/setup as HUI-027 above.)
 
 ---
 

@@ -53,6 +53,11 @@ export default async function ProfilePage() {
             description="Households and how you appear in each group"
           />
           <ProfileHubLink
+            href="/profile/home"
+            title="Home"
+            description="Saved address for hosting at home"
+          />
+          <ProfileHubLink
             href="/profile/hosting"
             title="Hosting"
             description="How you feel about hosting in each group"

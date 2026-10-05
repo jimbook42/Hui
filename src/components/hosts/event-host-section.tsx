@@ -8,6 +8,7 @@ import {
 import { AcceptHostWithPlaceForm } from "@/components/hosts/accept-host-with-place-form";
 import { AuthForm } from "@/components/auth/auth-form";
 import type { EventCoordinates } from "@/domain/events/location";
+import type { ProfileHomeLocation } from "@/domain/profile/home-location";
 import { filterHostAssignableMembers } from "@/domain/hosts/attendance-eligibility";
 import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 import type { EventHostView } from "@/lib/hosts/queries";
@@ -29,6 +30,7 @@ type EventHostSectionProps = {
   eventLocation: string | null;
   eventCoordinates: EventCoordinates | null;
   hostPlaceRequired: boolean | null;
+  viewerHomeLocation: ProfileHomeLocation | null;
 };
 
 export function EventHostSection({
@@ -47,6 +49,7 @@ export function EventHostSection({
   eventLocation,
   eventCoordinates,
   hostPlaceRequired,
+  viewerHomeLocation,
 }: EventHostSectionProps) {
   const assignableMembers = filterHostAssignableMembers(
     eligibleMembers,
@@ -143,6 +146,7 @@ export function EventHostSection({
                   defaultLocation={eventLocation}
                   defaultCoordinates={eventCoordinates}
                   suggestedHostName={suggestedName ?? "You"}
+                  viewerHomeLocation={viewerHomeLocation}
                 />
               ) : null}
               {canRequestSwap ? (

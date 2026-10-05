@@ -2,6 +2,16 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-027 Onboarding & setup architecture
+
+- **Audit:** User vs Group vs Hui ownership documented in `ROADMAP.md`; contribution categories remain group templates with per-event `event_contributions` (no per-hui category override yet).
+- **User:** `/profile/setup` + dashboard prompt; `/profile/home` for saved home; `personal_setup_completed_at` on profiles.
+- **Group:** `/groups/new` wizard (name → invite link → hosting/maybe toggles → propose CTA); owner `delete_group` RPC + UI.
+- **Host accept:** “At my home” / “Somewhere else” when profile home is set.
+- **UI:** `HuiSwitch` + checkbox→switch pass on group settings, notifications, contributions, propose review.
+- **Deferred:** hard event delete (no delete RLS) → **HUI-026D**; standing contribution preferences → GDD backlog.
+- **Migration:** `20261005120000_hui_027_profile_home_delete_group.sql`.
+
 ## 2026-10-05 — HUI-026U.4 final production polish
 
 - **Host accept:** `host_place_required` on events; accept flow uses `EventLocationFields` (confirm vs choose copy); `respond_to_host_assignment` optionally persists place atomically on accept.

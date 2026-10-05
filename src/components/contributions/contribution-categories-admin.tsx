@@ -7,6 +7,7 @@ import {
   updateContributionCategoryRulesAction,
 } from "@/app/contributions/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
+import { HuiSwitchField } from "@/components/hui/hui-switch";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
 
 type ContributionCategoriesAdminProps = {
@@ -87,15 +88,11 @@ function CategoryRow({
         hiddenFields={{ group_id: groupId, category_id: category.id }}
         refreshOnSuccess
       >
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            name="follows_host"
-            defaultChecked={category.followsHost}
-            className="rounded"
-          />
-          <span>Follows the host (for example, main dish)</span>
-        </label>
+        <HuiSwitchField
+          name="follows_host"
+          label="Follows the host (for example, main dish)"
+          defaultChecked={category.followsHost}
+        />
       </AuthForm>
       <AuthForm
         action={deactivateContributionCategoryAction}

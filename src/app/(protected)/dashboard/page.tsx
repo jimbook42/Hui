@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/app/app-shell";
 import { InstallHuiCard } from "@/components/pwa/install-hui";
 import { PushNotificationsOnboardCard } from "@/components/pwa/push-notifications-onboard";
+import { PersonalSetupPrompt } from "@/components/dashboard/personal-setup-prompt";
 import { DashboardEvents, DashboardEventsSkeleton } from "@/components/home/home-sections";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { getVapidPublicKey } from "@/lib/push/config";
@@ -33,6 +34,23 @@ function GreetingText({ name }: { name?: string }) {
   );
 }
 
+async function PersonalSetupGate() {
+  const user = await getServerAuthUser();
+  if (!user) {
+    return null;
+  }
+  const supabase = await getServerSupabase();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("personal_setup_completed_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.personal_setup_completed_at) {
+    return null;
+  }
+  return <PersonalSetupPrompt />;
+}
+
 export default function DashboardPage() {
   const vapidPublicKey = getVapidPublicKey();
   const pushConfigured = vapidPublicKey !== null;
@@ -41,6 +59,9 @@ export default function DashboardPage() {
     <AppShell title="Home" hideTitle>
       <Suspense fallback={<GreetingText />}>
         <Greeting />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PersonalSetupGate />
       </Suspense>
       <InstallHuiCard />
       <PushNotificationsOnboardCard

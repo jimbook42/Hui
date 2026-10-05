@@ -10,6 +10,7 @@ import {
 } from "@/components/events/wall-clock-picker-field";
 import { ChevronDownIcon, CheckIcon } from "@/components/hui/icons";
 import { EventLocationFields } from "@/components/map/event-location-fields";
+import { HuiSwitchField } from "@/components/hui/hui-switch";
 import { PendingButton } from "@/components/ui/pending-button";
 import type { EventFoodInvolvement } from "@/domain/events/food";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
@@ -516,28 +517,17 @@ export function CreateEventProposalFlow({
             </div>
           </fieldset>
           {settings.hostingEnabled ? (
-            <label className="flex min-w-0 cursor-pointer items-start gap-3 rounded-hui-xl bg-surface p-4 hui-shadow-md">
-              <input
-                type="checkbox"
-                className="mt-1 size-4 shrink-0 accent-primary"
-                checked={draft.hostPlaceRequired}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    hostPlaceRequired: event.target.checked,
-                  }))
-                }
-              />
-              <span className="min-w-0 [text-wrap:pretty]">
-                <span className="block text-sm font-extrabold text-foreground">
-                  Host confirms the venue
-                </span>
-                <span className="mt-1 block text-xs font-semibold text-muted-foreground">
-                  When on, whoever accepts hosting sets or confirms the place as part of accepting.
-                  Turn off for gatherings where the venue does not matter yet.
-                </span>
-              </span>
-            </label>
+            <HuiSwitchField
+              label="Host confirms the venue"
+              description="When on, whoever accepts hosting sets or confirms the place as part of accepting. Turn off when the venue does not matter yet."
+              checked={draft.hostPlaceRequired}
+              onCheckedChange={(checked) =>
+                setDraft((current) => ({
+                  ...current,
+                  hostPlaceRequired: checked,
+                }))
+              }
+            />
           ) : null}
           <dl className="grid gap-4 rounded-hui-xl bg-surface p-5 text-sm font-semibold text-foreground hui-shadow-md [&_dt]:hui-type-label [&_dt]:text-muted-foreground [&_dd]:mt-1 [&_dd]:text-base [&_dd]:font-extrabold">
             <div>

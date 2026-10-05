@@ -25,6 +25,7 @@ import {
   canRespondToCandidates,
   canWithdrawCandidate,
 } from "@/domain/scheduling/permissions";
+import { homeLocationFromProfileRow } from "@/domain/profile/home-location";
 import { getServerSupabase } from "@/lib/auth/server-session";
 import {
   getGroupContributionHistory,
@@ -61,6 +62,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     eventContributions,
     contributionHistory,
     sharedDietary,
+    viewerHomeRow,
   ] = await devTimed("event-page:parallel-load", () =>
     Promise.all([
       getGroupDetail(supabase, detail.groupId, userId),
@@ -70,8 +72,16 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
       listEventContributions(supabase, detail.id),
       getGroupContributionHistory(supabase, detail.groupId, userId),
       listGroupSharedDietary(supabase, detail.groupId),
+      supabase
+        .from("profiles")
+        .select("home_location_label, home_location_lat, home_location_lng")
+        .eq("id", userId)
+        .maybeSingle()
+        .then(({ data }) => data),
     ]),
   );
+
+  const viewerHomeLocation = viewerHomeRow ? homeLocationFromProfileRow(viewerHomeRow) : null;
 
   const [householdView, hostContext] = await Promise.all([
     group
@@ -201,6 +211,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     canSwapHost,
     showHostSection,
     anyCandidatePasses,
+    viewerHomeLocation,
   };
 });
 

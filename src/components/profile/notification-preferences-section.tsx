@@ -3,6 +3,7 @@ import {
   updatePushNotificationPreferencesAction,
 } from "@/app/notifications/actions";
 import { AuthForm } from "@/components/auth/auth-form";
+import { HuiSwitchField } from "@/components/hui/hui-switch";
 
 type NotificationPreferencesSectionProps = {
   reconnectRemindersEnabled: boolean;
@@ -69,23 +70,12 @@ export function NotificationPreferencesSection({
           submitLabel="Save in-app preferences"
           refreshOnSuccess
         >
-          <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
-            <input
-              type="checkbox"
-              name="member_reconnect_reminders_enabled"
-              defaultChecked={reconnectRemindersEnabled}
-              className="mt-1 h-4 w-4 rounded"
-            />
-            <span>
-              <span className="font-medium text-foreground">
-                Reconnect reminders
-              </span>
-              <span className="mt-1 block text-muted-foreground">
-                When a group you belong to enables reconnect reminders and has been inactive, Hui
-                can show an in-app reminder here.
-              </span>
-            </span>
-          </label>
+          <HuiSwitchField
+            name="member_reconnect_reminders_enabled"
+            label="Reconnect reminders"
+            description="When a group you belong to enables reconnect reminders and has been inactive, Hui can show an in-app reminder here."
+            defaultChecked={reconnectRemindersEnabled}
+          />
         </AuthForm>
       </div>
     </div>
@@ -102,14 +92,6 @@ function PushPreference({
   defaultChecked: boolean;
 }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-4 text-sm text-foreground">
-      <span>{label}</span>
-      <input
-        type="checkbox"
-        name={name}
-        defaultChecked={defaultChecked}
-        className="h-4 w-4 rounded"
-      />
-    </label>
+    <HuiSwitchField name={name} label={label} defaultChecked={defaultChecked} />
   );
 }

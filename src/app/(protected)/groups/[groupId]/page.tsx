@@ -40,7 +40,9 @@ import { SectionHeader } from "@/components/hui/section-header";
 import { StatusPill } from "@/components/hui/status-pill";
 import { canManageContributionCategories } from "@/domain/contributions/permissions";
 import { canProposeEvents, groupAllowsEventKind } from "@/domain/events/permissions";
+import { DeleteGroupForm } from "@/components/groups/delete-group-form";
 import {
+  canDeleteGroup,
   canEditSettings,
   canManageMembers,
   canRenameGroup,
@@ -80,6 +82,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
   const viewerCanEditSettings = canEditSettings(detail.viewerRole);
   const viewerCanRename = canRenameGroup(detail.viewerRole);
   const viewerCanTransfer = canTransferOwnership(detail.viewerRole);
+  const viewerCanDelete = canDeleteGroup(detail.viewerRole);
   const viewerCanLeave = detail.viewerRole !== "owner";
   const viewerCanPropose =
     canProposeEvents(detail.viewerRole, detail.settings) &&
@@ -345,11 +348,27 @@ export default async function GroupDetailPage({ params }: PageProps) {
               icon={<UserIcon size={20} />}
             >
               <div className="max-w-md">
+                <p className="hui-type-supporting mb-4">
+                  Transfers group admin rights only. Accepted hosting on existing events stays with
+                  whoever already accepted.
+                </p>
                 <TransferOwnershipForm
                   groupId={detail.id}
                   members={detail.members}
                   ownerId={detail.ownerId}
                 />
+              </div>
+            </DisclosureCard>
+          ) : null}
+
+          {viewerCanDelete ? (
+            <DisclosureCard
+              title="Delete group"
+              summary="Permanently remove this group"
+              icon={<SparkIcon size={20} />}
+            >
+              <div className="max-w-md">
+                <DeleteGroupForm groupId={detail.id} groupName={detail.name} />
               </div>
             </DisclosureCard>
           ) : null}
