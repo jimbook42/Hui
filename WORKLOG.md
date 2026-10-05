@@ -2,6 +2,15 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — UX foundation correction (pre–HUI-026E)
+
+- **Manage discoverability:** authorised viewers see a dedicated **Open manage hui** card on the main hui page (not only a small Details header link).
+- **Manage layout:** `/events/[eventId]/manage` grouped into Hui, People & attendance, Time, Host, Place, Contributions, and Dietary sections.
+- **Host place:** accepted host gets **Set the place** / **Change place** on the main hui hero; manage Place reuses the same host location form with **At my home** (no address search when home is selected).
+- **Propose flow:** recurring groups default to **Recurring** planning model; one-off remains an explicit radio alternative.
+- **Theme:** `ThemeSystemSync` + shared `theme-client` helpers so **Match device** follows `prefers-color-scheme` while open; explicit light/dark unchanged.
+- **Next:** **HUI-026E** contribution coordination finish (not started in this pass).
+
 ## 2026-10-05 — HUI-026D Hui management & admin surface
 
 - **Manage route:** `/events/[eventId]/manage` (mobile-first sections reusing existing scheduling, host, contribution, and edit components). Participant `/events/[eventId]` unchanged except a **Manage this hui** entry for authorised viewers.

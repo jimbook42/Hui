@@ -5,6 +5,7 @@ import { EditEventForm } from "@/components/events/event-form";
 import { HostEventLocationForm } from "@/components/events/host-event-location-form";
 import type { EventCoordinates } from "@/domain/events/location";
 import type { EventStatus } from "@/domain/events/types";
+import type { ProfileHomeLocation } from "@/domain/profile/home-location";
 
 type EventDetailManagementProps = {
   canEdit: boolean;
@@ -24,6 +25,7 @@ type EventDetailManagementProps = {
   defaultCoordinates: EventCoordinates | null;
   status: EventStatus;
   timeZone: string;
+  viewerHomeLocation?: ProfileHomeLocation | null;
 };
 
 export function EventDetailManagement({
@@ -41,6 +43,7 @@ export function EventDetailManagement({
   defaultCoordinates,
   status,
   timeZone,
+  viewerHomeLocation = null,
 }: EventDetailManagementProps) {
   if (!canEdit && !canEditLocation && !canCancel && !canDelete) {
     return null;
@@ -77,6 +80,7 @@ export function EventDetailManagement({
               defaultNotes={defaultNotes}
               defaultLocation={defaultLocation}
               defaultCoordinates={defaultCoordinates}
+              viewerHomeLocation={viewerHomeLocation}
             />
           </div>
         </section>

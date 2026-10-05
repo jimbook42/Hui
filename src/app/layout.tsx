@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Nunito } from "next/font/google";
 
+import { ThemeSystemSync } from "@/components/ui/theme-system-sync";
 import { InstallBootstrap } from "@/components/pwa/install-bootstrap";
 import { InteractionPerfBootstrap } from "@/components/perf/interaction-perf-bootstrap";
 import { HuiSerwistProvider } from "@/components/serwist-provider";
@@ -66,6 +67,7 @@ export default function RootLayout({
       </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <HuiSerwistProvider>
+          <ThemeSystemSync />
           <InteractionPerfBootstrap />
           <InstallBootstrap />
           {children}

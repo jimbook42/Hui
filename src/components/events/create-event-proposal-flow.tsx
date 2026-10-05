@@ -16,6 +16,7 @@ import type { EventFoodInvolvement } from "@/domain/events/food";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import type { EventProposalDraft } from "@/domain/events/proposal";
 import { mergeWallClockIntoCandidates, parseWallClockCandidate } from "@/domain/events/proposal";
+import { defaultProposalEventKind } from "@/domain/events/proposal-defaults";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
 import type { GroupMemberRow, GroupSettingsRow } from "@/lib/groups/types";
 import { cn } from "@/lib/ui/cn";
@@ -44,7 +45,7 @@ type CreateEventProposalFlowProps = {
 const initialActionState: EventActionState = {};
 
 function emptyDraft(settings: GroupSettingsRow): EventProposalDraft {
-  const defaultKind = settings.oneOffEventsAllowed ? "one_off" : "recurring";
+  const defaultKind = defaultProposalEventKind(settings);
   return {
     title: "",
     location: "",
@@ -287,22 +288,61 @@ export function CreateEventProposalFlow({
             </div>
           </details>
           {canOneOff || canRecurring ? (
-            <label className="hui-label">
-              <span>Event type</span>
-              <select
-                className="hui-input"
-                value={draft.eventKind}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    eventKind: event.target.value as EventProposalDraft["eventKind"],
-                  }))
-                }
-              >
-                {canOneOff ? <option value="one_off">One-off</option> : null}
-                {canRecurring ? <option value="recurring">Recurring series</option> : null}
-              </select>
-            </label>
+            <fieldset className="space-y-2">
+              <legend className="hui-label">
+                <span>Planning model</span>
+              </legend>
+              <div className="grid grid-cols-1 gap-2">
+                {canRecurring ? (
+                  <label
+                    className={cn(
+                      "hui-focus-ring flex min-h-14 cursor-pointer flex-col justify-center rounded-hui-lg px-4 py-3",
+                      draft.eventKind === "recurring"
+                        ? "border-2 border-primary bg-sage-soft"
+                        : "border border-transparent bg-muted",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="event_kind"
+                      className="sr-only"
+                      checked={draft.eventKind === "recurring"}
+                      onChange={() =>
+                        setDraft((current) => ({ ...current, eventKind: "recurring" }))
+                      }
+                    />
+                    <span className="font-extrabold text-foreground">Recurring</span>
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      Continue this group&apos;s normal gathering rhythm.
+                    </span>
+                  </label>
+                ) : null}
+                {canOneOff ? (
+                  <label
+                    className={cn(
+                      "hui-focus-ring flex min-h-14 cursor-pointer flex-col justify-center rounded-hui-lg px-4 py-3",
+                      draft.eventKind === "one_off"
+                        ? "border-2 border-primary bg-sage-soft"
+                        : "border border-transparent bg-muted",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="event_kind"
+                      className="sr-only"
+                      checked={draft.eventKind === "one_off"}
+                      onChange={() =>
+                        setDraft((current) => ({ ...current, eventKind: "one_off" }))
+                      }
+                    />
+                    <span className="font-extrabold text-foreground">One-off</span>
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      Plan this hui only — without continuing the recurring cycle.
+                    </span>
+                  </label>
+                ) : null}
+              </div>
+            </fieldset>
           ) : null}
           {draft.eventKind === "recurring" && canRecurring ? (
             <fieldset className="space-y-4 rounded-hui-lg bg-muted p-5">

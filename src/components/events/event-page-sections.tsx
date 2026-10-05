@@ -1,4 +1,5 @@
 import { EventContributionsSection } from "@/components/contributions/event-contributions-section";
+import { HostEventPlaceHeroAction } from "@/components/events/host-event-place-hero-action";
 import { EventDietarySection } from "@/components/dietary/event-dietary-section";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
 import { EventScheduling } from "@/components/events/event-scheduling";
@@ -46,6 +47,9 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
   const confirmed = detail.status === "confirmed";
   const closed = detail.status === "cancelled" || detail.status === "completed";
   const acceptedHost = data.hostContext?.view.acceptedHost ?? null;
+  const isAcceptedHost = acceptedHost?.userId === userId;
+  const hasPlace = Boolean(detail.location?.trim());
+  const showHostPlaceAction = isAcceptedHost && data.canEditLocation && !closed;
   const when = startsAt && !closed ? relativeDayLabel(startsAt, tz) : null;
 
   const respondable = data.canRespond && data.primaryCandidate !== null;
@@ -118,6 +122,17 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
               coordinates={detail.locationCoordinates}
               className="mt-0 self-start"
             />
+            {showHostPlaceAction ? (
+              <HostEventPlaceHeroAction
+                eventId={detail.id}
+                defaultTitle={detail.title}
+                defaultNotes={detail.notes}
+                defaultLocation={detail.location}
+                defaultCoordinates={detail.locationCoordinates}
+                viewerHomeLocation={data.viewerHomeLocation}
+                hasPlace={hasPlace}
+              />
+            ) : null}
           </span>
         </li>
         {acceptedHost ? (
@@ -215,6 +230,36 @@ const ATTENTION_TARGET = {
   contribute: { href: "#contributions", label: "Pick something" },
 } as const;
 
+export async function EventManageEntryCard({ detail, userId }: SectionProps) {
+  const data = await loadEventPage(detail, userId);
+  if (!data.canAccessManage) {
+    return null;
+  }
+
+  return (
+    <section aria-labelledby="event-manage-entry" className="hui-rise-2">
+      <HuiSurface tone="subtle" shape="soft" padding="md" className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="min-w-0 flex-1">
+          <h2 id="event-manage-entry" className="font-extrabold text-foreground">
+            Manage this hui
+          </h2>
+          <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
+            Update planning, people, hosting, place, and contributions.
+          </p>
+        </div>
+        <HuiLinkButton
+          href={eventManagePath(detail.id)}
+          variant="primary"
+          size="default"
+          className="w-full shrink-0 sm:w-auto"
+        >
+          Open manage hui
+        </HuiLinkButton>
+      </HuiSurface>
+    </section>
+  );
+}
+
 export async function EventAttentionCard({ detail, userId }: SectionProps) {
   const data = await loadEventPage(detail, userId);
   // "respond" is handled by the answer strip in the hero.
@@ -302,13 +347,6 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
         id="event-details"
         title="Details"
         description="Open anything you need. Nothing here is required."
-        action={
-          data.canAccessManage ? (
-            <HuiLinkButton href={eventManagePath(detail.id)} size="sm" shape="melt" variant="secondary">
-              Manage this hui
-            </HuiLinkButton>
-          ) : undefined
-        }
       />
 
       {settings ? (

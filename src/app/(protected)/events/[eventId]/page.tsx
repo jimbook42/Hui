@@ -7,6 +7,7 @@ import {
   EventBodySkeleton,
   EventDetailsList,
   EventHeroMeta,
+  EventManageEntryCard,
   EventPeopleCard,
 } from "@/components/events/event-page-sections";
 import { AttendanceLiveProvider } from "@/components/events/attendance-live";
@@ -52,6 +53,7 @@ export default async function EventDetailPage({ params }: PageProps) {
 
           <Suspense fallback={<EventBodySkeleton />}>
             <EventAttentionCard detail={detail} userId={userId} />
+            <EventManageEntryCard detail={detail} userId={userId} />
             <EventPeopleCard detail={detail} userId={userId} />
             <EventDetailsList detail={detail} userId={userId} />
           </Suspense>
