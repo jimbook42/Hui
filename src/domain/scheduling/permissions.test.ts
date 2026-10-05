@@ -24,6 +24,11 @@ const baseSettings: GroupSettingsRow = {
   timezone: "Pacific/Auckland",
   reconnectRemindersEnabled: false,
   reconnectAfterDays: null,
+  recurrenceIntervalUnit: null,
+  recurrenceIntervalCount: null,
+  recurrenceAnchorDate: null,
+  planningLeadDays: 14,
+  canonicalRecurrenceSeriesId: null,
 };
 
 describe("scheduling permissions", () => {

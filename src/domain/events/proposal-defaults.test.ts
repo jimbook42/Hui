@@ -19,6 +19,11 @@ function settings(partial: Partial<GroupSettingsRow>): GroupSettingsRow {
     avoidConsecutiveHosts: true,
     reconnectRemindersEnabled: false,
     reconnectAfterDays: null,
+    recurrenceIntervalUnit: null,
+    recurrenceIntervalCount: null,
+    recurrenceAnchorDate: null,
+    planningLeadDays: 14,
+    canonicalRecurrenceSeriesId: null,
     ...partial,
   };
 }

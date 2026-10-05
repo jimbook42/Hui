@@ -11,6 +11,7 @@ import {
   GroupUpcoming,
   GroupUpcomingSkeleton,
 } from "@/components/groups/group-detail-sections";
+import { GroupRecurrencePlanningCard } from "@/components/groups/group-recurrence-planning";
 import { GroupForm, GroupNameField } from "@/components/groups/group-form";
 import { GroupInviteSection } from "@/components/groups/group-invite-section";
 import { GroupMemberCoordination } from "@/components/groups/group-member-coordination";
@@ -54,6 +55,7 @@ import { listGroupSharedDietary } from "@/lib/dietary/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getGroupHostHistory } from "@/lib/hosts/queries";
 import { getGroupHouseholdMemberView } from "@/lib/households/queries";
+import { loadGroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
 import { createClient } from "@/lib/supabase/server";
 
 function roleLabel(role: string): string {
@@ -97,6 +99,14 @@ export default async function GroupDetailPage({ params }: PageProps) {
       listGroupSharedDietary(supabase, groupId),
     ]);
   const viewerCanManageCategories = canManageContributionCategories(detail.viewerRole);
+
+  const planningContext = await loadGroupPlanningContext(
+    supabase,
+    groupId,
+    user!.id,
+    detail.name,
+    detail.viewerRole,
+  );
 
   let inviteToken: string | null = null;
   if (viewerCanManage) {
@@ -170,6 +180,10 @@ export default async function GroupDetailPage({ params }: PageProps) {
             </HuiLinkButton>
           </div>
         </HuiSurface>
+
+        {planningContext ? (
+          <GroupRecurrencePlanningCard context={planningContext} />
+        ) : null}
 
         <Suspense fallback={<GroupUpcomingSkeleton />}>
           <GroupUpcoming groupId={groupId} />

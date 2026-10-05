@@ -16,7 +16,11 @@ import type { EventFoodInvolvement } from "@/domain/events/food";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import type { EventProposalDraft } from "@/domain/events/proposal";
 import { mergeWallClockIntoCandidates, parseWallClockCandidate } from "@/domain/events/proposal";
-import { defaultProposalEventKind } from "@/domain/events/proposal-defaults";
+import {
+  buildInitialProposalDraft,
+  initialCandidateDateFromDraft,
+} from "@/domain/events/proposal-defaults";
+import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
 import type { GroupMemberRow, GroupSettingsRow } from "@/lib/groups/types";
 import { cn } from "@/lib/ui/cn";
@@ -36,33 +40,15 @@ const stepLabels: Record<Step, string> = {
 
 type CreateEventProposalFlowProps = {
   groupId: string;
+  groupName: string;
   settings: GroupSettingsRow;
   isFirstGroupEvent: boolean;
   members: GroupMemberRow[];
   contributionCategories: ContributionCategoryRow[];
+  planningCycle: GroupPlanningCycle | null;
 };
 
 const initialActionState: EventActionState = {};
-
-function emptyDraft(settings: GroupSettingsRow): EventProposalDraft {
-  const defaultKind = defaultProposalEventKind(settings);
-  return {
-    title: "",
-    location: "",
-    notes: "",
-    eventKind: defaultKind,
-    recurrence: {
-      seriesTitle: "",
-      intervalUnit: "month",
-      intervalCount: 1,
-      startsOn: "",
-    },
-    candidates: [],
-    initialHostUserId: "suggest",
-    foodInvolvement: null,
-    hostPlaceRequired: true,
-  };
-}
 
 function hostSummary(
   draft: EventProposalDraft,
@@ -85,15 +71,25 @@ function hostSummary(
 
 export function CreateEventProposalFlow({
   groupId,
+  groupName,
   settings,
   isFirstGroupEvent,
   members,
   contributionCategories,
+  planningCycle,
 }: CreateEventProposalFlowProps) {
+  const initialDraft = useMemo(
+    () => buildInitialProposalDraft(settings, { groupName, cycle: planningCycle }),
+    [settings, groupName, planningCycle],
+  );
+  const initialDate = useMemo(
+    () => initialCandidateDateFromDraft(initialDraft, planningCycle),
+    [initialDraft, planningCycle],
+  );
   const [step, setStep] = useState<Step>("name");
-  const [draft, setDraft] = useState<EventProposalDraft>(() => emptyDraft(settings));
+  const [draft, setDraft] = useState<EventProposalDraft>(() => initialDraft);
   const [stepError, setStepError] = useState<string | null>(null);
-  const [timeDate, setTimeDate] = useState("");
+  const [timeDate, setTimeDate] = useState(initialDate);
   const [timeStart, setTimeStart] = useState("12:00");
   // The end time is optional: an empty value means "start only".
   const [timeEnd, setTimeEnd] = useState("");

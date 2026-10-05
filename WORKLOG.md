@@ -2,6 +2,15 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-028 Recurring planning cycle
+
+- **Before:** `recurrence_series` anchor per proposal only; no group cadence, planning window, cycle identity, or next-planning UX.
+- **Data:** `group_settings` cadence + `planning_lead_days` + `canonical_recurrence_series_id`; `events.planning_target_date` with partial unique index; `propose_group_event` syncs cadence, reuses series, rejects duplicate cycle targets.
+- **Domain:** `src/domain/recurrence/planning-cycle.ts` (phases, next target, planning opens, prefill).
+- **UX:** Group hero card + dashboard **Recurring groups**; propose flow prefills recurring target date when derivable.
+- **Tests:** `planning-cycle.test.ts`, `recurring-planning-hui-028.test.ts`; updated `event-proposal.test.ts` RPC arity.
+- **Deferred:** event completion UI hook, skipped-cycle policies, weekday/time-window recurrence UX, planning push/email reminders, persistent availability (HUI-025).
+
 ## 2026-10-05 — HUI-026F Generic decision polls
 
 - **Data:** `event_decisions`, `event_decision_options`, `event_decision_responses` with RLS + RPCs (`create_event_decision`, `respond_event_decision`, `finalize_event_decision`, `cancel_event_decision`, `update_event_decision_draft`); `_delete_event_cascade` extended.

@@ -8,6 +8,7 @@ import {
   groupAllowsEventKind,
 } from "@/domain/events/permissions";
 import { getGroupDetail } from "@/lib/groups/queries";
+import { loadGroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
 import { createClient } from "@/lib/supabase/server";
 
 type PageProps = {
@@ -46,6 +47,13 @@ export default async function NewGroupEventPage({ params }: PageProps) {
     (member) => member.hostingStanding !== "never",
   );
   const contributionCategories = await listContributionCategories(supabase, groupId);
+  const planningContext = await loadGroupPlanningContext(
+    supabase,
+    groupId,
+    user!.id,
+    detail.name,
+    detail.viewerRole,
+  );
 
   return (
     <AppShell
@@ -56,10 +64,12 @@ export default async function NewGroupEventPage({ params }: PageProps) {
     >
       <CreateEventProposalFlow
         groupId={groupId}
+        groupName={detail.name}
         settings={detail.settings}
         isFirstGroupEvent={isFirstGroupEvent}
         members={hostEligibleMembers}
         contributionCategories={contributionCategories}
+        planningCycle={planningContext?.cycle ?? null}
       />
     </AppShell>
   );

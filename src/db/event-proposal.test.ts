@@ -116,7 +116,9 @@ describe("propose_group_event (HUI-026A)", () => {
   it("rejects proposal without candidates", async () => {
     await asUser(db, ids.owner);
     const err = await expectFail(async () => {
-      await db.query(`select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null)`, [
+      await db.query(
+        `select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null, null, null)`,
+        [
         groupId,
         "No times",
         "[]",
@@ -134,7 +136,7 @@ describe("propose_group_event (HUI-026A)", () => {
     await asUser(db, ids.owner);
     const eventId = (
       await db.query<{ propose_group_event: string }>(
-        `select public.propose_group_event($1, $2, $3, null, null, $4::jsonb, false, null) as propose_group_event`,
+        `select public.propose_group_event($1, $2, $3, null, null, $4::jsonb, false, null, null, null) as propose_group_event`,
         [
           groupId,
           "Holiday dinner",
@@ -166,7 +168,9 @@ describe("propose_group_event (HUI-026A)", () => {
     const endsAt = wallClockToUtcIso("2026-12-06T21:00", "Pacific/Auckland");
     await asUser(db, ids.outsider);
     const err = await expectFail(async () => {
-      await db.query(`select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null)`, [
+      await db.query(
+        `select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null, null, null)`,
+        [
         groupId,
         "Intrusion",
         JSON.stringify([{ starts_at: startsAt, ends_at: endsAt }]),

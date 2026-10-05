@@ -22,6 +22,8 @@ export type ProposalRecurrenceInput = {
   intervalUnit: "week" | "month";
   intervalCount: number;
   startsOn: string;
+  /** Nominal cycle target — duplicate prevention in propose_group_event. */
+  planningTargetDate?: string | null;
 };
 
 export type EventProposalDraft = {
@@ -57,6 +59,7 @@ export type ProposeGroupEventPayload = {
     interval_unit: "week" | "month";
     interval_count: number;
     starts_on: string;
+    planning_target_date?: string | null;
   } | null;
   candidates: RpcProposalCandidate[];
   setInitialHost: boolean;
@@ -199,6 +202,9 @@ export function validateEventProposalDraft(
       interval_unit: intervalUnit,
       interval_count: intervalCount,
       starts_on: startsOn,
+      ...(draft.recurrence?.planningTargetDate
+        ? { planning_target_date: draft.recurrence.planningTargetDate }
+        : {}),
     };
   }
 

@@ -271,16 +271,12 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 - RLS/security; invitation notifications (when delivery stack exists)
 - Replace add-by-user-ID as the primary onboarding path
 
-### Recurring planning / cycle engine (open)
+### Recurring planning / cycle engine
 
-Previously listed as HUI-023. That number is now **Web Push** (see HUI-023 above). This cycle engine is still not started.
-
-- **Planning due** from group recurrence (not auto-confirmed event chains)
-- Open/close planning cycle; normally one active next cycle
-- Tie to the extended group recurrence configuration model
-- Skipped cycle, moved event, insufficient attendance, consensus failure hooks
-- **Complete event** → memory/history triggers → fairness state → next cycle due
-- Integrate host recommendation timing and contribution phase into cycle states
+- [x] **HUI-028** — Recurring planning cycle (group cadence on `group_settings`, nominal `planning_target_date`, planning window/phase derivation, dashboard + group UX, propose prefill, canonical series reuse, duplicate-safe `propose_group_event`; migration `20261005200000_hui_028_recurring_planning_cycle.sql`)
+- [ ] Skipped cycle, moved event, insufficient attendance, consensus failure hooks
+- [ ] **Complete event** workflow → memory/history triggers → fairness state → next cycle due (depends on HUI-029 completion UI)
+- [ ] Full recurrence configuration UX (weekday patterns, time windows, nominal previews — see below)
 
 ### Recurrence configuration and user-friendly recurrence UX
 
@@ -325,10 +321,10 @@ Previously listed as HUI-023. That number is now **Web Push** (see HUI-023 above
 ### Notification delivery follow-on (formerly numbered HUI-027 in GDD list)
 
 - [x] Web Push channel, outbox, and deep links for existing HUI-021 kinds — shipped as **HUI-023**
-- Email remains **HUI-028**
+- Email delivery (formerly numbered HUI-028 in GDD list) remains a separate backlog item — see **notification email delivery** below
 - Broader worker coverage for future notification kinds is still open
 
-### HUI-028 — Email delivery + actionable notification flows
+### Notification email delivery + actionable flows (GDD backlog)
 
 - Email channel for GDD notification types
 - Deep links; invitation and planning/reminder flows

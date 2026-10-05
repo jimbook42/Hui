@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/hui/empty-state";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { ChevronRightIcon, PlusIcon } from "@/components/hui/icons";
 import { SectionHeader } from "@/components/hui/section-header";
+import { DashboardRecurringPlanning } from "@/components/groups/group-recurrence-planning";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import {
   createHuiHref,
@@ -12,6 +13,7 @@ import {
   splitHomeEvents,
   type HomeEvent,
 } from "@/lib/events/home-data";
+import { loadDashboardRecurringPlanning } from "@/lib/groups/planning-cycle-queries";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 import { cn } from "@/lib/ui/cn";
 
@@ -57,9 +59,12 @@ export async function DashboardEvents() {
     return null;
   }
   const supabase = await getServerSupabase();
-  const { events, groups, proposableGroups } = await devTimed("dashboard:home-data", () =>
-    loadHomeData(supabase, user.id),
-  );
+  const [{ events, groups, proposableGroups }, recurringPlanning] = await Promise.all([
+    devTimed("dashboard:home-data", () => loadHomeData(supabase, user.id)),
+    devTimed("dashboard:recurring-planning", () =>
+      loadDashboardRecurringPlanning(supabase, user.id),
+    ),
+  ]);
   const sections = splitHomeEvents(events);
   const createHref = createHuiHref(proposableGroups);
 
@@ -136,6 +141,8 @@ export async function DashboardEvents() {
           </div>
         </section>
       ) : null}
+
+      <DashboardRecurringPlanning contexts={recurringPlanning} />
 
       {nothingPlanned ? (
         <EmptyState
