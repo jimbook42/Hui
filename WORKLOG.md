@@ -2,6 +2,16 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026E Contribution coordination finish
+
+- **Member UX:** per-category contribution cards with clear status (open, claimed, yours, host-bound, manager-assigned) on hui detail, manage, and respond **What are you bringing?** steps.
+- **Coordinator tools:** `assign_event_contribution_as_manager`, `reassign_event_contribution_as_manager`, `release_event_contribution_as_manager` (creator or group admin/owner); host-bound categories stay on accepted-host sync.
+- **Standing preferences:** group admins set optional **Usually brings this** (`default_assignee_user_id`) without rewriting past events.
+- **Claims:** members claim into existing open seeded rows; manual claims blocked on host-bound categories.
+- **Tests:** `src/db/contributions-hui-026e.test.ts`, `src/domain/contributions/slots.test.ts`.
+- **Migration:** `20261005160000_hui_026e_contribution_coordination.sql`.
+- **Deferred:** per-hui contribution category overrides; full GDD standing-preference matrix beyond default assignee.
+
 ## 2026-10-05 — UX foundation correction (pre–HUI-026E)
 
 - **Manage discoverability:** authorised viewers see a dedicated **Open manage hui** card on the main hui page (not only a small Details header link).

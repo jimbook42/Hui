@@ -33,6 +33,8 @@ describe("contribution display", () => {
         label: "Cake",
         status: "accepted",
         displayName: "Isaac",
+        assignedByUserId: "u1",
+        assignedByDisplayName: "Isaac",
       },
     ];
 

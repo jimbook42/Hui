@@ -3,9 +3,11 @@ import "server-only";
 import { cache } from "react";
 
 import {
+  canAssignEventContributions,
   canCoordinateContributions,
   isProposedEvent,
 } from "@/domain/contributions/permissions";
+import { buildContributionSlots, isContributionSlotFilled } from "@/domain/contributions/slots";
 import { buildEventAttention } from "@/domain/events/attention";
 import { attendanceStateFromChoice } from "@/domain/events/home";
 import { pickParticipantTimeCandidate } from "@/domain/events/participant-flow";
@@ -151,6 +153,12 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
   const canAdd = settings ? canAddCandidates(detail.viewerRole, settings, detail.status) : false;
   const canRemove = canWithdrawCandidate(detail.viewerRole, userId, detail.createdBy, detail.status);
   const coordinateContributions = canCoordinateContributions(detail.status);
+  const canAssignContributions = canAssignEventContributions(
+    detail.viewerRole,
+    userId,
+    detail.createdBy,
+    detail.status,
+  );
 
   const pendingHostProposal = hostContext ? pickPendingHostProposal(hostContext.assignments) : null;
   const canAssignHost = canAssignEventHost(detail.viewerRole, userId, detail.createdBy, detail.status);
@@ -168,10 +176,14 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     ? countAttendance(primaryRoster.members, scheduling.maybeResponsesEnabled)
     : null;
 
-  const activeCategories = contributionCategories.filter((category) => category.archivedAt === null);
-  const claimedCategoryIds = new Set(eventContributions.map((row) => row.categoryId));
-  const unclaimedContributionCount = activeCategories.filter(
-    (category) => !claimedCategoryIds.has(category.id),
+  const contributionSlots = buildContributionSlots(
+    contributionCategories,
+    eventContributions,
+    userId,
+    acceptedHostUserId,
+  );
+  const unclaimedContributionCount = contributionSlots.filter(
+    (slot) => !isContributionSlotFilled(slot.contribution),
   ).length;
   const viewerHasContribution = eventContributions.some((row) => row.userId === userId);
 
@@ -220,6 +232,9 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     canAdd,
     canRemove,
     coordinateContributions,
+    canAssignContributions,
+    groupMembers: group?.members ?? [],
+    acceptedHostUserId,
     isProposed: isProposedEvent(detail.status),
     pendingHostProposal,
     canAssignHost,

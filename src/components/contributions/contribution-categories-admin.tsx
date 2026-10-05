@@ -4,20 +4,28 @@ import {
   createContributionCategoryAction,
   deactivateContributionCategoryAction,
   renameContributionCategoryAction,
+  setContributionCategoryDefaultAssigneeAction,
   updateContributionCategoryRulesAction,
 } from "@/app/contributions/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import { HuiSwitchField } from "@/components/hui/hui-switch";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
 
+type ContributionMember = {
+  userId: string;
+  displayName: string;
+};
+
 type ContributionCategoriesAdminProps = {
   groupId: string;
   categories: ContributionCategoryRow[];
+  members: ContributionMember[];
 };
 
 export function ContributionCategoriesAdmin({
   groupId,
   categories,
+  members,
 }: ContributionCategoriesAdminProps) {
   const active = categories.filter((c) => c.archivedAt === null);
   const archived = categories.filter((c) => c.archivedAt !== null);
@@ -44,7 +52,7 @@ export function ContributionCategoriesAdmin({
               key={category.id}
               className="rounded-hui-md p-4 bg-muted"
             >
-              <CategoryRow groupId={groupId} category={category} />
+              <CategoryRow groupId={groupId} category={category} members={members} />
             </li>
           ))}
         </ul>
@@ -67,9 +75,11 @@ export function ContributionCategoriesAdmin({
 function CategoryRow({
   groupId,
   category,
+  members,
 }: {
   groupId: string;
   category: ContributionCategoryRow;
+  members: ContributionMember[];
 }) {
   return (
     <div className="space-y-3">
@@ -93,6 +103,31 @@ function CategoryRow({
           label="Follows the host (for example, main dish)"
           defaultChecked={category.followsHost}
         />
+      </AuthForm>
+      <AuthForm
+        action={setContributionCategoryDefaultAssigneeAction}
+        submitLabel="Save standing preference"
+        hiddenFields={{ group_id: groupId, category_id: category.id }}
+        refreshOnSuccess
+      >
+        <label className="hui-label">
+          Usually brings this (optional)
+          <select
+            name="default_assignee_user_id"
+            className="hui-input"
+            defaultValue={category.defaultAssigneeUserId ?? ""}
+          >
+            <option value="">No standing preference</option>
+            {members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="text-sm text-muted-foreground">
+          Applies when new events seed contributions. Changing this does not rewrite past events.
+        </p>
       </AuthForm>
       <AuthForm
         action={deactivateContributionCategoryAction}

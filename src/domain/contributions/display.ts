@@ -1,24 +1,53 @@
 import type { ContributionCategoryRow, EventContributionRow } from "@/lib/contributions/types";
 
+import { buildContributionSlots, isContributionSlotFilled } from "./slots";
+
 export type ContributionBoard = {
   stillNeeded: ContributionCategoryRow[];
   claimed: EventContributionRow[];
   mine: EventContributionRow[];
 };
 
+function primaryContributionsPerCategory(
+  contributions: EventContributionRow[],
+): EventContributionRow[] {
+  const byCategory = new Map<string, EventContributionRow>();
+  for (const row of contributions) {
+    const categoryId = row.categoryId;
+    if (!categoryId) {
+      continue;
+    }
+    const existing = byCategory.get(categoryId);
+    if (
+      !existing ||
+      (isContributionSlotFilled(row) && !isContributionSlotFilled(existing))
+    ) {
+      byCategory.set(categoryId, row);
+    } else if (row.status === "accepted" && existing.status !== "accepted") {
+      byCategory.set(categoryId, row);
+    }
+  }
+  return [...byCategory.values()];
+}
+
 export function buildContributionBoard(
   categories: ContributionCategoryRow[],
   contributions: EventContributionRow[],
   viewerUserId: string,
+  acceptedHostUserId: string | null = null,
 ): ContributionBoard {
-  const activeCategories = categories.filter((c) => c.archivedAt === null);
-  const claimed = contributions.filter((c) => c.status === "accepted");
-  const claimedCategoryIds = new Set(
-    claimed.map((c) => c.categoryId).filter((id): id is string => id !== null),
+  const slots = buildContributionSlots(
+    categories,
+    contributions,
+    viewerUserId,
+    acceptedHostUserId,
   );
-
-  const stillNeeded = activeCategories.filter((cat) => !claimedCategoryIds.has(cat.id));
-  const mine = claimed.filter((c) => c.userId === viewerUserId);
+  const stillNeeded = slots.filter((slot) => !isContributionSlotFilled(slot.contribution)).map(
+    (slot) => slot.category,
+  );
+  const primary = primaryContributionsPerCategory(contributions);
+  const claimed = primary.filter((row) => isContributionSlotFilled(row));
+  const mine = claimed.filter((row) => row.userId === viewerUserId);
 
   return { stillNeeded, claimed, mine };
 }

@@ -34,6 +34,7 @@ export type RespondPrimaryData = {
 export type RespondSecondaryData = {
   categories: ContributionCategoryRow[];
   contributions: EventContributionRow[];
+  acceptedHostUserId: string | null;
 };
 
 export async function loadRespondPrimary(
@@ -98,13 +99,27 @@ export async function loadRespondPrimary(
   };
 }
 
-export function loadRespondSecondary(
+export async function loadRespondSecondary(
   supabase: SupabaseClient,
   eventId: string,
   groupId: string,
 ): Promise<RespondSecondaryData> {
-  return Promise.all([
+  const [contributions, categories, hostRow] = await Promise.all([
     listEventContributions(supabase, eventId),
     listContributionCategories(supabase, groupId),
-  ]).then(([contributions, categories]) => ({ contributions, categories }));
+    supabase
+      .from("host_assignments")
+      .select("user_id")
+      .eq("event_id", eventId)
+      .eq("status", "accepted")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  return {
+    contributions,
+    categories,
+    acceptedHostUserId: hostRow.data?.user_id ?? null,
+  };
 }

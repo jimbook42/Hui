@@ -26,6 +26,8 @@ function mapContribution(row: Record<string, unknown>): EventContributionRow {
     | { name: string }[]
     | null;
   const category = Array.isArray(rawCategory) ? rawCategory[0] : rawCategory;
+  const rawAssigner = row.assigner as { display_name: string | null } | { display_name: string | null }[] | null;
+  const assigner = Array.isArray(rawAssigner) ? rawAssigner[0] : rawAssigner;
 
   return {
     id: row.id as string,
@@ -37,6 +39,11 @@ function mapContribution(row: Record<string, unknown>): EventContributionRow {
     label: row.label as string,
     status: row.status as string,
     displayName: row.display_name === null ? null : (row.display_name as string),
+    assignedByUserId: row.assigned_by === null ? null : (row.assigned_by as string),
+    assignedByDisplayName:
+      assigner?.display_name === null || assigner?.display_name === undefined
+        ? null
+        : assigner.display_name,
   };
 }
 
@@ -73,6 +80,10 @@ export async function listEventContributions(
       label,
       status,
       display_name,
+      assigned_by,
+      assigner:profiles!event_contributions_assigned_by_fkey (
+        display_name
+      ),
       contribution_categories (
         name
       )

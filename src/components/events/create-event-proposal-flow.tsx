@@ -609,7 +609,7 @@ export function CreateEventProposalFlow({
               <dt>Contributions</dt>
               <dd>
                 {activeCategories.length > 0
-                  ? `${activeCategories.length} categories ready after confirmation`
+                  ? `${activeCategories.map((category) => category.name).join(", ")} — coordinated after confirmation`
                   : "None configured yet"}
               </dd>
             </div>

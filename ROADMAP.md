@@ -149,7 +149,7 @@ Persistent recurring constraints/preferences with privacy; per-event override; W
 | 3 — Event domain | [~] Foundation | HUI-008: CRUD, cancel; recurrence **series anchor only** |
 | 4 — Scheduling & consensus | [~] Partial | HUI-009/010/017: manual candidates, consensus, finalise; **no** recommendation engine or persistent availability |
 | 5 — Host coordination | [~] Partial | HUI-020 foundation + **HUI-022A**: auto-propose on confirm, accept/swap, optional hosting, no auto-accept, consecutive-host setting, member standings (`default`, `always`, `prefer_not`, `never`); **not** household rotation or full fairness engine |
-| 6 — Contributions & dietary | [~] Partial | HUI-018/019 + **HUI-022A**: seed categories on confirm, host-bound categories, default assignee column; **not** full standing-preference editor or admin reassignment flows |
+| 6 — Contributions & dietary | [~] Partial | HUI-018/019 + **HUI-022A** + **HUI-026E**: seed categories, host-bound sync, default assignee standing editor, manager assign/reassign/release, member status UX; **not** full GDD standing-preference matrix |
 | 7 — Notifications | [x] In-app + Web Push deployed and verified | HUI-021 canonical in-app records plus **HUI-023** opt-in Web Push delivery. **Not** email. |
 | 8 — Recurring planning & invitations | [~] Partial | HUI-022B share-link invitations shipped; recurring cycle, recurrence UX, HUI-025, and HUI-026 remain open |
 | 9 — Delivery, calendar, memories | [~] Partial | Web Push shipped as HUI-023; email, calendar, memories, and next-cycle integration remain open |
@@ -395,7 +395,7 @@ Implementation must investigate server-action latency, unnecessary refreshes, ex
 | **HUI-026B** | Invitee response flow + alternative-time intent | Complete (branch `feat/hui-026a-event-proposal-flow`; `/events/[eventId]/respond`) |
 | **HUI-026C** | Dashboard + event entry | Planned |
 | **HUI-026D** | Event management/admin surface | Complete (`/events/[eventId]/manage`, `delete_event`, migration `20261005140000_hui_026d_delete_event`) |
-| **HUI-026E** | Contribution flow redesign | Planned (next after UX foundation correction on `feat/hui-026u-visual-design-system`) |
+| **HUI-026E** | Contribution coordination finish | Complete (`feat/hui-026u-visual-design-system`; migration `20261005160000_hui_026e_contribution_coordination`) |
 | **UX foundation (pre-026E)** | Manage discoverability, sectional manage layout, host place on main hui page, recurring default on propose, My home host place path, System theme OS sync | Complete on `feat/hui-026u-visual-design-system` |
 | **HUI-026U** | Visual design system & UX foundation | Complete (branch `feat/hui-026u-visual-design-system`; … **HUI-026U.4** production-verified; migrations through `20261005050000_host_accept_place`) |
 | **HUI-027** | Onboarding & setup architecture | Complete on `feat/hui-026u-visual-design-system` — personal setup (`/profile/setup`, dashboard prompt), profile home + “At my home” host accept, progressive group creation wizard, `HuiSwitch` boolean controls, owner `delete_group`, ownership semantics documented; migration `20261005120000_hui_027_profile_home_delete_group` |

@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { canCoordinateContributions, canManageContributionCategories } from "@/domain/contributions/permissions";
+import {
+  canAssignEventContributions,
+  canCoordinateContributions,
+  canManageContributionCategories,
+} from "@/domain/contributions/permissions";
 import {
   normalizeCategoryName,
   normalizeContributionDescription,
@@ -195,6 +199,7 @@ export async function claimContributionAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events/${eventId}/respond`);
+  revalidatePath(`/events/${eventId}/manage`);
   schedulePushDelivery();
   return { message: "Contribution claimed." };
 }
@@ -229,6 +234,8 @@ export async function updateContributionAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/respond`);
+  revalidatePath(`/events/${eventId}/manage`);
   schedulePushDelivery();
   return { message: "Contribution updated." };
 }
@@ -261,6 +268,174 @@ export async function releaseContributionAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/respond`);
+  revalidatePath(`/events/${eventId}/manage`);
   schedulePushDelivery();
   return { message: "Contribution released." };
+}
+
+export async function setContributionCategoryDefaultAssigneeAction(
+  _prev: ContributionActionState,
+  formData: FormData,
+): Promise<ContributionActionState> {
+  const groupId = String(formData.get("group_id") ?? "");
+  const categoryId = String(formData.get("category_id") ?? "");
+  const assigneeRaw = String(formData.get("default_assignee_user_id") ?? "");
+
+  if (!groupId || !categoryId) {
+    return { error: "Category not found." };
+  }
+
+  const defaultAssigneeUserId = assigneeRaw === "" ? null : assigneeRaw;
+
+  const { supabase, user } = await requireUser();
+  const group = await getGroupDetail(supabase, groupId, user.id);
+  if (!group || !canManageContributionCategories(group.viewerRole)) {
+    return { error: "You cannot manage contribution categories for this group." };
+  }
+
+  if (defaultAssigneeUserId !== null) {
+    const isMember = group.members.some((member) => member.userId === defaultAssigneeUserId);
+    if (!isMember) {
+      return { error: "Choose an active group member." };
+    }
+  }
+
+  const { error } = await supabase
+    .from("contribution_categories")
+    .update({ default_assignee_user_id: defaultAssigneeUserId })
+    .eq("id", categoryId)
+    .eq("group_id", groupId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  schedulePushDelivery();
+  return { message: "Standing preference saved." };
+}
+
+async function assertCanAssignContributions(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  eventId: string,
+) {
+  const detail = await getEventDetail(supabase, eventId, userId);
+  if (!detail) {
+    return { error: "Event not found." as const, detail: null };
+  }
+  if (!canAssignEventContributions(detail.viewerRole, userId, detail.createdBy, detail.status)) {
+    return { error: "You cannot assign contributions for this event." as const, detail: null };
+  }
+  if (!canCoordinateContributions(detail.status)) {
+    return { error: "Contributions are closed for this event." as const, detail: null };
+  }
+  return { error: null, detail };
+}
+
+export async function assignContributionAsManagerAction(
+  _prev: ContributionActionState,
+  formData: FormData,
+): Promise<ContributionActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  const groupId = String(formData.get("group_id") ?? "");
+  const categoryId = String(formData.get("category_id") ?? "");
+  const memberUserId = String(formData.get("member_user_id") ?? "");
+  const descriptionRaw = String(formData.get("description") ?? "");
+
+  if (!eventId || !groupId || !categoryId || !memberUserId) {
+    return { error: "Choose a member and category." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const gate = await assertCanAssignContributions(supabase, user.id, eventId);
+  if (gate.error || !gate.detail || gate.detail.groupId !== groupId) {
+    return { error: gate.error ?? "Event not found." };
+  }
+
+  const { error } = await supabase.rpc("assign_event_contribution_as_manager", {
+    p_event_id: eventId,
+    p_category_id: categoryId,
+    p_member_user_id: memberUserId,
+    p_description: descriptionRaw.trim() === "" ? null : descriptionRaw.trim(),
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/respond`);
+  revalidatePath(`/events/${eventId}/manage`);
+  schedulePushDelivery();
+  return { message: "Contribution assigned." };
+}
+
+export async function reassignContributionAsManagerAction(
+  _prev: ContributionActionState,
+  formData: FormData,
+): Promise<ContributionActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  const contributionId = String(formData.get("contribution_id") ?? "");
+  const memberUserId = String(formData.get("member_user_id") ?? "");
+  const descriptionRaw = String(formData.get("description") ?? "");
+
+  if (!eventId || !contributionId || !memberUserId) {
+    return { error: "Choose a member to assign." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const gate = await assertCanAssignContributions(supabase, user.id, eventId);
+  if (gate.error) {
+    return { error: gate.error };
+  }
+
+  const { error } = await supabase.rpc("reassign_event_contribution_as_manager", {
+    p_contribution_id: contributionId,
+    p_member_user_id: memberUserId,
+    p_description: descriptionRaw.trim() === "" ? null : descriptionRaw.trim(),
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/respond`);
+  revalidatePath(`/events/${eventId}/manage`);
+  schedulePushDelivery();
+  return { message: "Contribution reassigned." };
+}
+
+export async function releaseContributionAsManagerAction(
+  _prev: ContributionActionState,
+  formData: FormData,
+): Promise<ContributionActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  const contributionId = String(formData.get("contribution_id") ?? "");
+
+  if (!eventId || !contributionId) {
+    return { error: "Contribution not found." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const gate = await assertCanAssignContributions(supabase, user.id, eventId);
+  if (gate.error) {
+    return { error: gate.error };
+  }
+
+  const { error } = await supabase.rpc("release_event_contribution_as_manager", {
+    p_contribution_id: contributionId,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/respond`);
+  revalidatePath(`/events/${eventId}/manage`);
+  schedulePushDelivery();
+  return { message: "Assignment cleared." };
 }

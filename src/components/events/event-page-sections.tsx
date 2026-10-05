@@ -419,10 +419,16 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
           groupId={detail.groupId}
           eventStatus={detail.status}
           canCoordinate={data.coordinateContributions}
+          canAssign={data.canAssignContributions}
           isProposed={data.isProposed}
           categories={data.contributionCategories}
           contributions={data.eventContributions}
           viewerUserId={userId}
+          acceptedHostUserId={data.acceptedHostUserId}
+          members={data.groupMembers.map((member) => ({
+            userId: member.userId,
+            displayName: member.displayName,
+          }))}
           viewerHistoryCount={data.contributionHistory.viewerCount}
           sharedDietaryCount={data.sharedDietary.length}
         />

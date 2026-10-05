@@ -293,7 +293,14 @@ export default async function GroupDetailPage({ params }: PageProps) {
                 Categories members can claim on events. Deactivating keeps past event records intact.
               </p>
               <div className="max-w-lg">
-                <ContributionCategoriesAdmin groupId={detail.id} categories={contributionCategories} />
+                <ContributionCategoriesAdmin
+                  groupId={detail.id}
+                  categories={contributionCategories}
+                  members={detail.members.map((member) => ({
+                    userId: member.userId,
+                    displayName: member.displayName,
+                  }))}
+                />
               </div>
             </DisclosureCard>
           ) : null}

@@ -21,6 +21,11 @@ import { ArrowLeftIcon, BowlIcon, ClockIcon, PinIcon } from "@/components/hui/ic
 import { PendingButton } from "@/components/ui/pending-button";
 import { attendanceStateFromChoice } from "@/domain/events/home";
 import { buildContributionBoard } from "@/domain/contributions/display";
+import {
+  buildContributionSlots,
+  contributionCategoryHeadline,
+  isContributionSlotFilled,
+} from "@/domain/contributions/slots";
 import { formatCompactEventTimeRange, formatEventTimeRange } from "@/domain/datetime/timezone";
 import {
   nextStepAfterAttendanceSave,
@@ -42,7 +47,6 @@ import {
   endInteraction,
   markInteraction,
 } from "@/lib/perf/client-interaction-perf";
-import type { EventContributionRow } from "@/lib/contributions/types";
 import type { RespondSecondaryData } from "@/lib/events/respond-page-data";
 import type { EventCandidateRow } from "@/lib/scheduling/types";
 
@@ -67,16 +71,6 @@ type EventParticipantRespondFlowProps = {
 };
 
 const FLOW_PROGRESS: ParticipantFlowStep[] = ["time", "place", "bring", "done"];
-
-function contributionBoardLine(
-  categoryName: string,
-  claimed: EventContributionRow | undefined,
-): string {
-  if (!claimed) {
-    return `${categoryName} — Needed`;
-  }
-  return `${categoryName} — ${claimed.displayName ?? "Member"}`;
-}
 
 function readStepFromHash(): ParticipantFlowStep {
   if (typeof window === "undefined") {
@@ -152,11 +146,24 @@ export function EventParticipantRespondFlow({
     };
   }, [secondaryDataPromise]);
 
+  const acceptedHostUserId = secondary?.acceptedHostUserId ?? null;
+
   const board = useMemo(() => {
     const categories = secondary?.categories ?? [];
     const contributions = secondary?.contributions ?? [];
-    return buildContributionBoard(categories, contributions, viewerUserId);
-  }, [secondary, viewerUserId]);
+    return buildContributionBoard(
+      categories,
+      contributions,
+      viewerUserId,
+      acceptedHostUserId,
+    );
+  }, [secondary, viewerUserId, acceptedHostUserId]);
+
+  const contributionSlots = useMemo(() => {
+    const categories = secondary?.categories ?? [];
+    const contributions = secondary?.contributions ?? [];
+    return buildContributionSlots(categories, contributions, viewerUserId, acceptedHostUserId);
+  }, [secondary, viewerUserId, acceptedHostUserId]);
 
   const categories = secondary?.categories ?? [];
 
@@ -537,59 +544,61 @@ export function EventParticipantRespondFlow({
           {secondary && categories.filter((c) => !c.archivedAt).length === 0 ? (
             <p className="hui-type-supporting">This group has no contribution categories to claim.</p>
           ) : null}
-          {secondary && categories.filter((c) => !c.archivedAt).length > 0 ? (
+          {secondary && contributionSlots.length > 0 ? (
             <ul className="space-y-3">
-              {categories
-                .filter((c) => !c.archivedAt)
-                .map((category) => {
-                  const claimed = board.claimed.find((c) => c.categoryId === category.id);
-                  const isMine = claimed?.userId === viewerUserId;
-                  return (
-                    <li key={category.id}>
-                      <HuiSurface
-                        tone={isMine ? "sage" : claimed ? "subtle" : "default"}
-                        shape="soft"
-                        padding="md"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span
-                            aria-hidden="true"
-                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
-                          >
-                            <BowlIcon size={20} />
-                          </span>
-                          <p className="min-w-0 flex-1 font-extrabold text-foreground">
-                            {contributionBoardLine(category.name, claimed)}
+              {contributionSlots.map((slot) => {
+                const { category, contribution, state, statusLabel } = slot;
+                const filled = isContributionSlotFilled(contribution);
+                const isMine = state === "yours" || state === "host";
+                return (
+                  <li key={category.id}>
+                    <HuiSurface
+                      tone={isMine ? "sage" : filled ? "subtle" : "default"}
+                      shape="soft"
+                      padding="md"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
+                        >
+                          <BowlIcon size={20} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-extrabold text-foreground">
+                            {contributionCategoryHeadline(category.name, contribution ?? undefined)}
                           </p>
+                          <p className="text-sm text-muted-foreground">{statusLabel}</p>
                         </div>
-                        {!claimed && canCoordinateContributions ? (
-                          <div className="mt-3">
-                            <AuthForm
-                              action={claimContributionAction}
-                              submitLabel={`Claim ${category.name}`}
-                              hiddenFields={{
-                                event_id: eventId,
-                                group_id: groupId,
-                                category_id: category.id,
-                                category_name: category.name,
-                              }}
-                              refreshOnSuccess
-                            >
-                              <AuthField
-                                label="What you're bringing (optional)"
-                                name="description"
-                                required={false}
-                              />
-                            </AuthForm>
-                          </div>
-                        ) : null}
-                        {isMine ? (
-                          <p className="hui-message-success mt-2">You&apos;re bringing this.</p>
-                        ) : null}
-                      </HuiSurface>
-                    </li>
-                  );
-                })}
+                      </div>
+                      {!filled && canCoordinateContributions && !category.followsHost ? (
+                        <div className="mt-3">
+                          <AuthForm
+                            action={claimContributionAction}
+                            submitLabel={`Claim ${category.name}`}
+                            hiddenFields={{
+                              event_id: eventId,
+                              group_id: groupId,
+                              category_id: category.id,
+                              category_name: category.name,
+                            }}
+                            refreshOnSuccess
+                          >
+                            <AuthField
+                              label="What you're bringing (optional)"
+                              name="description"
+                              required={false}
+                            />
+                          </AuthForm>
+                        </div>
+                      ) : null}
+                      {isMine ? (
+                        <p className="hui-message-success mt-2">You&apos;re bringing this.</p>
+                      ) : null}
+                    </HuiSurface>
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
           <PendingButton type="button" size="touch" onClick={() => pushStep("done")}>
