@@ -6,7 +6,7 @@ Lightweight record of completed tickets. One entry per ticket.
 
 - **Attention:** `classifyHomeEvent` delegates primary attention to `buildEventAttention` (same respond / host / confirm / contribute rules as event pages); `loadHomeData` supplies proposer `canConfirmTime` via `canFinaliseEvent` + `evaluateCandidateConsensus`, plus contribution claim state for contribute nudges.
 - **Dashboard:** Sections **Needs attention** (only when items exist), **Upcoming** (featured + more confirmed), **Being planned** (proposal/consensus only); `/events` overview keeps parallel grouping; event cards link to `#scheduling`, `#host`, `#contributions` or `/respond`.
-- **Validation:** `lint` / `typecheck` / 506 tests (505 passed + 1 new home edge case; 2 skipped) / `build` passed.
+- **Validation:** `lint` / `typecheck` / **506 passed**, 2 skipped / `build` passed.
 - **Manual QA:** Authenticated dashboard flows not run in agent env (sign-in required).
 
 ## 2026-10-05 — Production promote `2fb4519` (Manage Hui UX)
