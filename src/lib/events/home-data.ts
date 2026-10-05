@@ -12,6 +12,7 @@ import {
 } from "@/domain/events/home";
 import type { EventStatus } from "@/domain/events/types";
 import type { MembershipRole } from "@/domain/groups/permissions";
+import { canRespondToEventDecisions } from "@/domain/decisions/permissions";
 import { canProposeEvents, groupAllowsEventKind } from "@/domain/events/permissions";
 import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 import {
@@ -34,6 +35,7 @@ import type {
   DbResponseValue,
 } from "@/domain/scheduling/types";
 import { ACTIVE_CANDIDATE_STATUSES } from "@/domain/scheduling/types";
+import { listOpenDecisionsForEvents } from "@/lib/decisions/queries";
 import { getCandidateAttendanceRoster } from "@/lib/scheduling/queries";
 
 const DEFAULT_TIME_ZONE = "Pacific/Auckland";
@@ -352,6 +354,11 @@ export async function loadHomeData(
     claimedByEvent.set(row.event_id, set);
   }
 
+  const openDecisionsByEvent =
+    eventIds.length > 0
+      ? await listOpenDecisionsForEvents(supabase, eventIds, userId)
+      : new Map<string, { needsResponse: boolean }>();
+
   const finalisableEvents = eventRows.filter((row) => {
     const role = roleByGroup.get(row.group_id);
     return (
@@ -436,6 +443,8 @@ export async function loadHomeData(
         canConfirmTime: decisionReadyByEvent.get(row.id) === true,
         unclaimedContributionCount: contributionsOpen ?? 0,
         viewerHasContribution: viewerHasContributionByEvent.get(row.id) === true,
+        openDecisionNeedsResponse: openDecisionsByEvent.get(row.id)?.needsResponse === true,
+        canRespondToDecisions: canRespondToEventDecisions(row.status),
       },
       now,
     );

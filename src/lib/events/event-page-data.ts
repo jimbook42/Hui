@@ -7,6 +7,11 @@ import {
   canCoordinateContributions,
   isProposedEvent,
 } from "@/domain/contributions/permissions";
+import { buildDecisionPollView, openDecisionsNeedingResponse } from "@/domain/decisions/display";
+import {
+  canManageEventDecisions,
+  canRespondToEventDecisions,
+} from "@/domain/decisions/permissions";
 import { buildContributionSlots, isContributionSlotFilled } from "@/domain/contributions/slots";
 import { buildEventAttention } from "@/domain/events/attention";
 import { attendanceStateFromChoice } from "@/domain/events/home";
@@ -40,6 +45,7 @@ import {
   listContributionCategories,
   listEventContributions,
 } from "@/lib/contributions/queries";
+import { listEventDecisions } from "@/lib/decisions/queries";
 import { listGroupSharedDietary } from "@/lib/dietary/queries";
 import type { EventDetail } from "@/lib/events/types";
 import { getGroupDetail } from "@/lib/groups/queries";
@@ -70,6 +76,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     eventContributions,
     contributionHistory,
     sharedDietary,
+    decisionBundles,
     viewerHomeRow,
   ] = await devTimed("event-page:parallel-load", () =>
     Promise.all([
@@ -80,6 +87,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
       listEventContributions(supabase, detail.id),
       getGroupContributionHistory(supabase, detail.groupId, userId),
       listGroupSharedDietary(supabase, detail.groupId),
+      listEventDecisions(supabase, detail.id),
       supabase
         .from("profiles")
         .select("home_location_label, home_location_lat, home_location_lng")
@@ -187,6 +195,41 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
   ).length;
   const viewerHasContribution = eventContributions.some((row) => row.userId === userId);
 
+  const groupMembers = group?.members ?? [];
+  const memberRefs = groupMembers.map((member) => ({
+    userId: member.userId,
+    displayName: member.displayName,
+  }));
+  const decisionPolls = decisionBundles.map((bundle) =>
+    buildDecisionPollView({
+      id: bundle.decision.id,
+      question: bundle.decision.question,
+      status: bundle.decision.status,
+      options: bundle.options,
+      responses: bundle.responses.map((row) => ({
+        userId: row.userId,
+        optionId: row.optionId,
+      })),
+      members: memberRefs,
+      viewerUserId: userId,
+      selectedOptionId: bundle.decision.selectedOptionId,
+      decidedByUserId: bundle.decision.decidedBy,
+      decidedAt: bundle.decision.decidedAt,
+      decidedByName:
+        groupMembers.find((member) => member.userId === bundle.decision.decidedBy)?.displayName ??
+        null,
+    }),
+  );
+  const canRespondToDecisions = canRespondToEventDecisions(detail.status);
+  const openDecisionNeedsResponse =
+    openDecisionsNeedingResponse(decisionPolls, canRespondToDecisions).length > 0;
+  const canManageDecisions = canManageEventDecisions(
+    detail.viewerRole,
+    userId,
+    detail.createdBy,
+    detail.status,
+  );
+
   const anyCandidatePasses = consensus.candidates.some((candidate) => candidate.passes);
 
   const attention = buildEventAttention({
@@ -199,6 +242,8 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     unclaimedContributionCount,
     canCoordinateContributions: coordinateContributions,
     viewerHasContribution,
+    openDecisionNeedsResponse,
+    canRespondToDecisions,
   });
 
   return {
@@ -243,6 +288,11 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     showHostSection,
     anyCandidatePasses,
     viewerHomeLocation,
+    decisionBundles,
+    decisionPolls,
+    canManageDecisions,
+    canRespondToDecisions,
+    openDecisionNeedsResponse,
   };
 });
 

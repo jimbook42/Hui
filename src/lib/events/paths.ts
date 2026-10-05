@@ -18,6 +18,12 @@ export function eventAttentionPath(
   kind: Exclude<EventAttentionKind, "respond">,
 ): string {
   const hash =
-    kind === "host" ? "host" : kind === "confirm" ? "scheduling" : "contributions";
+    kind === "host"
+      ? "host"
+      : kind === "confirm"
+        ? "scheduling"
+        : kind === "decision"
+          ? "decisions"
+          : "contributions";
   return `${eventDetailPath(eventId)}#${hash}`;
 }

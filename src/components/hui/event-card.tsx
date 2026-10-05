@@ -205,6 +205,16 @@ export function EventCard({ event, variant = "standard", tone = "primary", class
             Pick something
           </HuiLinkButton>
         ) : null}
+        {event.attention === "decision" ? (
+          <HuiLinkButton
+            href={eventAttentionPath(event.id, "decision")}
+            size="sm"
+            shape="melt"
+            className="relative z-10 ml-auto"
+          >
+            Answer
+          </HuiLinkButton>
+        ) : null}
       </div>
     </article>
   );

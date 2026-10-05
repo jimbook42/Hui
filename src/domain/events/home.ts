@@ -27,6 +27,8 @@ export type HomeEventFacts = {
   /** Active contribution categories nobody has claimed yet. */
   unclaimedContributionCount?: number;
   viewerHasContribution?: boolean;
+  openDecisionNeedsResponse?: boolean;
+  canRespondToDecisions?: boolean;
 };
 
 export type HomeClassification = {
@@ -69,6 +71,8 @@ export function classifyHomeEvent(facts: HomeEventFacts, now: Date = new Date())
     unclaimedContributionCount: unclaimed,
     canCoordinateContributions: canCoordinateContributions(facts.status),
     viewerHasContribution: facts.viewerHasContribution ?? false,
+    openDecisionNeedsResponse: facts.openDecisionNeedsResponse ?? false,
+    canRespondToDecisions: facts.canRespondToDecisions ?? true,
   });
   const attention = attentionItems[0]?.kind ?? null;
 

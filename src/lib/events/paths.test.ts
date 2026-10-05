@@ -14,5 +14,6 @@ describe("event paths (HUI-026B)", () => {
   it("builds attention deep links for home cards", () => {
     expect(eventAttentionPath("abc-123", "confirm")).toBe("/events/abc-123#scheduling");
     expect(eventAttentionPath("abc-123", "contribute")).toBe("/events/abc-123#contributions");
+    expect(eventAttentionPath("abc-123", "decision")).toBe("/events/abc-123#decisions");
   });
 });

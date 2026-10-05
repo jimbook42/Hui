@@ -87,6 +87,20 @@ describe("classifyHomeEvent", () => {
     ).toEqual({ bucket: "attention", attention: "contribute" });
   });
 
+  it("surfaces an unanswered group decision after higher-priority items", () => {
+    expect(
+      classifyHomeEvent(
+        facts({
+          status: "confirmed",
+          viewerResponse: "available",
+          viewerHasContribution: true,
+          openDecisionNeedsResponse: true,
+        }),
+        NOW,
+      ),
+    ).toEqual({ bucket: "attention", attention: "decision" });
+  });
+
   it("does not nudge contributions when the viewer already claimed something", () => {
     expect(
       classifyHomeEvent(

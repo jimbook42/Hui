@@ -1,4 +1,5 @@
 import { EventContributionsSection } from "@/components/contributions/event-contributions-section";
+import { EventDecisionsSection } from "@/components/decisions/event-decisions-section";
 import { HostEventPlaceHeroAction } from "@/components/events/host-event-place-hero-action";
 import { EventDietarySection } from "@/components/dietary/event-dietary-section";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
@@ -228,6 +229,7 @@ const ATTENTION_TARGET = {
   host: { href: "#host", label: "Open hosting" },
   confirm: { href: "#scheduling", label: "Review times" },
   contribute: { href: "#contributions", label: "Pick something" },
+  decision: { href: "#decisions", label: "Answer" },
 } as const;
 
 export async function EventManageEntryCard({ detail, userId }: SectionProps) {
@@ -257,6 +259,40 @@ export async function EventManageEntryCard({ detail, userId }: SectionProps) {
         </HuiLinkButton>
       </HuiSurface>
     </section>
+  );
+}
+
+export async function EventOpenDecisionsCard({ detail, userId }: SectionProps) {
+  const data = await loadEventPage(detail, userId);
+  const openPolls = data.decisionPolls.filter((poll) => poll.status === "open");
+  if (openPolls.length === 0 || detail.status === "cancelled" || detail.status === "completed") {
+    return null;
+  }
+
+  const summary =
+    openPolls.length === 1
+      ? openPolls[0].question
+      : `${openPolls.length} decisions open`;
+
+  return (
+    <HuiSurface padding="lg" shape="organic" elevated className="hui-rise-2">
+      <SectionHeader title="Group decisions" description={summary} />
+      <div className="mt-4">
+        <EventDecisionsSection
+          eventId={detail.id}
+          bundles={data.decisionBundles.filter((bundle) => bundle.decision.status === "open")}
+          members={data.groupMembers.map((member) => ({
+            userId: member.userId,
+            displayName: member.displayName,
+          }))}
+          viewerUserId={userId}
+          canManage={data.canManageDecisions}
+          canRespond={data.canRespondToDecisions}
+          timeZone={data.displayTimeZone}
+          compactOpenOnly
+        />
+      </div>
+    </HuiSurface>
   );
 }
 
@@ -337,6 +373,16 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
         ? `${claimed} claimed · ${data.unclaimedContributionCount} still needed`
         : "Everything is covered";
 
+  const openDecisionCount = data.decisionPolls.filter((poll) => poll.status === "open").length;
+  const decisionsSummary =
+    openDecisionCount === 0
+      ? data.decisionPolls.length === 0
+        ? "No decisions yet"
+        : "Past decisions in history"
+      : openDecisionCount === 1
+        ? "1 open decision"
+        : `${openDecisionCount} open decisions`;
+
   const hasAbout = Boolean(detail.notes || detail.recurrenceSeries || detail.kind);
 
   return (
@@ -403,6 +449,30 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             eventCoordinates={detail.locationCoordinates}
             hostPlaceRequired={detail.hostPlaceRequired}
             viewerHomeLocation={data.viewerHomeLocation}
+          />
+        </DisclosureCard>
+      ) : null}
+
+      {detail.status !== "cancelled" && detail.status !== "completed" ? (
+        <DisclosureCard
+          id="decisions"
+          title="Decisions"
+          summary={decisionsSummary}
+          icon={<HelpIcon size={20} />}
+          attention={attentionKinds.has("decision")}
+          defaultOpen={attentionKinds.has("decision")}
+        >
+          <EventDecisionsSection
+            eventId={detail.id}
+            bundles={data.decisionBundles}
+            members={data.groupMembers.map((member) => ({
+              userId: member.userId,
+              displayName: member.displayName,
+            }))}
+            viewerUserId={userId}
+            canManage={data.canManageDecisions}
+            canRespond={data.canRespondToDecisions}
+            timeZone={data.displayTimeZone}
           />
         </DisclosureCard>
       ) : null}

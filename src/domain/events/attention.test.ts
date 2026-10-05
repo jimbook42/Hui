@@ -25,7 +25,7 @@ describe("buildEventAttention", () => {
     expect(buildEventAttention({ ...base, viewerResponse: null, hasCandidate: false })).toEqual([]);
   });
 
-  it("orders respond, host, confirm, contribute", () => {
+  it("orders respond, host, confirm, contribute, decision", () => {
     const items = buildEventAttention({
       ...base,
       status: "confirmed",
@@ -33,9 +33,27 @@ describe("buildEventAttention", () => {
       canAcceptHostProposal: true,
       canConfirmTime: true,
       unclaimedContributionCount: 3,
+      openDecisionNeedsResponse: true,
     });
-    expect(items.map((i) => i.kind)).toEqual(["respond", "host", "confirm", "contribute"]);
+    expect(items.map((i) => i.kind)).toEqual([
+      "respond",
+      "host",
+      "confirm",
+      "contribute",
+      "decision",
+    ]);
     expect(items[3].title).toBe("3 things still need someone");
+  });
+
+  it("surfaces open generic decisions after contributions", () => {
+    const items = buildEventAttention({
+      ...base,
+      status: "confirmed",
+      viewerResponse: "available",
+      viewerHasContribution: true,
+      openDecisionNeedsResponse: true,
+    });
+    expect(items.map((i) => i.kind)).toEqual(["decision"]);
   });
 
   it("only nudges contributions on confirmed events when the viewer has none", () => {

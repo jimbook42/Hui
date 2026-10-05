@@ -2,7 +2,7 @@ import type { EventStatus } from "@/domain/events/types";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 
 /** Things on an event page that are waiting on the viewer, in priority order. */
-export type EventAttentionKind = "respond" | "host" | "confirm" | "contribute";
+export type EventAttentionKind = "respond" | "host" | "confirm" | "contribute" | "decision";
 
 export type EventAttentionFacts = {
   status: EventStatus;
@@ -18,6 +18,9 @@ export type EventAttentionFacts = {
   unclaimedContributionCount: number;
   canCoordinateContributions: boolean;
   viewerHasContribution: boolean;
+  /** An open generic decision still needs this member's choice. */
+  openDecisionNeedsResponse?: boolean;
+  canRespondToDecisions?: boolean;
 };
 
 export type EventAttentionItem = {
@@ -70,6 +73,17 @@ export function buildEventAttention(facts: EventAttentionFacts): EventAttentionI
       kind: "contribute",
       title: n === 1 ? "1 thing still needs someone" : `${n} things still need someone`,
       detail: "Pick something to bring.",
+    });
+  }
+
+  if (
+    facts.openDecisionNeedsResponse &&
+    (facts.canRespondToDecisions ?? true)
+  ) {
+    items.push({
+      kind: "decision",
+      title: "A group decision needs your answer",
+      detail: "Pick an option for this hui.",
     });
   }
 

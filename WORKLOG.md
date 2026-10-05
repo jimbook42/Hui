@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026F Generic decision polls
+
+- **Data:** `event_decisions`, `event_decision_options`, `event_decision_responses` with RLS + RPCs (`create_event_decision`, `respond_event_decision`, `finalize_event_decision`, `cancel_event_decision`, `update_event_decision_draft`); `_delete_event_cascade` extended.
+- **UX:** Open decisions on main hui page + Details disclosure + Manage **Decisions** section; members tap options; managers record result (ties do not auto-select); `buildEventAttention` / home cards add `decision` after contribute.
+- **Tests:** `src/db/event-decisions-hui-026f.test.ts`, `src/domain/decisions/display.test.ts`, attention/home path updates.
+- **Deferred:** ranked/multi-choice polls, deadlines/auto-expiry, push notifications for decisions.
+
 ## 2026-10-05 — HUI-026C Home / event attention finish
 
 - **Attention:** `classifyHomeEvent` delegates primary attention to `buildEventAttention` (same respond / host / confirm / contribute rules as event pages); `loadHomeData` supplies proposer `canConfirmTime` via `canFinaliseEvent` + `evaluateCandidateConsensus`, plus contribution claim state for contribute nudges.

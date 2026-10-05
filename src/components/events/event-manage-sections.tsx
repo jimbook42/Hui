@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { updateEventAction } from "@/app/events/actions";
 import { EventContributionsSection } from "@/components/contributions/event-contributions-section";
+import { EventDecisionsSection } from "@/components/decisions/event-decisions-section";
 import { EventDietarySection } from "@/components/dietary/event-dietary-section";
 import { EventDetailManagement } from "@/components/events/event-detail-management";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
@@ -289,6 +290,34 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
           ) : null}
         </HuiSurface>
       </section>
+
+      {!closed ? (
+        <ManageDomainSection
+          sectionId="manage-decisions"
+          title="Decisions"
+          description={
+            data.decisionPolls.filter((poll) => poll.status === "open").length === 0
+              ? data.decisionPolls.length === 0
+                ? "No group decisions yet"
+                : "No open decisions"
+              : `${data.decisionPolls.filter((poll) => poll.status === "open").length} open`
+          }
+        >
+          <EventDecisionsSection
+            eventId={detail.id}
+            bundles={data.decisionBundles}
+            members={data.groupMembers.map((member) => ({
+              userId: member.userId,
+              displayName: member.displayName,
+            }))}
+            viewerUserId={userId}
+            canManage={data.canManageDecisions}
+            canRespond={data.canRespondToDecisions}
+            timeZone={data.displayTimeZone}
+            showCreateForm={data.canManageDecisions}
+          />
+        </ManageDomainSection>
+      ) : null}
 
       {!closed ? (
         <ManageDomainSection
