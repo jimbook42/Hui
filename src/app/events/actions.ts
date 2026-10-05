@@ -11,6 +11,7 @@ import {
 } from "@/domain/events/lifecycle";
 import {
   canCancelEvent,
+  canDeleteEvent,
   canEditEventLocation,
   canEditEventMetadata,
   canProposeEvents,
@@ -364,4 +365,32 @@ export async function cancelEventAction(
   revalidatePath(`/groups/${detail.groupId}/events`);
   schedulePushDelivery();
   return { message: "Event cancelled." };
+}
+
+export async function deleteEventAction(
+  _prev: EventActionState,
+  formData: FormData,
+): Promise<EventActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  if (!eventId) {
+    return { error: "Missing event." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getEventDetail(supabase, eventId, user.id);
+  if (!detail) {
+    return { error: "Event not found." };
+  }
+  if (!canDeleteEvent(detail.viewerRole, user.id, detail.createdBy)) {
+    return { error: "You cannot delete this hui." };
+  }
+
+  const { error } = await supabase.rpc("delete_event", { p_event_id: eventId });
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/events");
+  revalidatePath(`/groups/${detail.groupId}/events`);
+  redirect(`/groups/${detail.groupId}/events`);
 }

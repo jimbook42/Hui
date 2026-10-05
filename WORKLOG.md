@@ -2,6 +2,14 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-026D Hui management & admin surface
+
+- **Manage route:** `/events/[eventId]/manage` (mobile-first sections reusing existing scheduling, host, contribution, and edit components). Participant `/events/[eventId]` unchanged except a **Manage this hui** entry for authorised viewers.
+- **Permissions:** `canAccessEventManagement` (creator/admin edit/cancel/delete, or accepted-host place edit). Delete: creator or group owner/admin only (`canDeleteEvent` + `delete_event` RPC).
+- **Delete:** `_delete_event_cascade` + `delete_event`; `events_delete` RLS policy; PGlite tests in `src/db/events-delete.test.ts`. Cancel remains non-destructive.
+- **Deferred:** per-hui contribution category overrides (still HUI-027/GDD backlog).
+- **Migration:** `20261005140000_hui_026d_delete_event.sql`.
+
 ## 2026-10-05 — HUI-027 Onboarding & setup architecture
 
 - **Audit:** User vs Group vs Hui ownership documented in `ROADMAP.md`; contribution categories remain group templates with per-event `event_contributions` (no per-hui category override yet).

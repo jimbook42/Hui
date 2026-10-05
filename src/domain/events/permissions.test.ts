@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import type { GroupSettingsRow } from "@/lib/groups/types";
 
 import {
+  canAccessEventManagement,
   canCancelEvent,
+  canDeleteEvent,
   canEditEventLocation,
   canEditEventMetadata,
   canProposeEvents,
@@ -59,5 +61,27 @@ describe("event permissions", () => {
     expect(
       canEditEventMetadata("member", "host-user", "creator-user", "proposing"),
     ).toBe(false);
+  });
+
+  it("lets creators and admins delete any status", () => {
+    expect(canDeleteEvent("member", "user-1", "user-1")).toBe(true);
+    expect(canDeleteEvent("member", "user-2", "user-1")).toBe(false);
+    expect(canDeleteEvent("admin", "user-2", "user-1")).toBe(true);
+    expect(canDeleteEvent("owner", "user-3", "user-1")).toBe(true);
+  });
+
+  it("opens management for editors, deleters, cancellers, and host-only place editors", () => {
+    expect(
+      canAccessEventManagement("member", "user-2", "user-1", "proposing", null),
+    ).toBe(false);
+    expect(
+      canAccessEventManagement("member", "user-1", "user-1", "proposing", null),
+    ).toBe(true);
+    expect(
+      canAccessEventManagement("member", "host", "user-1", "proposing", "host"),
+    ).toBe(true);
+    expect(
+      canAccessEventManagement("member", "user-1", "user-1", "cancelled", null),
+    ).toBe(true);
   });
 });

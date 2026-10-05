@@ -1,7 +1,5 @@
-import { updateEventAction } from "@/app/events/actions";
 import { EventContributionsSection } from "@/components/contributions/event-contributions-section";
 import { EventDietarySection } from "@/components/dietary/event-dietary-section";
-import { EventDetailManagement } from "@/components/events/event-detail-management";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
 import { EventScheduling } from "@/components/events/event-scheduling";
 import { LiveGatheringVisual, ViewerResponseCard } from "@/components/events/attendance-live";
@@ -33,6 +31,7 @@ import {
 } from "@/domain/datetime/display";
 import { eventKindLabel } from "@/lib/events/labels";
 import { loadEventPage } from "@/lib/events/event-page-data";
+import { eventManagePath } from "@/lib/events/paths";
 import type { EventDetail } from "@/lib/events/types";
 
 type SectionProps = { detail: EventDetail; userId: string };
@@ -298,7 +297,19 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
   return (
     <section aria-labelledby="event-details" className="hui-rise-3 space-y-3">
       <HashDisclosureOpener />
-      <SectionHeader as="h2" id="event-details" title="Details" description="Open anything you need. Nothing here is required." />
+      <SectionHeader
+        as="h2"
+        id="event-details"
+        title="Details"
+        description="Open anything you need. Nothing here is required."
+        action={
+          data.canAccessManage ? (
+            <HuiLinkButton href={eventManagePath(detail.id)} size="sm" shape="melt" variant="secondary">
+              Manage this hui
+            </HuiLinkButton>
+          ) : undefined
+        }
+      />
 
       {settings ? (
         <DisclosureCard
@@ -439,37 +450,6 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
         </DisclosureCard>
       ) : null}
 
-      {data.canEdit || data.canEditLocation || data.canCancel ? (
-        <DisclosureCard
-          title="Manage this hui"
-          summary={
-            data.canEdit && data.canCancel
-              ? "Edit details or cancel"
-              : data.canEdit
-                ? "Edit details"
-                : data.canEditLocation
-                  ? "Confirm the place"
-                  : "Cancel"
-          }
-          icon={<SparkIcon size={20} />}
-        >
-          <EventDetailManagement
-            canEdit={data.canEdit}
-            canEditLocation={data.canEditLocation && !data.canEdit}
-            canCancel={data.canCancel}
-            eventId={detail.id}
-            updateAction={updateEventAction}
-            defaultTitle={detail.title}
-            defaultLocation={detail.location}
-            defaultNotes={detail.notes}
-            defaultStartsAt={detail.startsAt}
-            defaultEndsAt={detail.endsAt}
-            defaultCoordinates={detail.locationCoordinates}
-            status={detail.status}
-            timeZone={data.displayTimeZone}
-          />
-        </DisclosureCard>
-      ) : null}
     </section>
   );
 }

@@ -60,6 +60,43 @@ export function canCancelEvent(
   return canManageEvent(viewerRole, viewerId, createdBy, status);
 }
 
+/** Creator or group owner/admin may permanently delete a hui (any status). */
+export function canDeleteEvent(
+  viewerRole: MembershipRole,
+  viewerId: string,
+  createdBy: string,
+): boolean {
+  if (viewerRole === "owner" || viewerRole === "admin") {
+    return true;
+  }
+  return viewerId === createdBy;
+}
+
+export function canAccessEventManagement(
+  viewerRole: MembershipRole,
+  viewerId: string,
+  createdBy: string,
+  status: EventStatus,
+  acceptedHostUserId: string | null,
+): boolean {
+  if (canEditEventMetadata(viewerRole, viewerId, createdBy, status)) {
+    return true;
+  }
+  if (canCancelEvent(viewerRole, viewerId, createdBy, status)) {
+    return true;
+  }
+  if (canDeleteEvent(viewerRole, viewerId, createdBy)) {
+    return true;
+  }
+  return canEditEventLocation(
+    viewerRole,
+    viewerId,
+    createdBy,
+    status,
+    acceptedHostUserId,
+  );
+}
+
 const LOCATION_EDIT_STATUSES: EventStatus[] = ["proposing", "confirmed"];
 
 /** Accepted host may confirm the physical place without gaining full event edit rights. */

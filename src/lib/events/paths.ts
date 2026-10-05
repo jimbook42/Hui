@@ -5,3 +5,7 @@ export function eventDetailPath(eventId: string): string {
 export function participantRespondPath(eventId: string): string {
   return `/events/${eventId}/respond`;
 }
+
+export function eventManagePath(eventId: string): string {
+  return `/events/${eventId}/manage`;
+}

@@ -1,5 +1,6 @@
 import type { EventActionState } from "@/app/events/actions";
 import { CancelEventButton } from "@/components/events/cancel-event-button";
+import { DeleteEventForm } from "@/components/events/delete-event-form";
 import { EditEventForm } from "@/components/events/event-form";
 import { HostEventLocationForm } from "@/components/events/host-event-location-form";
 import type { EventCoordinates } from "@/domain/events/location";
@@ -9,6 +10,7 @@ type EventDetailManagementProps = {
   canEdit: boolean;
   canEditLocation: boolean;
   canCancel: boolean;
+  canDelete?: boolean;
   eventId: string;
   updateAction: (
     prev: EventActionState,
@@ -28,6 +30,7 @@ export function EventDetailManagement({
   canEdit,
   canEditLocation,
   canCancel,
+  canDelete = false,
   eventId,
   updateAction,
   defaultTitle,
@@ -39,7 +42,7 @@ export function EventDetailManagement({
   status,
   timeZone,
 }: EventDetailManagementProps) {
-  if (!canEdit && !canEditLocation && !canCancel) {
+  if (!canEdit && !canEditLocation && !canCancel && !canDelete) {
     return null;
   }
 
@@ -83,9 +86,22 @@ export function EventDetailManagement({
         <section className="hui-card-section">
           <h3 className="hui-type-section text-foreground">Cancel</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            Cancelling keeps the event record but marks it as cancelled.
+            Cancelling keeps the hui record but marks it as cancelled.
           </p>
           <CancelEventButton eventId={eventId} />
+        </section>
+      ) : null}
+
+      {canDelete ? (
+        <section className="hui-card-section">
+          <h3 className="hui-type-section text-foreground">Delete</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Deleting removes this hui and its planning data permanently. Cancelled hui stay in history
+            until you delete them.
+          </p>
+          <div className="mt-4">
+            <DeleteEventForm eventId={eventId} />
+          </div>
         </section>
       ) : null}
     </div>
