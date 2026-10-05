@@ -53,8 +53,10 @@ export function buildProposedHuiGuidance(
   let nextStepDetail: string | null = null;
 
   if (input.isProposer && input.canRespond && input.hasCandidate && input.viewerResponse === null) {
-    nextStepTitle = "Your next step";
-    nextStepDetail = "Add your availability too — then Hui can wait for the rest of the group.";
+    nextStepTitle = options?.justProposed ? "Invite people to this gathering" : "Your next step";
+    nextStepDetail = options?.justProposed
+      ? "Share the invite link below — they will join the group through this hui and land in the coordination flow."
+      : "Add your availability too — then Hui can wait for the rest of the group.";
   } else if (input.isProposer && input.viewerResponse !== null) {
     nextStepTitle = "Waiting on the group";
     nextStepDetail = input.anyCandidatePassesConsensus
@@ -69,7 +71,7 @@ export function buildProposedHuiGuidance(
     show: true,
     headline: options?.justProposed ? "Hui proposed" : "Planning this hui",
     summary: options?.justProposed
-      ? "Your hui has been shared with the group."
+      ? "Share the invite link so people can join this planning and respond to the proposed times."
       : "This hui is waiting on responses before it can be confirmed.",
     steps,
     nextStepTitle,

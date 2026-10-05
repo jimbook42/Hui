@@ -30,6 +30,44 @@ export function gatheringTypeLabel(type: GatheringType): string {
   return GATHERING_TYPE_LABELS[type];
 }
 
+const GATHERING_DEFAULT_EVENT_TITLES: Record<GatheringType, string> = {
+  dinner_meal: "Dinner",
+  golf: "Golf",
+  drinks_night_out: "Drinks",
+  game_night: "Game night",
+  trip_outing: "Outing",
+  meeting: "Meeting",
+  other: "Gathering",
+};
+
+/** Stored event title when the organiser skips an optional gathering name. */
+export function defaultGatheringEventTitle(
+  type: GatheringType,
+  customDescription: string | null,
+): string {
+  if (type === "other") {
+    return customDescription?.trim() || GATHERING_DEFAULT_EVENT_TITLES.other;
+  }
+  return GATHERING_DEFAULT_EVENT_TITLES[type];
+}
+
+/** Optional human-readable name for invite copy — not the internal fallback title. */
+export function gatheringEventTitleForInvite(
+  storedTitle: string | null,
+  type: GatheringType | null,
+  customDescription: string | null,
+): string | null {
+  const trimmed = storedTitle?.trim() ?? "";
+  if (!trimmed || !type) {
+    return null;
+  }
+  if (type === "other") {
+    const custom = customDescription?.trim() ?? "";
+    return trimmed === custom ? null : trimmed;
+  }
+  return trimmed === defaultGatheringEventTitle(type, null) ? null : trimmed;
+}
+
 export function parseGatheringType(raw: unknown): GatheringType | null {
   if (typeof raw !== "string") {
     return null;

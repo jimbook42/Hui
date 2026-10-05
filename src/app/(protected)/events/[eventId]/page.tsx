@@ -12,6 +12,7 @@ import {
   EventPeopleCard,
   EventProposedGuidanceCard,
 } from "@/components/events/event-page-sections";
+import { EventProposeInviteSection } from "@/components/events/event-propose-invite-section";
 import { AttendanceLiveProvider } from "@/components/events/attendance-live";
 import { EventHero, EventHeroMetaSkeleton } from "@/components/hui/event-hero";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
@@ -58,11 +59,23 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
 
           <Suspense fallback={<EventBodySkeleton />}>
             {justProposed ? (
-              <EventProposedGuidanceCard
-                detail={detail}
-                userId={userId}
-                justProposed={true}
-              />
+              <>
+                <EventProposedGuidanceCard
+                  detail={detail}
+                  userId={userId}
+                  justProposed={true}
+                />
+                {detail.createdBy === userId ? (
+                  <EventProposeInviteSection
+                    detail={detail}
+                    inviterDisplayName={detail.creatorDisplayName}
+                    gatheringType={detail.gatheringType}
+                    gatheringTypeCustom={detail.gatheringTypeCustom}
+                    planningTargetDate={detail.planningTargetDate}
+                    timeZone={detail.timezone ?? "Pacific/Auckland"}
+                  />
+                ) : null}
+              </>
             ) : null}
             <EventAttentionCard detail={detail} userId={userId} />
             <EventOpenDecisionsCard detail={detail} userId={userId} />

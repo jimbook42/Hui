@@ -80,6 +80,7 @@ export async function proposeGroupEventAction(
     isFirstGroupEvent,
     hostingEnabled: detail.settings.hostingEnabled,
     memberUserIds: detail.members.map((member) => member.userId),
+    groupName: detail.name,
   });
 
   if (!validation.ok) {
@@ -103,6 +104,8 @@ export async function proposeGroupEventAction(
     p_location_lng: payload.locationCoordinates
       ? roundCoordinate(payload.locationCoordinates.lng)
       : null,
+    p_gathering_type: payload.gatheringType,
+    p_gathering_type_custom: payload.gatheringTypeCustom,
   });
 
   if (error) {
@@ -126,18 +129,6 @@ export async function proposeGroupEventAction(
     if (metaError) {
       return { error: metaError.message };
     }
-  }
-
-  const { error: gatheringError } = await supabase
-    .from("events")
-    .update({
-      gathering_type: payload.gatheringType,
-      gathering_type_custom: payload.gatheringTypeCustom,
-    })
-    .eq("id", eventId)
-    .eq("group_id", groupId);
-  if (gatheringError) {
-    return { error: gatheringError.message };
   }
 
   const { data: created, error: verifyError } = await supabase

@@ -13,6 +13,7 @@ import { JoinAuthLinks, JoinInviteButton } from "@/components/join/join-invite-a
 import { JoinInvitePreview } from "@/components/join/join-invite-preview";
 
 import type { InvitePlanningContext } from "@/domain/invites/resolve";
+import { gatheringEventTitleForInvite, parseGatheringType } from "@/domain/gathering/type";
 
 import { parseInviteResolvePayload } from "@/domain/invites/resolve";
 
@@ -58,7 +59,11 @@ function mapPlanning(planning: InvitePlanningContext | null): InvitePlanningPrev
 
       customDescription: planning.gatheringTypeCustom,
 
-      eventTitle: planning.eventTitle,
+      eventTitle: gatheringEventTitleForInvite(
+        planning.eventTitle,
+        parseGatheringType(planning.gatheringType),
+        planning.gatheringTypeCustom,
+      ),
 
     },
 

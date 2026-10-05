@@ -34,12 +34,12 @@ export function inviteHeadline(input: InvitePreviewCopyInput): string {
     const phrase = gatheringPlanningPhrase({
       type: input.planning.gathering.type,
       customDescription: input.planning.gathering.customDescription,
-      eventTitle: input.planning.eventTitle,
+      eventTitle: input.planning.gathering.eventTitle,
     });
     if (inviter) {
-      return `${inviter} invited you to join ${group} for planning ${phrase}.`;
+      return `${inviter} invited you to help plan ${phrase} with ${group}.`;
     }
-    return `You're invited to join ${group} for planning ${phrase}.`;
+    return `You're invited to help plan ${phrase} with ${group}.`;
   }
 
   if (inviter) {
@@ -59,7 +59,7 @@ export function inviteSupportingLines(input: InvitePreviewCopyInput): string[] {
   }
 
   lines.push(
-    "Hui helps the group find a time that works and coordinate the details.",
+    "Hui helps groups find a time that works, coordinate the details and keep everyone up to date.",
   );
 
   return lines;
@@ -79,5 +79,5 @@ export function invitePrimaryCtaLabel(groupName: string, hasActivePlanning: bool
 export const INVITE_WHAT_IS_HUI = {
   title: "What is Hui?",
   body:
-    "Hui helps groups keep recurring gatherings happening without the back-and-forth of group chats. It helps everyone find a time, coordinate the details, and know when they need to act.",
+    "Hui helps groups find a time that works, coordinate the details and keep everyone up to date.",
 } as const;

@@ -20,7 +20,7 @@ describe("event proposal validation (HUI-026A)", () => {
     gatheringTypeCustom: "",
   };
 
-  it("rejects proposal without a name", () => {
+  it("allows proposal without an optional gathering name", () => {
     const result = validateEventProposalDraft(
       {
         ...baseDraft,
@@ -41,9 +41,9 @@ describe("event proposal validation (HUI-026A)", () => {
       },
       baseOptions,
     );
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error).toMatch(/name/i);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.payload.title).toBe("Dinner");
     }
   });
 

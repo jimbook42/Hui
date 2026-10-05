@@ -138,16 +138,30 @@ export function CreateEventProposalFlow({
         setStepError("Describe what you are planning.");
         return;
       }
-      if (!draft.title.trim()) {
-        setStepError("Enter an event name.");
-        return;
-      }
-      if (draft.eventKind === "recurring") {
-        const seriesTitle = (draft.recurrence?.seriesTitle || draft.title).trim();
-        if (!seriesTitle) {
-          setStepError("Enter a series title for recurrence.");
+      if (draft.eventKind === "recurring" && isFirstGroupEvent) {
+        const startsOn = draft.recurrence?.startsOn?.trim() ?? "";
+        if (!startsOn) {
+          setStepError("Choose when the first gathering should be planned around.");
           return;
         }
+        setDraft((current) => ({
+          ...current,
+          recurrence: {
+            ...(current.recurrence ?? {
+              seriesTitle: "",
+              intervalUnit: "month",
+              intervalCount: 1,
+              startsOn: "",
+              planningTargetDate: null,
+            }),
+            startsOn,
+            planningTargetDate: startsOn,
+            seriesTitle:
+              current.title.trim() ||
+              current.recurrence?.seriesTitle?.trim() ||
+              `${groupName} gatherings`,
+          },
+        }));
       }
       goTo("time");
       return;
@@ -234,8 +248,8 @@ export function CreateEventProposalFlow({
   }
 
   const reviewMissing: string[] = [];
-  if (!draft.title.trim()) {
-    reviewMissing.push("Event name");
+  if (!draft.gatheringType) {
+    reviewMissing.push("Type of gathering");
   }
   if (draft.candidates.length < 1) {
     reviewMissing.push("At least one proposed time");
@@ -322,15 +336,14 @@ export function CreateEventProposalFlow({
             </label>
           ) : null}
           <label className="hui-label">
-            <span>Give it a name</span>
+            <span>Name this gathering (optional)</span>
             <input
               className="hui-input text-lg font-bold"
               value={draft.title}
-              placeholder="Mum's birthday, Friday catch-up…"
+              placeholder="Mum's birthday, October family dinner…"
               onChange={(event) =>
                 setDraft((current) => ({ ...current, title: event.target.value }))
               }
-              required
             />
           </label>
           <details className="hui-details rounded-hui-lg bg-surface hui-shadow-sm">
@@ -422,7 +435,8 @@ export function CreateEventProposalFlow({
                     />
                     <span className="font-extrabold text-foreground">One-off</span>
                     <span className="text-sm font-semibold text-muted-foreground">
-                      Plan this hui only — without continuing the recurring cycle.
+                      Plan this gathering only — choose this for your first hui unless you already
+                      know the rhythm.
                     </span>
                   </label>
                 ) : null}
@@ -431,31 +445,7 @@ export function CreateEventProposalFlow({
           ) : null}
           {draft.eventKind === "recurring" && canRecurring && isFirstGroupEvent ? (
             <fieldset className="space-y-4 rounded-hui-lg bg-muted p-5">
-              <legend className="px-1 text-sm font-extrabold">Recurrence</legend>
-              <p className="text-sm font-semibold text-muted-foreground">
-                This is when the rhythm starts — not necessarily when the first gathering happens.
-              </p>
-              <label className="hui-label">
-                <span>Series title</span>
-                <input
-                  className="hui-input"
-                  value={draft.recurrence?.seriesTitle ?? ""}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      recurrence: {
-                        ...(current.recurrence ?? {
-                          seriesTitle: "",
-                          intervalUnit: "month",
-                          intervalCount: 1,
-                          startsOn: "",
-                        }),
-                        seriesTitle: event.target.value,
-                      },
-                    }))
-                  }
-                />
-              </label>
+              <legend className="px-1 text-sm font-extrabold">How often should this group meet?</legend>
               <label className="hui-label">
                 <span>Cadence</span>
                 <select
@@ -470,6 +460,7 @@ export function CreateEventProposalFlow({
                           intervalUnit: "month",
                           intervalCount: 1,
                           startsOn: "",
+                          planningTargetDate: null,
                         }),
                         intervalUnit: event.target.value as "week" | "month",
                       },
@@ -496,6 +487,7 @@ export function CreateEventProposalFlow({
                           intervalUnit: "month",
                           intervalCount: 1,
                           startsOn: "",
+                          planningTargetDate: null,
                         }),
                         intervalCount: Number(event.target.value),
                       },
@@ -504,9 +496,9 @@ export function CreateEventProposalFlow({
                 />
               </label>
               <WallClockDateField
-                label="Cadence starts from"
-                value={draft.recurrence?.startsOn ?? ""}
-                onChange={(startsOn) =>
+                label="When should the first gathering be planned around?"
+                value={draft.recurrence?.planningTargetDate ?? draft.recurrence?.startsOn ?? ""}
+                onChange={(date) =>
                   setDraft((current) => ({
                     ...current,
                     recurrence: {
@@ -515,12 +507,21 @@ export function CreateEventProposalFlow({
                         intervalUnit: "month",
                         intervalCount: 1,
                         startsOn: "",
+                        planningTargetDate: null,
                       }),
-                      startsOn,
+                      startsOn: date,
+                      planningTargetDate: date,
+                      seriesTitle:
+                        current.title.trim() ||
+                        current.recurrence?.seriesTitle?.trim() ||
+                        `${groupName} gatherings`,
                     },
                   }))
                 }
               />
+              <p className="text-xs font-semibold text-muted-foreground">
+                This is a planning target for the first cycle — not a confirmed gathering time.
+              </p>
             </fieldset>
           ) : null}
           {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (

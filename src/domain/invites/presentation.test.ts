@@ -20,7 +20,7 @@ describe("invite presentation (HUI-ONBOARDING-002)", () => {
       },
     });
     expect(headline).toBe(
-      "Isaac invited you to join Smith Family for planning Mum's birthday dinner.",
+      "Isaac invited you to help plan Mum's birthday dinner with Smith Family.",
     );
   });
 

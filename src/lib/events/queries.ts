@@ -84,6 +84,9 @@ export async function getEventDetail(
       starts_at,
       ends_at,
       timezone,
+      planning_target_date,
+      gathering_type,
+      gathering_type_custom,
       created_by,
       recurrence_series_id,
       created_at,
@@ -173,6 +176,9 @@ export async function getEventDetail(
       typeof event.timezone === "string" && event.timezone.length > 0
         ? event.timezone
         : null,
+    planningTargetDate: (event.planning_target_date as string | null) ?? null,
+    gatheringType: (event.gathering_type as string | null) ?? null,
+    gatheringTypeCustom: (event.gathering_type_custom as string | null) ?? null,
     createdBy: event.created_by as string,
     creatorDisplayName: profile?.display_name ?? "Member",
     recurrenceSeries,

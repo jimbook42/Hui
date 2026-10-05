@@ -114,7 +114,7 @@ async function propose(groupId: string, title: string, planningTarget: string) {
   await asUser(db, ownerId);
   return (
     await db.query<{ propose_group_event: string }>(
-      `select public.propose_group_event($1, $2, null, null, $3::jsonb, $4::jsonb, false, null, null, null) as propose_group_event`,
+      `select public.propose_group_event($1, $2, null, null, $3::jsonb, $4::jsonb, false, null, null, null, 'dinner_meal'::public.gathering_type, null) as propose_group_event`,
       [
         groupId,
         title,

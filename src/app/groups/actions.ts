@@ -53,7 +53,7 @@ export async function createGroupAction(
 
   const groupId = data as string;
   revalidatePath("/groups");
-  redirect(`/groups/${groupId}`);
+  redirect(`/groups/${groupId}/events/new`);
 }
 
 /** Creates a group for the multi-step setup wizard without leaving the flow. */
@@ -74,19 +74,8 @@ export async function createGroupSetupAction(
   }
 
   const groupId = data as string;
-  const { data: tokenData, error: inviteError } = await supabase.rpc("get_group_invite_link", {
-    p_group_id: groupId,
-  });
-  if (inviteError) {
-    return { error: inviteError.message, groupId };
-  }
-
   revalidatePath("/groups");
-  return {
-    message: "Group created.",
-    groupId,
-    inviteToken: typeof tokenData === "string" ? tokenData : undefined,
-  };
+  redirect(`/groups/${groupId}/events/new`);
 }
 
 export async function updateGroupNameAction(

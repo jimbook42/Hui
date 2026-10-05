@@ -38,6 +38,9 @@ export type EventDetail = {
   startsAt: string | null;
   endsAt: string | null;
   timezone: string | null;
+  planningTargetDate: string | null;
+  gatheringType: string | null;
+  gatheringTypeCustom: string | null;
   createdBy: string;
   creatorDisplayName: string;
   recurrenceSeries: RecurrenceSeriesSummary | null;

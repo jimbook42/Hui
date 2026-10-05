@@ -16,6 +16,9 @@ type GroupInviteSectionProps = {
   groupName?: string;
   inviteToken: string;
   appOrigin: string;
+  /** Planning-first invite copy for first-hui onboarding. */
+  variant?: "group" | "planning";
+  invitePreviewHeadline?: string | null;
 };
 
 export function GroupInviteSection({
@@ -23,6 +26,8 @@ export function GroupInviteSection({
   groupName,
   inviteToken: initialToken,
   appOrigin,
+  variant = "group",
+  invitePreviewHeadline,
 }: GroupInviteSectionProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [regenState, regenAction, regenPending] = useActionState(
@@ -63,11 +68,18 @@ export function GroupInviteSection({
   return (
     <section className="hui-card-section">
       <h2 className="hui-type-section text-foreground">
-        Invite people
+        {variant === "planning" ? "Invite people to this gathering" : "Invite people"}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Share this link with anyone you&apos;d like to join this group.
+        {variant === "planning"
+          ? "Share this link so people can join the planning. They become group members through this hui."
+          : "Share this link with anyone you'd like to join this group."}
       </p>
+      {invitePreviewHeadline ? (
+        <p className="mt-3 rounded-hui-md bg-muted px-3 py-2 text-sm font-semibold text-foreground">
+          {invitePreviewHeadline}
+        </p>
+      ) : null}
 
       <p className="mt-4 break-all rounded-hui-md bg-muted px-3 py-2 text-sm text-foreground">
         {inviteUrl}

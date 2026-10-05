@@ -12,6 +12,7 @@ import { parseEventFoodInvolvement, type EventFoodInvolvement } from "@/domain/e
 import {
   normalizeGatheringCustomDescription,
   parseGatheringType,
+  defaultGatheringEventTitle,
   type GatheringType,
 } from "@/domain/gathering/type";
 import { validateCandidateWindow } from "@/domain/scheduling/validation";
@@ -151,12 +152,25 @@ export function validateEventProposalDraft(
     isFirstGroupEvent: boolean;
     hostingEnabled: boolean;
     memberUserIds: string[];
+    groupName?: string;
   },
 ): ProposalValidationResult {
-  const title = normalizeEventTitle(draft.title);
-  if (!title) {
-    return { ok: false, error: "Enter an event name." };
+  const gatheringType = parseGatheringType(draft.gatheringType);
+  if (!gatheringType) {
+    return { ok: false, error: "Choose what you are planning." };
   }
+  let gatheringTypeCustom: string | null = null;
+  if (gatheringType === "other") {
+    gatheringTypeCustom = normalizeGatheringCustomDescription(draft.gatheringTypeCustom);
+    if (!gatheringTypeCustom) {
+      return { ok: false, error: "Describe what you are planning." };
+    }
+  }
+
+  const explicitTitle = normalizeEventTitle(draft.title);
+  const title =
+    explicitTitle ??
+    defaultGatheringEventTitle(gatheringType, gatheringTypeCustom);
 
   const location = normalizeEventLocation(draft.location);
   if (location === null && draft.location.trim().length > 0) {
@@ -178,18 +192,6 @@ export function validateEventProposalDraft(
     return { ok: false, error: "Say whether food is involved." };
   }
 
-  const gatheringType = parseGatheringType(draft.gatheringType);
-  if (!gatheringType) {
-    return { ok: false, error: "Choose what you are planning." };
-  }
-  let gatheringTypeCustom: string | null = null;
-  if (gatheringType === "other") {
-    gatheringTypeCustom = normalizeGatheringCustomDescription(draft.gatheringTypeCustom);
-    if (!gatheringTypeCustom) {
-      return { ok: false, error: "Describe what you are planning." };
-    }
-  }
-
   if (draft.candidates.length < 1) {
     return { ok: false, error: "Add at least one proposed time." };
   }
@@ -209,12 +211,18 @@ export function validateEventProposalDraft(
 
   let recurrence: ProposeGroupEventPayload["recurrence"] = null;
   if (draft.eventKind === "recurring") {
-    const seriesTitle = normalizeEventTitle(draft.recurrence?.seriesTitle ?? draft.title);
+    const seriesTitle =
+      normalizeEventTitle(draft.recurrence?.seriesTitle ?? "") ??
+      explicitTitle ??
+      normalizeEventTitle(options.groupName ?? "") ??
+      title;
     const intervalUnit = parseCadenceUnit(draft.recurrence?.intervalUnit ?? "");
     const intervalCount = parseIntervalCount(
       String(draft.recurrence?.intervalCount ?? ""),
     );
     const startsOn = parseStartsOnDate(draft.recurrence?.startsOn ?? "");
+    const planningTargetDate =
+      draft.recurrence?.planningTargetDate ?? draft.recurrence?.startsOn ?? null;
     if (!seriesTitle || !intervalUnit || intervalCount === null || !startsOn) {
       return { ok: false, error: "Enter valid recurrence settings." };
     }
@@ -223,9 +231,7 @@ export function validateEventProposalDraft(
       interval_unit: intervalUnit,
       interval_count: intervalCount,
       starts_on: startsOn,
-      ...(draft.recurrence?.planningTargetDate
-        ? { planning_target_date: draft.recurrence.planningTargetDate }
-        : {}),
+      ...(planningTargetDate ? { planning_target_date: planningTargetDate } : {}),
     };
   }
 

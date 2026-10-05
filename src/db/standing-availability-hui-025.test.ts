@@ -180,7 +180,7 @@ describe("HUI-025 standing availability", () => {
     );
     const eventId = (
       await db.query<{ propose_group_event: string }>(
-        `select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null, null, null) as propose_group_event`,
+        `select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null, null, null, 'dinner_meal'::public.gathering_type, null) as propose_group_event`,
         [
           groupId,
           "Friday dinner",
@@ -221,7 +221,7 @@ describe("HUI-025 standing availability", () => {
     const startsAt = wallClockToUtcIso("2026-10-10T10:00", "Pacific/Auckland");
     const eventId = (
       await db.query<{ propose_group_event: string }>(
-        `select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null, null, null) as propose_group_event`,
+        `select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null, null, null, 'dinner_meal'::public.gathering_type, null) as propose_group_event`,
         [
           groupId,
           "Saturday brunch",

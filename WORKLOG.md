@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-06 — HUI-ONBOARDING-002A First-Hui onboarding correction
+
+- **Schema:** `20261006200000_hui_onboarding_002a_corrections.sql` — idempotent `gathering_type` columns; `propose_group_event` writes gathering atomically; `group_settings` canonical FK fixed (no composite SET NULL on `group_id`); `_delete_group_cascade` deletes `group_settings` before series; PostgREST `reload schema`.
+- **Root causes:** remote DB missing `20261006180000` (PostgREST cache / unapplied migration); group delete failed when `recurrence_series` delete triggered composite FK SET NULL on `group_settings.group_id`.
+- **Product:** group create → first hui propose → invite (group link shows planning preview); optional gathering name; single first-cycle planning date for new recurring groups; invite copy “help plan … with {group}”; join still establishes membership + coordination redirect.
+- **Tests:** group delete with recurrence, gathering invite title helpers, updated RPC signatures; `npm run validate`.
+
 ## 2026-10-06 — HUI-ONBOARDING-002 Frictionless participant & event context
 
 - **Audit:** no reusable gathering-type field (only `eventKind` one-off/recurring + `food_involvement`); group-only invite RPC; post-join redirect to group page; `SuggestedTimesList` uses standing availability at propose time (not live re-rank after each response); recurring UX duplicated cadence anchor vs candidate dates; auth `useActionState` cleared fields on failed submit; contribution bring step requires open category (QA “only claimed items” = no open slots, not missing claim UI).

@@ -105,4 +105,42 @@ describe("delete_group", () => {
     const remaining = await db.query(`select 1 from public.groups where id = $1`, [groupId]);
     expect(remaining.rows).toHaveLength(0);
   });
+
+  it("deletes a group with recurrence settings and an active event", async () => {
+    const owner = await createUser(db, "owner-rich-delete@test", "Owner");
+    await asUser(db, owner);
+    const created = await db.query<{ create_group: string }>(
+      `select public.create_group('Delete me club') as create_group`,
+    );
+    const groupId = created.rows[0]!.create_group;
+
+    const candidate = JSON.stringify([
+      { starts_at: "2026-11-01T00:00:00.000Z", ends_at: null },
+    ]);
+    const recurrence = JSON.stringify({
+      series_title: "Monthly dinners",
+      interval_unit: "month",
+      interval_count: 1,
+      starts_on: "2026-11-01",
+      planning_target_date: "2026-11-01",
+    });
+
+    await db.query(
+      `select public.propose_group_event($1, $2, null, null, $3::jsonb, $4::jsonb, false, null, null, null, 'dinner_meal'::public.gathering_type, null)`,
+      [groupId, "November dinner", recurrence, candidate],
+    );
+
+    await db.query(`select public.get_group_invite_link($1)`, [groupId]);
+
+    await asUser(db, owner);
+    await db.query(`select public.delete_group($1)`, [groupId]);
+
+    const remaining = await db.query(`select 1 from public.groups where id = $1`, [groupId]);
+    expect(remaining.rows).toHaveLength(0);
+
+    const settings = await db.query(`select 1 from public.group_settings where group_id = $1`, [
+      groupId,
+    ]);
+    expect(settings.rows).toHaveLength(0);
+  });
 });

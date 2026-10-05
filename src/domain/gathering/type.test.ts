@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { gatheringPlanningPhrase } from "./type";
+import { gatheringEventTitleForInvite, gatheringPlanningPhrase } from "./type";
 
 describe("gatheringPlanningPhrase", () => {
   it("uses type and title without inferring type from title", () => {
@@ -31,5 +31,14 @@ describe("gatheringPlanningPhrase", () => {
         eventTitle: "",
       }),
     ).toBe("Book club");
+  });
+
+  it("treats default stored titles as no optional name for invites", () => {
+    expect(
+      gatheringEventTitleForInvite("Dinner", "dinner_meal", null),
+    ).toBeNull();
+    expect(
+      gatheringEventTitleForInvite("Mum's birthday", "dinner_meal", null),
+    ).toBe("Mum's birthday");
   });
 });

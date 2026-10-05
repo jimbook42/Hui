@@ -117,7 +117,7 @@ describe("propose_group_event (HUI-026A)", () => {
     await asUser(db, ids.owner);
     const err = await expectFail(async () => {
       await db.query(
-        `select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null, null, null)`,
+        `select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null, null, null, 'dinner_meal'::public.gathering_type, null)`,
         [
         groupId,
         "No times",
@@ -136,7 +136,7 @@ describe("propose_group_event (HUI-026A)", () => {
     await asUser(db, ids.owner);
     const eventId = (
       await db.query<{ propose_group_event: string }>(
-        `select public.propose_group_event($1, $2, $3, null, null, $4::jsonb, false, null, null, null) as propose_group_event`,
+        `select public.propose_group_event($1, $2, $3, null, null, $4::jsonb, false, null, null, null, 'dinner_meal'::public.gathering_type, null) as propose_group_event`,
         [
           groupId,
           "Holiday dinner",
@@ -169,7 +169,7 @@ describe("propose_group_event (HUI-026A)", () => {
     await asUser(db, ids.outsider);
     const err = await expectFail(async () => {
       await db.query(
-        `select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null, null, null)`,
+        `select public.propose_group_event($1, $2, null, null, null, $3::jsonb, false, null, null, null, 'dinner_meal'::public.gathering_type, null)`,
         [
         groupId,
         "Intrusion",
