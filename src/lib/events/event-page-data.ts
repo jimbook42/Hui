@@ -9,6 +9,7 @@ import {
 } from "@/domain/contributions/permissions";
 import { buildDecisionPollView, openDecisionsNeedingResponse } from "@/domain/decisions/display";
 import {
+  canCreateEventDecisions,
   canManageEventDecisions,
   canRespondToEventDecisions,
 } from "@/domain/decisions/permissions";
@@ -229,6 +230,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     detail.createdBy,
     detail.status,
   );
+  const canCreateDecisions = canCreateEventDecisions(detail.status);
 
   const anyCandidatePasses = consensus.candidates.some((candidate) => candidate.passes);
 
@@ -291,6 +293,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     decisionBundles,
     decisionPolls,
     canManageDecisions,
+    canCreateDecisions,
     canRespondToDecisions,
     openDecisionNeedsResponse,
   };

@@ -158,11 +158,75 @@ describe("event decisions HUI-026F", () => {
   it("creates a decision with at least two options", async () => {
     const { decisionId, options } = await createDecision();
     expect(options).toHaveLength(2);
-    const row = await db.query<{ question: string; status: string }>(
-      `select question, status::text from public.event_decisions where id = $1`,
+    const row = await db.query<{ question: string; status: string; created_by: string }>(
+      `select question, status::text, created_by from public.event_decisions where id = $1`,
       [decisionId],
     );
-    expect(row.rows[0]).toMatchObject({ question: "Where should we eat?", status: "open" });
+    expect(row.rows[0]).toMatchObject({
+      question: "Where should we eat?",
+      status: "open",
+      created_by: ids.owner,
+    });
+  });
+
+  it("lets any active member create a decision", async () => {
+    await asUser(db, ids.member);
+    const decisionId = (
+      await db.query<{ create_event_decision: string }>(
+        `select public.create_event_decision($1, $2, $3) as create_event_decision`,
+        [eventId, "Thai or Mexican?", ["Thai", "Mexican"]],
+      )
+    ).rows[0].create_event_decision;
+
+    const row = await db.query<{ created_by: string }>(
+      `select created_by from public.event_decisions where id = $1`,
+      [decisionId],
+    );
+    expect(row.rows[0].created_by).toBe(ids.member);
+  });
+
+  it("blocks outsiders and anonymous users from creating decisions", async () => {
+    await asUser(db, ids.outsider);
+    const outsiderError = await expectFail(() =>
+      db.query(`select public.create_event_decision($1, $2, $3)`, [
+        eventId,
+        "Sneak in?",
+        ["A", "B"],
+      ]),
+    );
+    expect(outsiderError).toMatch(/not an active group member/i);
+
+    await asUser(db, null);
+    const anonError = await expectFail(() =>
+      db.query(`select public.create_event_decision($1, $2, $3)`, [
+        eventId,
+        "Anonymous?",
+        ["A", "B"],
+      ]),
+    );
+    expect(anonError).toMatch(/not authenticated/i);
+  });
+
+  it("lets the creator edit a draft before responses exist", async () => {
+    await asUser(db, ids.member);
+    const decisionId = (
+      await db.query<{ create_event_decision: string }>(
+        `select public.create_event_decision($1, $2, $3) as create_event_decision`,
+        [eventId, "Original?", ["One", "Two"]],
+      )
+    ).rows[0].create_event_decision;
+
+    await db.query(`select public.update_event_decision_draft($1, $2, $3)`, [
+      decisionId,
+      "Updated?",
+      ["Alpha", "Beta"],
+    ]);
+
+    const row = await db.query<{ question: string }>(
+      `select question from public.event_decisions where id = $1`,
+      [decisionId],
+    );
+    expect(row.rows[0].question).toBe("Updated?");
   });
 
   it("rejects fewer than two options", async () => {

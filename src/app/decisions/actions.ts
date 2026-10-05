@@ -4,9 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
+  canCreateEventDecisions,
+  canEditOwnEventDecisionDraft,
   canManageEventDecisions,
   canRespondToEventDecisions,
 } from "@/domain/decisions/permissions";
+import { getEventDecisionBundle } from "@/lib/decisions/queries";
 import {
   parseDecisionOptionDrafts,
   validateDecisionDraft,
@@ -53,10 +56,7 @@ export async function createEventDecisionAction(
 
   const { supabase, user } = await requireUser();
   const detail = await getEventDetail(supabase, eventId, user.id);
-  if (
-    !detail ||
-    !canManageEventDecisions(detail.viewerRole, user.id, detail.createdBy, detail.status)
-  ) {
+  if (!detail || !canCreateEventDecisions(detail.status)) {
     return { error: "You cannot add decisions for this hui." };
   }
 
@@ -90,11 +90,29 @@ export async function updateEventDecisionDraftAction(
 
   const { supabase, user } = await requireUser();
   const detail = await getEventDetail(supabase, eventId, user.id);
-  if (
-    !detail ||
-    !canManageEventDecisions(detail.viewerRole, user.id, detail.createdBy, detail.status)
-  ) {
+  if (!detail || !canCreateEventDecisions(detail.status)) {
     return { error: "You cannot edit decisions for this hui." };
+  }
+
+  const bundle = await getEventDecisionBundle(supabase, decisionId);
+  if (!bundle || bundle.decision.eventId !== eventId) {
+    return { error: "Decision not found." };
+  }
+
+  const canManage = canManageEventDecisions(
+    detail.viewerRole,
+    user.id,
+    detail.createdBy,
+    detail.status,
+  );
+  const canEditOwn = canEditOwnEventDecisionDraft(
+    user.id,
+    bundle.decision.createdBy,
+    bundle.responses.length,
+    bundle.decision.status,
+  );
+  if (!canManage && !canEditOwn) {
+    return { error: "You cannot edit this decision." };
   }
 
   const { error } = await supabase.rpc("update_event_decision_draft", {

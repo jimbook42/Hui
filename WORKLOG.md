@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI UX follow-up: member decisions + Manage Hui navigation
+
+- **Decisions:** `create_event_decision` now requires active group membership (not event manager); creators may edit drafts with zero responses; finalize/cancel unchanged (event manager). Main hui **Group decisions** card shows empty state + **Ask the group**; reuse 026F form.
+- **Manage Hui:** sectional `DisclosureCard` hub with `#hui`, `#people`, `#time`, `#host`, `#place`, `#contributions`, `#decisions`, `#dietary` + `HashDisclosureOpener`; default section from planning attention heuristics.
+- **Migration:** `20261005230000_hui_decision_member_create.sql`.
+- **Tests:** extended `event-decisions-hui-026f.test.ts`; `permissions.test.ts`, `manage-navigation.test.ts`.
+
 ## 2026-10-05 — HUI-025 Persistent availability & preferences
 
 - **Before:** only per-candidate `event_responses` (yes/no/maybe); no standing weekly preferences; respond flow always cold-start.

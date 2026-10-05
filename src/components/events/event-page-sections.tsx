@@ -264,13 +264,22 @@ export async function EventManageEntryCard({ detail, userId }: SectionProps) {
 
 export async function EventOpenDecisionsCard({ detail, userId }: SectionProps) {
   const data = await loadEventPage(detail, userId);
-  const openPolls = data.decisionPolls.filter((poll) => poll.status === "open");
-  if (openPolls.length === 0 || detail.status === "cancelled" || detail.status === "completed") {
+  const closed = detail.status === "cancelled" || detail.status === "completed";
+  if (closed || !data.canCreateDecisions) {
     return null;
   }
 
-  const summary =
-    openPolls.length === 1
+  const openPolls = data.decisionPolls.filter((poll) => poll.status === "open");
+  const showEmpty = openPolls.length === 0 && data.decisionPolls.length === 0;
+  const showOpen = openPolls.length > 0;
+
+  if (!showEmpty && !showOpen) {
+    return null;
+  }
+
+  const summary = showEmpty
+    ? "Ask a simple question and let everyone choose"
+    : openPolls.length === 1
       ? openPolls[0].question
       : `${openPolls.length} decisions open`;
 
@@ -280,16 +289,22 @@ export async function EventOpenDecisionsCard({ detail, userId }: SectionProps) {
       <div className="mt-4">
         <EventDecisionsSection
           eventId={detail.id}
-          bundles={data.decisionBundles.filter((bundle) => bundle.decision.status === "open")}
+          bundles={
+            showOpen
+              ? data.decisionBundles.filter((bundle) => bundle.decision.status === "open")
+              : []
+          }
           members={data.groupMembers.map((member) => ({
             userId: member.userId,
             displayName: member.displayName,
           }))}
           viewerUserId={userId}
           canManage={data.canManageDecisions}
+          canCreate={data.canCreateDecisions}
           canRespond={data.canRespondToDecisions}
           timeZone={data.displayTimeZone}
           compactOpenOnly
+          showSectionHeader={showEmpty}
         />
       </div>
     </HuiSurface>
@@ -471,6 +486,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             }))}
             viewerUserId={userId}
             canManage={data.canManageDecisions}
+            canCreate={data.canCreateDecisions}
             canRespond={data.canRespondToDecisions}
             timeZone={data.displayTimeZone}
           />

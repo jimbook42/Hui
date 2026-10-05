@@ -132,6 +132,52 @@ export async function listEventDecisions(
   }));
 }
 
+export async function getEventDecisionBundle(
+  supabase: SupabaseClient,
+  decisionId: string,
+): Promise<EventDecisionBundle | null> {
+  const { data: decision, error } = await supabase
+    .from("event_decisions")
+    .select(
+      "id, event_id, group_id, question, status, created_by, selected_option_id, decided_by, decided_at, cancelled_at, created_at",
+    )
+    .eq("id", decisionId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!decision) {
+    return null;
+  }
+
+  const row = decision as DbDecision;
+  const [optionsResult, responsesResult] = await Promise.all([
+    supabase
+      .from("event_decision_options")
+      .select("id, decision_id, label, position")
+      .eq("decision_id", decisionId)
+      .order("position", { ascending: true }),
+    supabase
+      .from("event_decision_responses")
+      .select("id, decision_id, option_id, user_id")
+      .eq("decision_id", decisionId),
+  ]);
+
+  if (optionsResult.error) {
+    throw new Error(optionsResult.error.message);
+  }
+  if (responsesResult.error) {
+    throw new Error(responsesResult.error.message);
+  }
+
+  return {
+    decision: mapDecision(row),
+    options: ((optionsResult.data ?? []) as DbOption[]).map(mapOption),
+    responses: ((responsesResult.data ?? []) as DbResponse[]).map(mapResponse),
+  };
+}
+
 /** Open decisions for many events (home attention). */
 export async function listOpenDecisionsForEvents(
   supabase: SupabaseClient,
