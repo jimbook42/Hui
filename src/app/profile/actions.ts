@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { parseHomeLocationForm } from "@/domain/profile/home-location";
-import { normalizeDisplayName } from "@/lib/profiles/validation";
+import { parsePersonalSetupFormData } from "@/domain/profile/personal-setup-update";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -62,19 +62,24 @@ export async function completePersonalSetupAction(
   _prev: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> {
-  const displayName = normalizeDisplayName(String(formData.get("display_name") ?? ""));
+  const patch = parsePersonalSetupFormData(formData);
+  const displayName = patch.displayName ?? "";
   if (!displayName) {
     return { error: "Display name must be between 1 and 80 characters." };
   }
 
   const { supabase, user } = await requireUser();
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      display_name: displayName,
-      personal_setup_completed_at: new Date().toISOString(),
-    })
-    .eq("id", user.id);
+  const update: Record<string, unknown> = {
+    display_name: displayName,
+    personal_setup_completed_at: new Date().toISOString(),
+  };
+  if (patch.home !== undefined) {
+    update.home_location_label = patch.home?.label ?? null;
+    update.home_location_lat = patch.home?.coordinates?.lat ?? null;
+    update.home_location_lng = patch.home?.coordinates?.lng ?? null;
+  }
+
+  const { error } = await supabase.from("profiles").update(update).eq("id", user.id);
 
   if (error) {
     return { error: error.message };
@@ -85,12 +90,24 @@ export async function completePersonalSetupAction(
   redirect("/dashboard");
 }
 
-export async function skipPersonalSetupAction(): Promise<void> {
+export async function skipPersonalSetupAction(formData: FormData): Promise<void> {
+  const patch = parsePersonalSetupFormData(formData);
   const { supabase, user } = await requireUser();
-  await supabase
-    .from("profiles")
-    .update({ personal_setup_completed_at: new Date().toISOString() })
-    .eq("id", user.id);
+
+  const update: Record<string, unknown> = {
+    personal_setup_completed_at: new Date().toISOString(),
+  };
+  if (patch.displayName) {
+    update.display_name = patch.displayName;
+  }
+  if (patch.home !== undefined) {
+    update.home_location_label = patch.home?.label ?? null;
+    update.home_location_lat = patch.home?.coordinates?.lat ?? null;
+    update.home_location_lng = patch.home?.coordinates?.lng ?? null;
+  }
+
+  await supabase.from("profiles").update(update).eq("id", user.id);
   revalidatePath("/dashboard");
+  revalidatePath("/profile");
   redirect("/dashboard");
 }

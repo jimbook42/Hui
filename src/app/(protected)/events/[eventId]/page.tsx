@@ -10,6 +10,7 @@ import {
   EventManageEntryCard,
   EventOpenDecisionsCard,
   EventPeopleCard,
+  EventProposedGuidanceCard,
 } from "@/components/events/event-page-sections";
 import { AttendanceLiveProvider } from "@/components/events/attendance-live";
 import { EventHero, EventHeroMetaSkeleton } from "@/components/hui/event-hero";
@@ -19,10 +20,13 @@ import { devTimed } from "@/lib/perf/dev-server-timing";
 
 type PageProps = {
   params: Promise<{ eventId: string }>;
+  searchParams: Promise<{ proposed?: string }>;
 };
 
-export default async function EventDetailPage({ params }: PageProps) {
+export default async function EventDetailPage({ params, searchParams }: PageProps) {
   const { eventId } = await params;
+  const query = await searchParams;
+  const justProposed = query.proposed === "1";
   const user = await devTimed("event-page:getUser", () => getServerAuthUser());
   const supabase = await getServerSupabase();
 
@@ -53,6 +57,13 @@ export default async function EventDetailPage({ params }: PageProps) {
           </EventHero>
 
           <Suspense fallback={<EventBodySkeleton />}>
+            {justProposed ? (
+              <EventProposedGuidanceCard
+                detail={detail}
+                userId={userId}
+                justProposed={true}
+              />
+            ) : null}
             <EventAttentionCard detail={detail} userId={userId} />
             <EventOpenDecisionsCard detail={detail} userId={userId} />
             <EventManageEntryCard detail={detail} userId={userId} />

@@ -32,6 +32,7 @@ import {
   formatTimeSpan,
   relativeDayLabel,
 } from "@/domain/datetime/display";
+import { buildProposedHuiGuidance } from "@/domain/events/proposed-guidance";
 import { eventKindLabel } from "@/lib/events/labels";
 import { loadEventPage } from "@/lib/events/event-page-data";
 import { eventManagePath } from "@/lib/events/paths";
@@ -172,6 +173,56 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
         />
       ) : null}
     </div>
+  );
+}
+
+/* ------------------------------------------------ proposed guidance */
+
+export async function EventProposedGuidanceCard({
+  detail,
+  userId,
+  justProposed,
+}: SectionProps & { justProposed: boolean }) {
+  const data = await loadEventPage(detail, userId);
+  const anyCandidatePasses = data.consensus.candidates.some((candidate) => candidate.passes);
+  const guidance = buildProposedHuiGuidance(
+    {
+      status: detail.status,
+      isProposer: detail.createdBy === userId,
+      canRespond: data.canRespond,
+      viewerResponse: data.viewerResponse,
+      hasCandidate: data.primaryCandidate !== null,
+      canFinalise: data.canFinalise,
+      anyCandidatePassesConsensus: anyCandidatePasses,
+    },
+    { justProposed },
+  );
+
+  if (!guidance.show) {
+    return null;
+  }
+
+  return (
+    <HuiSurface tone="sage" shape="soft" padding="md" className="hui-rise-2" role="status">
+      <p className="text-lg font-extrabold text-foreground">{guidance.headline}</p>
+      <p className="mt-1 text-sm font-semibold text-muted-foreground">{guidance.summary}</p>
+      <div className="mt-4">
+        <p className="text-sm font-extrabold text-foreground">What happens next</p>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm font-semibold text-muted-foreground">
+          {guidance.steps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+      </div>
+      {guidance.nextStepTitle && guidance.nextStepDetail ? (
+        <div className="mt-4 rounded-hui-md bg-background/60 px-4 py-3">
+          <p className="text-sm font-extrabold text-foreground">{guidance.nextStepTitle}</p>
+          <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
+            {guidance.nextStepDetail}
+          </p>
+        </div>
+      ) : null}
+    </HuiSurface>
   );
 }
 

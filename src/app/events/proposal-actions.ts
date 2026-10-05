@@ -154,5 +154,5 @@ export async function proposeGroupEventAction(
 
   revalidatePath(`/groups/${groupId}/events`);
   schedulePushDelivery();
-  redirect(`/events/${eventId}`);
+  redirect(`/events/${eventId}?proposed=1`);
 }

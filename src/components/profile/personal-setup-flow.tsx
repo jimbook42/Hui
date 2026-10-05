@@ -8,8 +8,9 @@ import {
 } from "@/app/profile/actions";
 import { AuthForm } from "@/components/auth/auth-form";
 import { HuiLinkButton } from "@/components/hui/hui-button";
-import { HomeLocationSection } from "@/components/profile/home-location-section";
+import { EventLocationFields } from "@/components/map/event-location-fields";
 import type { ProfileHomeLocation } from "@/domain/profile/home-location";
+import type { EventCoordinates } from "@/domain/events/location";
 import { PendingButton } from "@/components/ui/pending-button";
 import { normalizeDisplayName } from "@/lib/profiles/validation";
 
@@ -20,10 +21,38 @@ type PersonalSetupFlowProps = {
   home: ProfileHomeLocation | null;
 };
 
+function HomeFieldsHidden({
+  location,
+  coordinates,
+}: {
+  location: string;
+  coordinates: EventCoordinates | null;
+}) {
+  return (
+    <>
+      <input type="hidden" name="home_location_label" value={location} />
+      <input
+        type="hidden"
+        name="home_location_lat"
+        value={coordinates ? String(coordinates.lat) : ""}
+      />
+      <input
+        type="hidden"
+        name="home_location_lng"
+        value={coordinates ? String(coordinates.lng) : ""}
+      />
+    </>
+  );
+}
+
 export function PersonalSetupFlow({ defaultDisplayName, home }: PersonalSetupFlowProps) {
   const [step, setStep] = useState<Step>("welcome");
   const [displayName, setDisplayName] = useState(defaultDisplayName);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [homeLocation, setHomeLocation] = useState(home?.label ?? "");
+  const [homeCoordinates, setHomeCoordinates] = useState<EventCoordinates | null>(
+    home?.coordinates ?? null,
+  );
 
   function goToHome() {
     const normalized = normalizeDisplayName(displayName);
@@ -64,6 +93,7 @@ export function PersonalSetupFlow({ defaultDisplayName, home }: PersonalSetupFlo
             Next
           </PendingButton>
           <form action={skipPersonalSetupAction}>
+            <input type="hidden" name="display_name" value={displayName} />
             <button type="submit" className="hui-link text-sm font-bold">
               Skip for now
             </button>
@@ -77,7 +107,15 @@ export function PersonalSetupFlow({ defaultDisplayName, home }: PersonalSetupFlo
           <p className="text-sm font-semibold text-muted-foreground">
             Save your home so hosting can be as simple as choosing “At my home”.
           </p>
-          <HomeLocationSection home={home} />
+          <EventLocationFields
+            location={homeLocation}
+            onLocationChange={setHomeLocation}
+            coordinates={homeCoordinates}
+            onCoordinatesChange={setHomeCoordinates}
+            locationLabel="Home address"
+            searchLabel="Search for your home"
+            helperText="Only people in groups you host for will see this when you choose “At my home”."
+          />
           <div className="flex flex-wrap gap-3">
             <PendingButton type="button" size="touch" onClick={() => setStep("finish")}>
               Continue
@@ -96,12 +134,16 @@ export function PersonalSetupFlow({ defaultDisplayName, home }: PersonalSetupFlo
             Dietary sharing and notifications live in Profile whenever you&apos;re ready.
           </p>
           <AuthForm action={completePersonalSetupAction} submitLabel="Go to Home">
+            <input type="hidden" name="complete_setup" value="1" />
             <input type="hidden" name="display_name" value={displayName} />
+            <HomeFieldsHidden location={homeLocation} coordinates={homeCoordinates} />
           </AuthForm>
           <HuiLinkButton href="/profile/dietary" variant="secondary">
             Set up dietary & food first
           </HuiLinkButton>
           <form action={skipPersonalSetupAction}>
+            <input type="hidden" name="display_name" value={displayName} />
+            <HomeFieldsHidden location={homeLocation} coordinates={homeCoordinates} />
             <button type="submit" className="hui-link text-sm font-bold">
               Skip and go to Home
             </button>

@@ -21,7 +21,7 @@ export function JoinInviteButton({ token }: { token: string }) {
         disabled={pending}
         className="hui-btn hui-btn-primary rounded-full hui-focus-ring w-full"
       >
-        {pending ? "Joining…" : "Join Hui"}
+        {pending ? "Joining…" : "Join group"}
       </button>
     </form>
   );

@@ -26,6 +26,7 @@ export function CreateGroupFlow({ appOrigin }: CreateGroupFlowProps) {
   const [manualStep, setManualStep] = useState<Step | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [groupName, setGroupName] = useState<string | null>(null);
   const [hostingEnabled, setHostingEnabled] = useState(true);
   const [maybeEnabled, setMaybeEnabled] = useState(true);
 
@@ -34,6 +35,10 @@ export function CreateGroupFlow({ appOrigin }: CreateGroupFlowProps) {
       const result = await createGroupSetupAction(prev, formData);
       if (result.groupId) {
         setGroupId(result.groupId);
+        const name = String(formData.get("name") ?? "").trim();
+        if (name) {
+          setGroupName(name);
+        }
         if (result.inviteToken) {
           setInviteToken(result.inviteToken);
         }
@@ -79,6 +84,7 @@ export function CreateGroupFlow({ appOrigin }: CreateGroupFlowProps) {
             <div className="mt-4">
               <GroupInviteSection
                 groupId={resolvedGroupId}
+                groupName={groupName ?? undefined}
                 inviteToken={resolvedInviteToken}
                 appOrigin={appOrigin}
               />

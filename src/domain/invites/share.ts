@@ -1,5 +1,19 @@
-export const INVITE_SHARE_TITLE = "Join our Hui";
-export const INVITE_SHARE_TEXT = "Join our Hui group on Hui.";
+export const INVITE_SHARE_TITLE = "Join our group on Hui";
+export const INVITE_SHARE_TEXT = "You're invited to join our group on Hui.";
+
+export function inviteShareTitle(groupName?: string): string {
+  if (groupName?.trim()) {
+    return `Join ${groupName.trim()} on Hui`;
+  }
+  return INVITE_SHARE_TITLE;
+}
+
+export function inviteShareText(groupName?: string): string {
+  if (groupName?.trim()) {
+    return `You're invited to join ${groupName.trim()} on Hui.`;
+  }
+  return INVITE_SHARE_TEXT;
+}
 
 export type ShareInviteResult =
   | { outcome: "shared" }
@@ -20,12 +34,15 @@ export async function copyInviteLink(url: string): Promise<ShareInviteResult> {
   }
 }
 
-export async function shareOrCopyInviteLink(url: string): Promise<ShareInviteResult> {
+export async function shareOrCopyInviteLink(
+  url: string,
+  groupName?: string,
+): Promise<ShareInviteResult> {
   if (canUseWebShare()) {
     try {
       await navigator.share({
-        title: INVITE_SHARE_TITLE,
-        text: INVITE_SHARE_TEXT,
+        title: inviteShareTitle(groupName),
+        text: inviteShareText(groupName),
         url,
       });
       return { outcome: "shared" };

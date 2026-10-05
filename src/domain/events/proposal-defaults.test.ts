@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { defaultProposalEventKind } from "@/domain/events/proposal-defaults";
+import {
+  defaultProposalEventKind,
+  groupHasEstablishedRecurrence,
+} from "@/domain/events/proposal-defaults";
 import type { GroupSettingsRow } from "@/lib/groups/types";
 
 function settings(partial: Partial<GroupSettingsRow>): GroupSettingsRow {
@@ -28,11 +31,57 @@ function settings(partial: Partial<GroupSettingsRow>): GroupSettingsRow {
   };
 }
 
+describe("groupHasEstablishedRecurrence", () => {
+  it("is false for a new group with recurring enabled but no cadence", () => {
+    expect(
+      groupHasEstablishedRecurrence(
+        settings({ recurringEventsEnabled: true, recurrenceAnchorDate: null }),
+      ),
+    ).toBe(false);
+  });
+
+  it("is true when cadence parts are configured", () => {
+    expect(
+      groupHasEstablishedRecurrence(
+        settings({
+          recurrenceIntervalUnit: "month",
+          recurrenceIntervalCount: 1,
+          recurrenceAnchorDate: "2026-01-15",
+        }),
+      ),
+    ).toBe(true);
+  });
+});
+
 describe("defaultProposalEventKind", () => {
-  it("prefers recurring when the group allows it", () => {
+  it("defaults first hui in a new group to one-off", () => {
     expect(
       defaultProposalEventKind(
         settings({ recurringEventsEnabled: true, oneOffEventsAllowed: true }),
+        { isFirstGroupEvent: true },
+      ),
+    ).toBe("one_off");
+  });
+
+  it("prefers recurring when the group has established cadence", () => {
+    expect(
+      defaultProposalEventKind(
+        settings({
+          recurringEventsEnabled: true,
+          recurrenceIntervalUnit: "month",
+          recurrenceIntervalCount: 1,
+          recurrenceAnchorDate: "2026-01-15",
+        }),
+        { isFirstGroupEvent: true },
+      ),
+    ).toBe("recurring");
+  });
+
+  it("prefers recurring on later proposals when recurring is enabled", () => {
+    expect(
+      defaultProposalEventKind(
+        settings({ recurringEventsEnabled: true, oneOffEventsAllowed: true }),
+        { isFirstGroupEvent: false },
       ),
     ).toBe("recurring");
   });

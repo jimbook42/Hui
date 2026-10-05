@@ -288,6 +288,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
               <div className="space-y-8">
                 <GroupInviteSection
                   groupId={detail.id}
+                  groupName={detail.name}
                   inviteToken={inviteToken}
                   appOrigin={appOrigin}
                 />

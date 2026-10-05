@@ -1,13 +1,26 @@
 import type { GroupSettingsRow } from "@/lib/groups/types";
+import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
 
 import type { EventProposalDraft } from "./proposal";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
 import { proposalPrefillFromCycle } from "@/domain/recurrence/planning-cycle";
 
-/** Default event kind when proposing from a group — recurring groups favour recurring planning. */
+/** Group has configured cadence or an active recurrence series — not a brand-new casual group. */
+export function groupHasEstablishedRecurrence(settings: GroupSettingsRow): boolean {
+  if (settings.canonicalRecurrenceSeriesId) {
+    return true;
+  }
+  return cadenceFromGroupSettings(settings) !== null;
+}
+
+/** Default event kind when proposing from a group. */
 export function defaultProposalEventKind(
   settings: GroupSettingsRow,
+  context?: { isFirstGroupEvent?: boolean },
 ): EventProposalDraft["eventKind"] {
+  if (context?.isFirstGroupEvent && !groupHasEstablishedRecurrence(settings)) {
+    return "one_off";
+  }
   if (settings.recurringEventsEnabled) {
     return "recurring";
   }
@@ -19,9 +32,12 @@ export function buildInitialProposalDraft(
   options: {
     groupName: string;
     cycle: GroupPlanningCycle | null;
+    isFirstGroupEvent?: boolean;
   },
 ): EventProposalDraft {
-  const eventKind = defaultProposalEventKind(settings);
+  const eventKind = defaultProposalEventKind(settings, {
+    isFirstGroupEvent: options.isFirstGroupEvent,
+  });
   const prefill =
     eventKind === "recurring" && options.cycle
       ? proposalPrefillFromCycle(options.cycle, options.groupName)

@@ -83,8 +83,13 @@ export function CreateEventProposalFlow({
   timeRecommendations,
 }: CreateEventProposalFlowProps) {
   const initialDraft = useMemo(
-    () => buildInitialProposalDraft(settings, { groupName, cycle: planningCycle }),
-    [settings, groupName, planningCycle],
+    () =>
+      buildInitialProposalDraft(settings, {
+        groupName,
+        cycle: planningCycle,
+        isFirstGroupEvent,
+      }),
+    [settings, groupName, planningCycle, isFirstGroupEvent],
   );
   const initialDate = useMemo(
     () => initialCandidateDateFromDraft(initialDraft, planningCycle),

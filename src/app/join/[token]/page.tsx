@@ -51,11 +51,11 @@ export default async function JoinInvitePage({ params }: PageProps) {
               <h1 className="hui-type-page-title text-foreground">Already a member</h1>
               <p className="hui-type-supporting mt-3">
                 You&apos;re already a member of{" "}
-                <span className="font-extrabold text-foreground">{resolved.groupName}</span>.
+                <span className="font-extrabold text-foreground">{resolved.groupName}</span> on Hui.
               </p>
               <div className="mt-7 flex justify-center">
                 <HuiLinkButton href={`/groups/${resolved.groupId}`} size="lg">
-                  Open Hui
+                  Open group
                 </HuiLinkButton>
               </div>
             </>
@@ -66,7 +66,7 @@ export default async function JoinInvitePage({ params }: PageProps) {
               <h1 className="hui-type-page-title text-foreground">You&apos;re invited</h1>
               <p className="hui-type-supporting mt-3">
                 You&apos;re invited to join{" "}
-                <span className="font-extrabold text-foreground">{resolved.groupName}</span>.
+                <span className="font-extrabold text-foreground">{resolved.groupName}</span> on Hui.
               </p>
               {user ? (
                 <div className="mx-auto mt-7 max-w-sm">

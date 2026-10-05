@@ -2,6 +2,15 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-05 — HUI-ONBOARDING-001 First Hui onboarding hardening
+
+- **Audit addressed:** group/hui conflation on invite/join/share copy; first proposal defaulting to recurring; missing post-propose orientation; personal setup discarding display name on skip and home on Continue; no first-run Group vs Hui explainer.
+- **Decisions:** first-hui one-off when `groupHasEstablishedRecurrence` is false (cadence parts or canonical series); existing cadence unchanged; post-propose via `?proposed=1` + state-aware `buildProposedHuiGuidance`; setup home/name via `parsePersonalSetupFormData` on skip/complete (no forced tutorials).
+- **Tests:** `proposal-defaults.test.ts`, `proposed-guidance.test.ts`, `personal-setup-update.test.ts`, `terminology.test.ts`; full `npm run validate` pass.
+- **Manual QA:** not run in implementation session — use ticket runsheet A–D.
+- **Deferred (explicit):** group cadence UI, demoting user-ID invites, suggested-times → availability link, join deep-link to active hui, email invites, PWA/push placement, recurrence weekday polish, full onboarding E2E suite.
+- **Migration:** none.
+
 ## 2026-10-05 — HUI-026 Explainable time recommendations
 
 - **Model:** `rankTimeRecommendations` in `src/domain/scheduling/time-recommendations.ts` — event response > standing signal > unknown; bounded slot generation around `planning_target_date` / 14-day fallback; deterministic sort; max 3 suggestions with human explanations.

@@ -13,12 +13,14 @@ const initialState: InviteActionState = {};
 
 type GroupInviteSectionProps = {
   groupId: string;
+  groupName?: string;
   inviteToken: string;
   appOrigin: string;
 };
 
 export function GroupInviteSection({
   groupId,
+  groupName,
   inviteToken: initialToken,
   appOrigin,
 }: GroupInviteSectionProps) {
@@ -37,7 +39,7 @@ export function GroupInviteSection({
   }, []);
 
   async function handleShare() {
-    const result = await shareOrCopyInviteLink(inviteUrl);
+    const result = await shareOrCopyInviteLink(inviteUrl, groupName);
     if (result.outcome === "shared") {
       showFeedback("Share sheet opened.");
     } else if (result.outcome === "copied") {
@@ -64,7 +66,7 @@ export function GroupInviteSection({
         Invite people
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Share this link with anyone you&apos;d like to join this Hui.
+        Share this link with anyone you&apos;d like to join this group.
       </p>
 
       <p className="mt-4 break-all rounded-hui-md bg-muted px-3 py-2 text-sm text-foreground">
