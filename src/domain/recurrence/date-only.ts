@@ -57,3 +57,20 @@ export function addDaysToDateOnly(dateOnly: string, days: number): string {
   date.setUTCDate(date.getUTCDate() + days);
   return formatDateOnlyUtc(date);
 }
+
+/** Format a calendar date for humans without shifting the day across time zones. */
+export function formatDateOnlyDisplay(
+  dateOnly: string,
+  locale = "en-NZ",
+): string {
+  if (!isDateOnly(dateOnly)) {
+    throw new Error("invalid date-only value");
+  }
+  const [y, m, d] = dateOnly.split("-").map(Number);
+  const instant = new Date(Date.UTC(y, m - 1, d));
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "long",
+  }).format(instant);
+}

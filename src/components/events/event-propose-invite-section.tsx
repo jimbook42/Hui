@@ -68,6 +68,7 @@ export async function EventProposeInviteSection({
         appOrigin={appOrigin}
         variant="planning"
         invitePreviewHeadline={previewHeadline}
+        focusEventId={detail.id}
       />
     </HuiSurface>
   );

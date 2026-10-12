@@ -19,7 +19,7 @@ export default async function SignUpPage({
   return (
     <AuthShell
       title="Create your account"
-      description="We will send a verification email before your first sign-in."
+      description="Create your account to continue. If this project requires email confirmation, we will email you a link before your first sign-in."
       footer={
         <>
           Already have an account?{" "}

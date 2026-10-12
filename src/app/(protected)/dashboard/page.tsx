@@ -17,10 +17,9 @@ async function Greeting() {
     .eq("id", user!.id)
     .maybeSingle();
 
-  const displayName = profile?.display_name ?? user?.email ?? "there";
-  const firstName = displayName.split(/\s+/)[0] ?? displayName;
+  const displayName = profile?.display_name?.trim() ?? user?.email ?? "there";
 
-  return <GreetingText name={firstName} />;
+  return <GreetingText name={displayName} />;
 }
 
 function GreetingText({ name }: { name?: string }) {

@@ -19,6 +19,8 @@ type GroupInviteSectionProps = {
   /** Planning-first invite copy for first-hui onboarding. */
   variant?: "group" | "planning";
   invitePreviewHeadline?: string | null;
+  /** When sharing from a specific gathering, keep invitees on that hui. */
+  focusEventId?: string | null;
 };
 
 export function GroupInviteSection({
@@ -28,6 +30,7 @@ export function GroupInviteSection({
   appOrigin,
   variant = "group",
   invitePreviewHeadline,
+  focusEventId,
 }: GroupInviteSectionProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [regenState, regenAction, regenPending] = useActionState(
@@ -36,7 +39,7 @@ export function GroupInviteSection({
   );
 
   const token = regenState.token ?? initialToken;
-  const inviteUrl = buildGroupInviteUrl(appOrigin, token);
+  const inviteUrl = buildGroupInviteUrl(appOrigin, token, { focusEventId });
 
   const showFeedback = useCallback((message: string) => {
     setFeedback(message);

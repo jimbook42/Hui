@@ -41,8 +41,47 @@ describe("invite presentation (HUI-ONBOARDING-002)", () => {
       },
       timeZone: "Pacific/Auckland",
     });
-    expect(lines[0]).toMatch(/Planning for around/);
-    expect(lines[0]).toMatch(/not a confirmed date/i);
+    expect(lines[0]).toBe(
+      "Planning for around 11 October — not a confirmed date yet.",
+    );
+  });
+
+  it("does not shift planning target dates forward in NZ time zones", () => {
+    const november = inviteSupportingLines({
+      groupName: "QA Group",
+      inviterDisplayName: null,
+      planning: {
+        eventId: "e1",
+        eventTitle: "Dinner",
+        status: "proposing",
+        planningTargetDate: "2026-11-02",
+        gathering: {
+          type: "dinner_meal",
+          customDescription: null,
+          eventTitle: "Dinner",
+        },
+      },
+      timeZone: "Pacific/Auckland",
+    });
+    expect(november[0]).toContain("2 November");
+
+    const second = inviteSupportingLines({
+      groupName: "QA Group",
+      inviterDisplayName: null,
+      planning: {
+        eventId: "e2",
+        eventTitle: "Lunch",
+        status: "proposing",
+        planningTargetDate: "2026-11-09",
+        gathering: {
+          type: "dinner_meal",
+          customDescription: null,
+          eventTitle: "Lunch",
+        },
+      },
+      timeZone: "Pacific/Auckland",
+    });
+    expect(second[0]).toContain("9 November");
   });
 
   it("avoids inventing a confirmed gathering date when only type is known", () => {

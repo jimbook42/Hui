@@ -2,6 +2,16 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-06 — HUI-ONBOARDING-002B QA failures (invite, dates, routing)
+
+- **Root causes:** signed-out `/join/[token]` called `group_settings` under member-only RLS → thrown error → HTTP 500; calendar dates formatted via UTC-noon + group TZ shifted NZ dates forward one day; gathering invites shared the group link without `?event=` so `resolve_group_invite` and post-join routing preferred newest active hui.
+- **Schema:** `resolve_group_invite(p_token, p_focus_event_id)` returns `groupTimeZone` + optional focus gathering (`20261006210000_hui_onboarding_002b_invite_and_dates.sql`); applied to linked Supabase.
+- **App:** date-only `formatDateOnlyDisplay`; gathering invite URLs append `?event=` from propose-hui share; join/sign-in preserve focus; post-join redirect prioritises focus event; event cards label proposed times; dashboard uses full display name; profile shows build SHA; sign-up copy matches optional confirmation flow.
+- **Host auto-suggest on respond:** unchanged — `trg_maybe_propose_event_host_on_response` / `coordinate_event_host_after_attendance` (product decision pending).
+- **Tests:** `date-only.test.ts`, invite presentation/urls/resolve, `group-invite-links` focus + timezone, `post-join-redirect` ordering; `npm run validate` pass.
+- **Deploy:** not promoted to production (per ticket). Production at ticket start was `3e9e67b`; fix lands on branch after push.
+- **Manual QA:** signed-out invite link, two-active-gathering invite from propose-hui share (not group-only link), recurrence date entry 2 Nov / 9 Nov, host-suggest behaviour.
+
 ## 2026-10-06 — HUI-ONBOARDING-002A First-Hui onboarding correction
 
 - **Schema:** `20261006200000_hui_onboarding_002a_corrections.sql` — idempotent `gathering_type` columns; `propose_group_event` writes gathering atomically; `group_settings` canonical FK fixed (no composite SET NULL on `group_id`); `_delete_group_cascade` deletes `group_settings` before series; PostgREST `reload schema`.

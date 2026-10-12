@@ -73,13 +73,17 @@ export function EventCard({ event, variant = "standard", tone = "primary", class
     .map((member) => ({ id: member.userId, name: member.displayName }));
   const summary = peopleSummary(event);
   const planning = event.bucket === "planning" || event.attention === "respond";
+  const proposedPrefix =
+    planning && event.startsAt && event.status !== "confirmed" ? "Proposed · " : "";
   const timeLine = event.startsAt
-    ? `${formatShortDay(event.startsAt, event.timeZone)} · ${
+    ? `${proposedPrefix}${formatShortDay(event.startsAt, event.timeZone)} · ${
         featured
           ? formatTimeSpan(event.startsAt, event.endsAt, event.timeZone)
           : formatClockTime(event.startsAt, event.timeZone)
       }`
-    : "Time still to be agreed";
+    : planning
+      ? "Time proposed — not confirmed yet"
+      : "Time still to be agreed";
   const when = event.startsAt && event.bucket !== "past" ? relativeDayLabel(event.startsAt, event.timeZone) : null;
 
   return (

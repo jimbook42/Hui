@@ -543,10 +543,7 @@ export function CreateEventProposalFlow({
             {draft.recurrence?.planningTargetDate ? (
               <p className="hui-message-note mt-3" role="status">
                 Planning for around{" "}
-                {formatNominalPlanningDate(
-                  draft.recurrence.planningTargetDate,
-                  settings.timezone,
-                )}{" "}
+                {formatNominalPlanningDate(draft.recurrence.planningTargetDate)}{" "}
                 — a target for this cycle, not a confirmed gathering time.
               </p>
             ) : null}

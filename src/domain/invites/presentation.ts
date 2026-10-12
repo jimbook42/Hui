@@ -1,4 +1,5 @@
 import { gatheringPlanningPhrase, type GatheringContext } from "@/domain/gathering/type";
+import { formatDateOnlyDisplay } from "@/domain/recurrence/date-only";
 
 export type InvitePlanningPreview = {
   eventId: string;
@@ -15,16 +16,6 @@ export type InvitePreviewCopyInput = {
   /** IANA timezone for formatting planning target only. */
   timeZone?: string;
 };
-
-function formatPlanningTargetDate(dateOnly: string, timeZone: string): string {
-  const [y, m, d] = dateOnly.split("-").map(Number);
-  const instant = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-  return new Intl.DateTimeFormat("en-NZ", {
-    timeZone,
-    day: "numeric",
-    month: "long",
-  }).format(instant);
-}
 
 export function inviteHeadline(input: InvitePreviewCopyInput): string {
   const group = input.groupName.trim();
@@ -52,9 +43,8 @@ export function inviteSupportingLines(input: InvitePreviewCopyInput): string[] {
   const lines: string[] = [];
 
   if (input.planning?.planningTargetDate) {
-    const tz = input.timeZone ?? "Pacific/Auckland";
     lines.push(
-      `Planning for around ${formatPlanningTargetDate(input.planning.planningTargetDate, tz)} — not a confirmed date yet.`,
+      `Planning for around ${formatDateOnlyDisplay(input.planning.planningTargetDate)} — not a confirmed date yet.`,
     );
   }
 

@@ -17,6 +17,7 @@ export type InviteResolveResult =
       status: "valid";
       groupId: string;
       groupName: string;
+      groupTimeZone: string;
       inviterDisplayName: string | null;
       planning: InvitePlanningContext | null;
     }
@@ -24,6 +25,7 @@ export type InviteResolveResult =
       status: "already_member";
       groupId: string;
       groupName: string;
+      groupTimeZone: string;
       inviterDisplayName: string | null;
       planning: InvitePlanningContext | null;
     };
@@ -72,16 +74,34 @@ export function parseInviteResolvePayload(
   const groupName = typeof record.groupName === "string" ? record.groupName : "";
   const inviterDisplayName =
     typeof record.inviterDisplayName === "string" ? record.inviterDisplayName : null;
+  const groupTimeZone =
+    typeof record.groupTimeZone === "string" && record.groupTimeZone.trim()
+      ? record.groupTimeZone.trim()
+      : "Pacific/Auckland";
   const planning = parseInvitePlanning(record);
   if (!groupId || !groupName) {
     return { status: "invalid" };
   }
 
   if (status === "already_member") {
-    return { status: "already_member", groupId, groupName, inviterDisplayName, planning };
+    return {
+      status: "already_member",
+      groupId,
+      groupName,
+      groupTimeZone,
+      inviterDisplayName,
+      planning,
+    };
   }
   if (status === "valid") {
-    return { status: "valid", groupId, groupName, inviterDisplayName, planning };
+    return {
+      status: "valid",
+      groupId,
+      groupName,
+      groupTimeZone,
+      inviterDisplayName,
+      planning,
+    };
   }
 
   return { status: "invalid" };

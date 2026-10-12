@@ -11,12 +11,11 @@ import {
 import type { GroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
 
 function phaseCopy(context: GroupPlanningContext): { title: string; detail: string } {
-  const { cycle, settings } = context;
+  const { cycle } = context;
   const target =
-    cycle.nextTargetDate && formatNominalPlanningDate(cycle.nextTargetDate, settings.timezone);
+    cycle.nextTargetDate && formatNominalPlanningDate(cycle.nextTargetDate);
   const opens =
-    cycle.planningOpensOn &&
-    formatNominalPlanningDate(cycle.planningOpensOn, settings.timezone);
+    cycle.planningOpensOn && formatNominalPlanningDate(cycle.planningOpensOn);
 
   switch (cycle.phase) {
     case "planning_exists":

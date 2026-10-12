@@ -1,3 +1,4 @@
+import { formatDateOnlyDisplay } from "@/domain/recurrence/date-only";
 import {
   cadenceFromParts,
   deriveGroupPlanningCycle,
@@ -46,14 +47,8 @@ export function buildGroupPlanningCycle(
 
 export { shouldShowPlanNextCta };
 
-export function formatNominalPlanningDate(dateOnly: string, timeZone: string): string {
-  const [y, m, d] = dateOnly.split("-").map(Number);
-  const instant = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-  return new Intl.DateTimeFormat("en-NZ", {
-    timeZone,
-    day: "numeric",
-    month: "long",
-  }).format(instant);
+export function formatNominalPlanningDate(dateOnly: string): string {
+  return formatDateOnlyDisplay(dateOnly);
 }
 
 export function mapPlanningEventRow(row: {

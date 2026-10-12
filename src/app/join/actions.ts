@@ -15,6 +15,7 @@ export async function joinGroupViaInviteAction(
   formData: FormData,
 ): Promise<JoinActionState> {
   const token = String(formData.get("token") ?? "").trim();
+  const focusEventId = String(formData.get("focus_event_id") ?? "").trim() || null;
   if (!token) {
     return { error: "This invite link is no longer valid." };
   }
@@ -25,7 +26,9 @@ export async function joinGroupViaInviteAction(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    const next = encodeURIComponent(`/join/${token}`);
+    const joinPath =
+      focusEventId ? `/join/${token}?event=${encodeURIComponent(focusEventId)}` : `/join/${token}`;
+    const next = encodeURIComponent(joinPath);
     redirect(`/sign-in?next=${next}`);
   }
 
@@ -42,6 +45,11 @@ export async function joinGroupViaInviteAction(
     return { error: "This invite link is no longer valid." };
   }
 
-  const destination = await resolvePostInviteJoinPath(supabase, result.groupId, user.id);
+  const destination = await resolvePostInviteJoinPath(
+    supabase,
+    result.groupId,
+    user.id,
+    focusEventId,
+  );
   redirect(destination);
 }
