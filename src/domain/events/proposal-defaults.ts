@@ -46,6 +46,13 @@ export function buildInitialProposalDraft(
       : null;
 
   const anchorFromCadence = cadence?.anchorDate ?? "";
+  const cycleTarget = prefill?.planningTargetDate ?? options.cycle?.cycleTargetDate ?? null;
+  const prefillStarts = prefill?.startsOn?.trim() ?? "";
+  const startsOn =
+    (prefillStarts.length > 0 ? prefillStarts : null) ??
+    (anchorFromCadence.length > 0 ? anchorFromCadence : null) ??
+    cycleTarget ??
+    "";
   const intervalUnit = cadence?.intervalUnit ?? "month";
   const intervalCount = cadence?.intervalCount ?? 1;
 
@@ -60,8 +67,8 @@ export function buildInitialProposalDraft(
       seriesTitle: prefill?.seriesTitle ?? (groupHasEstablishedRecurrence(settings) ? options.groupName : ""),
       intervalUnit,
       intervalCount,
-      startsOn: prefill?.startsOn ?? anchorFromCadence,
-      planningTargetDate: prefill?.planningTargetDate ?? null,
+      startsOn,
+      planningTargetDate: prefill?.planningTargetDate ?? cycleTarget,
     },
     candidates: [],
     initialHostUserId: "suggest",

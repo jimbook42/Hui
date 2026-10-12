@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildInitialProposalDraft,
   defaultProposalEventKind,
   groupHasEstablishedRecurrence,
 } from "@/domain/events/proposal-defaults";
+import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
 import type { GroupSettingsRow } from "@/lib/groups/types";
 
 function settings(partial: Partial<GroupSettingsRow>): GroupSettingsRow {
@@ -92,5 +94,35 @@ describe("defaultProposalEventKind", () => {
         settings({ recurringEventsEnabled: false, oneOffEventsAllowed: true }),
       ),
     ).toBe("one_off");
+  });
+});
+
+describe("buildInitialProposalDraft", () => {
+  it("uses the open cycle target when the cadence anchor is missing", () => {
+    const cycle: GroupPlanningCycle = {
+      cadence: {
+        intervalUnit: "month",
+        intervalCount: 1,
+        anchorDate: "",
+      },
+      planningLeadDays: 14,
+      nextTargetDate: "2026-11-11",
+      planningOpensOn: "2026-10-28",
+      phase: "ready_to_plan",
+      blockingEventId: null,
+      cycleTargetDate: "2026-11-11",
+    };
+    const draft = buildInitialProposalDraft(
+      settings({
+        recurringEventsEnabled: true,
+        recurrenceIntervalUnit: "month",
+        recurrenceIntervalCount: 1,
+        recurrenceAnchorDate: null,
+        canonicalRecurrenceSeriesId: "series-1",
+      }),
+      { groupName: "QA 002A Group One", cycle, isFirstGroupEvent: false },
+    );
+    expect(draft.recurrence?.startsOn).toBe("2026-11-11");
+    expect(draft.recurrence?.planningTargetDate).toBe("2026-11-11");
   });
 });

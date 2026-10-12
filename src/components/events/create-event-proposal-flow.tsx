@@ -29,6 +29,7 @@ import {
 } from "@/domain/recurrence/planning-cycle";
 import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
 import type { TimeRecommendation } from "@/domain/scheduling/time-recommendations";
+import { ProposalContributionRequestFields } from "@/components/events/proposal-contribution-request-fields";
 import { SuggestedTimesList } from "@/components/events/suggested-times-list";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
 import type { GroupSettingsRow } from "@/lib/groups/types";
@@ -117,27 +118,6 @@ export function CreateEventProposalFlow({
     }
     return cadenceFromGroupSettings(settings) ?? planningCycle?.cadence ?? null;
   }, [establishedRecurrence, settings, planningCycle]);
-
-  function toggleContributionCategory(categoryId: string, categoryName: string) {
-    setDraft((current) => {
-      const exists = current.requestedContributions.some((row) => row.categoryId === categoryId);
-      if (exists) {
-        return {
-          ...current,
-          requestedContributions: current.requestedContributions.filter(
-            (row) => row.categoryId !== categoryId,
-          ),
-        };
-      }
-      return {
-        ...current,
-        requestedContributions: [
-          ...current.requestedContributions,
-          { categoryId, label: categoryName },
-        ],
-      };
-    });
-  }
 
   function goTo(next: Step) {
     setStepError(null);
@@ -623,6 +603,13 @@ export function CreateEventProposalFlow({
               Add another time
             </PendingButton>
           </div>
+          <ProposalContributionRequestFields
+            categories={activeCategories}
+            requestedContributions={draft.requestedContributions}
+            onChange={(requestedContributions) =>
+              setDraft((current) => ({ ...current, requestedContributions }))
+            }
+          />
         </section>
       ) : null}
 
@@ -679,59 +666,6 @@ export function CreateEventProposalFlow({
               })}
             </div>
           </div>
-          {activeCategories.length > 0 ? (
-            <div className="space-y-3 rounded-hui-xl bg-surface p-4 sm:p-5 hui-shadow-md">
-              <div>
-                <p className="text-sm font-extrabold text-foreground">What to bring (optional)</p>
-                <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                  Choose categories you&apos;d like people to help with. You can skip this.
-                </p>
-              </div>
-              <ul className="space-y-2">
-                {activeCategories.map((category) => {
-                  const selected = draft.requestedContributions.some(
-                    (row) => row.categoryId === category.id,
-                  );
-                  const request = draft.requestedContributions.find(
-                    (row) => row.categoryId === category.id,
-                  );
-                  return (
-                    <li key={category.id} className="rounded-hui-lg bg-muted px-3 py-2">
-                      <label className="flex min-h-11 cursor-pointer items-center gap-3">
-                        <input
-                          type="checkbox"
-                          className="hui-checkbox"
-                          checked={selected}
-                          onChange={() => toggleContributionCategory(category.id, category.name)}
-                        />
-                        <span className="font-extrabold text-foreground">{category.name}</span>
-                      </label>
-                      {selected ? (
-                        <label className="mt-2 block text-sm font-semibold text-muted-foreground">
-                          <span className="hui-label">Item or note (optional)</span>
-                          <input
-                            className="hui-input mt-1"
-                            value={request?.label ?? category.name}
-                            maxLength={160}
-                            onChange={(event) =>
-                              setDraft((current) => ({
-                                ...current,
-                                requestedContributions: current.requestedContributions.map((row) =>
-                                  row.categoryId === category.id
-                                    ? { ...row, label: event.target.value }
-                                    : row,
-                                ),
-                              }))
-                            }
-                          />
-                        </label>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ) : null}
           {settings.hostingEnabled ? (
             <>
               <HuiSwitchField

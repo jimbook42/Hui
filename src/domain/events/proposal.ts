@@ -232,11 +232,23 @@ export function validateEventProposalDraft(
     const intervalCount = parseIntervalCount(
       String(draft.recurrence?.intervalCount ?? ""),
     );
-    const startsOn = parseStartsOnDate(draft.recurrence?.startsOn ?? "");
+    const planningTargetRaw =
+      draft.recurrence?.planningTargetDate?.trim() ||
+      draft.recurrence?.startsOn?.trim() ||
+      "";
+    const startsOn =
+      parseStartsOnDate(draft.recurrence?.startsOn ?? "") ??
+      parseStartsOnDate(planningTargetRaw);
     const planningTargetDate =
-      draft.recurrence?.planningTargetDate ?? draft.recurrence?.startsOn ?? null;
-    if (!seriesTitle || !intervalUnit || intervalCount === null || !startsOn) {
-      return { ok: false, error: "Enter valid recurrence settings." };
+      parseStartsOnDate(planningTargetRaw) ?? startsOn;
+    if (!seriesTitle) {
+      return { ok: false, error: "Enter a name for this recurring rhythm." };
+    }
+    if (!intervalUnit || intervalCount === null) {
+      return { ok: false, error: "Choose how often this group usually meets." };
+    }
+    if (!startsOn) {
+      return { ok: false, error: "Choose the planning date for this cycle." };
     }
     recurrence = {
       series_title: seriesTitle,

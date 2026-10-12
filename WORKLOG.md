@@ -2,6 +2,17 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — HUI-ONBOARDING-003A Planning workflow QA fixes
+
+- **Host on finalise:** `coordinate_event_host_after_attendance` required attendance on `proposed` candidates only; after finalise the selected time is `selected`, so host coordination no-op'd. Fixed in `20261013100000` to count `selected` when the event is `confirmed`.
+- **Contributions at setup:** optional request picker moved to the **Time** step (`ProposalContributionRequestFields`); finalise no longer calls `seed_event_contributions` (avoids copying every group category onto the hui when only a subset was requested at propose).
+- **Respond race:** global `isSavingAttendance` dropped rapid saves for a second candidate; per-candidate pending state allows concurrent saves.
+- **Recurring validation:** `starts_on` now falls back to `planningTargetDate` / cycle target when the cadence anchor is empty (QA 002A recurring propose).
+- **Duplicate cycle (item 5):** rejection when `planning_target_date` already has an open proposing hui is **expected** duplicate-cycle protection (see `recurring-planning-hui-028` / `hui-onboarding-003a` test).
+- **Tests:** `hui-onboarding-003a-planning-qa.test.ts`, `proposal.test.ts`, `proposal-defaults.test.ts`; `npm run validate` — 610 tests, build OK.
+- **Migration:** `20261013100000_hui_onboarding_003a_planning_qa_fixes.sql` pending on linked Supabase (not applied this ticket). `20261006220000` unchanged on disk; apply order 003 → 003a when promoting DB.
+- **Deploy:** none (per ticket).
+
 ## 2026-10-12 — HUI-ONBOARDING-003 Event planning workflow
 
 - **Root causes:** gathering invite only on `?proposed=1`; no contribution slots at propose; recurrence series overwritten on later proposals; host auto-proposed on every `event_responses` write; respond flow single-candidate; first-hui host dropdown implied hosting on attendance; food-involvement fieldset legend overflow on small screens.

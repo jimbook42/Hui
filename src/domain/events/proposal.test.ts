@@ -229,6 +229,42 @@ describe("event proposal validation (HUI-026A)", () => {
     }
   });
 
+  it("accepts recurring proposals when only the cycle planning date is set", () => {
+    const result = validateEventProposalDraft(
+      {
+        ...baseDraft,
+        title: "Monthly dinner",
+        location: "",
+        notes: "",
+        eventKind: "recurring",
+        recurrence: {
+          seriesTitle: "QA Group",
+          intervalUnit: "month",
+          intervalCount: 1,
+          startsOn: "",
+          planningTargetDate: "2026-11-11",
+        },
+        candidates: [
+          {
+            startsAt: "2026-11-10T23:00:00.000Z",
+            endsAt: null,
+          },
+        ],
+        initialHostUserId: "suggest",
+        foodInvolvement: "yes",
+        hostPlaceRequired: true,
+        organiserWillHost: false,
+        requestedContributions: [],
+      },
+      baseOptions,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.payload.recurrence?.starts_on).toBe("2026-11-11");
+      expect(result.payload.recurrence?.planning_target_date).toBe("2026-11-11");
+    }
+  });
+
   it("rejects duplicate start-only candidates", () => {
     const result = validateEventProposalDraft(
       {

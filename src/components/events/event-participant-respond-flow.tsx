@@ -127,7 +127,9 @@ export function EventParticipantRespondFlow({
       return initial;
     },
   );
-  const [pendingChoice, setPendingChoice] = useState<AvailabilityChoice | null>(null);
+  const [pendingByCandidate, setPendingByCandidate] = useState<
+    Record<string, AvailabilityChoice | null>
+  >({});
   const [actionError, setActionError] = useState<string | null>(null);
   const [suggestSubmittedRange, setSuggestSubmittedRange] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState("");
@@ -135,7 +137,7 @@ export function EventParticipantRespondFlow({
   // The end time is optional: an empty value means "start only".
   const [timeEnd, setTimeEnd] = useState("");
   const [suggestError, setSuggestError] = useState<string | null>(null);
-  const [isSavingAttendance, startSaveAttendance] = useTransition();
+  const [, startSaveAttendance] = useTransition();
   const [isSubmittingSuggest, startSubmitSuggest] = useTransition();
   const [secondary, setSecondary] = useState<RespondSecondaryData | null>(null);
   const [secondaryError, setSecondaryError] = useState<string | null>(null);
@@ -247,7 +249,10 @@ export function EventParticipantRespondFlow({
     choice: AvailabilityChoice,
     advanceOnSave = true,
   ) {
-    if (!canRespond || isSavingAttendance) {
+    if (!canRespond) {
+      return;
+    }
+    if (pendingByCandidate[targetCandidateId]) {
       return;
     }
     const existing = responsesByCandidate[targetCandidateId] ?? null;
@@ -261,7 +266,7 @@ export function EventParticipantRespondFlow({
     beginInteraction(interaction);
     markInteraction(interaction, "handler-start");
     setActionError(null);
-    setPendingChoice(choice);
+    setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
     setResponsesByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
     if (!multipleTimeOptions && advanceOnSave) {
       setResponseOverride(choice);
@@ -278,7 +283,7 @@ export function EventParticipantRespondFlow({
       markInteraction(interaction, "request-end");
       if (result.error) {
         setActionError(result.error);
-        setPendingChoice(null);
+        setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
         setResponsesByCandidate((current) => ({
           ...current,
           [targetCandidateId]: existing,
@@ -286,7 +291,7 @@ export function EventParticipantRespondFlow({
         endInteraction(interaction);
         return;
       }
-      setPendingChoice(null);
+      setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
       if (!multipleTimeOptions) {
         window.setTimeout(() => {
           router.refresh();
@@ -456,7 +461,7 @@ export function EventParticipantRespondFlow({
                             state={attendanceStateFromChoice(option, true)}
                             label={participantAttendanceChoiceLabel(option)}
                             selected={rowResponse === option}
-                            pending={pendingChoice === option && isSavingAttendance}
+                            pending={pendingByCandidate[row.id] === option}
                             disabled={!canRespond}
                             onClick={() => saveAttendanceForCandidate(row.id, option, false)}
                           />
@@ -513,7 +518,8 @@ export function EventParticipantRespondFlow({
           <div className="space-y-3">
             {attendanceOptions.map((option) => {
               const isSelected = viewerResponse === option;
-              const isPending = pendingChoice === option && isSavingAttendance;
+              const isPending = pendingByCandidate[candidate.id] === option;
+              const savingThisCandidate = Boolean(pendingByCandidate[candidate.id]);
               return (
                 <AttendanceChoice
                   key={option}
@@ -521,7 +527,7 @@ export function EventParticipantRespondFlow({
                   label={participantAttendanceChoiceLabel(option)}
                   selected={isSelected}
                   pending={isPending}
-                  disabled={!canRespond || (isSavingAttendance && pendingChoice !== option)}
+                  disabled={!canRespond || (savingThisCandidate && !isPending)}
                   onClick={() => saveAttendance(option)}
                 />
               );
@@ -540,7 +546,7 @@ export function EventParticipantRespondFlow({
               {actionError}
             </p>
           ) : null}
-          {viewerResponse && !pendingChoice ? (
+          {viewerResponse && !pendingByCandidate[candidate.id] ? (
             <p className="hui-message-success" role="status">
               Saved: {participantAttendanceSummaryLabel(viewerResponse)}
             </p>
