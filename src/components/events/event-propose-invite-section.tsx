@@ -13,6 +13,7 @@ type EventProposeInviteSectionProps = {
   gatheringTypeCustom: string | null;
   planningTargetDate: string | null;
   timeZone: string;
+  prominent?: boolean;
 };
 
 export async function EventProposeInviteSection({
@@ -22,6 +23,7 @@ export async function EventProposeInviteSection({
   gatheringTypeCustom,
   planningTargetDate,
   timeZone,
+  prominent = false,
 }: EventProposeInviteSectionProps) {
   const supabase = await createClient();
   const appOrigin = await resolveAuthRedirectOrigin();
@@ -60,7 +62,12 @@ export async function EventProposeInviteSection({
       : null;
 
   return (
-    <HuiSurface tone="subtle" padding="md" shape="soft" className="hui-rise-2">
+    <HuiSurface
+      tone={prominent ? "default" : "subtle"}
+      padding="md"
+      shape="soft"
+      className={prominent ? "hui-rise-2 ring-2 ring-primary/30" : "hui-rise"}
+    >
       <GroupInviteSection
         groupId={detail.groupId}
         groupName={detail.groupName}

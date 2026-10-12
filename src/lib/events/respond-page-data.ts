@@ -27,6 +27,7 @@ import type { EventDetail } from "@/lib/events/types";
 export type RespondPrimaryData = {
   detail: EventDetail;
   candidate: EventCandidateRow;
+  proposedCandidates: EventCandidateRow[];
   displayTimeZone: string;
   canRespond: boolean;
   maybeResponsesEnabled: boolean;
@@ -68,6 +69,9 @@ export async function loadRespondPrimary(
     primary === null
       ? null
       : (scheduling.candidates.find((row) => row.id === primary.id) ?? null);
+  const proposedCandidates = scheduling.candidates.filter(
+    (row) => row.status === "proposed" || row.status === "selected",
+  );
 
   const flowAvailable = canUseParticipantRespondFlow({
     eventStatus: detail.status,
@@ -106,6 +110,7 @@ export async function loadRespondPrimary(
   return {
     detail,
     candidate,
+    proposedCandidates,
     displayTimeZone,
     canRespond: canRespondToCandidates(detail.status),
     maybeResponsesEnabled: scheduling.maybeResponsesEnabled,

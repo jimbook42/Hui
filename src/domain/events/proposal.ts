@@ -16,6 +16,7 @@ import {
   type GatheringType,
 } from "@/domain/gathering/type";
 import { validateCandidateWindow } from "@/domain/scheduling/validation";
+import { normalizeProposalContributionRequests } from "@/domain/events/proposal-contributions";
 
 export type ProposalCandidateInput = {
   startsAt: string;
@@ -32,6 +33,11 @@ export type ProposalRecurrenceInput = {
   planningTargetDate?: string | null;
 };
 
+export type ProposalContributionRequest = {
+  categoryId: string;
+  label: string;
+};
+
 export type EventProposalDraft = {
   title: string;
   gatheringType: GatheringType | null;
@@ -43,9 +49,12 @@ export type EventProposalDraft = {
   eventKind: "one_off" | "recurring";
   recurrence: ProposalRecurrenceInput | null;
   candidates: ProposalCandidateInput[];
+  /** @deprecated First-hui host nomination; kept for RPC compatibility. */
   initialHostUserId: string | null | "suggest";
   foodInvolvement: EventFoodInvolvement | null;
   hostPlaceRequired: boolean;
+  organiserWillHost: boolean;
+  requestedContributions: ProposalContributionRequest[];
 };
 
 export type ProposalValidationResult =
@@ -76,6 +85,8 @@ export type ProposeGroupEventPayload = {
   hostPlaceRequired: boolean;
   gatheringType: GatheringType;
   gatheringTypeCustom: string | null;
+  requestedContributions: ProposalContributionRequest[];
+  organiserCommitsHost: boolean;
 };
 
 export function candidatesForRpc(
@@ -153,6 +164,7 @@ export function validateEventProposalDraft(
     hostingEnabled: boolean;
     memberUserIds: string[];
     groupName?: string;
+    contributionCategoryNames?: Map<string, string>;
   },
 ): ProposalValidationResult {
   const gatheringType = parseGatheringType(draft.gatheringType);
@@ -235,21 +247,17 @@ export function validateEventProposalDraft(
     };
   }
 
-  let setInitialHost = false;
-  let initialHostUserId: string | null = null;
-  if (options.isFirstGroupEvent && options.hostingEnabled) {
-    if (draft.initialHostUserId === "suggest") {
-      setInitialHost = false;
-    } else {
-      setInitialHost = true;
-      if (draft.initialHostUserId !== null) {
-        if (!options.memberUserIds.includes(draft.initialHostUserId)) {
-          return { ok: false, error: "Choose a valid group member to host." };
-        }
-        initialHostUserId = draft.initialHostUserId;
-      }
-    }
+  const categoryNames = options.contributionCategoryNames ?? new Map<string, string>();
+  const contributionResult = normalizeProposalContributionRequests(
+    draft.requestedContributions ?? [],
+    categoryNames,
+  );
+  if (!contributionResult.ok) {
+    return { ok: false, error: contributionResult.error };
   }
+
+  const organiserCommitsHost =
+    options.hostingEnabled && draft.organiserWillHost === true;
 
   return {
     ok: true,
@@ -260,12 +268,14 @@ export function validateEventProposalDraft(
       notes,
       recurrence,
       candidates: candidatesForRpc(draft.candidates),
-      setInitialHost,
-      initialHostUserId,
+      setInitialHost: false,
+      initialHostUserId: null,
       foodInvolvement,
       hostPlaceRequired: options.hostingEnabled ? draft.hostPlaceRequired : false,
       gatheringType,
       gatheringTypeCustom,
+      requestedContributions: contributionResult.requests,
+      organiserCommitsHost,
     },
   };
 }

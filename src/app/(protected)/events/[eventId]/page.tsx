@@ -59,23 +59,23 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
 
           <Suspense fallback={<EventBodySkeleton />}>
             {justProposed ? (
-              <>
-                <EventProposedGuidanceCard
-                  detail={detail}
-                  userId={userId}
-                  justProposed={true}
-                />
-                {detail.createdBy === userId ? (
-                  <EventProposeInviteSection
-                    detail={detail}
-                    inviterDisplayName={detail.creatorDisplayName}
-                    gatheringType={detail.gatheringType}
-                    gatheringTypeCustom={detail.gatheringTypeCustom}
-                    planningTargetDate={detail.planningTargetDate}
-                    timeZone={detail.timezone ?? "Pacific/Auckland"}
-                  />
-                ) : null}
-              </>
+              <EventProposedGuidanceCard
+                detail={detail}
+                userId={userId}
+                justProposed={true}
+              />
+            ) : null}
+            {detail.status === "proposing" &&
+            (detail.createdBy === userId || detail.viewerRole === "owner" || detail.viewerRole === "admin") ? (
+              <EventProposeInviteSection
+                detail={detail}
+                inviterDisplayName={detail.creatorDisplayName}
+                gatheringType={detail.gatheringType}
+                gatheringTypeCustom={detail.gatheringTypeCustom}
+                planningTargetDate={detail.planningTargetDate}
+                timeZone={detail.timezone ?? "Pacific/Auckland"}
+                prominent={justProposed}
+              />
             ) : null}
             <EventAttentionCard detail={detail} userId={userId} />
             <EventOpenDecisionsCard detail={detail} userId={userId} />

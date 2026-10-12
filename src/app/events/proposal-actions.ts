@@ -10,6 +10,7 @@ import {
 import { roundCoordinate } from "@/domain/events/location";
 import { canProposeEvents, groupAllowsEventKind } from "@/domain/events/permissions";
 import { parseEventKind } from "@/domain/events/validation";
+import { listContributionCategories } from "@/lib/contributions/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
@@ -75,12 +76,20 @@ export async function proposeGroupEventAction(
     .neq("status", "cancelled");
 
   const isFirstGroupEvent = (activeEventCount ?? 0) === 0;
+  const contributionCategories = await listContributionCategories(supabase, groupId);
+  const categoryNames = new Map(
+    contributionCategories
+      .filter((row) => !row.archivedAt)
+      .map((row) => [row.id, row.name]),
+  );
+
   const validation = validateEventProposalDraft(draft, {
     timeZone: detail.settings.timezone,
     isFirstGroupEvent,
     hostingEnabled: detail.settings.hostingEnabled,
     memberUserIds: detail.members.map((member) => member.userId),
     groupName: detail.name,
+    contributionCategoryNames: categoryNames,
   });
 
   if (!validation.ok) {
@@ -106,6 +115,11 @@ export async function proposeGroupEventAction(
       : null,
     p_gathering_type: payload.gatheringType,
     p_gathering_type_custom: payload.gatheringTypeCustom,
+    p_requested_contributions: payload.requestedContributions.map((row) => ({
+      category_id: row.categoryId,
+      label: row.label,
+    })),
+    p_organiser_commits_host: payload.organiserCommitsHost,
   });
 
   if (error) {

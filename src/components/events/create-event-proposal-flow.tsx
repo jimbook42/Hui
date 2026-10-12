@@ -22,11 +22,16 @@ import {
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
-import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
+import {
+  formatCadenceLabel,
+  type GroupPlanningCycle,
+  type RecurrenceCadence,
+} from "@/domain/recurrence/planning-cycle";
+import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
 import type { TimeRecommendation } from "@/domain/scheduling/time-recommendations";
 import { SuggestedTimesList } from "@/components/events/suggested-times-list";
 import type { ContributionCategoryRow } from "@/lib/contributions/types";
-import type { GroupMemberRow, GroupSettingsRow } from "@/lib/groups/types";
+import type { GroupSettingsRow } from "@/lib/groups/types";
 import { formatNominalPlanningDate } from "@/lib/groups/planning-cycle";
 import { cn } from "@/lib/ui/cn";
 
@@ -48,7 +53,6 @@ type CreateEventProposalFlowProps = {
   groupName: string;
   settings: GroupSettingsRow;
   isFirstGroupEvent: boolean;
-  members: GroupMemberRow[];
   contributionCategories: ContributionCategoryRow[];
   planningCycle: GroupPlanningCycle | null;
   timeRecommendations: TimeRecommendation[];
@@ -56,23 +60,14 @@ type CreateEventProposalFlowProps = {
 
 const initialActionState: EventActionState = {};
 
-function hostSummary(
-  draft: EventProposalDraft,
-  members: GroupMemberRow[],
-  isFirstGroupEvent: boolean,
-  hostingEnabled: boolean,
-): string {
-  if (!isFirstGroupEvent || !hostingEnabled) {
-    return "Hui will suggest a host when people respond.";
+function hostSummary(draft: EventProposalDraft, hostingEnabled: boolean): string {
+  if (!hostingEnabled) {
+    return "Hosting is off for this group.";
   }
-  if (draft.initialHostUserId === "suggest") {
-    return "Let Hui suggest when people respond.";
+  if (draft.organiserWillHost) {
+    return "You — confirmed host for this gathering.";
   }
-  if (draft.initialHostUserId === null) {
-    return "No host for this event.";
-  }
-  const member = members.find((m) => m.userId === draft.initialHostUserId);
-  return member ? `Hosted by ${member.displayName}` : "Hosted by a group member.";
+  return "No host yet — someone can accept a host proposal later.";
 }
 
 export function CreateEventProposalFlow({
@@ -80,7 +75,6 @@ export function CreateEventProposalFlow({
   groupName,
   settings,
   isFirstGroupEvent,
-  members,
   contributionCategories,
   planningCycle,
   timeRecommendations,
@@ -112,17 +106,43 @@ export function CreateEventProposalFlow({
   );
 
   const stepIndex = STEPS.indexOf(step);
+  const establishedRecurrence = groupHasEstablishedRecurrence(settings);
   const activeCategories = useMemo(
     () => contributionCategories.filter((row) => !row.archivedAt),
     [contributionCategories],
   );
+  const establishedCadence = useMemo((): RecurrenceCadence | null => {
+    if (!establishedRecurrence) {
+      return null;
+    }
+    return cadenceFromGroupSettings(settings) ?? planningCycle?.cadence ?? null;
+  }, [establishedRecurrence, settings, planningCycle]);
+
+  function toggleContributionCategory(categoryId: string, categoryName: string) {
+    setDraft((current) => {
+      const exists = current.requestedContributions.some((row) => row.categoryId === categoryId);
+      if (exists) {
+        return {
+          ...current,
+          requestedContributions: current.requestedContributions.filter(
+            (row) => row.categoryId !== categoryId,
+          ),
+        };
+      }
+      return {
+        ...current,
+        requestedContributions: [
+          ...current.requestedContributions,
+          { categoryId, label: categoryName },
+        ],
+      };
+    });
+  }
 
   function goTo(next: Step) {
     setStepError(null);
     setStep(next);
   }
-
-  const establishedRecurrence = groupHasEstablishedRecurrence(settings);
 
   function goNext() {
     setStepError(null);
@@ -435,8 +455,7 @@ export function CreateEventProposalFlow({
                     />
                     <span className="font-extrabold text-foreground">One-off</span>
                     <span className="text-sm font-semibold text-muted-foreground">
-                      Plan this gathering only — choose this for your first hui unless you already
-                      know the rhythm.
+                      Plan this gathering only — not part of the group&apos;s usual rhythm.
                     </span>
                   </label>
                 ) : null}
@@ -526,8 +545,9 @@ export function CreateEventProposalFlow({
           ) : null}
           {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (
             <p className="rounded-hui-lg bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
-              This hui continues {groupName}&apos;s usual gathering rhythm. Proposed times below are
-              when this gathering could happen — not confirmed dates yet.
+              This hui continues {groupName}&apos;s usual rhythm
+              {establishedCadence ? ` (${formatCadenceLabel(establishedCadence)})` : ""}. Proposed
+              times are options — not confirmed dates yet.
             </p>
           ) : null}
         </section>
@@ -614,13 +634,13 @@ export function CreateEventProposalFlow({
               Still needed: {reviewMissing.join(", ")}
             </p>
           ) : null}
-          <fieldset className="w-full min-w-0 max-w-full space-y-3 overflow-hidden rounded-hui-xl bg-surface p-4 sm:p-5 hui-shadow-md">
-            <legend className="block w-full min-w-0 px-1 text-sm font-extrabold text-foreground [text-wrap:pretty]">
-              Will food be involved?
-            </legend>
-            <p className="w-full min-w-0 text-xs font-semibold text-muted-foreground [text-wrap:pretty]">
-              Helps the group know whether dietary coordination matters for this hui.
-            </p>
+          <div className="w-full min-w-0 max-w-full space-y-3 rounded-hui-xl bg-surface p-4 sm:p-5 hui-shadow-md">
+            <div className="px-1">
+              <p className="text-sm font-extrabold text-foreground">Will food be involved?</p>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                Helps the group know whether dietary coordination matters for this hui.
+              </p>
+            </div>
             <div className="grid w-full min-w-0 grid-cols-1 gap-2">
               {(
                 [
@@ -658,9 +678,74 @@ export function CreateEventProposalFlow({
                 );
               })}
             </div>
-          </fieldset>
+          </div>
+          {activeCategories.length > 0 ? (
+            <div className="space-y-3 rounded-hui-xl bg-surface p-4 sm:p-5 hui-shadow-md">
+              <div>
+                <p className="text-sm font-extrabold text-foreground">What to bring (optional)</p>
+                <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                  Choose categories you&apos;d like people to help with. You can skip this.
+                </p>
+              </div>
+              <ul className="space-y-2">
+                {activeCategories.map((category) => {
+                  const selected = draft.requestedContributions.some(
+                    (row) => row.categoryId === category.id,
+                  );
+                  const request = draft.requestedContributions.find(
+                    (row) => row.categoryId === category.id,
+                  );
+                  return (
+                    <li key={category.id} className="rounded-hui-lg bg-muted px-3 py-2">
+                      <label className="flex min-h-11 cursor-pointer items-center gap-3">
+                        <input
+                          type="checkbox"
+                          className="hui-checkbox"
+                          checked={selected}
+                          onChange={() => toggleContributionCategory(category.id, category.name)}
+                        />
+                        <span className="font-extrabold text-foreground">{category.name}</span>
+                      </label>
+                      {selected ? (
+                        <label className="mt-2 block text-sm font-semibold text-muted-foreground">
+                          <span className="hui-label">Item or note (optional)</span>
+                          <input
+                            className="hui-input mt-1"
+                            value={request?.label ?? category.name}
+                            maxLength={160}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                requestedContributions: current.requestedContributions.map((row) =>
+                                  row.categoryId === category.id
+                                    ? { ...row, label: event.target.value }
+                                    : row,
+                                ),
+                              }))
+                            }
+                          />
+                        </label>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
           {settings.hostingEnabled ? (
-            <HuiSwitchField
+            <>
+              <HuiSwitchField
+                label="I'll host this gathering"
+                description="Optional. You're the confirmed host — not just the organiser."
+                checked={draft.organiserWillHost}
+                onCheckedChange={(checked) =>
+                  setDraft((current) => ({
+                    ...current,
+                    organiserWillHost: checked,
+                  }))
+                }
+              />
+              <HuiSwitchField
               label="Host confirms the venue"
               description="When on, whoever accepts hosting sets or confirms the place as part of accepting. Turn off when the venue does not matter yet."
               checked={draft.hostPlaceRequired}
@@ -671,6 +756,7 @@ export function CreateEventProposalFlow({
                 }))
               }
             />
+            </>
           ) : null}
           <dl className="grid gap-4 rounded-hui-xl bg-surface p-5 text-sm font-semibold text-foreground hui-shadow-md [&_dt]:hui-type-label [&_dt]:text-muted-foreground [&_dd]:mt-1 [&_dd]:text-base [&_dd]:font-extrabold">
             <div>
@@ -706,55 +792,17 @@ export function CreateEventProposalFlow({
             </div>
             <div>
               <dt>Host</dt>
-              <dd>{hostSummary(draft, members, isFirstGroupEvent, settings.hostingEnabled)}</dd>
+              <dd>{hostSummary(draft, settings.hostingEnabled)}</dd>
             </div>
             <div>
               <dt>Contributions</dt>
               <dd>
-                {activeCategories.length > 0
-                  ? `${activeCategories.map((category) => category.name).join(", ")} — coordinated after confirmation`
-                  : "None configured yet"}
+                {draft.requestedContributions.length > 0
+                  ? draft.requestedContributions.map((row) => row.label).join(", ")
+                  : "None requested"}
               </dd>
             </div>
           </dl>
-          {isFirstGroupEvent && settings.hostingEnabled ? (
-            <label className="hui-label">
-              <span>Initial host (first gathering)</span>
-              <p className="mt-1 text-xs font-normal text-muted-foreground">
-                Your choice is a proposal — they still accept or ask to swap.
-              </p>
-              <select
-                className="hui-input"
-                value={
-                  draft.initialHostUserId === "suggest"
-                    ? ""
-                    : draft.initialHostUserId === null
-                      ? "__none__"
-                      : draft.initialHostUserId
-                }
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setDraft((current) => ({
-                    ...current,
-                    initialHostUserId:
-                      value === ""
-                        ? "suggest"
-                        : value === "__none__"
-                          ? null
-                          : value,
-                  }));
-                }}
-              >
-                <option value="">Let Hui suggest when people respond</option>
-                <option value="__none__">No host for this event</option>
-                {members.map((member) => (
-                  <option key={member.userId} value={member.userId}>
-                    {member.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
           <form action={formAction} className="space-y-3">
             <input type="hidden" name="group_id" value={groupId} />
             <input type="hidden" name="proposal_draft" value={JSON.stringify(draft)} />

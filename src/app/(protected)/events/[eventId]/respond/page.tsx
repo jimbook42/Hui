@@ -66,6 +66,7 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
         canCoordinateContributions={primary.canCoordinateContributions}
         canSuggestTime={primary.canSuggestTime}
         candidate={primary.candidate}
+        proposedCandidates={primary.proposedCandidates}
         placeView={primary.placeView}
         coordinates={primary.detail.locationCoordinates}
         hostingEnabled={primary.hostingEnabled}

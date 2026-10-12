@@ -150,7 +150,10 @@ describe("update_event_place (HUI-026U.4)", () => {
   }
 
   async function acceptHostForEvent(eventId: string, candidateId: string) {
+    await respondYes(ids.owner, candidateId);
     await respondYes(ids.host, candidateId);
+    await asUser(db, ids.owner);
+    await db.query(`select public.assign_event_host($1, $2)`, [eventId, ids.host]);
     await asUser(db, ids.host);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);
   }
@@ -189,7 +192,10 @@ describe("update_event_place (HUI-026U.4)", () => {
     const { eventId, candidateId } = await createProposingEvent("Place on accept");
     await asUser(db, ids.owner);
     await db.query(`update public.events set host_place_required = true where id = $1`, [eventId]);
+    await respondYes(ids.owner, candidateId);
     await respondYes(ids.host, candidateId);
+    await asUser(db, ids.owner);
+    await db.query(`select public.assign_event_host($1, $2)`, [eventId, ids.host]);
 
     await asUser(db, ids.host);
     const missingPlace = await expectFail(async () => {

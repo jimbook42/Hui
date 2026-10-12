@@ -2,6 +2,15 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-12 — HUI-ONBOARDING-003 Event planning workflow
+
+- **Root causes:** gathering invite only on `?proposed=1`; no contribution slots at propose; recurrence series overwritten on later proposals; host auto-proposed on every `event_responses` write; respond flow single-candidate; first-hui host dropdown implied hosting on attendance; food-involvement fieldset legend overflow on small screens.
+- **Schema:** `20261006220000_hui_onboarding_003_event_planning_workflow.sql` — drop host-on-response trigger; `commit_proposer_as_confirmed_host`, `apply_proposal_contribution_requests`; extend `propose_group_event`; preserve canonical recurrence; `finalise_event` proposes host when none accepted.
+- **App:** propose review — optional contributions, “I'll host”, food UI fix; event detail invite for organisers while proposing; multi-candidate respond step.
+- **Tests:** `hui-onboarding-003-planning-workflow.test.ts`, `proposal-contributions.test.ts`; updated host-selection + `propose_group_event` call sites.
+- **Migration:** applied via PGlite in `npm run validate` only (not pushed to linked Supabase in this session).
+- **Manual QA:** full invite E2E with two active gatherings; browser authenticated integration not run in CI.
+
 ## 2026-10-06 — HUI-ONBOARDING-002B QA failures (invite, dates, routing)
 
 - **Root causes:** signed-out `/join/[token]` called `group_settings` under member-only RLS → thrown error → HTTP 500; calendar dates formatted via UTC-noon + group TZ shifted NZ dates forward one day; gathering invites shared the group link without `?event=` so `resolve_group_invite` and post-join routing preferred newest active hui.

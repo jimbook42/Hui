@@ -44,9 +44,6 @@ export default async function NewGroupEventPage({ params }: PageProps) {
     .neq("status", "cancelled");
 
   const isFirstGroupEvent = (activeEventCount ?? 0) === 0;
-  const hostEligibleMembers = detail.members.filter(
-    (member) => member.hostingStanding !== "never",
-  );
   const contributionCategories = await listContributionCategories(supabase, groupId);
   const planningContext = await loadGroupPlanningContext(
     supabase,
@@ -83,7 +80,6 @@ export default async function NewGroupEventPage({ params }: PageProps) {
         groupName={detail.name}
         settings={detail.settings}
         isFirstGroupEvent={isFirstGroupEvent}
-        members={hostEligibleMembers}
         contributionCategories={contributionCategories}
         planningCycle={planningContext?.cycle ?? null}
         timeRecommendations={timeRecommendations}

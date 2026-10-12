@@ -63,6 +63,7 @@ type EventParticipantRespondFlowProps = {
   canCoordinateContributions: boolean;
   canSuggestTime: boolean;
   candidate: EventCandidateRow;
+  proposedCandidates: EventCandidateRow[];
   placeView: ReturnType<typeof participantPlaceView>;
   /** Hui's stored pin for the place, when the organiser set one. */
   coordinates: EventCoordinates | null;
@@ -103,6 +104,7 @@ export function EventParticipantRespondFlow({
   canCoordinateContributions,
   canSuggestTime,
   candidate,
+  proposedCandidates,
   placeView,
   coordinates,
   viewerUserId,
@@ -114,6 +116,17 @@ export function EventParticipantRespondFlow({
   const [step, setStep] = useState<ParticipantFlowStep>(() => readStepFromHash());
   const [responseOverride, setResponseOverride] = useState<AvailabilityChoice | null>(null);
   const viewerResponse = responseOverride ?? initialViewerResponse;
+  const multipleTimeOptions =
+    proposedCandidates.filter((row) => row.status === "proposed").length > 1;
+  const [responsesByCandidate, setResponsesByCandidate] = useState<Record<string, AvailabilityChoice | null>>(
+    () => {
+      const initial: Record<string, AvailabilityChoice | null> = {};
+      for (const row of proposedCandidates) {
+        initial[row.id] = row.viewerResponse;
+      }
+      return initial;
+    },
+  );
   const [pendingChoice, setPendingChoice] = useState<AvailabilityChoice | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [suggestSubmittedRange, setSuggestSubmittedRange] = useState<string | null>(null);
@@ -229,52 +242,88 @@ export function EventParticipantRespondFlow({
     return () => window.removeEventListener("popstate", onPop);
   }, [step]);
 
-  function saveAttendance(choice: AvailabilityChoice) {
+  function saveAttendanceForCandidate(
+    targetCandidateId: string,
+    choice: AvailabilityChoice,
+    advanceOnSave = true,
+  ) {
     if (!canRespond || isSavingAttendance) {
       return;
     }
-    if (choice === viewerResponse) {
-      // Already saved: just move on without another round trip.
-      pushStep(nextStepAfterAttendanceSave(choice));
+    const existing = responsesByCandidate[targetCandidateId] ?? null;
+    if (choice === existing && advanceOnSave) {
+      if (!multipleTimeOptions) {
+        pushStep(nextStepAfterAttendanceSave(choice));
+      }
       return;
     }
-    const interaction = `attendance_${choice}`;
+    const interaction = `attendance_${targetCandidateId}_${choice}`;
     beginInteraction(interaction);
     markInteraction(interaction, "handler-start");
     setActionError(null);
-    const priorOverride = responseOverride;
-    const nextStep = nextStepAfterAttendanceSave(choice);
     setPendingChoice(choice);
-    setResponseOverride(choice);
-    pushStep(nextStep);
-    markInteraction(interaction, "optimistic-ui-visible");
-    markInteraction(interaction, "usable-ui");
+    setResponsesByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
+    if (!multipleTimeOptions && advanceOnSave) {
+      setResponseOverride(choice);
+      pushStep(nextStepAfterAttendanceSave(choice));
+    }
 
     startSaveAttendance(async () => {
       markInteraction(interaction, "request-start");
       const formData = new FormData();
       formData.set("event_id", eventId);
-      formData.set("candidate_id", candidate.id);
+      formData.set("candidate_id", targetCandidateId);
       formData.set("response", choice);
       const result: EventActionState = await setAvailabilityResponseAction({}, formData);
       markInteraction(interaction, "request-end");
       if (result.error) {
         setActionError(result.error);
         setPendingChoice(null);
-        setResponseOverride(priorOverride);
-        pushStep("time");
+        setResponsesByCandidate((current) => ({
+          ...current,
+          [targetCandidateId]: existing,
+        }));
         endInteraction(interaction);
         return;
       }
       setPendingChoice(null);
-      window.setTimeout(() => {
-        markInteraction(interaction, "navigation-start");
-        router.refresh();
-        markInteraction(interaction, "navigation-end");
+      if (!multipleTimeOptions) {
+        window.setTimeout(() => {
+          router.refresh();
+          endInteraction(interaction);
+        }, 0);
+      } else {
         endInteraction(interaction);
-      }, 0);
+      }
     });
   }
+
+  function saveAttendance(choice: AvailabilityChoice) {
+    saveAttendanceForCandidate(candidate.id, choice);
+  }
+
+  const openProposedCandidates = proposedCandidates.filter((row) => row.status === "proposed");
+  const allMultiTimesAnswered =
+    multipleTimeOptions &&
+    openProposedCandidates.every((row) => responsesByCandidate[row.id] !== null);
+  const multiSummaryChoice: AvailabilityChoice | null = (() => {
+    if (!multipleTimeOptions) {
+      return viewerResponse;
+    }
+    const values = openProposedCandidates
+      .map((row) => responsesByCandidate[row.id])
+      .filter((value): value is AvailabilityChoice => value !== null);
+    if (values.some((value) => value === "available")) {
+      return "available";
+    }
+    if (values.some((value) => value === "maybe")) {
+      return "maybe";
+    }
+    if (values.length > 0 && values.every((value) => value === "unavailable")) {
+      return "unavailable";
+    }
+    return null;
+  })();
 
   function openSuggestTime(returnStep: ParticipantFlowStep = "time") {
     setSuggestError(null);
@@ -381,6 +430,62 @@ export function EventParticipantRespondFlow({
 
       {step === "time" ? (
         <section className="hui-rise mt-6 space-y-5">
+          {multipleTimeOptions ? (
+            <>
+              <h1 className="hui-type-page-title text-foreground">Which times work for you?</h1>
+              <p className="hui-type-supporting">
+                Answer each option separately — changing one does not change the others.
+              </p>
+              <ul className="space-y-4">
+                {openProposedCandidates.map((row) => {
+                  const rowResponse = responsesByCandidate[row.id] ?? null;
+                  return (
+                    <li key={row.id} className="rounded-hui-xl bg-surface p-4 hui-shadow-sm">
+                      <p className="text-sm font-extrabold text-foreground">
+                        {formatCompactEventTimeRange(row.startsAt, row.endsAt, timeZone)}
+                      </p>
+                      {rowResponse ? (
+                        <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                          Your answer: {participantAttendanceSummaryLabel(rowResponse)}
+                        </p>
+                      ) : null}
+                      <div className="mt-3 space-y-2">
+                        {attendanceOptions.map((option) => (
+                          <AttendanceChoice
+                            key={`${row.id}-${option}`}
+                            state={attendanceStateFromChoice(option, true)}
+                            label={participantAttendanceChoiceLabel(option)}
+                            selected={rowResponse === option}
+                            pending={pendingChoice === option && isSavingAttendance}
+                            disabled={!canRespond}
+                            onClick={() => saveAttendanceForCandidate(row.id, option, false)}
+                          />
+                        ))}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              {actionError ? (
+                <p className="hui-message-error" role="alert">
+                  {actionError}
+                </p>
+              ) : null}
+              {allMultiTimesAnswered && multiSummaryChoice ? (
+                <PendingButton
+                  type="button"
+                  size="touch"
+                  onClick={() => {
+                    setResponseOverride(multiSummaryChoice);
+                    pushStep(nextStepAfterAttendanceSave(multiSummaryChoice));
+                  }}
+                >
+                  Continue
+                </PendingButton>
+              ) : null}
+            </>
+          ) : (
+            <>
           {candidate.status === "proposed" ? (
             <>
               <h1 className="hui-type-page-title text-foreground">When could you make it?</h1>
@@ -445,6 +550,8 @@ export function EventParticipantRespondFlow({
               Continue
             </PendingButton>
           ) : null}
+            </>
+          )}
         </section>
       ) : null}
 

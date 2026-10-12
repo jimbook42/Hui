@@ -91,6 +91,11 @@ async function insertProposingEvent(
   return { eventId, candidateId: candidate.rows[0].id };
 }
 
+async function proposeHostForEvent(database: PGlite, eventId: string) {
+  await asUser(database, ids.owner);
+  await database.query(`select public.propose_event_host_for_event($1, $2)`, [eventId, ids.owner]);
+}
+
 async function respondYes(database: PGlite, userId: string, candidateId: string) {
   await asUser(database, userId);
   await database.query(
@@ -167,6 +172,7 @@ describe("coordination HUI-022A.4 accepted-host swap", () => {
     const { eventId, candidateId } = await insertProposingEvent(db, "Accept then swap");
     await respondYes(db, ids.isaac, candidateId);
     await respondYes(db, ids.jamie, candidateId);
+    await proposeHostForEvent(db, eventId);
 
     const firstProposed = await db.query<{ user_id: string }>(
       `select user_id::text as user_id from public.host_assignments

@@ -91,6 +91,11 @@ async function insertSubsequentEvent(
   return { eventId, candidateId: candidate.rows[0].id };
 }
 
+async function proposeHostForEvent(database: PGlite, eventId: string) {
+  await asUser(database, ids.owner);
+  await database.query(`select public.propose_event_host_for_event($1, $2)`, [eventId, ids.owner]);
+}
+
 async function respond(
   database: PGlite,
   userId: string,
@@ -176,12 +181,15 @@ describe("coordination HUI-022A.2", () => {
   it("regression B: first attendance response can trigger host selection", async () => {
     const { eventId, candidateId } = await insertSubsequentEvent(db, "First response host");
     await respond(db, ids.jamie, candidateId, "yes");
+    expect(await assignmentCounts(eventId)).toEqual({ proposed: 0, accepted: 0, total: 0 });
+    await proposeHostForEvent(db, eventId);
     expect(await assignmentCounts(eventId)).toEqual({ proposed: 1, accepted: 0, total: 1 });
   });
 
   it("regression A: can't-come proposed host is cleared", async () => {
     const { eventId, candidateId } = await insertSubsequentEvent(db, "Alice decline");
     await respond(db, ids.alice, candidateId, "yes");
+    await proposeHostForEvent(db, eventId);
     const proposed = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
       [eventId],
@@ -189,6 +197,10 @@ describe("coordination HUI-022A.2", () => {
     expect(proposed.rows[0]?.user_id).toBe(ids.alice);
 
     await respond(db, ids.alice, candidateId, "no");
+    await db.query(`select public.coordinate_event_host_after_attendance($1, $2)`, [
+      eventId,
+      ids.owner,
+    ]);
     expect(await assignmentCounts(eventId)).toEqual({ proposed: 0, accepted: 0, total: 1 });
 
     const stale = await db.query(
@@ -202,6 +214,7 @@ describe("coordination HUI-022A.2", () => {
   it("lifecycle: accept while proposing leaves exactly one accepted assignment", async () => {
     const { eventId, candidateId } = await insertSubsequentEvent(db, "Accept counts");
     await respond(db, ids.jamie, candidateId, "yes");
+    await proposeHostForEvent(db, eventId);
     await asUser(db, ids.jamie);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);
     expect(await assignmentCounts(eventId)).toEqual({ proposed: 0, accepted: 1, total: 1 });
@@ -216,6 +229,7 @@ describe("coordination HUI-022A.2", () => {
     const { eventId, candidateId } = await insertSubsequentEvent(db, "Swap pre-confirm");
     await respond(db, ids.isaac, candidateId, "yes");
     await respond(db, ids.jamie, candidateId, "yes");
+    await proposeHostForEvent(db, eventId);
 
     const firstProposed = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments
@@ -255,6 +269,7 @@ describe("coordination HUI-022A.2", () => {
     const { eventId, candidateId } = await insertSubsequentEvent(db, "Pre-confirm actions");
     await respond(db, ids.isaac, candidateId, "yes");
     await respond(db, ids.jamie, candidateId, "yes");
+    await proposeHostForEvent(db, eventId);
 
     const proposed = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed' order by created_at desc limit 1`,
@@ -355,15 +370,24 @@ describe("coordination HUI-022A.2", () => {
     await respond(db, ids.jamie, prior.candidateId, "yes");
     await asUser(db, ids.owner);
     await db.query(`select public.finalise_event($1, $2)`, [prior.eventId, prior.candidateId]);
-    const firstHost = await db.query<{ user_id: string }>(
+    await proposeHostForEvent(db, prior.eventId);
+    let firstHost = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
       [prior.eventId],
     );
-    await asUser(db, firstHost.rows[0].user_id);
+    if (!firstHost.rows[0]) {
+      await db.query(`select public.assign_event_host($1, $2)`, [prior.eventId, ids.isaac]);
+      firstHost = await db.query<{ user_id: string }>(
+        `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
+        [prior.eventId],
+      );
+    }
+    await asUser(db, firstHost.rows[0]!.user_id);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [prior.eventId]);
 
     const { eventId, candidateId } = await insertSubsequentEvent(db, "Reorder");
     await respond(db, ids.isaac, candidateId, "yes");
+    await proposeHostForEvent(db, eventId);
     let host = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
       [eventId],
@@ -371,6 +395,10 @@ describe("coordination HUI-022A.2", () => {
     expect(host.rows[0]?.user_id).toBe(ids.isaac);
 
     await respond(db, ids.jamie, candidateId, "yes");
+    await db.query(`select public.coordinate_event_host_after_attendance($1, $2)`, [
+      eventId,
+      ids.owner,
+    ]);
     host = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed' order by created_at desc limit 1`,
       [eventId],

@@ -126,7 +126,7 @@ describe("delete_group", () => {
     });
 
     await db.query(
-      `select public.propose_group_event($1, $2, null, null, $3::jsonb, $4::jsonb, false, null, null, null, 'dinner_meal'::public.gathering_type, null)`,
+      `select public.propose_group_event($1, $2, null, null, $3::jsonb, $4::jsonb, false, null, null, null, 'dinner_meal'::public.gathering_type, null, '[]'::jsonb, false)`,
       [groupId, "November dinner", recurrence, candidate],
     );
 

@@ -38,6 +38,8 @@ describe("event proposal validation (HUI-026A)", () => {
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
         hostPlaceRequired: true,
+        organiserWillHost: false,
+        requestedContributions: [],
       },
       baseOptions,
     );
@@ -60,6 +62,8 @@ describe("event proposal validation (HUI-026A)", () => {
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
         hostPlaceRequired: true,
+        organiserWillHost: false,
+        requestedContributions: [],
       },
       baseOptions,
     );
@@ -87,6 +91,8 @@ describe("event proposal validation (HUI-026A)", () => {
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
         hostPlaceRequired: true,
+        organiserWillHost: false,
+        requestedContributions: [],
       },
       baseOptions,
     );
@@ -111,6 +117,8 @@ describe("event proposal validation (HUI-026A)", () => {
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
         hostPlaceRequired: true,
+        organiserWillHost: false,
+        requestedContributions: [],
       },
       baseOptions,
     );
@@ -152,6 +160,8 @@ describe("event proposal validation (HUI-026A)", () => {
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
         hostPlaceRequired: true,
+        organiserWillHost: false,
+        requestedContributions: [],
       },
       baseOptions,
     );
@@ -205,6 +215,8 @@ describe("event proposal validation (HUI-026A)", () => {
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
         hostPlaceRequired: true,
+        organiserWillHost: false,
+        requestedContributions: [],
       },
       baseOptions,
     );
@@ -233,6 +245,8 @@ describe("event proposal validation (HUI-026A)", () => {
         initialHostUserId: "suggest",
         foodInvolvement: "unsure",
         hostPlaceRequired: true,
+        organiserWillHost: false,
+        requestedContributions: [],
       },
       baseOptions,
     );

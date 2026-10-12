@@ -38,10 +38,16 @@ export function buildInitialProposalDraft(
   const eventKind = defaultProposalEventKind(settings, {
     isFirstGroupEvent: options.isFirstGroupEvent,
   });
+  const settingsCadence = cadenceFromGroupSettings(settings);
+  const cadence = options.cycle?.cadence ?? settingsCadence;
   const prefill =
     eventKind === "recurring" && options.cycle
       ? proposalPrefillFromCycle(options.cycle, options.groupName)
       : null;
+
+  const anchorFromCadence = cadence?.anchorDate ?? "";
+  const intervalUnit = cadence?.intervalUnit ?? "month";
+  const intervalCount = cadence?.intervalCount ?? 1;
 
   return {
     title: "",
@@ -51,16 +57,18 @@ export function buildInitialProposalDraft(
     notes: "",
     eventKind,
     recurrence: {
-      seriesTitle: prefill?.seriesTitle ?? "",
-      intervalUnit: options.cycle?.cadence?.intervalUnit ?? "month",
-      intervalCount: options.cycle?.cadence?.intervalCount ?? 1,
-      startsOn: prefill?.startsOn ?? options.cycle?.cadence?.anchorDate ?? "",
+      seriesTitle: prefill?.seriesTitle ?? (groupHasEstablishedRecurrence(settings) ? options.groupName : ""),
+      intervalUnit,
+      intervalCount,
+      startsOn: prefill?.startsOn ?? anchorFromCadence,
       planningTargetDate: prefill?.planningTargetDate ?? null,
     },
     candidates: [],
     initialHostUserId: "suggest",
     foodInvolvement: null,
     hostPlaceRequired: true,
+    organiserWillHost: false,
+    requestedContributions: [],
   };
 }
 

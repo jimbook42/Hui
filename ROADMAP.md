@@ -316,6 +316,7 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 - [x] Lightweight personal setup (skippable); group creation people → invite → essentials → ready.
 - [x] **Onboarding hardening / first-Hui UX** (HUI-ONBOARDING-001): correct group vs hui invite copy; first hui defaults one-off until group cadence is established; post-propose guidance; personal setup name/home persistence; dashboard Group/Hui explainer.
 - [x] **Frictionless participant & event context** (HUI-ONBOARDING-002 / **002A**): gathering type on events; first-hui-first invite flow; rich invite preview + post-join coordination entry; group delete + schema corrections; migrations `20261006180000_hui_onboarding_002_gathering_invite.sql`, `20261006200000_hui_onboarding_002a_corrections.sql`.
+- [x] **Event planning workflow** (HUI-ONBOARDING-003): gathering invite on propose + event detail; contribution requests at propose; recurrence cadence preservation; per-candidate availability in respond flow; organiser host opt-in; no host-on-attendance trigger; migration `20261006220000_hui_onboarding_003_event_planning_workflow.sql`.
 - [x] Profile home location; host accept “At my home” / “Somewhere else”.
 - [x] Boolean settings → `HuiSwitch` (group settings, notifications, contributions, propose flow).
 - [x] Owner group delete (`delete_group` RPC); transfer ownership does not move accepted hosting.
