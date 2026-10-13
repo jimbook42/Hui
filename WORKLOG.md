@@ -2,6 +2,11 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — HUI-031-D Recurring cycle engine (design)
+
+- **Deliverable:** `docs/design/HUI-031-recurring-cycle-engine.md` — end-to-end loop, sketched migration/RLS, generation/idempotency/TZ, reuse map, UX touchpoints, product questions, implementation split (031-A–D).
+- **No app or migration changes.**
+
 ## 2026-10-13 — HUI-022A.6 hydration + respond bring step
 
 - **Hydration (#418):** server-preformatted time labels for `EventScheduling`, respond flow, and decision poll decided dates; `EditEventForm` datetime-local defaults formatted in `EventDetailManagement`; event hero dates via `buildEventHeroDateCopy` + `EventHeroDateBlock` (client-only relative chip).
