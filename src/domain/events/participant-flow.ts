@@ -33,6 +33,26 @@ export function pickParticipantTimeCandidate(
   return proposed[0] ?? null;
 }
 
+/** Best answer across open proposed times: Yes beats Maybe beats No (HUI-003A-T1). */
+export function bestViewerResponseAcrossProposedCandidates(
+  candidates: ParticipantTimeCandidate[],
+): AvailabilityChoice | null {
+  const proposed = candidates.filter((candidate) => candidate.status === "proposed");
+  if (proposed.length === 0) {
+    return null;
+  }
+  if (proposed.some((candidate) => candidate.viewerResponse === "available")) {
+    return "available";
+  }
+  if (proposed.some((candidate) => candidate.viewerResponse === "maybe")) {
+    return "maybe";
+  }
+  if (proposed.every((candidate) => candidate.viewerResponse === "unavailable")) {
+    return "unavailable";
+  }
+  return null;
+}
+
 export function participantAttendanceBranch(
   choice: AvailabilityChoice,
 ): "yes-maybe" | "no" {

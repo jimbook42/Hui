@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — HUI-003A-T1 QA tier 1 cleanup
+
+- **Event summary:** multi-time hui hero/attention uses `bestViewerResponseAcrossProposedCandidates` (Yes > Maybe > No) instead of `focusCandidate` only.
+- **Hydration (#418):** respond flow initial step always `"time"` then reads hash in `useEffect`; `formatEventTimeRange` / `formatCompactEventTimeRange` delegate to fixed `en-NZ` display helpers (avoids Node vs browser `dateStyle` drift on event scheduling + respond).
+- **ROADMAP:** production-from-`main` + per-ticket branches; HUI-023 merged note; 003A migration version mismatch + `supabase migration repair` recommendation.
+- **Tests:** `participant-flow.test.ts`; `npm run validate`.
+
 ## 2026-10-13 — Merge `feat/hui-026u-visual-design-system` → `main`
 
 - **Shipped on main:** HUI-ONBOARDING-003 / 003A / 003A-R1 (repair 2), plus prior 026U–028 work on the feature branch (`02d324d` tip before merge docs commit).

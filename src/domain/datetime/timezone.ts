@@ -1,3 +1,10 @@
+import {
+  formatClockTime,
+  formatLongDay,
+  formatShortDay,
+  formatTimeSpan,
+} from "@/domain/datetime/display";
+
 const WALL_CLOCK_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
 
 /**
@@ -71,63 +78,38 @@ export function formatInstantInTimeZone(
   }).format(new Date(iso));
 }
 
-/** Compact range for proposal UI, e.g. "Sat 31 Oct, 12:00 pm – 3:00 pm". */
+/** Compact range for proposal UI, e.g. "Sat 31 Oct, 6:30pm – 9:00pm". */
 export function formatCompactEventTimeRange(
   startsAt: string,
   endsAt: string | null,
   timeZone: string,
 ): string {
-  const startDate = formatInstantInTimeZone(startsAt, timeZone, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-  const startTime = formatInstantInTimeZone(startsAt, timeZone, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const startDate = formatShortDay(startsAt, timeZone);
+  const startTime = formatClockTime(startsAt, timeZone);
   if (!endsAt) {
     return `${startDate}, ${startTime}`;
   }
-  const endTime = formatInstantInTimeZone(endsAt, timeZone, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  const endDate = formatInstantInTimeZone(endsAt, timeZone, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-  if (startDate === endDate) {
-    return `${startDate}, ${startTime} – ${endTime}`;
+  const span = formatTimeSpan(startsAt, endsAt, timeZone);
+  if (formatShortDay(startsAt, timeZone) === formatShortDay(endsAt, timeZone)) {
+    return `${startDate}, ${span}`;
   }
-  return `${startDate}, ${startTime} – ${endDate}, ${endTime}`;
+  return `${startDate}, ${startTime} – ${formatShortDay(endsAt, timeZone)} ${formatClockTime(endsAt, timeZone)}`;
 }
 
+/** Long-form range for event/respond UI — uses fixed en-NZ field formatters for SSR/client parity. */
 export function formatEventTimeRange(
   startsAt: string,
   endsAt: string | null,
   timeZone: string,
 ): string {
-  const start = formatInstantInTimeZone(startsAt, timeZone, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const start = `${formatLongDay(startsAt, timeZone)}, ${formatClockTime(startsAt, timeZone)}`;
   if (!endsAt) {
     return start;
   }
-  const end = formatInstantInTimeZone(endsAt, timeZone, {
-    timeStyle: "short",
-  });
-  const startDay = formatInstantInTimeZone(startsAt, timeZone, { dateStyle: "medium" });
-  const endDay = formatInstantInTimeZone(endsAt, timeZone, { dateStyle: "medium" });
-  if (startDay === endDay) {
-    return `${start} — ${end}`;
+  if (formatShortDay(startsAt, timeZone) === formatShortDay(endsAt, timeZone)) {
+    return `${start} — ${formatClockTime(endsAt, timeZone)}`;
   }
-  const endFull = formatInstantInTimeZone(endsAt, timeZone, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const endFull = `${formatLongDay(endsAt, timeZone)}, ${formatClockTime(endsAt, timeZone)}`;
   return `${start} — ${endFull}`;
 }
 
