@@ -67,6 +67,60 @@ describe("recurring planning cycle (HUI-028)", () => {
     expect(shouldShowPlanNextCta(cycle)).toBe(false);
   });
 
+  it("confirmed future hui does not advance the cycle reference", () => {
+    const reference = resolveCycleReferenceDate(
+      [
+        {
+          id: "e1",
+          status: "confirmed",
+          planningTargetDate: "2026-06-01",
+          startsAt: "2026-06-01T10:00:00.000Z",
+          recurrenceSeriesId: "s1",
+        },
+      ],
+      CADENCE.anchorDate,
+      "2026-03-01",
+    );
+    expect(reference).toBe(CADENCE.anchorDate);
+  });
+
+  it("confirmed past hui advances reference from nominal date", () => {
+    const reference = resolveCycleReferenceDate(
+      [
+        {
+          id: "e1",
+          status: "confirmed",
+          planningTargetDate: "2026-02-01",
+          startsAt: "2026-02-01T10:00:00.000Z",
+          recurrenceSeriesId: "s1",
+        },
+      ],
+      CADENCE.anchorDate,
+      "2026-03-01",
+    );
+    expect(reference).toBe("2026-02-01");
+  });
+
+  it("future confirmed event blocks the next planning cycle", () => {
+    const cycle = deriveGroupPlanningCycle({
+      recurringEnabled: true,
+      cadence: CADENCE,
+      planningLeadDays: 14,
+      todayDateOnly: "2026-05-15",
+      events: [
+        {
+          id: "e1",
+          status: "confirmed",
+          planningTargetDate: "2026-06-01",
+          startsAt: "2026-06-01T10:00:00.000Z",
+          recurrenceSeriesId: "s1",
+        },
+      ],
+    });
+    expect(cycle.phase).toBe("hui_confirmed");
+    expect(shouldShowPlanNextCta(cycle)).toBe(false);
+  });
+
   it("completed hui advances reference for next target", () => {
     const reference = resolveCycleReferenceDate(
       [

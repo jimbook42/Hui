@@ -67,3 +67,19 @@ export function cancellationPatch(now: Date = new Date()): {
     cancelled_at: now.toISOString(),
   };
 }
+
+/** The only status from which HUI-031-A marks an event completed. */
+export const COMPLETABLE_EVENT_STATUS: EventStatus = "confirmed";
+
+export function assertCanComplete(status: EventStatus): string | null {
+  if (status === "completed") {
+    return "This event is already completed.";
+  }
+  if (status === "cancelled") {
+    return "Cancelled events cannot be completed.";
+  }
+  if (status !== COMPLETABLE_EVENT_STATUS) {
+    return "Only a confirmed event can be marked completed.";
+  }
+  return null;
+}

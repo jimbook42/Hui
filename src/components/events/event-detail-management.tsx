@@ -1,5 +1,6 @@
 import type { EventActionState } from "@/app/events/actions";
 import { CancelEventButton } from "@/components/events/cancel-event-button";
+import { CompleteEventButton } from "@/components/events/complete-event-button";
 import { DeleteEventForm } from "@/components/events/delete-event-form";
 import { EditEventForm } from "@/components/events/event-form";
 import { HostEventLocationForm } from "@/components/events/host-event-location-form";
@@ -12,6 +13,7 @@ type EventDetailManagementProps = {
   canEdit: boolean;
   canEditLocation: boolean;
   canCancel: boolean;
+  canComplete?: boolean;
   canDelete?: boolean;
   eventId: string;
   updateAction: (
@@ -33,6 +35,7 @@ export function EventDetailManagement({
   canEdit,
   canEditLocation,
   canCancel,
+  canComplete = false,
   canDelete = false,
   eventId,
   updateAction,
@@ -46,7 +49,7 @@ export function EventDetailManagement({
   timeZone,
   viewerHomeLocation = null,
 }: EventDetailManagementProps) {
-  if (!canEdit && !canEditLocation && !canCancel && !canDelete) {
+  if (!canEdit && !canEditLocation && !canCancel && !canComplete && !canDelete) {
     return null;
   }
 
@@ -93,6 +96,16 @@ export function EventDetailManagement({
               viewerHomeLocation={viewerHomeLocation}
             />
           </div>
+        </section>
+      ) : null}
+
+      {canComplete ? (
+        <section className="hui-card-section">
+          <h3 className="hui-type-section text-foreground">Complete</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            After the gathering, mark this hui completed so the group can plan the next cycle.
+          </p>
+          <CompleteEventButton eventId={eventId} />
         </section>
       ) : null}
 

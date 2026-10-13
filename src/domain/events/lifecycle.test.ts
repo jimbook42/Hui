@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   INITIAL_EVENT_STATUS,
+  assertCanComplete,
   assertCanFinalise,
   assertMetadataEditable,
   canChangeEventSchedule,
@@ -42,5 +43,12 @@ describe("event lifecycle", () => {
     const patch = cancellationPatch(new Date("2026-10-02T00:00:00.000Z"));
     expect(patch.status).toBe("cancelled");
     expect(patch.cancelled_at).toBe("2026-10-02T00:00:00.000Z");
+  });
+
+  it("allows completion only from confirmed", () => {
+    expect(assertCanComplete("confirmed")).toBeNull();
+    expect(assertCanComplete("proposing")).toMatch(/confirmed/);
+    expect(assertCanComplete("completed")).toMatch(/already completed/);
+    expect(assertCanComplete("cancelled")).toMatch(/Cancelled/);
   });
 });

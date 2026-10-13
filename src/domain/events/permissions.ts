@@ -60,6 +60,22 @@ export function canCancelEvent(
   return canManageEvent(viewerRole, viewerId, createdBy, status);
 }
 
+/** Creator or group owner/admin may mark a confirmed hui completed. */
+export function canCompleteEvent(
+  viewerRole: MembershipRole,
+  viewerId: string,
+  createdBy: string,
+  status: EventStatus,
+): boolean {
+  if (status !== "confirmed") {
+    return false;
+  }
+  if (viewerRole === "owner" || viewerRole === "admin") {
+    return true;
+  }
+  return viewerId === createdBy;
+}
+
 /** Creator or group owner/admin may permanently delete a hui (any status). */
 export function canDeleteEvent(
   viewerRole: MembershipRole,
@@ -86,6 +102,9 @@ export function canAccessEventManagement(
     return true;
   }
   if (canDeleteEvent(viewerRole, viewerId, createdBy)) {
+    return true;
+  }
+  if (canCompleteEvent(viewerRole, viewerId, createdBy, status)) {
     return true;
   }
   return canEditEventLocation(
