@@ -206,29 +206,24 @@ Copy aligns with ROADMAP principles: nominal ≠ confirmed; progressive disclosu
 
 ## 6. Open product questions (for Isaac)
 
-1. **Who may pause, skip, or edit cadence?**  
-   *Recommended default:* admins/owners only; any member with propose permission may still start a hui when due.
+*Resolved 13 Oct 2026 — see **Decisions (13 Oct 2026)** below.*
 
-2. **After complete, advance from nominal target or actual confirmed date?**  
-   *Recommended default:* `nominal_cadence` (planning_target_date), with optional group setting `from_actual_start` later.
+---
 
-3. **If a confirmed event is still in the future, can the next planning cycle open?**  
-   *Recommended default:* **No** — `findBlockingEvent` keeps `hui_confirmed` until that event is completed or cancelled (matches “one cycle at a time”).
+## Decisions (13 Oct 2026)
 
-4. **Does skip require a reason, and is it visible to all members?**  
-   *Recommended default:* optional reason; visible to all active members (transparency).
+Isaac accepted the recommended default for each item in §6:
 
-5. **Consensus failure / insufficient attendance — auto-skip nominal or leave stuck?**  
-   *Recommended default:* leave event proposing or cancelled by organiser; **no** auto-skip; admin may skip nominal explicitly.
+1. **Pause, skip, cadence edit:** admins/owners only; members with propose permission may still start a hui when due.
+2. **After complete:** advance from nominal `planning_target_date` (`nominal_cadence`); `from_actual_start` remains a future optional setting.
+3. **Future confirmed event:** no next planning cycle until that hui is completed or cancelled (`findBlockingEvent` / `hui_confirmed`).
+4. **Skip:** optional reason; visible to all active members.
+5. **Consensus failure:** no auto-skip; organiser may cancel the hui; admin may skip a nominal date explicitly.
+6. **Planning opens:** no auto-propose for MVP; notifications-only in a later ticket.
+7. **Weekday/time-window prefs:** `group_recurrence_preferences.preference_json` when built; engine v1 is complete/skip/pause/reference without that UI.
+8. **Paused groups:** suppress reconnect and planning nudges until resumed.
 
-6. **Auto-propose a draft hui when planning opens?**  
-   *Recommended default:* **No** for MVP; notifications only.
-
-7. **Where do weekday / time-window preferences live for v1 of the engine?**  
-   *Recommended default:* `group_recurrence_preferences.preference_json` + UI later; engine v1 ships pause/skip/complete reference only.
-
-8. **Should paused groups suppress reconnect reminders?**  
-   *Recommended default:* yes, pause suppresses planning/reconnect nudges until resumed.
+Binding for HUI-031 implementation unless overridden in `DECISIONS.md`.
 
 ---
 
