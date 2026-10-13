@@ -2,6 +2,15 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — HUI-ONBOARDING-003A-R1 Repair 2 (live QA)
+
+- **Respond Yes glyph:** `AttendanceChoice` hides the corner check on `AttendanceDot` until the option is saved-selected (fixes “Yes” looking picked before tap / during Saving on single- and multi-time respond).
+- **Contribution copy/UI:** disclosure summaries count **requested slots** (`event_contributions` rows), not all group categories; hide “What to bring” when food is **No** or nothing was requested; section copy says nothing was requested instead of “Everything is covered”.
+- **Confirm → extra categories (not fixed here):** if linked Supabase still runs `finalise_event` from `20261006220000`, it calls `seed_event_contributions` on confirm. **003A** removes that in `20261013100000_hui_onboarding_003a_planning_qa_fixes.sql` — apply that migration to stop confirm injecting Dessert/Drinks/Salad. Host accept still runs `sync_host_bound_contributions` → `seed_event_contributions` (`20261003220000_host_bound_contribution_sync_on_accept.sql`); separate product/DB decision if that should be scoped to requested categories only.
+- **Multi-time summary (reported):** event page `viewerResponse` comes from `focusCandidate` only (`event-page-data.ts`), not an aggregate across candidates — can show “maybe” when another time is Yes.
+- **Tests:** `display.test.ts`; `npm run validate`.
+- **Deploy:** none.
+
 ## 2026-10-13 — HUI-ONBOARDING-003A-R1 Contributions display + respond Yes tick
 
 - **Contributions:** `buildContributionSlots` only surfaces categories that have an `event_contributions` row for that hui (fixes respond “What are you bringing?” and event contribution UI listing every group category when only a subset was requested at propose). Propose validation drops contribution requests when food involvement is **No**; review step clears requested contributions when organiser picks No.

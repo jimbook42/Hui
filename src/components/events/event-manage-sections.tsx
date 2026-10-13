@@ -63,12 +63,14 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
       ? `${suggestedName} suggested`
       : "No host yet";
 
-  const activeCategories = data.contributionCategories.filter((category) => category.archivedAt === null);
   const bringSummary = formatContributionDisclosureSummary(
-    activeCategories.length,
+    data.requestedContributionSlotCount,
     data.unclaimedContributionCount,
     data.claimedContributionCount,
   );
+  const showContributionCoordination =
+    isDietaryCoordinationRelevant(detail.foodInvolvement) &&
+    data.requestedContributionSlotCount > 0;
 
   const roster = data.primaryRoster;
   let peopleSummary = "Nobody has answered a time yet";
@@ -293,7 +295,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
         ) : null}
       </DisclosureCard>
 
-      {!closed ? (
+      {!closed && showContributionCoordination ? (
         <DisclosureCard
           id="contributions"
           title="Contributions"

@@ -431,12 +431,14 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
       ? `${suggestedName} suggested`
       : "No host yet";
 
-  const activeCategories = data.contributionCategories.filter((category) => category.archivedAt === null);
   const bringSummary = formatContributionDisclosureSummary(
-    activeCategories.length,
+    data.requestedContributionSlotCount,
     data.unclaimedContributionCount,
     data.claimedContributionCount,
   );
+  const showContributionCoordination =
+    isDietaryCoordinationRelevant(detail.foodInvolvement) &&
+    data.requestedContributionSlotCount > 0;
 
   const openDecisionCount = data.decisionPolls.filter((poll) => poll.status === "open").length;
   const decisionsSummary =
@@ -543,32 +545,34 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
         </DisclosureCard>
       ) : null}
 
-      <DisclosureCard
-        title="What to bring"
-        summary={bringSummary}
-        icon={<BowlIcon size={20} />}
-        attention={attentionKinds.has("contribute")}
-        defaultOpen={attentionKinds.has("contribute")}
-      >
-        <EventContributionsSection
-          eventId={detail.id}
-          groupId={detail.groupId}
-          eventStatus={detail.status}
-          canCoordinate={data.coordinateContributions}
-          canAssign={data.canAssignContributions}
-          isProposed={data.isProposed}
-          categories={data.contributionCategories}
-          contributions={data.eventContributions}
-          viewerUserId={userId}
-          acceptedHostUserId={data.acceptedHostUserId}
-          members={data.groupMembers.map((member) => ({
-            userId: member.userId,
-            displayName: member.displayName,
-          }))}
-          viewerHistoryCount={data.contributionHistory.viewerCount}
-          sharedDietaryCount={data.sharedDietary.length}
-        />
-      </DisclosureCard>
+      {showContributionCoordination ? (
+        <DisclosureCard
+          title="What to bring"
+          summary={bringSummary}
+          icon={<BowlIcon size={20} />}
+          attention={attentionKinds.has("contribute")}
+          defaultOpen={attentionKinds.has("contribute")}
+        >
+          <EventContributionsSection
+            eventId={detail.id}
+            groupId={detail.groupId}
+            eventStatus={detail.status}
+            canCoordinate={data.coordinateContributions}
+            canAssign={data.canAssignContributions}
+            isProposed={data.isProposed}
+            categories={data.contributionCategories}
+            contributions={data.eventContributions}
+            viewerUserId={userId}
+            acceptedHostUserId={data.acceptedHostUserId}
+            members={data.groupMembers.map((member) => ({
+              userId: member.userId,
+              displayName: member.displayName,
+            }))}
+            viewerHistoryCount={data.contributionHistory.viewerCount}
+            sharedDietaryCount={data.sharedDietary.length}
+          />
+        </DisclosureCard>
+      ) : null}
 
       {detail.status !== "cancelled" && isDietaryCoordinationRelevant(detail.foodInvolvement) ? (
         <DisclosureCard

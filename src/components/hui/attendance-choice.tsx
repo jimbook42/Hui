@@ -53,7 +53,12 @@ export function AttendanceChoice({
           {icon}
         </span>
       ) : (
-        <AttendanceDot state={state} label={label} size="md" />
+        <AttendanceDot
+          state={state}
+          label={label}
+          size="md"
+          hideBadge={!selected}
+        />
       )}
       <span className="min-w-0 flex-1 leading-tight">{pending ? "Saving…" : label}</span>
       {selected && !pending ? (

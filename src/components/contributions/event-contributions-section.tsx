@@ -72,6 +72,7 @@ export function EventContributionsSection({
     acceptedHostUserId,
   );
   const hasActiveCategories = categories.some((c) => c.archivedAt === null);
+  const requestedSlotCount = slots.length;
   const dietaryReminder = sharedDietaryReminder(sharedDietaryCount);
   const openCount = slots.filter((slot) => slot.state === "open").length;
 
@@ -110,13 +111,19 @@ export function EventContributionsSection({
         </p>
       ) : null}
 
-      {hasActiveCategories && openCount === 0 && canCoordinate ? (
-        <p className="mt-2 text-sm font-semibold text-foreground">All set — every category is covered.</p>
-      ) : hasActiveCategories ? (
+      {requestedSlotCount === 0 && hasActiveCategories ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          Nothing was requested for this gathering.
+        </p>
+      ) : null}
+
+      {requestedSlotCount > 0 && openCount === 0 && canCoordinate ? (
+        <p className="mt-2 text-sm font-semibold text-foreground">All set — every requested item is covered.</p>
+      ) : requestedSlotCount > 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">
           {openCount > 0
             ? `${openCount} still open · ${board.claimed.length} claimed`
-            : "Every category has someone bringing it."}
+            : "Every requested item has someone bringing it."}
         </p>
       ) : null}
 
@@ -131,7 +138,7 @@ export function EventContributionsSection({
         <p className="mt-2 text-sm text-muted-foreground">{dietaryReminder}</p>
       ) : null}
 
-      {hasActiveCategories ? (
+      {requestedSlotCount > 0 ? (
         <ul className="mt-6 space-y-3">
           {slots.map((slot) => (
             <ContributionSlotCard

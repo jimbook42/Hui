@@ -58,7 +58,9 @@ describe("contribution display", () => {
   });
 
   it("formats disclosure summaries from slot counts", () => {
-    expect(formatContributionDisclosureSummary(0, 0, 0)).toBe("No categories yet");
+    expect(formatContributionDisclosureSummary(0, 0, 0)).toBe(
+      "Nothing requested for this gathering",
+    );
     expect(formatContributionDisclosureSummary(3, 2, 1)).toBe("1 claimed · 2 still needed");
     expect(formatContributionDisclosureSummary(3, 0, 3)).toBe("Everything is covered");
   });

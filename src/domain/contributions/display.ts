@@ -59,12 +59,12 @@ export type ContributionHistoryEntry = {
 };
 
 export function formatContributionDisclosureSummary(
-  activeCategoryCount: number,
+  requestedSlotCount: number,
   unclaimedCount: number,
   claimedCount: number,
 ): string {
-  if (activeCategoryCount === 0) {
-    return "No categories yet";
+  if (requestedSlotCount === 0) {
+    return "Nothing requested for this gathering";
   }
   if (unclaimedCount > 0) {
     return `${claimedCount} claimed · ${unclaimedCount} still needed`;
