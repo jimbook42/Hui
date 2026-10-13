@@ -2,6 +2,11 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — ICS calendar export (0.14.0, HUI-029 partial)
+
+- **ICS:** `GET /api/events/[eventId]/calendar.ics` for active members (RLS via `getEventDetail`); confirmed hui with start time only.
+- **UI:** “Add to calendar” on confirmed event hero; UID stable per event; SEQUENCE from `new_time` reschedule audit count; no migration.
+
 ## 2026-10-13 — Auto-confirm when consensus met (0.13.0)
 
 - **DB:** `apply_event_confirmation`, `try_auto_confirm_event`, `pick_auto_confirm_candidate` (tie-break: earliest `starts_at`, then `id`); response trigger; `finalise_event` delegates to shared path; migration `20261014113000` (not applied on linked Supabase by agent).

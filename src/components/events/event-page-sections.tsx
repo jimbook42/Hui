@@ -25,7 +25,9 @@ import {
   UserIcon,
 } from "@/components/hui/icons";
 import { SectionHeader } from "@/components/hui/section-header";
+import { AddToCalendarLink } from "@/components/events/add-to-calendar-link";
 import { EventHostSection } from "@/components/hosts/event-host-section";
+import { canDownloadEventIcs } from "@/lib/calendar/event-ics-export";
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
 import {
   formatClockTime,
@@ -84,11 +86,16 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
   return (
     <div className="mt-5 space-y-5">
       {heroDateCopy ? (
-        <EventHeroDateBlock
-          copy={heroDateCopy}
-          badgeTone={confirmed || completed ? "sage" : "primary"}
-          showProposedHint={!confirmed && !completed && !closed}
-        />
+        <div className="space-y-3">
+          <EventHeroDateBlock
+            copy={heroDateCopy}
+            badgeTone={confirmed || completed ? "sage" : "primary"}
+            showProposedHint={!confirmed && !completed && !closed}
+          />
+          {canDownloadEventIcs(detail.status, startsAt) ? (
+            <AddToCalendarLink eventId={detail.id} />
+          ) : null}
+        </div>
       ) : (
         <div className="flex items-center gap-4">
           <div className="min-w-0 flex-1">
