@@ -156,7 +156,7 @@ describe("stale proposing events", () => {
     );
     expect(notifications.rows.map((r) => r.kind)).toEqual([
       "stale_proposal_passed",
-      "stale_proposal_auto_cancelled",
+      "event_cancelled",
     ]);
 
     const cadence: RecurrenceCadence = {
