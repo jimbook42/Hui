@@ -7,7 +7,11 @@ import { loadEventPage } from "@/lib/events/event-page-data";
 type Props = { detail: EventDetail; userId: string };
 
 export async function RescheduledFromSection({ detail, userId }: Props) {
-  if (detail.status === "cancelled" || detail.status === "completed") {
+  if (
+    detail.status === "cancelled" ||
+    detail.status === "completed" ||
+    detail.status === "proposing"
+  ) {
     return null;
   }
 

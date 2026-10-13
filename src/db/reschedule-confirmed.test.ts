@@ -243,5 +243,27 @@ describe("reschedule confirmed hui", () => {
     expect(row.rows[0]?.status).toBe("proposing");
     expect(row.rows[0]?.planning_target_date).toBe("2026-12-01");
     expect(row.rows[0]?.starts_at).toBeNull();
+
+    const active = await db.query<{ status: string }>(
+      `select status::text as status from public.event_candidates
+       where event_id = $1 and status in ('proposed', 'selected')`,
+      [eventId],
+    );
+    expect(active.rows).toHaveLength(0);
+
+    const withdrawn = await db.query<{ status: string }>(
+      `select status::text as status from public.event_candidates
+       where event_id = $1 and status = 'withdrawn'`,
+      [eventId],
+    );
+    expect(withdrawn.rows.length).toBeGreaterThan(0);
+
+    await asUser(db, null);
+    const audit = await db.query<{ from_starts_at: string | null }>(
+      `select from_starts_at::text from public.event_reschedule_audit
+       where event_id = $1 order by created_at desc limit 1`,
+      [eventId],
+    );
+    expect(audit.rows[0]?.from_starts_at).toContain("2026-12-01");
   });
 });

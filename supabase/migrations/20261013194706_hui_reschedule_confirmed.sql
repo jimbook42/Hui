@@ -34,6 +34,8 @@ create policy event_reschedule_audit_select on public.event_reschedule_audit
   for select to authenticated
   using (public.is_active_member(group_id));
 
+grant select on public.event_reschedule_audit to authenticated;
+
 create or replace function public.events_before_write()
 returns trigger
 language plpgsql
@@ -269,9 +271,9 @@ begin
     and er.candidate_id = c.id;
 
   update public.event_candidates
-  set status = 'proposed'
+  set status = 'withdrawn'
   where event_id = p_event_id
-    and status = 'selected';
+    and status in ('proposed', 'selected');
 
   update public.events
   set
@@ -343,12 +345,12 @@ begin
   if v_event_status = 'confirmed'
      and current_setting('hui.internal_reschedule', true) = '1'
      and tg_op = 'UPDATE'
-     and old.status = 'selected'
+     and old.status in ('selected', 'proposed')
      and (
        (new.status = 'selected'
          and (new.starts_at is distinct from old.starts_at
               or new.ends_at is distinct from old.ends_at))
-       or new.status = 'proposed'
+       or new.status = 'withdrawn'
      )
   then
     return new;
