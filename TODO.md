@@ -18,6 +18,7 @@ Unresolved implementation questions only. Add items when a real decision or task
 - [ ] Decide when to add shadcn/ui (likely start of Phase 1 UI).
 - [x] Member hosting standing **I always host** (`always` enum + selection preference; not auto-accept).
 - [ ] **HUI-022A.4 live Grok QA** — Family Dinner: accept → Ask to swap (accepted host) → replacement accept → Main lifecycle while proposing.
+- [ ] **HUI-022A.5 live QA** — Dessert-only stays after host accept; swap redirect (no manage 404); vacant-host warning + organiser notification.
 - [ ] **HUI-022B live QA** — share invite link → sign-up/sign-in return → join; regenerate invalidates old link.
 - [ ] HUI-022 remainder — named invites, invitation records/lifecycle, invitation notifications (email is HUI-028; Web Push does not notify non-members).
 - [x] **HUI-028** — Recurring planning cycle (see WORKLOG 2026-10-05).

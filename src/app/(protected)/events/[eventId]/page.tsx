@@ -11,6 +11,7 @@ import {
   EventOpenDecisionsCard,
   EventPeopleCard,
   EventProposedGuidanceCard,
+  HostSwappedConfirmationCard,
 } from "@/components/events/event-page-sections";
 import { EventProposeInviteSection } from "@/components/events/event-propose-invite-section";
 import { AttendanceLiveProvider } from "@/components/events/attendance-live";
@@ -21,13 +22,14 @@ import { devTimed } from "@/lib/perf/dev-server-timing";
 
 type PageProps = {
   params: Promise<{ eventId: string }>;
-  searchParams: Promise<{ proposed?: string }>;
+  searchParams: Promise<{ proposed?: string; host_swapped?: string }>;
 };
 
 export default async function EventDetailPage({ params, searchParams }: PageProps) {
   const { eventId } = await params;
   const query = await searchParams;
   const justProposed = query.proposed === "1";
+  const justSwappedHost = query.host_swapped === "1";
   const user = await devTimed("event-page:getUser", () => getServerAuthUser());
   const supabase = await getServerSupabase();
 
@@ -64,6 +66,9 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
                 userId={userId}
                 justProposed={true}
               />
+            ) : null}
+            {justSwappedHost ? (
+              <HostSwappedConfirmationCard />
             ) : null}
             {detail.status === "proposing" &&
             (detail.createdBy === userId || detail.viewerRole === "owner" || detail.viewerRole === "admin") ? (

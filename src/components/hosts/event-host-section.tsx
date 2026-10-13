@@ -3,10 +3,10 @@
 import {
   acceptHostProposalAction,
   assignEventHostAction,
-  requestHostSwapAction,
 } from "@/app/hosts/actions";
 import { AcceptHostWithPlaceForm } from "@/components/hosts/accept-host-with-place-form";
 import { AuthForm } from "@/components/auth/auth-form";
+import { HostSwapRequestForm } from "@/components/hosts/host-swap-request-form";
 import type { EventCoordinates } from "@/domain/events/location";
 import type { ProfileHomeLocation } from "@/domain/profile/home-location";
 import { filterHostAssignableMembers } from "@/domain/hosts/attendance-eligibility";
@@ -22,6 +22,7 @@ type EventHostSectionProps = {
   canAssign: boolean;
   canRespond: boolean;
   canRequestSwap: boolean;
+  hostSwapHasReplacement: boolean;
   viewerUserId: string;
   eligibleMembers: GroupMemberRow[];
   attendanceRoster: AttendanceRoster | null;
@@ -41,6 +42,7 @@ export function EventHostSection({
   canAssign,
   canRespond,
   canRequestSwap,
+  hostSwapHasReplacement,
   viewerUserId,
   eligibleMembers,
   attendanceRoster,
@@ -119,14 +121,10 @@ export function EventHostSection({
           </p>
           {canRequestSwap && view.acceptedHost.userId === viewerUserId && !readOnly ? (
             <div className="mt-3">
-              <AuthForm
-                action={requestHostSwapAction}
-                submitLabel="Ask to swap"
-                hiddenFields={{ event_id: eventId }}
-                refreshOnSuccess
-              >
-                {null}
-              </AuthForm>
+              <HostSwapRequestForm
+                eventId={eventId}
+                hasReplacement={hostSwapHasReplacement}
+              />
             </div>
           ) : null}
         </div>
@@ -150,14 +148,10 @@ export function EventHostSection({
                 />
               ) : null}
               {canRequestSwap ? (
-                <AuthForm
-                  action={requestHostSwapAction}
-                  submitLabel="Ask to swap"
-                  hiddenFields={{ event_id: eventId }}
-                  refreshOnSuccess
-                >
-                  {null}
-                </AuthForm>
+                <HostSwapRequestForm
+                  eventId={eventId}
+                  hasReplacement={hostSwapHasReplacement}
+                />
               ) : null}
             </div>
           ) : null}

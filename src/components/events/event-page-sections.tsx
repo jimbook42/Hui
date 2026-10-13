@@ -176,6 +176,20 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
   );
 }
 
+/* ------------------------------------------------ host swap confirmation */
+
+export function HostSwappedConfirmationCard() {
+  return (
+    <HuiSurface tone="sage" shape="soft" padding="md" className="hui-rise-2" role="status">
+      <p className="text-lg font-extrabold text-foreground">Swap request sent</p>
+      <p className="mt-1 text-sm font-semibold text-muted-foreground">
+        Hui will suggest another host when someone is available. You can still help with planning from
+        this page.
+      </p>
+    </HuiSurface>
+  );
+}
+
 /* ------------------------------------------------ proposed guidance */
 
 export async function EventProposedGuidanceCard({
@@ -507,6 +521,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             canAssign={data.canAssignHost}
             canRespond={data.canAcceptHost}
             canRequestSwap={data.canSwapHost}
+            hostSwapHasReplacement={data.hostSwapReplacementAvailable}
             viewerUserId={userId}
             eligibleMembers={group.members}
             attendanceRoster={data.primaryRoster}

@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — HUI-022A.5 host swap + contribution seed scope
+
+- **DB:** `20261013150000_hui_022a5_host_swap_contribution_seed.sql` — `sync_host_bound_contributions` no longer calls `seed_event_contributions`; `host_swap_has_replacement`; vacant swap notifies event creator (`host_declined` + push-eligible dedupe `host_vacant:…`). Applied production `xmvzzypefpiethefrfka`.
+- **App:** swap redirects to hui page `?host_swapped=1`; `HostSwapRequestForm` warns when no replacement; server enforces `acknowledge_no_replacement`.
+- **Tests:** `coordination-hui-022a5.test.ts`; updated A.3/A.4 contribution setup. `npm run validate` + build (CI env).
+
 ## 2026-10-13 — HUI-003A-T1 QA tier 1 cleanup
 
 - **Event summary:** multi-time hui hero/attention uses `bestViewerResponseAcrossProposedCandidates` (Yes > Maybe > No) instead of `focusCandidate` only.

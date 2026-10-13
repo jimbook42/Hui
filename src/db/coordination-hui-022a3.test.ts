@@ -106,6 +106,14 @@ async function proposeHostForEvent(database: PGlite, eventId: string) {
   await database.query(`select public.propose_event_host_for_event($1, $2)`, [eventId, ids.owner]);
 }
 
+async function requestMainContribution(database: PGlite, eventId: string) {
+  await asUser(database, ids.owner);
+  await database.query(
+    `select public.apply_proposal_contribution_requests($1, $2, $3::jsonb)`,
+    [eventId, ids.owner, JSON.stringify([{ category_id: mainCategoryId }])],
+  );
+}
+
 async function mainContribution(database: PGlite, eventId: string) {
   return database.query<{ user_id: string | null; status: string }>(
     `select ec.user_id::text as user_id, ec.status::text as status
@@ -196,6 +204,7 @@ describe("coordination HUI-022A.3 host-bound contributions", () => {
     await proposeHostForEvent(db, eventId);
     const proposedId = await proposedHostUserId(db, eventId);
     expect(proposedId).toBeTruthy();
+    await requestMainContribution(db, eventId);
 
     await asUser(db, proposedId!);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);
@@ -223,6 +232,7 @@ describe("coordination HUI-022A.3 host-bound contributions", () => {
     await respondYes(db, ids.isaac, candidateId);
     await respondYes(db, ids.jamie, candidateId);
     await proposeHostForEvent(db, eventId);
+    await requestMainContribution(db, eventId);
 
     const swapperId = await proposedHostUserId(db, eventId);
     expect(swapperId).toBeTruthy();
@@ -263,6 +273,7 @@ describe("coordination HUI-022A.3 host-bound contributions", () => {
     await respondYes(db, ids.jamie, candidateId);
     await proposeHostForEvent(db, eventId);
     const hostId = await proposedHostUserId(db, eventId);
+    await requestMainContribution(db, eventId);
     await asUser(db, hostId!);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);
 
@@ -324,16 +335,24 @@ describe("coordination HUI-022A.3 host-bound contributions", () => {
     await respondYes(db, ids.isaac, candidateId);
     await respondYes(db, ids.jamie, candidateId);
     await asUser(db, ids.owner);
+    await db.query(
+      `select public.apply_proposal_contribution_requests($1, $2, $3::jsonb)`,
+      [
+        eventId,
+        ids.owner,
+        JSON.stringify([{ category_id: side.rows[0].id }]),
+      ],
+    );
     await db.query(`select public.assign_event_host($1, $2)`, [eventId, ids.jamie]);
     await asUser(db, ids.jamie);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);
 
-    const dessert = await db.query<{ user_id: string; status: string }>(
+    const dessert = await db.query<{ user_id: string | null; status: string }>(
       `select user_id::text as user_id, status::text as status
        from public.event_contributions where event_id = $1 and category_id = $2`,
       [eventId, side.rows[0].id],
     );
-    expect(dessert.rows[0]?.user_id).toBe(ids.isaac);
-    expect(dessert.rows[0]?.status).toBe("accepted");
+    expect(dessert.rows[0]?.user_id ?? null).toBeNull();
+    expect(dessert.rows[0]?.status).toBe("open");
   });
 });
