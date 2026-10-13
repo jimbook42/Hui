@@ -33,6 +33,7 @@ import {
 } from "@/domain/datetime/display";
 import { shouldShowEventHeroTime } from "@/domain/events/event-hero-visibility";
 import { buildProposedHuiGuidance } from "@/domain/events/proposed-guidance";
+import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
 import { eventKindLabel } from "@/lib/events/labels";
 import { loadEventPage } from "@/lib/events/event-page-data";
 import { eventManagePath } from "@/lib/events/paths";
@@ -64,6 +65,11 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
     : null;
 
   const respondable = data.canRespond && data.primaryCandidate !== null;
+  const replyByLabel = replyByLabelForEvent(
+    detail.status,
+    detail.responseDeadlineAt,
+    tz,
+  );
   // Contributions that would be released if the viewer declined (host-following categories stay).
   const followsHostCategoryIds = new Set(
     data.contributionCategories.filter((category) => category.followsHost).map((category) => category.id),
@@ -131,6 +137,12 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
           <UserIcon size={20} className="mt-0.5 shrink-0" />
           <span className="min-w-0">Proposed by {detail.creatorDisplayName}</span>
         </li>
+        {replyByLabel ? (
+          <li className="flex items-start gap-3 font-semibold text-muted-foreground">
+            <ClockIcon size={20} className="mt-0.5 shrink-0" />
+            <span className="min-w-0">{replyByLabel}</span>
+          </li>
+        ) : null}
       </ul>
 
       {detail.status === "cancelled" ? (
@@ -453,6 +465,11 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
     [...data.scheduling.candidates, ...data.scheduling.withdrawnCandidates],
     data.displayTimeZone,
   );
+  const replyByLabel = replyByLabelForEvent(
+    detail.status,
+    detail.responseDeadlineAt,
+    data.displayTimeZone,
+  );
 
   return (
     <section aria-labelledby="event-details" className="hui-rise-3 space-y-3">
@@ -482,6 +499,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             maybeResponsesEnabled={data.scheduling.maybeResponsesEnabled}
             minimumAttendees={data.scheduling.minimumAttendees}
             proposalDeadlineHours={settings.proposalDeadlineHours ?? null}
+            replyByLabel={replyByLabel}
             consensus={data.consensus}
             canAddCandidates={data.canAdd}
             canRemoveCandidates={data.canRemove}

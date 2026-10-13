@@ -9,6 +9,7 @@ const KINDS: NotificationKind[] = [
   "event_confirmed",
   "event_cancelled",
   "event_rescheduled",
+  "proposal_deadline_reminder",
   "host_proposed",
   "host_accepted",
   "host_declined",
@@ -31,6 +32,7 @@ describe("notificationPresentation", () => {
       "event_proposed",
       "consensus_ready",
       "event_rescheduled",
+      "proposal_deadline_reminder",
       "host_proposed",
     ]);
   });

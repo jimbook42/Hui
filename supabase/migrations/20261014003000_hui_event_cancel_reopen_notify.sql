@@ -362,9 +362,13 @@ declare
   v_event public.events;
   v_actor uuid := auth.uid();
   v_audit_id uuid;
+  v_group_name text;
+  v_body text;
 begin
   v_event := public._assert_can_reschedule_confirmed_event(p_event_id);
   perform set_config('hui.internal_reschedule', '1', true);
+
+  select g.name into v_group_name from public.groups g where g.id = v_event.group_id;
 
   insert into public.event_reschedule_audit (
     event_id,
@@ -388,12 +392,18 @@ begin
   )
   returning id into v_audit_id;
 
+  v_body := format(
+    '"%s" in %s was reopened for new proposed times. You will be asked again when times are set.',
+    v_event.title,
+    coalesce(v_group_name, 'your group')
+  );
+
   perform public.notify_event_recipients_except(
     p_event_id,
     v_actor,
     'event_rescheduled'::public.notification_kind,
     'Hui reopened for planning',
-    'Times were cleared so new options can be proposed. You will be asked again when times are set.',
+    v_body,
     'event_reopened:' || v_audit_id::text,
     true
   );
@@ -414,6 +424,7 @@ begin
     starts_at = null,
     ends_at = null,
     confirmed_at = null,
+    response_deadline_at = public.default_event_response_deadline_at(v_event.group_id, pg_catalog.now()),
     updated_at = pg_catalog.now()
   where id = p_event_id
     and status = 'confirmed';

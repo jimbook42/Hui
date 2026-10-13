@@ -47,5 +47,6 @@ export type EventDetail = {
   createdAt: string;
   updatedAt: string;
   cancelledAt: string | null;
+  responseDeadlineAt: string | null;
   viewerRole: "owner" | "admin" | "member";
 };

@@ -50,6 +50,7 @@ type EventSchedulingProps = {
   maybeResponsesEnabled: boolean;
   minimumAttendees: number;
   proposalDeadlineHours: number | null;
+  replyByLabel: string | null;
   consensus: EventConsensusSummary;
   canAddCandidates: boolean;
   canRemoveCandidates: boolean;
@@ -466,6 +467,7 @@ export function EventScheduling({
   maybeResponsesEnabled,
   minimumAttendees,
   proposalDeadlineHours,
+  replyByLabel,
   consensus,
   canAddCandidates,
   canRemoveCandidates,
@@ -508,6 +510,9 @@ export function EventScheduling({
           ? " Maybe counts as available."
           : " Maybe does not count as available."}
       </p>
+      {replyByLabel ? (
+        <p className="mt-2 text-sm font-semibold text-foreground">{replyByLabel}</p>
+      ) : null}
       {deadlineNotice ? (
         <p className="mt-2 text-sm text-muted-foreground">{deadlineNotice}</p>
       ) : null}

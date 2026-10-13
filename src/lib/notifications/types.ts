@@ -10,7 +10,8 @@ export type NotificationKind =
   | "host_accepted"
   | "host_declined"
   | "contribution_changed"
-  | "reconnect_reminder";
+  | "reconnect_reminder"
+  | "proposal_deadline_reminder";
 
 export type MemberNotification = {
   id: string;
@@ -28,6 +29,7 @@ const PARTICIPANT_RESPOND_KINDS = new Set<NotificationKind>([
   "event_proposed",
   "consensus_ready",
   "event_rescheduled",
+  "proposal_deadline_reminder",
 ]);
 
 export function notificationHref(

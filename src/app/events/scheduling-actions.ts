@@ -19,6 +19,8 @@ import {
   validateAvailabilityChoice,
   validateCandidateWindow,
 } from "@/domain/scheduling/validation";
+import { eventAcceptsResponseDeadline } from "@/domain/events/response-deadline-status";
+import { wallClockToUtcIso } from "@/domain/datetime/timezone";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getGroupResponseSettings } from "@/lib/groups/response-settings";
@@ -327,4 +329,54 @@ export async function finaliseEventAction(
   revalidatePath(`/groups/${detail.groupId}/events`);
   schedulePushDelivery();
   return { message: "Event confirmed." };
+}
+
+export async function updateEventResponseDeadlineAction(
+  _prev: EventActionState,
+  formData: FormData,
+): Promise<EventActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  const deadlineLocal = String(formData.get("response_deadline_at") ?? "").trim();
+
+  if (!eventId || !deadlineLocal) {
+    return { error: "Reply deadline is required." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getEventDetail(supabase, eventId, user.id);
+  if (!detail) {
+    return { error: "Event not found." };
+  }
+
+  if (!eventAcceptsResponseDeadline(detail.status)) {
+    return { error: "This hui is no longer open for scheduling." };
+  }
+
+  const canEdit =
+    detail.viewerRole === "owner" ||
+    detail.viewerRole === "admin" ||
+    detail.createdBy === user.id;
+  if (!canEdit) {
+    return { error: "You cannot change the reply deadline." };
+  }
+
+  const timeZone = detail.timezone ?? "Pacific/Auckland";
+  const deadlineAt = wallClockToUtcIso(deadlineLocal, timeZone);
+  if (!deadlineAt) {
+    return { error: "Enter a valid date and time." };
+  }
+
+  const { error } = await supabase.rpc("update_event_response_deadline", {
+    p_event_id: eventId,
+    p_deadline_at: deadlineAt,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/manage`);
+  revalidatePath(`/events/${eventId}/respond`);
+  return { message: "Reply deadline updated." };
 }

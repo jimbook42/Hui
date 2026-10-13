@@ -77,6 +77,7 @@ type EventParticipantRespondFlowProps = {
   /** Server-preformatted for hydration-safe display. */
   focusTimeLabel: string;
   candidateTimeLabels: Record<string, string>;
+  replyByLabel: string | null;
 };
 
 const MAIN_FLOW_WITH_BRING: ParticipantFlowStep[] = ["time", "place", "bring", "done"];
@@ -119,6 +120,7 @@ export function EventParticipantRespondFlow({
   secondaryDataPromise,
   focusTimeLabel,
   candidateTimeLabels,
+  replyByLabel,
 }: EventParticipantRespondFlowProps) {
   const router = useRouter();
   const [step, setStep] = useState<ParticipantFlowStep>("time");
@@ -430,6 +432,9 @@ export function EventParticipantRespondFlow({
           <p className="hui-type-label text-accent">{groupName}</p>
           <p className="mt-0.5 truncate text-lg font-extrabold leading-tight text-foreground">{eventTitle}</p>
           <p className="mt-0.5 text-sm font-semibold text-muted-foreground">{timeLabel}</p>
+          {replyByLabel ? (
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">{replyByLabel}</p>
+          ) : null}
         </div>
         <Link
           href={eventDetailPath(eventId)}

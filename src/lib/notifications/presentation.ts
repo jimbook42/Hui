@@ -85,6 +85,13 @@ const PRESENTATION: Record<NotificationKind, NotificationPresentation> = {
     actionLabel: "View group",
     actionable: false,
   },
+  proposal_deadline_reminder: {
+    label: "Needs a reply",
+    tone: "blue",
+    icon: "spark",
+    actionLabel: "Reply",
+    actionable: true,
+  },
 };
 
 export function notificationPresentation(kind: NotificationKind): NotificationPresentation {

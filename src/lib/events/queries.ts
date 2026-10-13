@@ -92,6 +92,7 @@ export async function getEventDetail(
       created_at,
       updated_at,
       cancelled_at,
+      response_deadline_at,
       groups:group_id (
         name
       ),
@@ -185,6 +186,7 @@ export async function getEventDetail(
     createdAt: event.created_at as string,
     updatedAt: event.updated_at as string,
     cancelledAt: event.cancelled_at as string | null,
+    responseDeadlineAt: (event.response_deadline_at as string | null) ?? null,
     viewerRole: membership.role as MembershipRole,
   };
 }

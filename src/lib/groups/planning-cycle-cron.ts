@@ -15,6 +15,7 @@ export type PlanningCycleCronSummary = {
   nudgesQueued: number;
   staleProposalNudges: number;
   staleProposalsCancelled: number;
+  proposalDeadlineRemindersQueued: number;
 };
 
 const GROUP_SETTINGS_SELECT = `
@@ -127,11 +128,21 @@ export async function runPlanningCycleCron(
     await refreshAllGroupPlanningSnapshots(supabase);
   }
 
+  const { data: proposalDeadlineRemindersQueued, error: reminderError } = await supabase.rpc(
+    "enqueue_proposal_deadline_reminders",
+    { p_as_of: asOfDate ? `${asOfDate}T12:00:00Z` : undefined },
+  );
+  if (reminderError) {
+    throw new Error(reminderError.message);
+  }
+
   return {
     groupsScanned: typeof groupsScanned === "number" ? groupsScanned : snapshotsRefreshed,
     snapshotsRefreshed,
     nudgesQueued: typeof nudgesQueued === "number" ? nudgesQueued : 0,
     staleProposalNudges,
     staleProposalsCancelled,
+    proposalDeadlineRemindersQueued:
+      typeof proposalDeadlineRemindersQueued === "number" ? proposalDeadlineRemindersQueued : 0,
   };
 }

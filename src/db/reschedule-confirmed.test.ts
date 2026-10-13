@@ -223,7 +223,7 @@ describe("reschedule confirmed hui", () => {
       [groupId],
     );
 
-    const { eventId } = await seedConfirmedEvent(
+    const { eventId, candidateId } = await seedConfirmedEvent(
       db,
       ids.owner,
       groupId,
@@ -232,8 +232,31 @@ describe("reschedule confirmed hui", () => {
       "2026-12-01T12:00:00+00",
     );
 
+    await db.query(
+      `insert into public.group_memberships (group_id, user_id, role)
+       values ($1, $2, 'member')`,
+      [groupId, ids.member],
+    );
+
+    await asUser(db, ids.member);
+    await db.query(
+      `insert into public.event_responses (candidate_id, user_id, response, visibility)
+       values ($1, $2, 'yes', 'private')`,
+      [candidateId, ids.member],
+    );
+
     await asUser(db, ids.owner);
     await db.query(`select public.reopen_confirmed_event_for_proposing($1::uuid)`, [eventId]);
+
+    await asUser(db, null);
+    const reopenNotice = await db.query<{ body: string }>(
+      `select body from public.member_notifications
+       where event_id = $1 and user_id = $2 and kind = 'event_rescheduled'
+       order by created_at desc limit 1`,
+      [eventId, ids.member],
+    );
+    expect(reopenNotice.rows[0]?.body).toContain("Reschedule dinner");
+    expect(reopenNotice.rows[0]?.body).toContain("Reopen group");
 
     const row = await db.query<{ status: string; planning_target_date: string; starts_at: string | null }>(
       `select status::text, planning_target_date::text, starts_at::text
