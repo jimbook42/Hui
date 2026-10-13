@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { buildContributionBoard, buildContributionHistory, formatContributionDisclosureSummary } from "./display";
+import {
+  buildContributionBoard,
+  buildContributionHistory,
+  formatContributionDisclosureSummary,
+  formatViewerContributionLine,
+} from "./display";
 
 describe("contribution display", () => {
   it("partitions still needed and claimed categories", () => {
@@ -75,5 +80,38 @@ describe("contribution display", () => {
       { userId: "a", displayName: "Alice", count: 2 },
       { userId: "b", displayName: "Bob", count: 1 },
     ]);
+  });
+
+  it("collapses duplicate category and label on the viewer line", () => {
+    expect(
+      formatViewerContributionLine({
+        id: "1",
+        eventId: "e",
+        groupId: "g",
+        categoryId: "d",
+        categoryName: "Dessert",
+        userId: "u",
+        label: "Dessert",
+        status: "accepted",
+        displayName: "You",
+        assignedByUserId: null,
+        assignedByDisplayName: null,
+      }),
+    ).toBe("Dessert");
+    expect(
+      formatViewerContributionLine({
+        id: "2",
+        eventId: "e",
+        groupId: "g",
+        categoryId: "d",
+        categoryName: "Dessert",
+        userId: "u",
+        label: "Lemon tart",
+        status: "accepted",
+        displayName: "You",
+        assignedByUserId: null,
+        assignedByDisplayName: null,
+      }),
+    ).toBe("Dessert — Lemon tart");
   });
 });

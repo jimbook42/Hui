@@ -58,6 +58,16 @@ export type ContributionHistoryEntry = {
   count: number;
 };
 
+/** One-line summary for the viewer's own contribution on respond "All set". */
+export function formatViewerContributionLine(row: EventContributionRow): string {
+  const category = row.categoryName?.trim() || "Contribution";
+  const label = row.label.trim();
+  if (label.length === 0 || label.toLowerCase() === category.toLowerCase()) {
+    return category;
+  }
+  return `${category} — ${label}`;
+}
+
 export function formatContributionDisclosureSummary(
   requestedSlotCount: number,
   unclaimedCount: number,

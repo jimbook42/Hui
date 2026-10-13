@@ -4,10 +4,10 @@ Lightweight record of completed tickets. One entry per ticket.
 
 ## 2026-10-13 — HUI-022A.6 hydration + respond bring step
 
-- **Hydration (#418):** server-preformatted time labels for `EventScheduling`, respond flow, and decision poll decided dates; `EditEventForm` datetime-local defaults formatted in `EventDetailManagement`.
-- **Host swap:** `HostSwapRequestForm` acknowledges no-replacement via state + hidden field before resubmit (fixes confirm race).
-- **Respond flow:** skip “What are you bringing?” when no open slots and viewer has no claim; keep step when slots are open or viewer already claimed.
-- **Tests:** `participant-flow.test.ts` bring-step rules; `npm run lint`, `typecheck`, `test`, `build` (placeholder Supabase env).
+- **Hydration (#418):** server-preformatted time labels for `EventScheduling`, respond flow, and decision poll decided dates; `EditEventForm` datetime-local defaults formatted in `EventDetailManagement`; event hero dates via `buildEventHeroDateCopy` + `EventHeroDateBlock` (client-only relative chip).
+- **Host swap:** inline two-step confirm (`Ask to swap` → `Yes, step back` with `acknowledge_no_replacement`); dropped native `confirm()`.
+- **Respond flow:** skip “What are you bringing?” when no open slots and viewer has no claim; `formatViewerContributionLine` avoids `Dessert — Dessert`.
+- **Tests:** bring-step, host-swap form, hero dates, contribution line; `npm run validate` (placeholder Supabase env for build).
 
 ## 2026-10-13 — HUI-022A.5 host swap + contribution seed scope
 

@@ -20,7 +20,7 @@ import { AttendanceDot } from "@/components/hui/attendance-dot";
 import { ArrowLeftIcon, BowlIcon, ClockIcon, PinIcon } from "@/components/hui/icons";
 import { PendingButton } from "@/components/ui/pending-button";
 import { attendanceStateFromChoice } from "@/domain/events/home";
-import { buildContributionBoard } from "@/domain/contributions/display";
+import { buildContributionBoard, formatViewerContributionLine } from "@/domain/contributions/display";
 import {
   buildContributionSlots,
   contributionCategoryHeadline,
@@ -845,7 +845,7 @@ export function EventParticipantRespondFlow({
                 <div key={c.id} className="flex justify-between gap-4">
                   <dt className="font-bold text-muted-foreground">You&apos;re bringing</dt>
                   <dd className="text-right font-extrabold text-foreground">
-                    {c.categoryName ?? "Contribution"} — {c.label}
+                    {formatViewerContributionLine(c)}
                   </dd>
                 </div>
               ))}

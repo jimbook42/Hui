@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AvatarStack } from "@/components/hui/avatar-stack";
 import { EventDateBadge } from "@/components/hui/event-date-badge";
+import { formatEventDateBadgeParts } from "@/domain/datetime/event-hero-dates";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { BowlIcon, CheckIcon, ClockIcon, PinIcon, SparkIcon } from "@/components/hui/icons";
 import { StatusPill, type StatusPillTone } from "@/components/hui/status-pill";
@@ -96,8 +97,9 @@ export function EventCard({ event, variant = "standard", tone = "primary", class
     >
       <div className="flex gap-4">
         <EventDateBadge
-          startsAt={event.startsAt}
-          timeZone={event.timeZone}
+          parts={
+            event.startsAt ? formatEventDateBadgeParts(event.startsAt, event.timeZone) : null
+          }
           tone={tone}
           size={featured ? "lg" : "md"}
           fallbackLabel="TBC"
