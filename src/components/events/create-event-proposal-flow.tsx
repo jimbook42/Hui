@@ -103,10 +103,6 @@ export function CreateEventProposalFlow({
   const [draft, setDraft] = useState<EventProposalDraft>(() => initialDraft);
   const [stepError, setStepError] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState(initialDate);
-  const wallClockDate =
-    draft.eventKind === "recurring" && draft.recurrence?.planningTargetDate
-      ? draft.recurrence.planningTargetDate
-      : timeDate;
 
   function applyFirstGroupCadence(
     recurrence: EventProposalDraft["recurrence"],
@@ -191,12 +187,15 @@ export function CreateEventProposalFlow({
           },
         }));
       }
+      if (draft.eventKind === "recurring" && draft.recurrence?.planningTargetDate) {
+        setTimeDate(draft.recurrence.planningTargetDate);
+      }
       goTo("time");
       return;
     }
     if (step === "time") {
       const parsed = parseWallClockCandidate(
-        wallClockDate,
+        timeDate,
         timeStart,
         timeEnd,
         settings.timezone,
@@ -234,7 +233,7 @@ export function CreateEventProposalFlow({
   function addCandidate() {
     setStepError(null);
     const parsed = parseWallClockCandidate(
-      wallClockDate,
+      timeDate,
       timeStart,
       timeEnd,
       settings.timezone,
@@ -621,10 +620,8 @@ export function CreateEventProposalFlow({
             <p className="font-extrabold text-foreground">Add a time</p>
             <WallClockDateField
               label="Date"
-              value={wallClockDate}
-              onChange={
-                draft.eventKind === "recurring" ? () => {} : setTimeDate
-              }
+              value={timeDate}
+              onChange={setTimeDate}
             />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <WallClockTimeField

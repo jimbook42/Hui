@@ -26,6 +26,9 @@ type EventCardProps = {
 };
 
 function statusPillFor(event: HomeEvent): { label: string; tone: StatusPillTone } | null {
+  if (event.proposalDatePassed && event.status === "proposing") {
+    return { label: "Date passed", tone: "clay" };
+  }
   if (event.status === "cancelled") {
     return { label: "Cancelled", tone: "muted" };
   }
@@ -76,7 +79,9 @@ export function EventCard({ event, variant = "standard", tone = "primary", class
   const planning = event.bucket === "planning" || event.attention === "respond";
   const proposedPrefix =
     planning && event.startsAt && event.status !== "confirmed" ? "Proposed · " : "";
-  const timeLine = event.startsAt
+  const timeLine = event.proposalDatePassed && event.status === "proposing"
+    ? "This proposal's date has passed"
+    : event.startsAt
     ? `${proposedPrefix}${formatShortDay(event.startsAt, event.timeZone)} · ${
         featured
           ? formatTimeSpan(event.startsAt, event.endsAt, event.timeZone)

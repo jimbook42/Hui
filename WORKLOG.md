@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — Stale proposing events
+
+- **Cron:** `process_stale_proposals` in planning cycle worker — organiser in-app nudge when nominal passes; auto-cancel after 3-day grace; snapshot refresh on cancel.
+- **RPC:** `reschedule_proposing_event_nominal`; migration `20261013191745` (applied linked Supabase 2026-10-13).
+- **App:** stale banner on event page; home card “Date passed”; propose flow Time step date editable.
+- **Tests:** `stale-proposal.test.ts`, `stale-proposals.test.ts`.
+
 ## 2026-10-13 — Lifecycle gaps (Tier 1)
 
 - **Recurring card:** `cycleDisplayTargetDate` — “Planning around” uses active cycle nominal while a proposal is open (not the following open slot).
