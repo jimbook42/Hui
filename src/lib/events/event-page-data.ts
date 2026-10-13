@@ -231,6 +231,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
       decidedByName:
         groupMembers.find((member) => member.userId === bundle.decision.decidedBy)?.displayName ??
         null,
+      timeZone: displayTimeZone,
     }),
   );
   const canRespondToDecisions = canRespondToEventDecisions(detail.status);

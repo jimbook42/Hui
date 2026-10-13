@@ -6,7 +6,8 @@ import { EventParticipantsSummary } from "@/components/events/event-participants
 import { EventScheduling } from "@/components/events/event-scheduling";
 import { LiveGatheringVisual, ViewerResponseCard } from "@/components/events/attendance-live";
 import { DisclosureCard } from "@/components/hui/disclosure-card";
-import { EventDateBadge } from "@/components/hui/event-date-badge";
+import { EventHeroDateBlock } from "@/components/hui/event-hero-date-block";
+import { buildEventHeroDateCopy } from "@/domain/datetime/event-hero-dates";
 import { HashDisclosureOpener } from "@/components/hui/hash-disclosure-opener";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
@@ -25,12 +26,10 @@ import {
 } from "@/components/hui/icons";
 import { SectionHeader } from "@/components/hui/section-header";
 import { EventHostSection } from "@/components/hosts/event-host-section";
+import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
 import {
   formatClockTime,
-  formatLongDay,
   formatShortDay,
-  formatTimeSpan,
-  relativeDayLabel,
 } from "@/domain/datetime/display";
 import { buildProposedHuiGuidance } from "@/domain/events/proposed-guidance";
 import { eventKindLabel } from "@/lib/events/labels";
@@ -53,7 +52,15 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
   const isAcceptedHost = acceptedHost?.userId === userId;
   const hasPlace = Boolean(detail.location?.trim());
   const showHostPlaceAction = isAcceptedHost && data.canEditLocation && !closed;
-  const when = startsAt && !closed ? relativeDayLabel(startsAt, tz) : null;
+  const heroDateCopy =
+    startsAt && !closed
+      ? buildEventHeroDateCopy({
+          startsAt,
+          endsAt,
+          timeZone: tz,
+          showRelativeWhen: true,
+        })
+      : null;
 
   const respondable = data.canRespond && data.primaryCandidate !== null;
   // Contributions that would be released if the viewer declined (host-following categories stay).
@@ -69,47 +76,22 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
 
   return (
     <div className="mt-5 space-y-5">
-      <div className="flex items-center gap-4">
-        <EventDateBadge
-          startsAt={startsAt}
-          timeZone={tz}
-          size="lg"
-          tone={confirmed ? "sage" : "primary"}
-          fallbackLabel="TBC"
+      {heroDateCopy ? (
+        <EventHeroDateBlock
+          copy={heroDateCopy}
+          badgeTone={confirmed ? "sage" : "primary"}
+          showProposedHint={!confirmed && !closed}
         />
-        <div className="min-w-0 flex-1">
-          {startsAt ? (
-            <>
-              <p className="text-xl font-extrabold leading-tight text-foreground">
-                {formatLongDay(startsAt, tz)}
-              </p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-base font-bold text-muted-foreground">
-                <ClockIcon size={17} className="shrink-0" />
-                <span>{formatTimeSpan(startsAt, endsAt, tz)}</span>
-              </p>
-              <p className="mt-1.5 flex flex-wrap items-center gap-2">
-                {when ? (
-                  <span className="rounded-full bg-clay-soft px-2.5 py-0.5 text-xs font-extrabold text-foreground">
-                    {when}
-                  </span>
-                ) : null}
-                {!confirmed && !closed ? (
-                  <span className="text-sm font-semibold text-muted-foreground">
-                    Proposed time — not confirmed yet
-                  </span>
-                ) : null}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-xl font-extrabold leading-tight text-foreground">Time still to be agreed</p>
-              <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
-                Nobody has put a time on the table yet.
-              </p>
-            </>
-          )}
+      ) : (
+        <div className="flex items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-xl font-extrabold leading-tight text-foreground">Time still to be agreed</p>
+            <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
+              Nobody has put a time on the table yet.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <ul className="space-y-2 text-base font-bold text-foreground">
         <li className="flex items-start gap-3">
@@ -466,6 +448,11 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
 
   const hasAbout = Boolean(detail.notes || detail.recurrenceSeries || detail.kind);
 
+  const candidateTimeLabels = buildEventTimeLabelMap(
+    [...data.scheduling.candidates, ...data.scheduling.withdrawnCandidates],
+    data.displayTimeZone,
+  );
+
   return (
     <section aria-labelledby="event-details" className="hui-rise-3 space-y-3">
       <HashDisclosureOpener />
@@ -500,6 +487,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             canRespond={data.canRespond}
             canFinalise={data.canFinalise}
             timeZone={data.displayTimeZone}
+            candidateTimeLabels={candidateTimeLabels}
             attendanceRosters={data.attendanceRosters}
           />
         </DisclosureCard>

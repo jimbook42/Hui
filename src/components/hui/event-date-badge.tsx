@@ -1,37 +1,18 @@
+import type { EventDateBadgeParts } from "@/domain/datetime/event-hero-dates";
+import { formatEventDateBadgeParts } from "@/domain/datetime/event-hero-dates";
 import { cn } from "@/lib/ui/cn";
 
 type EventDateBadgeProps = {
-  startsAt: string | null;
-  timeZone: string;
+  /** Pre-formatted on the server when possible (avoids client Intl during hydration). */
+  parts?: EventDateBadgeParts | null;
+  startsAt?: string | null;
+  timeZone?: string;
   tone?: "primary" | "secondary" | "sage";
   size?: "md" | "lg";
   /** Shown when no date has been set yet (e.g. a proposal with no chosen time). */
   fallbackLabel?: string;
   className?: string;
 };
-
-export function dateBadgeParts(
-  startsAt: string,
-  timeZone: string,
-): { day: string; month: string; weekday: string } | null {
-  try {
-    const date = new Date(startsAt);
-    if (Number.isNaN(date.getTime())) {
-      return null;
-    }
-    const day = new Intl.DateTimeFormat("en-NZ", { day: "numeric", timeZone }).format(date);
-    const month = new Intl.DateTimeFormat("en-NZ", { month: "short", timeZone })
-      .format(date)
-      .replace(/\./g, "")
-      .toUpperCase();
-    const weekday = new Intl.DateTimeFormat("en-NZ", { weekday: "short", timeZone })
-      .format(date)
-      .replace(/\./g, "");
-    return { day, month, weekday };
-  } catch {
-    return null;
-  }
-}
 
 const toneClass = {
   primary: "bg-[var(--blob-blue)]",
@@ -41,14 +22,17 @@ const toneClass = {
 
 /** Organic, slightly asymmetric date blob (see home reference). */
 export function EventDateBadge({
-  startsAt,
-  timeZone,
+  parts: partsProp,
+  startsAt = null,
+  timeZone = "Pacific/Auckland",
   tone = "primary",
   size = "md",
   fallbackLabel = "TBC",
   className,
 }: EventDateBadgeProps) {
-  const parts = startsAt ? dateBadgeParts(startsAt, timeZone) : null;
+  const parts =
+    partsProp ??
+    (startsAt ? formatEventDateBadgeParts(startsAt, timeZone) : null);
   const dimension = size === "lg" ? "h-24 w-24" : "h-[4.5rem] w-[4.5rem]";
 
   return (

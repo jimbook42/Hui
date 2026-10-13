@@ -9,7 +9,6 @@ import {
 } from "@/app/decisions/actions";
 import { HuiButton } from "@/components/hui/hui-button";
 import { CheckIcon } from "@/components/hui/icons";
-import { formatShortDay } from "@/domain/datetime/display";
 import type { DecisionPollView } from "@/domain/decisions/display";
 import { cn } from "@/lib/ui/cn";
 
@@ -27,7 +26,6 @@ export function DecisionPoll({
   eventId,
   canManage,
   canRespond,
-  timeZone,
   compact = false,
 }: DecisionPollProps) {
   const [pending, startTransition] = useTransition();
@@ -103,7 +101,7 @@ export function DecisionPoll({
             <p className="font-extrabold">{poll.selectedLabel}</p>
             {poll.decidedByName && poll.decidedAt ? (
               <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
-                Decided by {poll.decidedByName} · {formatShortDay(poll.decidedAt, timeZone)}
+                Decided by {poll.decidedByName} · {poll.decidedAtLabel}
               </p>
             ) : null}
           </div>

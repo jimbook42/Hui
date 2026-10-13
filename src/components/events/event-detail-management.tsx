@@ -4,6 +4,7 @@ import { DeleteEventForm } from "@/components/events/delete-event-form";
 import { EditEventForm } from "@/components/events/event-form";
 import { HostEventLocationForm } from "@/components/events/host-event-location-form";
 import type { EventCoordinates } from "@/domain/events/location";
+import { formatDateTimeLocalInTimeZone } from "@/domain/datetime/timezone";
 import type { EventStatus } from "@/domain/events/types";
 import type { ProfileHomeLocation } from "@/domain/profile/home-location";
 
@@ -49,6 +50,13 @@ export function EventDetailManagement({
     return null;
   }
 
+  const defaultStartsAtLocal = defaultStartsAt
+    ? formatDateTimeLocalInTimeZone(defaultStartsAt, timeZone)
+    : "";
+  const defaultEndsAtLocal = defaultEndsAt
+    ? formatDateTimeLocalInTimeZone(defaultEndsAt, timeZone)
+    : "";
+
   return (
     <div className="space-y-8">
       {canEdit ? (
@@ -63,6 +71,8 @@ export function EventDetailManagement({
               defaultNotes={defaultNotes}
               defaultStartsAt={defaultStartsAt}
               defaultEndsAt={defaultEndsAt}
+              defaultStartsAtLocal={defaultStartsAtLocal}
+              defaultEndsAtLocal={defaultEndsAtLocal}
               defaultCoordinates={defaultCoordinates}
               scheduleLocked={status === "confirmed"}
               timeZone={timeZone}

@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
 
+import type { ContributionSlot } from "@/domain/contributions/slots";
+import { buildContributionSlots } from "@/domain/contributions/slots";
+
 import {
   bestViewerResponseAcrossProposedCandidates,
   canSuggestAlternativeTimeInFlow,
   canUseParticipantRespondFlow,
   nextStepAfterAttendanceSave,
+  nextStepAfterPlace,
   participantAttendanceBranch,
+  participantFlowStepsForBack,
   pickParticipantTimeCandidate,
+  shouldShowParticipantBringStep,
 } from "./participant-flow";
 
 describe("participant flow (HUI-026B)", () => {
@@ -82,6 +88,91 @@ describe("participant flow (HUI-026B)", () => {
     expect(
       canUseParticipantRespondFlow({ eventStatus: "cancelled", hasCandidate: true }),
     ).toBe(false);
+  });
+
+  it("skips the bring step when nothing is needed and the viewer has no claim", () => {
+    const baseCategory = {
+      groupId: "g",
+      archivedAt: null,
+      followsHost: false,
+      defaultAssigneeUserId: null,
+    };
+    const filled = buildContributionSlots(
+      [{ id: "dessert", name: "Dessert", ...baseCategory }],
+      [
+        {
+          id: "ec1",
+          eventId: "e",
+          groupId: "g",
+          categoryId: "dessert",
+          categoryName: "Dessert",
+          userId: "other",
+          label: "Cake",
+          status: "accepted",
+          displayName: "Mia",
+          assignedByUserId: null,
+          assignedByDisplayName: null,
+        },
+      ],
+      "viewer",
+      null,
+    );
+    expect(shouldShowParticipantBringStep(filled)).toBe(false);
+    expect(nextStepAfterPlace(false)).toBe("done");
+    expect(participantFlowStepsForBack("done", { showBringStep: false })).toBe("place");
+  });
+
+  it("shows the bring step when a slot is open or the viewer already claimed", () => {
+    const baseCategory = {
+      groupId: "g",
+      archivedAt: null,
+      followsHost: false,
+      defaultAssigneeUserId: null,
+    };
+    const openSlot = buildContributionSlots(
+      [{ id: "dessert", name: "Dessert", ...baseCategory }],
+      [
+        {
+          id: "ec1",
+          eventId: "e",
+          groupId: "g",
+          categoryId: "dessert",
+          categoryName: "Dessert",
+          userId: null,
+          label: "Dessert",
+          status: "open",
+          displayName: null,
+          assignedByUserId: null,
+          assignedByDisplayName: null,
+        },
+      ],
+      "viewer",
+      null,
+    );
+    expect(shouldShowParticipantBringStep(openSlot)).toBe(true);
+
+    const mine = buildContributionSlots(
+      [{ id: "dessert", name: "Dessert", ...baseCategory }],
+      [
+        {
+          id: "ec2",
+          eventId: "e",
+          groupId: "g",
+          categoryId: "dessert",
+          categoryName: "Dessert",
+          userId: "viewer",
+          label: "Cake",
+          status: "accepted",
+          displayName: "You",
+          assignedByUserId: null,
+          assignedByDisplayName: null,
+        },
+      ],
+      "viewer",
+      null,
+    );
+    expect(shouldShowParticipantBringStep(mine)).toBe(true);
+    expect(shouldShowParticipantBringStep([] as ContributionSlot[])).toBe(false);
   });
 
   it("allows alternative-time suggestions when members may propose", () => {

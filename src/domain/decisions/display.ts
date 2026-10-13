@@ -1,3 +1,4 @@
+import { formatShortDay } from "@/domain/datetime/display";
 import type { EventDecisionStatus } from "@/lib/decisions/types";
 
 export type DecisionMemberRef = {
@@ -32,6 +33,8 @@ export type DecisionPollView = {
   viewerOptionId: string | null;
   decidedByName: string | null;
   decidedAt: string | null;
+  /** Pre-formatted on the server for hydration-safe client display. */
+  decidedAtLabel: string | null;
   selectedLabel: string | null;
 };
 
@@ -47,6 +50,7 @@ export function buildDecisionPollView(input: {
   decidedByUserId: string | null;
   decidedAt: string | null;
   decidedByName: string | null;
+  timeZone: string;
 }): DecisionPollView {
   const memberById = new Map(input.members.map((member) => [member.userId, member]));
   const votersByOption = new Map<string, DecisionMemberRef[]>();
@@ -84,6 +88,8 @@ export function buildDecisionPollView(input: {
     viewerOptionId: viewerResponse?.optionId ?? null,
     decidedByName: input.decidedByName,
     decidedAt: input.decidedAt,
+    decidedAtLabel:
+      input.decidedAt ? formatShortDay(input.decidedAt, input.timeZone) : null,
     selectedLabel,
   };
 }

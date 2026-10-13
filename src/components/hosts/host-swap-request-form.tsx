@@ -1,12 +1,17 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   requestHostSwapAction,
   type HostActionState,
 } from "@/app/hosts/actions";
 import { beginInteraction, markInteraction } from "@/lib/perf/client-interaction-perf";
+import {
+  hostSwapPrimaryActionLabel,
+  shouldIncludeNoReplacementAck,
+  type HostSwapNoReplacementStep,
+} from "@/domain/hosts/host-swap-form";
 
 const NO_REPLACEMENT_WARNING =
   "No one else is available to host. If you continue, this hui will have no host.";
@@ -20,6 +25,10 @@ const initialState: HostActionState = {};
 
 export function HostSwapRequestForm({ eventId, hasReplacement }: HostSwapRequestFormProps) {
   const [state, formAction, pending] = useActionState(requestHostSwapAction, initialState);
+  const [noReplacementStep, setNoReplacementStep] = useState<HostSwapNoReplacementStep>("idle");
+
+  const includeAck = shouldIncludeNoReplacementAck(hasReplacement, noReplacementStep);
+  const primaryLabel = hostSwapPrimaryActionLabel(hasReplacement, noReplacementStep, pending);
 
   return (
     <form
@@ -30,23 +39,14 @@ export function HostSwapRequestForm({ eventId, hasReplacement }: HostSwapRequest
         markInteraction("form_save", "handler-start");
         markInteraction("form_save", "optimistic-ui-visible");
 
-        const form = event.currentTarget;
-        const acknowledged =
-          (new FormData(form).get("acknowledge_no_replacement") ?? "") === "1";
-        if (!hasReplacement && !acknowledged) {
+        if (!hasReplacement && noReplacementStep === "idle") {
           event.preventDefault();
-          if (window.confirm(NO_REPLACEMENT_WARNING)) {
-            const input = document.createElement("input");
-            input.type = "hidden";
-            input.name = "acknowledge_no_replacement";
-            input.value = "1";
-            form.appendChild(input);
-            form.requestSubmit();
-          }
+          setNoReplacementStep("confirm");
         }
       }}
     >
       <input type="hidden" name="event_id" value={eventId} />
+      {includeAck ? <input type="hidden" name="acknowledge_no_replacement" value="1" /> : null}
       {!hasReplacement ? (
         <p className="text-sm text-muted-foreground">{NO_REPLACEMENT_WARNING}</p>
       ) : null}
@@ -55,13 +55,25 @@ export function HostSwapRequestForm({ eventId, hasReplacement }: HostSwapRequest
           {state.error}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={pending}
-        className="hui-btn hui-btn-secondary rounded-full hui-focus-ring"
-      >
-        {pending ? "Please wait…" : "Ask to swap"}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="hui-btn hui-btn-secondary rounded-full hui-focus-ring"
+        >
+          {primaryLabel}
+        </button>
+        {!hasReplacement && noReplacementStep === "confirm" ? (
+          <button
+            type="button"
+            disabled={pending}
+            className="hui-btn hui-btn-ghost rounded-full hui-focus-ring"
+            onClick={() => setNoReplacementStep("idle")}
+          >
+            Cancel
+          </button>
+        ) : null}
+      </div>
     </form>
   );
 }

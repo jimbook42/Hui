@@ -34,6 +34,7 @@ function toPollViews(
   bundles: EventDecisionBundle[],
   members: Member[],
   viewerUserId: string,
+  timeZone: string,
 ): DecisionPollView[] {
   return bundles.map((bundle) =>
     buildDecisionPollView({
@@ -51,6 +52,7 @@ function toPollViews(
       decidedByUserId: bundle.decision.decidedBy,
       decidedAt: bundle.decision.decidedAt,
       decidedByName: memberName(members, bundle.decision.decidedBy),
+      timeZone,
     }),
   );
 }
@@ -68,7 +70,7 @@ export function EventDecisionsSection({
   compactOpenOnly = false,
   showSectionHeader = false,
 }: EventDecisionsSectionProps) {
-  const polls = toPollViews(bundles, members, viewerUserId);
+  const polls = toPollViews(bundles, members, viewerUserId, timeZone);
   const openPolls = polls.filter((poll) => poll.status === "open");
   const historyPolls = polls.filter((poll) => poll.status !== "open");
   const visible = compactOpenOnly ? openPolls : openPolls;

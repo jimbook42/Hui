@@ -1,3 +1,7 @@
+import {
+  isContributionSlotFilled,
+  type ContributionSlot,
+} from "@/domain/contributions/slots";
 import type { MembershipRole } from "@/domain/groups/permissions";
 import {
   canAddCandidates,
@@ -63,6 +67,21 @@ export function nextStepAfterAttendanceSave(choice: AvailabilityChoice): Partici
   return participantAttendanceBranch(choice) === "no" ? "declined" : "place";
 }
 
+/** Bring step only when something is still needed or the viewer already has a claim to review. */
+export function shouldShowParticipantBringStep(slots: ContributionSlot[]): boolean {
+  if (slots.length === 0) {
+    return false;
+  }
+  if (slots.some((slot) => !isContributionSlotFilled(slot.contribution))) {
+    return true;
+  }
+  return slots.some((slot) => slot.state === "yours" || slot.state === "host");
+}
+
+export function nextStepAfterPlace(showBringStep: boolean): ParticipantFlowStep {
+  return showBringStep ? "bring" : "done";
+}
+
 export function canUseParticipantRespondFlow(input: {
   eventStatus: EventStatus;
   hasCandidate: boolean;
@@ -81,7 +100,11 @@ export function canSuggestAlternativeTimeInFlow(
   return canAddCandidates(viewerRole, settings, status);
 }
 
-export function participantFlowStepsForBack(from: ParticipantFlowStep): ParticipantFlowStep | null {
+export function participantFlowStepsForBack(
+  from: ParticipantFlowStep,
+  options?: { showBringStep?: boolean },
+): ParticipantFlowStep | null {
+  const showBringStep = options?.showBringStep ?? true;
   switch (from) {
     case "time":
       return null;
@@ -96,6 +119,6 @@ export function participantFlowStepsForBack(from: ParticipantFlowStep): Particip
     case "bring":
       return "place";
     case "done":
-      return "bring";
+      return showBringStep ? "bring" : "place";
   }
 }
