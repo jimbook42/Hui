@@ -7,6 +7,7 @@ Lightweight record of completed tickets. One entry per ticket.
 - **Schema/RPC:** `group_recurrence_preferences`, `group_planning_cycle_skips`, `group_planning_cycle_snapshots`; `set_group_recurrence_paused`, `skip_group_planning_cycle`, `upsert_group_planning_snapshot`, `refresh_all_group_planning_snapshots` (stub); migrations `20261013105417`, `20261013105855` (applied linked Supabase 2026-10-13).
 - **Domain:** skip dates in `resolveCycleReferenceDate`; `recurrence_paused` phase.
 - **UX:** group recurring card admin pause/skip; snapshot sync on skip/pause/complete.
+- **Tier-2 QA (91a6cc2):** closed-cycle `afterClosedCycle` next nominal; completed events no longer block; hero time on completed; paused hides propose; skips listed for members; `useActionStateRefresh`; migration `20261013112545` (RPC-only writes under FORCE RLS).
 
 ## 2026-10-13 — HUI-031-A Complete event + cycle reference
 
