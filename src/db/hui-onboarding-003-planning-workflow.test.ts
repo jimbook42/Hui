@@ -69,6 +69,7 @@ describe("HUI-ONBOARDING-003 planning workflow", () => {
     for (const file of files) {
       await db.exec(await readFile(path.join(dir, file), "utf8"));
     }
+    await db.query(`select set_config('hui.skip_auto_confirm', '1', false)`);
 
     ownerId = await createUser(db, "o003-owner@hui.test", "Owner");
     memberId = await createUser(db, "o003-member@hui.test", "Member");

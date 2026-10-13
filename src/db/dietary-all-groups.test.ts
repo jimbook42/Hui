@@ -159,6 +159,7 @@ describe("dietary: share with all my groups (HUI-026U.3)", () => {
     for (const file of files) {
       await db.exec(await readFile(path.join(dir, file), "utf8"));
     }
+    await db.query(`select set_config('hui.skip_auto_confirm', '1', false)`);
 
     ids = {
       sharer: await createUser(db, "all-sharer@hui.test", "Sam Sharer"),

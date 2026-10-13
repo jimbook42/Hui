@@ -127,6 +127,7 @@ describe("event management (HUI-008)", () => {
     for (const file of files) {
       await db.exec(await readFile(path.join(dir, file), "utf8"));
     }
+    await db.query(`select set_config('hui.skip_auto_confirm', '1', false)`);
 
     ids = {
       owner: await createUser(db, "owner@hui.test", "Olivia Owner"),
