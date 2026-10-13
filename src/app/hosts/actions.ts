@@ -15,9 +15,10 @@ import {
   canRespondToHostProposal,
 } from "@/domain/hosts/permissions";
 import { pickPendingHostProposal } from "@/domain/hosts/display";
+import { eventDetailPath } from "@/lib/events/paths";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
-import { listEventHostAssignments } from "@/lib/hosts/queries";
+import { hostSwapHasReplacement, listEventHostAssignments } from "@/lib/hosts/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
 
@@ -106,6 +107,16 @@ export async function requestHostSwapAction(
     return { error: "You cannot request a swap for this event." };
   }
 
+  const hasReplacement = await hostSwapHasReplacement(supabase, eventId);
+  const acknowledgedNoReplacement =
+    String(formData.get("acknowledge_no_replacement") ?? "") === "1";
+  if (!hasReplacement && !acknowledgedNoReplacement) {
+    return {
+      error:
+        "No one else is available to host. Confirm you want to continue without a host.",
+    };
+  }
+
   const { error } = await supabase.rpc("request_host_swap", {
     p_event_id: eventId,
   });
@@ -115,9 +126,10 @@ export async function requestHostSwapAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/manage`);
   revalidatePath(`/groups/${detail.groupId}`);
   schedulePushDelivery();
-  return { message: "Hui will suggest another host." };
+  redirect(`${eventDetailPath(eventId)}?host_swapped=1`);
 }
 
 export async function acceptHostProposalAction(

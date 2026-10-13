@@ -17,6 +17,19 @@ function mapAssignment(row: Record<string, unknown>): HostAssignmentSnapshot {
   };
 }
 
+export async function hostSwapHasReplacement(
+  supabase: SupabaseClient,
+  eventId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("host_swap_has_replacement", {
+    p_event_id: eventId,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data === true;
+}
+
 export async function listEventHostAssignments(
   supabase: SupabaseClient,
   eventId: string,

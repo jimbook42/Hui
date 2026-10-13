@@ -248,6 +248,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
             canAssign={data.canAssignHost}
             canRespond={data.canAcceptHost}
             canRequestSwap={data.canSwapHost}
+            hostSwapHasReplacement={data.hostSwapReplacementAvailable}
             viewerUserId={userId}
             eligibleMembers={group.members}
             attendanceRoster={data.primaryRoster}

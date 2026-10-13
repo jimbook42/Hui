@@ -96,6 +96,14 @@ async function proposeHostForEvent(database: PGlite, eventId: string) {
   await database.query(`select public.propose_event_host_for_event($1, $2)`, [eventId, ids.owner]);
 }
 
+async function requestMainContribution(database: PGlite, eventId: string) {
+  await asUser(database, ids.owner);
+  await database.query(
+    `select public.apply_proposal_contribution_requests($1, $2, $3::jsonb)`,
+    [eventId, ids.owner, JSON.stringify([{ category_id: mainCategoryId }])],
+  );
+}
+
 async function respondYes(database: PGlite, userId: string, candidateId: string) {
   await asUser(database, userId);
   await database.query(
@@ -183,6 +191,7 @@ describe("coordination HUI-022A.4 accepted-host swap", () => {
     expect(memberA).toBeTruthy();
     const memberB = memberA === ids.isaac ? ids.jamie : ids.isaac;
 
+    await requestMainContribution(db, eventId);
     await asUser(db, memberA);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);
 

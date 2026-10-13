@@ -53,7 +53,7 @@ import { listEventDecisions } from "@/lib/decisions/queries";
 import { listGroupSharedDietary } from "@/lib/dietary/queries";
 import type { EventDetail } from "@/lib/events/types";
 import { getGroupDetail } from "@/lib/groups/queries";
-import { getEventHostContext } from "@/lib/hosts/queries";
+import { getEventHostContext, hostSwapHasReplacement } from "@/lib/hosts/queries";
 import { getGroupHouseholdMemberView } from "@/lib/households/queries";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 import {
@@ -178,6 +178,8 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
   const canSwapHost = hostContext
     ? canRequestHostSwap(userId, hostContext.assignments, detail.status)
     : false;
+  const hostSwapReplacementAvailable =
+    canSwapHost && (await hostSwapHasReplacement(supabase, detail.id));
   const showHostSection = canViewHostCoordination(detail.status) && Boolean(settings?.hostingEnabled);
 
   const displayTimeZone = detail.timezone ?? settings?.timezone ?? "Pacific/Auckland";
@@ -299,6 +301,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     canAssignHost,
     canAcceptHost,
     canSwapHost,
+    hostSwapReplacementAvailable,
     showHostSection,
     anyCandidatePasses,
     viewerHomeLocation,
