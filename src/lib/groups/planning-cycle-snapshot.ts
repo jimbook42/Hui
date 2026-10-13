@@ -60,7 +60,23 @@ export async function persistGroupPlanningSnapshot(
   supabase: SupabaseClient,
   groupId: string,
   cycle: GroupPlanningCycle,
+  options?: { serviceRole?: boolean },
 ): Promise<void> {
+  if (options?.serviceRole) {
+    const { error } = await supabase.from("group_planning_cycle_snapshots").upsert({
+      group_id: groupId,
+      next_nominal_date: cycle.nextTargetDate,
+      planning_opens_on: cycle.planningOpensOn,
+      phase: cycle.phase,
+      derived_at: new Date().toISOString(),
+      derivation_version: 1,
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return;
+  }
+
   const { error } = await supabase.rpc("upsert_group_planning_snapshot", {
     p_group_id: groupId,
     p_next_nominal_date: cycle.nextTargetDate,
@@ -78,9 +94,10 @@ export async function rebuildAndPersistGroupPlanningSnapshot(
   settings: GroupSettingsRow,
   eventRows: Parameters<typeof mapPlanningEventRow>[0][] | null,
   modifiers: BuildGroupPlanningCycleOptions,
+  options?: { serviceRole?: boolean },
 ): Promise<GroupPlanningCycle> {
   const events = (eventRows ?? []).map((row) => mapPlanningEventRow(row));
   const cycle = buildGroupPlanningCycle(settings, events, modifiers);
-  await persistGroupPlanningSnapshot(supabase, groupId, cycle);
+  await persistGroupPlanningSnapshot(supabase, groupId, cycle, options);
   return cycle;
 }
