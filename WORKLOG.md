@@ -2,9 +2,15 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — HUI-031-B Pause, skip, snapshot refresh
+
+- **Schema/RPC:** `group_recurrence_preferences`, `group_planning_cycle_skips`, `group_planning_cycle_snapshots`; `set_group_recurrence_paused`, `skip_group_planning_cycle`, `upsert_group_planning_snapshot`, `refresh_all_group_planning_snapshots` (stub); migrations `20261013105417`, `20261013105855` (applied linked Supabase 2026-10-13).
+- **Domain:** skip dates in `resolveCycleReferenceDate`; `recurrence_paused` phase.
+- **UX:** group recurring card admin pause/skip; snapshot sync on skip/pause/complete.
+
 ## 2026-10-13 — HUI-031-A Complete event + cycle reference
 
-- **RPC:** `complete_event` — confirmed → completed; creator or group admin/owner; migration `20261013160000_hui_031a_complete_event.sql` (applied linked Supabase 2026-10-13).
+- **RPC:** `complete_event` — confirmed → completed; creator or group admin/owner; migrations `20261013104702_hui_031a_complete_event.sql`, `20261013104928_hui_031a_complete_event_trigger.sql` (applied linked Supabase 2026-10-13).
 - **App:** manage lifecycle “Mark hui completed”, `completeEventAction`, domain permissions/lifecycle helpers.
 - **Tests:** `events-complete.test.ts`, planning-cycle confirmed-future vs completed cases.
 

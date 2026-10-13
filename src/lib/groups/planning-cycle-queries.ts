@@ -3,7 +3,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { canProposeEvents } from "@/domain/events/permissions";
-import type { MembershipRole } from "@/domain/groups/permissions";
+import { canEditSettings, type MembershipRole } from "@/domain/groups/permissions";
+import { loadRecurrenceCycleModifiers } from "@/lib/groups/planning-cycle-snapshot";
 import { getGroupSettingsByGroupId } from "@/lib/groups/settings-query";
 import {
   buildGroupPlanningCycle,
@@ -21,6 +22,8 @@ export type GroupPlanningContext = {
   cycle: GroupPlanningCycle;
   canPropose: boolean;
   showPlanCta: boolean;
+  canManageRecurrence: boolean;
+  recurrencePaused: boolean;
 };
 
 export async function loadGroupPlanningContext(
@@ -45,11 +48,13 @@ export async function loadGroupPlanningContext(
     throw new Error(error.message);
   }
 
+  const modifiers = await loadRecurrenceCycleModifiers(supabase, groupId);
   const events = (eventRows ?? []).map((row) =>
     mapPlanningEventRow(row as Parameters<typeof mapPlanningEventRow>[0]),
   );
-  const cycle = buildGroupPlanningCycle(settings, events);
+  const cycle = buildGroupPlanningCycle(settings, events, modifiers);
   const canPropose = canProposeEvents(viewerRole, settings);
+  const recurrencePaused = Boolean(modifiers.recurrencePaused);
 
   return {
     groupId,
@@ -58,7 +63,9 @@ export async function loadGroupPlanningContext(
     settings,
     cycle,
     canPropose,
-    showPlanCta: canPropose && shouldShowPlanNextCta(cycle),
+    showPlanCta: canPropose && shouldShowPlanNextCta(cycle) && !recurrencePaused,
+    canManageRecurrence: canEditSettings(viewerRole),
+    recurrencePaused,
   };
 }
 

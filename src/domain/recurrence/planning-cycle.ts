@@ -22,6 +22,7 @@ export type GroupPlanningEventSnapshot = {
 
 export type PlanningCyclePhase =
   | "not_recurring"
+  | "recurrence_paused"
   | "not_due"
   | "planning_soon"
   | "ready_to_plan"
@@ -63,6 +64,7 @@ export function resolveCycleReferenceDate(
   events: GroupPlanningEventSnapshot[],
   anchorDate: string,
   todayDateOnly: string,
+  skippedNominalDates: string[] = [],
 ): string {
   let best = anchorDate;
   for (const event of events) {
@@ -85,6 +87,11 @@ export function resolveCycleReferenceDate(
       if (compareDateOnly(nominal, best) > 0) {
         best = nominal;
       }
+    }
+  }
+  for (const skip of skippedNominalDates) {
+    if (isDateOnly(skip) && compareDateOnly(skip, best) > 0) {
+      best = skip;
     }
   }
   return best;
@@ -134,6 +141,8 @@ export function deriveGroupPlanningCycle(input: {
   planningLeadDays: number;
   todayDateOnly: string;
   events: GroupPlanningEventSnapshot[];
+  skippedNominalDates?: string[];
+  recurrencePaused?: boolean;
 }): GroupPlanningCycle {
   const leadDays = input.planningLeadDays >= 0 ? input.planningLeadDays : 14;
 
@@ -149,10 +158,35 @@ export function deriveGroupPlanningCycle(input: {
     };
   }
 
+  if (input.recurrencePaused) {
+    const reference = resolveCycleReferenceDate(
+      input.events,
+      input.cadence.anchorDate,
+      input.todayDateOnly,
+      input.skippedNominalDates ?? [],
+    );
+    const nextTarget = computeNextTargetDate(
+      input.cadence,
+      reference,
+      input.todayDateOnly,
+    );
+    const planningOpens = subtractDaysFromDateOnly(nextTarget, leadDays);
+    return {
+      cadence: input.cadence,
+      planningLeadDays: leadDays,
+      nextTargetDate: nextTarget,
+      planningOpensOn: planningOpens,
+      phase: "recurrence_paused",
+      blockingEventId: null,
+      cycleTargetDate: nextTarget,
+    };
+  }
+
   const reference = resolveCycleReferenceDate(
     input.events,
     input.cadence.anchorDate,
     input.todayDateOnly,
+    input.skippedNominalDates ?? [],
   );
   const nextTarget = computeNextTargetDate(
     input.cadence,

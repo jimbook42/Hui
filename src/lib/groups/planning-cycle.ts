@@ -30,9 +30,15 @@ export function cadenceFromGroupSettings(settings: GroupSettingsRow) {
   );
 }
 
+export type BuildGroupPlanningCycleOptions = {
+  skippedNominalDates?: string[];
+  recurrencePaused?: boolean;
+};
+
 export function buildGroupPlanningCycle(
   settings: GroupSettingsRow,
   events: GroupPlanningEventSnapshot[],
+  options: BuildGroupPlanningCycleOptions = {},
   now: Date = new Date(),
 ): GroupPlanningCycle {
   const today = todayDateOnlyInTimeZone(settings.timezone, now);
@@ -42,6 +48,8 @@ export function buildGroupPlanningCycle(
     planningLeadDays: settings.planningLeadDays,
     todayDateOnly: today,
     events,
+    skippedNominalDates: options.skippedNominalDates,
+    recurrencePaused: options.recurrencePaused,
   });
 }
 

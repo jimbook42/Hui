@@ -8,6 +8,7 @@ import {
   formatNominalPlanningDate,
   shouldShowPlanNextCta,
 } from "@/lib/groups/planning-cycle";
+import { GroupRecurrenceAdminControls } from "@/components/groups/group-recurrence-admin-controls";
 import type { GroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
 
 function phaseCopy(context: GroupPlanningContext): { title: string; detail: string } {
@@ -44,6 +45,13 @@ function phaseCopy(context: GroupPlanningContext): { title: string; detail: stri
       return {
         title: "Next hui to plan",
         detail: opens ? `Planning opens ${opens}` : "Nothing due yet.",
+      };
+    case "recurrence_paused":
+      return {
+        title: "Recurrence paused",
+        detail: target
+          ? `Next nominal date would be ${target} when you resume.`
+          : "Planning reminders are paused until an admin resumes.",
       };
     default:
       return { title: "Recurring group", detail: "" };
@@ -98,6 +106,7 @@ export function GroupRecurrencePlanningCard({
           when you are ready.
         </p>
       ) : null}
+      <GroupRecurrenceAdminControls context={context} />
     </HuiSurface>
   );
 }

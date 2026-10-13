@@ -121,6 +121,32 @@ describe("recurring planning cycle (HUI-028)", () => {
     expect(shouldShowPlanNextCta(cycle)).toBe(false);
   });
 
+  it("skipped nominal date advances the cycle reference", () => {
+    const reference = resolveCycleReferenceDate(
+      [],
+      CADENCE.anchorDate,
+      "2026-03-01",
+      ["2026-02-15"],
+    );
+    expect(reference).toBe("2026-02-15");
+    expect(
+      computeNextTargetDate(CADENCE, reference, "2026-03-01"),
+    ).toBe("2026-03-29");
+  });
+
+  it("paused recurrence uses recurrence_paused phase", () => {
+    const cycle = deriveGroupPlanningCycle({
+      recurringEnabled: true,
+      cadence: CADENCE,
+      planningLeadDays: 14,
+      todayDateOnly: "2026-03-12",
+      events: [],
+      recurrencePaused: true,
+    });
+    expect(cycle.phase).toBe("recurrence_paused");
+    expect(shouldShowPlanNextCta(cycle)).toBe(false);
+  });
+
   it("completed hui advances reference for next target", () => {
     const reference = resolveCycleReferenceDate(
       [

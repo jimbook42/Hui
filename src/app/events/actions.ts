@@ -32,6 +32,7 @@ import {
 } from "@/domain/events/validation";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getEventDetail } from "@/lib/events/queries";
+import { syncGroupPlanningAfterChange } from "@/lib/groups/sync-planning-after-change";
 import { pickAcceptedHost } from "@/domain/hosts/display";
 import { getEventHostContext } from "@/lib/hosts/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
@@ -396,6 +397,12 @@ export async function completeEventAction(
   const { error } = await supabase.rpc("complete_event", { p_event_id: eventId });
   if (error) {
     return { error: error.message };
+  }
+
+  try {
+    await syncGroupPlanningAfterChange(supabase, detail.groupId);
+  } catch {
+    // Snapshot is best-effort; completion is authoritative.
   }
 
   revalidatePath(`/events/${eventId}`);
