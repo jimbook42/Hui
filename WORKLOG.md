@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — Cancel and reopen notifications (0.11.0)
+
+- **Kind:** `event_cancelled`; trigger on manual cancel; stale auto-cancel via `process_stale_proposals` + trigger (idempotent `event_cancelled:{event_id}`).
+- **Reopen:** `notify_event_recipients_except` attendees-only before clearing responses; migration `20261014003000`.
+- **Push:** `event_cancelled` / `event_rescheduled` respect `push_event_confirmed_enabled`.
+
 ## 2026-10-13 — Reschedule confirmed hui (0.10.0)
 
 - **RPC:** `reschedule_confirmed_event_to_time`, `reopen_confirmed_event_for_proposing`; `event_reschedule_audit`; notification kind `event_rescheduled`.

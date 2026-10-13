@@ -4,6 +4,7 @@ export type NotificationKind =
   | "event_proposed"
   | "consensus_ready"
   | "event_confirmed"
+  | "event_cancelled"
   | "event_rescheduled"
   | "host_proposed"
   | "host_accepted"

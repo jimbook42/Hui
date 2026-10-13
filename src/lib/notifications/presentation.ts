@@ -36,6 +36,13 @@ const PRESENTATION: Record<NotificationKind, NotificationPresentation> = {
     actionLabel: "See details",
     actionable: false,
   },
+  event_cancelled: {
+    label: "Cancelled",
+    tone: "clay",
+    icon: "calendar",
+    actionLabel: "View",
+    actionable: false,
+  },
   event_rescheduled: {
     label: "Time changed",
     tone: "clay",
