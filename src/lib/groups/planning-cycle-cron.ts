@@ -13,6 +13,8 @@ export type PlanningCycleCronSummary = {
   groupsScanned: number;
   snapshotsRefreshed: number;
   nudgesQueued: number;
+  staleProposalNudges: number;
+  staleProposalsCancelled: number;
 };
 
 const GROUP_SETTINGS_SELECT = `
@@ -103,9 +105,33 @@ export async function runPlanningCycleCron(
     throw new Error(nudgeError.message);
   }
 
+  const { data: staleRows, error: staleError } = await supabase.rpc(
+    "process_stale_proposals",
+    { p_as_of: asOfDate ?? undefined },
+  );
+  if (staleError) {
+    throw new Error(staleError.message);
+  }
+
+  const staleRow = Array.isArray(staleRows) ? staleRows[0] : staleRows;
+  const staleProposalNudges =
+    staleRow && typeof staleRow === "object" && "nudges_queued" in staleRow
+      ? Number((staleRow as { nudges_queued: number }).nudges_queued)
+      : 0;
+  const staleProposalsCancelled =
+    staleRow && typeof staleRow === "object" && "proposals_cancelled" in staleRow
+      ? Number((staleRow as { proposals_cancelled: number }).proposals_cancelled)
+      : 0;
+
+  if (staleProposalsCancelled > 0) {
+    await refreshAllGroupPlanningSnapshots(supabase);
+  }
+
   return {
     groupsScanned: typeof groupsScanned === "number" ? groupsScanned : snapshotsRefreshed,
     snapshotsRefreshed,
     nudgesQueued: typeof nudgesQueued === "number" ? nudgesQueued : 0,
+    staleProposalNudges,
+    staleProposalsCancelled,
   };
 }

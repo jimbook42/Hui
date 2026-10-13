@@ -13,6 +13,7 @@ import {
   EventProposedGuidanceCard,
   HostSwappedConfirmationCard,
 } from "@/components/events/event-page-sections";
+import { StaleProposalSection } from "@/components/events/stale-proposal-section";
 import { EventProposeInviteSection } from "@/components/events/event-propose-invite-section";
 import { AttendanceLiveProvider } from "@/components/events/attendance-live";
 import { EventHero, EventHeroMetaSkeleton } from "@/components/hui/event-hero";
@@ -82,6 +83,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
                 prominent={justProposed}
               />
             ) : null}
+            <StaleProposalSection detail={detail} userId={userId} />
             <EventAttentionCard detail={detail} userId={userId} />
             <EventOpenDecisionsCard detail={detail} userId={userId} />
             <EventManageEntryCard detail={detail} userId={userId} />

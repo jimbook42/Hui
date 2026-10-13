@@ -10,6 +10,11 @@ import {
   type HomeAttention,
   type HomeBucket,
 } from "@/domain/events/home";
+import {
+  isProposingEventStale,
+  resolveProposalNominalDate,
+} from "@/domain/events/stale-proposal";
+import { todayDateOnlyInTimeZone } from "@/lib/groups/planning-cycle";
 import type { EventStatus } from "@/domain/events/types";
 import type { MembershipRole } from "@/domain/groups/permissions";
 import { canRespondToEventDecisions } from "@/domain/decisions/permissions";
@@ -65,6 +70,8 @@ export type HomeEvent = {
   hostName: string | null;
   /** Active contribution categories nobody has claimed yet (confirmed gatherings only). */
   contributionsOpen: number | null;
+  /** Proposing hui whose nominal date is before today in the group timezone. */
+  proposalDatePassed: boolean;
 };
 
 export type ProposableGroup = { id: string; name: string };
@@ -85,6 +92,7 @@ type EventRow = {
   starts_at: string | null;
   ends_at: string | null;
   timezone: string | null;
+  planning_target_date: string | null;
   groups: { name: string } | { name: string }[] | null;
 };
 
@@ -142,7 +150,7 @@ export async function loadHomeData(
   let eventsQuery = supabase
     .from("events")
     .select(
-      "id, title, status, group_id, created_by, location, starts_at, ends_at, timezone, groups:group_id ( name )",
+      "id, title, status, group_id, created_by, location, starts_at, ends_at, timezone, planning_target_date, groups:group_id ( name )",
     )
     .in("status", statuses)
     .order("starts_at", { ascending: true, nullsFirst: false })
@@ -432,6 +440,19 @@ export async function loadHomeData(
       }
     }
 
+    const timeZone =
+      row.timezone && row.timezone.length > 0
+        ? row.timezone
+        : (groupSettings?.timezone ?? DEFAULT_TIME_ZONE);
+    const today = todayDateOnlyInTimeZone(timeZone, now);
+    const eventCandidates = candidatesByEvent.get(row.id) ?? [];
+    const nominal = resolveProposalNominalDate({
+      planningTargetDate: row.planning_target_date,
+      candidateStartInstants: eventCandidates.map((c) => c.starts_at),
+      timeZone,
+    });
+    const proposalDatePassed = isProposingEventStale(row.status, nominal, today);
+
     const { bucket, attention } = classifyHomeEvent(
       {
         status: row.status,
@@ -458,7 +479,7 @@ export async function loadHomeData(
       location: row.location?.trim() ? row.location.trim() : null,
       startsAt,
       endsAt,
-      timeZone: row.timezone && row.timezone.length > 0 ? row.timezone : (groupSettings?.timezone ?? DEFAULT_TIME_ZONE),
+      timeZone,
       candidateId: picked?.id ?? null,
       viewerResponse,
       viewerState: attendanceStateFromChoice(viewerResponse, maybeEnabled),
@@ -469,6 +490,7 @@ export async function loadHomeData(
       counts: null,
       hostName: hostNameByEvent.get(row.id) ?? null,
       contributionsOpen,
+      proposalDatePassed,
     };
   });
 
