@@ -22,6 +22,7 @@ import {
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
+import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nominal";
 import {
   formatCadenceLabel,
   type GroupPlanningCycle,
@@ -102,6 +103,28 @@ export function CreateEventProposalFlow({
   const [draft, setDraft] = useState<EventProposalDraft>(() => initialDraft);
   const [stepError, setStepError] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState(initialDate);
+  const wallClockDate =
+    draft.eventKind === "recurring" && draft.recurrence?.planningTargetDate
+      ? draft.recurrence.planningTargetDate
+      : timeDate;
+
+  function applyFirstGroupCadence(
+    recurrence: EventProposalDraft["recurrence"],
+  ): NonNullable<EventProposalDraft["recurrence"]> {
+    const intervalUnit = recurrence?.intervalUnit ?? "month";
+    const intervalCount = recurrence?.intervalCount ?? 1;
+    const nominal = firstGroupCycleNominalDate(
+      { intervalUnit, intervalCount },
+      todayDateOnly,
+    );
+    return {
+      seriesTitle: recurrence?.seriesTitle ?? "",
+      intervalUnit,
+      intervalCount,
+      startsOn: nominal,
+      planningTargetDate: nominal,
+    };
+  }
   const [timeStart, setTimeStart] = useState("12:00");
   // The end time is optional: an empty value means "start only".
   const [timeEnd, setTimeEnd] = useState("");
@@ -144,8 +167,8 @@ export function CreateEventProposalFlow({
         return;
       }
       if (draft.eventKind === "recurring" && isFirstGroupEvent) {
-        const startsOn = draft.recurrence?.startsOn?.trim() ?? "";
-        if (!startsOn) {
+        const nominal = draft.recurrence?.planningTargetDate?.trim() ?? "";
+        if (!nominal) {
           setStepError("Choose when the first gathering should be planned around.");
           return;
         }
@@ -159,8 +182,8 @@ export function CreateEventProposalFlow({
               startsOn: "",
               planningTargetDate: null,
             }),
-            startsOn,
-            planningTargetDate: startsOn,
+            startsOn: nominal,
+            planningTargetDate: nominal,
             seriesTitle:
               current.title.trim() ||
               current.recurrence?.seriesTitle?.trim() ||
@@ -172,7 +195,12 @@ export function CreateEventProposalFlow({
       return;
     }
     if (step === "time") {
-      const parsed = parseWallClockCandidate(timeDate, timeStart, timeEnd, settings.timezone);
+      const parsed = parseWallClockCandidate(
+        wallClockDate,
+        timeStart,
+        timeEnd,
+        settings.timezone,
+      );
       if (!parsed && draft.candidates.length < 1) {
         setStepError(
           timeEnd.trim()
@@ -205,7 +233,12 @@ export function CreateEventProposalFlow({
 
   function addCandidate() {
     setStepError(null);
-    const parsed = parseWallClockCandidate(timeDate, timeStart, timeEnd, settings.timezone);
+    const parsed = parseWallClockCandidate(
+      wallClockDate,
+      timeStart,
+      timeEnd,
+      settings.timezone,
+    );
     if (!parsed) {
       setStepError(
         timeEnd.trim()
@@ -456,9 +489,8 @@ export function CreateEventProposalFlow({
                   className="hui-input"
                   value={draft.recurrence?.intervalUnit ?? "month"}
                   onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      recurrence: {
+                    setDraft((current) => {
+                      const next = applyFirstGroupCadence({
                         ...(current.recurrence ?? {
                           seriesTitle: "",
                           intervalUnit: "month",
@@ -467,8 +499,9 @@ export function CreateEventProposalFlow({
                           planningTargetDate: null,
                         }),
                         intervalUnit: event.target.value as "week" | "month",
-                      },
-                    }))
+                      });
+                      return { ...current, recurrence: next };
+                    })
                   }
                 >
                   <option value="week">Weekly</option>
@@ -483,9 +516,8 @@ export function CreateEventProposalFlow({
                   className="hui-input"
                   value={draft.recurrence?.intervalCount ?? 1}
                   onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      recurrence: {
+                    setDraft((current) => {
+                      const next = applyFirstGroupCadence({
                         ...(current.recurrence ?? {
                           seriesTitle: "",
                           intervalUnit: "month",
@@ -494,15 +526,16 @@ export function CreateEventProposalFlow({
                           planningTargetDate: null,
                         }),
                         intervalCount: Number(event.target.value),
-                      },
-                    }))
+                      });
+                      return { ...current, recurrence: next };
+                    })
                   }
                 />
               </label>
               <WallClockDateField
                 label="When should the first gathering be planned around?"
                 value={draft.recurrence?.planningTargetDate ?? draft.recurrence?.startsOn ?? ""}
-                onChange={(date) =>
+                onChange={(date) => {
                   setDraft((current) => ({
                     ...current,
                     recurrence: {
@@ -520,8 +553,8 @@ export function CreateEventProposalFlow({
                         current.recurrence?.seriesTitle?.trim() ||
                         `${groupName} gatherings`,
                     },
-                  }))
-                }
+                  }));
+                }}
               />
               <p className="text-xs font-semibold text-muted-foreground">
                 This is a planning target for the first cycle — not a confirmed gathering time.
@@ -588,8 +621,10 @@ export function CreateEventProposalFlow({
             <p className="font-extrabold text-foreground">Add a time</p>
             <WallClockDateField
               label="Date"
-              value={timeDate}
-              onChange={setTimeDate}
+              value={wallClockDate}
+              onChange={
+                draft.eventKind === "recurring" ? () => {} : setTimeDate
+              }
             />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <WallClockTimeField

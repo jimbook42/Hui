@@ -12,28 +12,29 @@ const WEEKLY = {
 const baseCycle: GroupPlanningCycle = {
   cadence: WEEKLY,
   planningLeadDays: 14,
-  nextTargetDate: "2026-10-26",
-  planningOpensOn: "2026-10-12",
+  nextTargetDate: "2026-10-19",
+  planningOpensOn: "2026-10-05",
   phase: "ready_to_plan",
   blockingEventId: null,
-  cycleTargetDate: "2026-10-26",
+  cycleTargetDate: "2026-10-19",
 };
 
 describe("buildNominalDatePreview", () => {
-  it("lists four cadence steps from the next open target", () => {
+  it("lists four cadence steps from the first nominal on or after today", () => {
     const rows = buildNominalDatePreview({
       cadence: WEEKLY,
       cycle: baseCycle,
+      todayDateOnly: "2026-10-13",
       events: [],
       skippedNominalDates: [],
       skipReasons: {},
       count: 4,
     });
     expect(rows.map((row) => row.nominalDate)).toEqual([
+      "2026-10-19",
       "2026-10-26",
       "2026-11-02",
       "2026-11-09",
-      "2026-11-16",
     ]);
     expect(rows[0].disposition).toBe("next_open");
     expect(rows[1].disposition).toBe("upcoming_open");
@@ -43,13 +44,14 @@ describe("buildNominalDatePreview", () => {
     const rows = buildNominalDatePreview({
       cadence: WEEKLY,
       cycle: baseCycle,
+      todayDateOnly: "2026-10-13",
       events: [],
-      skippedNominalDates: ["2026-11-02"],
-      skipReasons: { "2026-11-02": "Away" },
+      skippedNominalDates: ["2026-10-26"],
+      skipReasons: { "2026-10-26": "Away" },
       count: 4,
     });
     expect(rows[1]).toMatchObject({
-      nominalDate: "2026-11-02",
+      nominalDate: "2026-10-26",
       disposition: "skipped",
       skipReason: "Away",
     });
@@ -59,11 +61,12 @@ describe("buildNominalDatePreview", () => {
     const rows = buildNominalDatePreview({
       cadence: WEEKLY,
       cycle: baseCycle,
+      todayDateOnly: "2026-10-13",
       events: [
         {
           id: "e1",
           status: "confirmed",
-          planningTargetDate: "2026-10-26",
+          planningTargetDate: "2026-10-19",
           startsAt: null,
           recurrenceSeriesId: "s1",
         },

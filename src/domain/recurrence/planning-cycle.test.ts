@@ -4,6 +4,7 @@ import {
   cadenceFromParts,
   computeNextTargetDate,
   deriveGroupPlanningCycle,
+  findEarliestOpenNominalTarget,
   resolveCycleReferenceDate,
   shouldShowPlanNextCta,
 } from "@/domain/recurrence/planning-cycle";
@@ -123,18 +124,19 @@ describe("recurring planning cycle (HUI-028)", () => {
     expect(shouldShowPlanNextCta(cycle)).toBe(false);
   });
 
-  it("skipped nominal date advances the cycle reference", () => {
-    const reference = resolveCycleReferenceDate(
-      [],
-      CADENCE.anchorDate,
-      "2026-03-01",
-      ["2026-02-15"],
-    );
-    expect(reference.referenceDate).toBe("2026-02-15");
-    expect(reference.afterClosedCycle).toBe(true);
-    expect(
-      computeNextTargetDate(CADENCE, reference.referenceDate, "2026-03-01", true),
-    ).toBe("2026-03-29");
+  it("skipped nominal only removes that slot, not earlier open targets", () => {
+    const biweekly = {
+      intervalUnit: "week" as const,
+      intervalCount: 2,
+      anchorDate: "2026-10-19",
+    };
+    const next = findEarliestOpenNominalTarget({
+      cadence: biweekly,
+      todayDateOnly: "2026-10-13",
+      events: [],
+      skippedNominalDates: ["2026-11-02"],
+    });
+    expect(next).toBe("2026-10-19");
   });
 
   it("paused recurrence uses recurrence_paused phase", () => {

@@ -1,11 +1,9 @@
-import { addCadenceToDateOnly } from "@/domain/recurrence/date-only";
+import { addCadenceToDateOnly, compareDateOnly } from "@/domain/recurrence/date-only";
 import type {
   GroupPlanningCycle,
   GroupPlanningEventSnapshot,
   RecurrenceCadence,
 } from "@/domain/recurrence/planning-cycle";
-import { pickOpenCycleNominalDate } from "@/domain/recurrence/planning-cycle";
-
 export type NominalPreviewDisposition =
   | "next_open"
   | "upcoming_open"
@@ -49,6 +47,7 @@ function dispositionForEvent(
 export function buildNominalDatePreview(input: {
   cadence: RecurrenceCadence;
   cycle: GroupPlanningCycle;
+  todayDateOnly: string;
   events: GroupPlanningEventSnapshot[];
   skippedNominalDates: string[];
   skipReasons: Record<string, string | null>;
@@ -56,10 +55,19 @@ export function buildNominalDatePreview(input: {
 }): NominalPreviewRow[] {
   const count = input.count ?? 4;
   const skipSet = new Set(input.skippedNominalDates);
-  let cursor =
-    pickOpenCycleNominalDate(input.cycle) ??
-    input.cycle.nextTargetDate ??
-    input.cadence.anchorDate;
+  let cursor = input.cadence.anchorDate;
+  let alignGuard = 0;
+  while (
+    compareDateOnly(cursor, input.todayDateOnly) < 0 &&
+    alignGuard < 500
+  ) {
+    cursor = addCadenceToDateOnly(
+      cursor,
+      input.cadence.intervalUnit,
+      input.cadence.intervalCount,
+    );
+    alignGuard += 1;
+  }
 
   const rows: NominalPreviewRow[] = [];
   let openSlots = 0;

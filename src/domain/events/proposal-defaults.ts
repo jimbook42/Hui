@@ -3,11 +3,10 @@ import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
 
 import type { EventProposalDraft } from "./proposal";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
+import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nominal";
 import {
-  computeNextTargetDate,
   pickOpenCycleNominalDate,
   proposalPrefillFromCycle,
-  type RecurrenceCadence,
 } from "@/domain/recurrence/planning-cycle";
 
 /** Group has configured cadence or an active recurrence series — not a brand-new casual group. */
@@ -73,20 +72,12 @@ export function buildInitialProposalDraft(
     !groupHasEstablishedRecurrence(settings) &&
     options.todayDateOnly
   ) {
-    const anchor = options.todayDateOnly;
-    const draftCadence: RecurrenceCadence = {
-      intervalUnit,
-      intervalCount,
-      anchorDate: anchor,
-    };
-    const firstTarget = computeNextTargetDate(
-      draftCadence,
-      anchor,
+    const firstNominal = firstGroupCycleNominalDate(
+      { intervalUnit, intervalCount },
       options.todayDateOnly,
-      false,
     );
-    resolvedStartsOn = anchor;
-    planningTargetDate = firstTarget;
+    resolvedStartsOn = firstNominal;
+    planningTargetDate = firstNominal;
   }
 
   return {

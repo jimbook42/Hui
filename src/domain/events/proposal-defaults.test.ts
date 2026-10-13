@@ -67,7 +67,7 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
     });
     expect(draft.eventKind).toBe("recurring");
     expect(draft.recurrence?.startsOn).toBe("2026-10-13");
-    expect(draft.recurrence?.planningTargetDate).toBe("2026-11-13");
-    expect(initialCandidateDateFromDraft(draft, null)).toBe("2026-11-13");
+    expect(draft.recurrence?.planningTargetDate).toBe("2026-10-13");
+    expect(initialCandidateDateFromDraft(draft, null)).toBe("2026-10-13");
   });
 });

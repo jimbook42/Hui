@@ -14,6 +14,7 @@ import {
   buildGroupPlanningCycle,
   mapPlanningEventRow,
   shouldShowPlanNextCta,
+  todayDateOnlyInTimeZone,
   type GroupPlanningCycle,
 } from "@/lib/groups/planning-cycle";
 import type { GroupSettingsRow } from "@/lib/groups/types";
@@ -69,6 +70,7 @@ export async function loadGroupPlanningContext(
       ? buildNominalDatePreview({
           cadence: cycle.cadence,
           cycle,
+          todayDateOnly: todayDateOnlyInTimeZone(settings.timezone),
           events,
           skippedNominalDates: modifiers.skippedNominalDates ?? [],
           skipReasons,
