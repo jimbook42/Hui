@@ -27,7 +27,7 @@ import {
   type GroupPlanningCycle,
   type RecurrenceCadence,
 } from "@/domain/recurrence/planning-cycle";
-import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
+import { cadenceFromGroupSettings, todayDateOnlyInTimeZone } from "@/lib/groups/planning-cycle";
 import type { TimeRecommendation } from "@/domain/scheduling/time-recommendations";
 import { ProposalContributionRequestFields } from "@/components/events/proposal-contribution-request-fields";
 import { SuggestedTimesList } from "@/components/events/suggested-times-list";
@@ -80,14 +80,19 @@ export function CreateEventProposalFlow({
   planningCycle,
   timeRecommendations,
 }: CreateEventProposalFlowProps) {
+  const todayDateOnly = useMemo(
+    () => todayDateOnlyInTimeZone(settings.timezone),
+    [settings.timezone],
+  );
   const initialDraft = useMemo(
     () =>
       buildInitialProposalDraft(settings, {
         groupName,
         cycle: planningCycle,
         isFirstGroupEvent,
+        todayDateOnly,
       }),
-    [settings, groupName, planningCycle, isFirstGroupEvent],
+    [settings, groupName, planningCycle, isFirstGroupEvent, todayDateOnly],
   );
   const initialDate = useMemo(
     () => initialCandidateDateFromDraft(initialDraft, planningCycle),

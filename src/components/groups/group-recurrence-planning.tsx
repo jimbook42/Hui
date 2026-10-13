@@ -9,6 +9,7 @@ import {
 } from "@/domain/recurrence/planning-cycle";
 import { formatNominalPlanningDate } from "@/lib/groups/planning-cycle";
 import { GroupRecurrenceAdminControls } from "@/components/groups/group-recurrence-admin-controls";
+import { GroupRecurrenceCadenceSection } from "@/components/groups/group-recurrence-cadence";
 import type { GroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
 
 function phaseCopy(context: GroupPlanningContext): { title: string; detail: string } {
@@ -121,6 +122,7 @@ export function GroupRecurrencePlanningCard({
           </ul>
         </div>
       ) : null}
+      <GroupRecurrenceCadenceSection context={context} />
       <GroupRecurrenceAdminControls context={context} />
     </HuiSurface>
   );
