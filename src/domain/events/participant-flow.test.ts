@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bestViewerResponseAcrossProposedCandidates,
   canSuggestAlternativeTimeInFlow,
   canUseParticipantRespondFlow,
   nextStepAfterAttendanceSave,
@@ -16,6 +17,34 @@ describe("participant flow (HUI-026B)", () => {
     status: "proposed" as const,
     viewerResponse: null,
   };
+
+  it("picks the best viewer answer across proposed times", () => {
+    const second = { ...candidate, id: "c2" };
+    expect(
+      bestViewerResponseAcrossProposedCandidates([
+        { ...candidate, viewerResponse: "maybe" },
+        { ...second, viewerResponse: "available" },
+      ]),
+    ).toBe("available");
+    expect(
+      bestViewerResponseAcrossProposedCandidates([
+        { ...candidate, viewerResponse: "unavailable" },
+        { ...second, viewerResponse: "maybe" },
+      ]),
+    ).toBe("maybe");
+    expect(
+      bestViewerResponseAcrossProposedCandidates([
+        { ...candidate, viewerResponse: "unavailable" },
+        { ...second, viewerResponse: "unavailable" },
+      ]),
+    ).toBe("unavailable");
+    expect(
+      bestViewerResponseAcrossProposedCandidates([
+        { ...candidate, viewerResponse: "unavailable" },
+        second,
+      ]),
+    ).toBeNull();
+  });
 
   it("prefers selected candidate over proposed times", () => {
     const picked = pickParticipantTimeCandidate([

@@ -16,7 +16,10 @@ import {
 import { buildContributionSlots, isContributionSlotFilled } from "@/domain/contributions/slots";
 import { buildEventAttention } from "@/domain/events/attention";
 import { attendanceStateFromChoice } from "@/domain/events/home";
-import { pickParticipantTimeCandidate } from "@/domain/events/participant-flow";
+import {
+  bestViewerResponseAcrossProposedCandidates,
+  pickParticipantTimeCandidate,
+} from "@/domain/events/participant-flow";
 import {
   canAccessEventManagement,
   canCancelEvent,
@@ -179,7 +182,10 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
 
   const displayTimeZone = detail.timezone ?? settings?.timezone ?? "Pacific/Auckland";
 
-  const viewerResponse = focusCandidate?.viewerResponse ?? null;
+  const viewerResponse =
+    bestViewerResponseAcrossProposedCandidates(scheduling.candidates) ??
+    focusCandidate?.viewerResponse ??
+    null;
   const viewerState = attendanceStateFromChoice(viewerResponse, scheduling.maybeResponsesEnabled);
   const counts = primaryRoster
     ? countAttendance(primaryRoster.members, scheduling.maybeResponsesEnabled)

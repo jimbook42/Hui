@@ -113,7 +113,7 @@ export function EventParticipantRespondFlow({
   secondaryDataPromise,
 }: EventParticipantRespondFlowProps) {
   const router = useRouter();
-  const [step, setStep] = useState<ParticipantFlowStep>(() => readStepFromHash());
+  const [step, setStep] = useState<ParticipantFlowStep>("time");
   const [responseOverride, setResponseOverride] = useState<AvailabilityChoice | null>(null);
   const viewerResponse = responseOverride ?? initialViewerResponse;
   const multipleTimeOptions =
@@ -212,6 +212,16 @@ export function EventParticipantRespondFlow({
     setStep(previous);
     window.history.pushState({ participantStep: previous }, "", `#${previous}`);
   }, [step]);
+
+  useEffect(() => {
+    const fromHash = readStepFromHash();
+    if (fromHash === "time") {
+      return;
+    }
+    // Defer so SSR/hydration first paint matches server ("time"), then apply deep-link hash.
+    const id = window.requestAnimationFrame(() => setStep(fromHash));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
 
   useEffect(() => {
     if (step === "time") {
