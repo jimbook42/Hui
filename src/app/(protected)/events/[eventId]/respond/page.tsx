@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app/app-shell";
 import { EventParticipantRespondFlow } from "@/components/events/event-participant-respond-flow";
+import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
+import { formatEventTimeRange } from "@/domain/datetime/timezone";
 import { loadRespondPrimary, loadRespondSecondary } from "@/lib/events/respond-page-data";
 import { eventDetailPath } from "@/lib/events/paths";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
@@ -53,6 +55,17 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
     primary.detail.groupId,
   );
 
+  const candidateTimeLabels = buildEventTimeLabelMap(
+    primary.proposedCandidates,
+    primary.displayTimeZone,
+    "compact",
+  );
+  const focusTimeLabel = formatEventTimeRange(
+    primary.candidate.startsAt,
+    primary.candidate.endsAt,
+    primary.displayTimeZone,
+  );
+
   return (
     <AppShell title="Your response">
       <EventParticipantRespondFlow
@@ -74,6 +87,8 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
         initialViewerResponse={primary.candidate.viewerResponse}
         standingAvailabilityHint={primary.standingAvailabilityHint}
         secondaryDataPromise={secondaryDataPromise}
+        focusTimeLabel={focusTimeLabel}
+        candidateTimeLabels={candidateTimeLabels}
       />
     </AppShell>
   );

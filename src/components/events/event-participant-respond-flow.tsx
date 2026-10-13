@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import type { EventActionState } from "@/app/events/actions";
 import { addCandidateAction, setAvailabilityResponseAction } from "@/app/events/scheduling-actions";
@@ -27,10 +27,12 @@ import {
   isContributionSlotFilled,
   sortContributionSlotsForDisplay,
 } from "@/domain/contributions/slots";
-import { formatCompactEventTimeRange, formatEventTimeRange } from "@/domain/datetime/timezone";
+import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import {
   nextStepAfterAttendanceSave,
+  nextStepAfterPlace,
   participantFlowStepsForBack,
+  shouldShowParticipantBringStep,
   type ParticipantFlowStep,
 } from "@/domain/events/participant-flow";
 import { participantPlaceView } from "@/domain/events/participant-place";
@@ -72,9 +74,13 @@ type EventParticipantRespondFlowProps = {
   initialViewerResponse: AvailabilityChoice | null;
   standingAvailabilityHint: StandingAvailabilityHint | null;
   secondaryDataPromise?: Promise<RespondSecondaryData>;
+  /** Server-preformatted for hydration-safe display. */
+  focusTimeLabel: string;
+  candidateTimeLabels: Record<string, string>;
 };
 
-const FLOW_PROGRESS: ParticipantFlowStep[] = ["time", "place", "bring", "done"];
+const MAIN_FLOW_WITH_BRING: ParticipantFlowStep[] = ["time", "place", "bring", "done"];
+const MAIN_FLOW_WITHOUT_BRING: ParticipantFlowStep[] = ["time", "place", "done"];
 
 function readStepFromHash(): ParticipantFlowStep {
   if (typeof window === "undefined") {
@@ -111,6 +117,8 @@ export function EventParticipantRespondFlow({
   initialViewerResponse,
   standingAvailabilityHint,
   secondaryDataPromise,
+  focusTimeLabel,
+  candidateTimeLabels,
 }: EventParticipantRespondFlowProps) {
   const router = useRouter();
   const [step, setStep] = useState<ParticipantFlowStep>("time");
@@ -188,7 +196,14 @@ export function EventParticipantRespondFlow({
 
   const categories = secondary?.categories ?? [];
 
-  const timeLabel = formatEventTimeRange(candidate.startsAt, candidate.endsAt, timeZone);
+  const showBringStep = useMemo(
+    () => shouldShowParticipantBringStep(contributionSlots),
+    [contributionSlots],
+  );
+
+  const flowProgress = showBringStep ? MAIN_FLOW_WITH_BRING : MAIN_FLOW_WITHOUT_BRING;
+
+  const timeLabel = focusTimeLabel;
 
   const suggestPreview = useMemo(() => {
     const parsed = parseWallClockCandidate(timeDate, timeStart, timeEnd, timeZone);
@@ -199,29 +214,52 @@ export function EventParticipantRespondFlow({
   }, [timeDate, timeStart, timeEnd, timeZone]);
   const attendanceOptions = availabilityResponseOptions(maybeResponsesEnabled);
 
-  const pushStep = useCallback((next: ParticipantFlowStep) => {
-    setStep(next);
-    window.history.pushState({ participantStep: next }, "", `#${next}`);
-  }, []);
+  const pushStep = useCallback(
+    (next: ParticipantFlowStep) => {
+      let resolved = next;
+      if (next === "bring" && !showBringStep) {
+        resolved = "done";
+      }
+      setStep(resolved);
+      window.history.pushState({ participantStep: resolved }, "", `#${resolved}`);
+    },
+    [showBringStep],
+  );
 
   const goBack = useCallback(() => {
-    const previous = participantFlowStepsForBack(step);
+    const previous = participantFlowStepsForBack(step, { showBringStep });
     if (!previous) {
       return;
     }
     setStep(previous);
     window.history.pushState({ participantStep: previous }, "", `#${previous}`);
-  }, [step]);
+  }, [step, showBringStep]);
+
+  const pendingHashStepRef = useRef(false);
 
   useEffect(() => {
     const fromHash = readStepFromHash();
     if (fromHash === "time") {
       return;
     }
-    // Defer so SSR/hydration first paint matches server ("time"), then apply deep-link hash.
-    const id = window.requestAnimationFrame(() => setStep(fromHash));
-    return () => window.cancelAnimationFrame(id);
+    pendingHashStepRef.current = true;
   }, []);
+
+  useEffect(() => {
+    if (!pendingHashStepRef.current) {
+      return;
+    }
+    if (secondaryDataPromise && !secondary) {
+      return;
+    }
+    pendingHashStepRef.current = false;
+    const fromHash = readStepFromHash();
+    const resolved =
+      fromHash === "bring" && !showBringStep ? "done" : fromHash;
+    // Defer so SSR/hydration first paint matches server ("time"), then apply deep-link hash.
+    const id = window.requestAnimationFrame(() => setStep(resolved));
+    return () => window.cancelAnimationFrame(id);
+  }, [secondary, secondaryDataPromise, showBringStep]);
 
   useEffect(() => {
     if (step === "time") {
@@ -244,7 +282,7 @@ export function EventParticipantRespondFlow({
         setStep(fromState);
         return;
       }
-      const previous = participantFlowStepsForBack(step);
+      const previous = participantFlowStepsForBack(step, { showBringStep });
       if (previous) {
         setStep(previous);
       }
@@ -252,7 +290,7 @@ export function EventParticipantRespondFlow({
 
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [step]);
+  }, [step, showBringStep]);
 
   function saveAttendanceForCandidate(
     targetCandidateId: string,
@@ -381,7 +419,8 @@ export function EventParticipantRespondFlow({
   }
 
   const showBack = participantFlowStepsForBack(step) !== null;
-  const stepIndex = FLOW_PROGRESS.indexOf(step);
+  const stepIndex = flowProgress.indexOf(step);
+  const waitingForContributionContext = Boolean(secondaryDataPromise && !secondary);
   const chosenState = attendanceStateFromChoice(viewerResponse, maybeResponsesEnabled);
 
   return (
@@ -402,7 +441,7 @@ export function EventParticipantRespondFlow({
 
       {stepIndex >= 0 ? (
         <ol className="mt-5 flex gap-1.5" aria-label="Progress">
-          {FLOW_PROGRESS.map((name, index) => (
+          {flowProgress.map((name, index) => (
             <li
               key={name}
               aria-current={index === stepIndex ? "step" : undefined}
@@ -460,7 +499,7 @@ export function EventParticipantRespondFlow({
                   return (
                     <li key={row.id} className="rounded-hui-xl bg-surface p-4 hui-shadow-sm">
                       <p className="text-sm font-extrabold text-foreground">
-                        {formatCompactEventTimeRange(row.startsAt, row.endsAt, timeZone)}
+                        {candidateTimeLabels[row.id] ?? ""}
                       </p>
                       {rowResponse ? (
                         <p className="mt-1 text-xs font-semibold text-muted-foreground">
@@ -676,8 +715,13 @@ export function EventParticipantRespondFlow({
               <p className="text-lg font-extrabold leading-snug text-foreground">{placeView.line}</p>
             </div>
           </div>
-          <PendingButton type="button" size="touch" onClick={() => pushStep("bring")}>
-            Continue
+          <PendingButton
+            type="button"
+            size="touch"
+            disabled={waitingForContributionContext}
+            onClick={() => pushStep(nextStepAfterPlace(showBringStep))}
+          >
+            {waitingForContributionContext ? "Loading…" : "Continue"}
           </PendingButton>
         </section>
       ) : null}

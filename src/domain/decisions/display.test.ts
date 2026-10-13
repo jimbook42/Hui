@@ -31,6 +31,7 @@ describe("buildDecisionPollView", () => {
       decidedByUserId: null,
       decidedAt: null,
       decidedByName: null,
+      timeZone: "Pacific/Auckland",
     });
     expect(poll.options.find((option) => option.id === "o1")?.count).toBe(2);
     expect(poll.viewerOptionId).toBe("o1");
@@ -54,6 +55,7 @@ describe("decision attention helpers", () => {
     decidedByUserId: null,
     decidedAt: null,
     decidedByName: null,
+    timeZone: "Pacific/Auckland",
   });
 
   it("flags unanswered open polls", () => {

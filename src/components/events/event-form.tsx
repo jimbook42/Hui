@@ -123,6 +123,9 @@ type EditEventFormProps = {
   defaultNotes: string | null;
   defaultStartsAt: string | null;
   defaultEndsAt: string | null;
+  /** Pre-formatted on the server for datetime-local defaults (hydration-safe). */
+  defaultStartsAtLocal?: string;
+  defaultEndsAtLocal?: string;
   defaultCoordinates?: EventCoordinates | null;
   scheduleLocked?: boolean;
   timeZone: string;
@@ -136,6 +139,8 @@ export function EditEventForm({
   defaultNotes,
   defaultStartsAt,
   defaultEndsAt,
+  defaultStartsAtLocal,
+  defaultEndsAtLocal,
   defaultCoordinates = null,
   scheduleLocked = false,
   timeZone,
@@ -178,9 +183,10 @@ export function EditEventForm({
             type="datetime-local"
             required={false}
             defaultValue={
-              defaultStartsAt
+              defaultStartsAtLocal ??
+              (defaultStartsAt
                 ? formatDateTimeLocalInTimeZone(defaultStartsAt, timeZone)
-                : ""
+                : "")
             }
           />
           <AuthField
@@ -189,7 +195,8 @@ export function EditEventForm({
             type="datetime-local"
             required={false}
             defaultValue={
-              defaultEndsAt ? formatDateTimeLocalInTimeZone(defaultEndsAt, timeZone) : ""
+              defaultEndsAtLocal ??
+              (defaultEndsAt ? formatDateTimeLocalInTimeZone(defaultEndsAt, timeZone) : "")
             }
           />
         </>

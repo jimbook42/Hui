@@ -25,6 +25,7 @@ import {
 } from "@/components/hui/icons";
 import { SectionHeader } from "@/components/hui/section-header";
 import { EventHostSection } from "@/components/hosts/event-host-section";
+import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
 import {
   formatClockTime,
   formatLongDay,
@@ -466,6 +467,11 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
 
   const hasAbout = Boolean(detail.notes || detail.recurrenceSeries || detail.kind);
 
+  const candidateTimeLabels = buildEventTimeLabelMap(
+    [...data.scheduling.candidates, ...data.scheduling.withdrawnCandidates],
+    data.displayTimeZone,
+  );
+
   return (
     <section aria-labelledby="event-details" className="hui-rise-3 space-y-3">
       <HashDisclosureOpener />
@@ -500,6 +506,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             canRespond={data.canRespond}
             canFinalise={data.canFinalise}
             timeZone={data.displayTimeZone}
+            candidateTimeLabels={candidateTimeLabels}
             attendanceRosters={data.attendanceRosters}
           />
         </DisclosureCard>

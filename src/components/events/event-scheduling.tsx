@@ -27,7 +27,6 @@ import {
   consensusFailureLabel,
   consensusRuleLabel,
 } from "@/lib/scheduling/labels";
-import { formatEventTimeRange } from "@/domain/datetime/timezone";
 import {
   groupAttendanceByResponse,
   type AttendanceRoster,
@@ -56,14 +55,12 @@ type EventSchedulingProps = {
   canRespond: boolean;
   canFinalise: boolean;
   timeZone: string;
+  /** Server-preformatted labels keyed by candidate id (avoids hydration mismatches). */
+  candidateTimeLabels: Record<string, string>;
   attendanceRosters: Record<string, AttendanceRoster>;
 };
 
 const initialState: EventActionState = {};
-
-function formatSlot(startsAt: string, endsAt: string | null, timeZone: string): string {
-  return formatEventTimeRange(startsAt, endsAt, timeZone);
-}
 
 function AttendanceSummary({
   evaluation,
@@ -383,7 +380,7 @@ function CandidateCard({
   canRespond,
   canRemoveCandidates,
   canFinalise,
-  timeZone,
+  timeLabel,
   roster,
 }: {
   eventId: string;
@@ -394,7 +391,7 @@ function CandidateCard({
   canRespond: boolean;
   canRemoveCandidates: boolean;
   canFinalise: boolean;
-  timeZone: string;
+  timeLabel: string;
   roster?: AttendanceRoster | null;
 }) {
   const badge = candidateStatusBadge(
@@ -411,7 +408,7 @@ function CandidateCard({
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <p className="text-sm font-bold text-foreground">
-          {formatSlot(candidate.startsAt, candidate.endsAt, timeZone)}
+          {timeLabel}
         </p>
         {badge ? (
           <span
@@ -473,6 +470,7 @@ export function EventScheduling({
   canRespond,
   canFinalise,
   timeZone,
+  candidateTimeLabels,
   attendanceRosters,
 }: EventSchedulingProps) {
   const evaluations = new Map(
@@ -482,6 +480,7 @@ export function EventScheduling({
   const requiredCount = consensus.candidates[0]?.requiredParticipantCount ?? 0;
   const ruleLabel = consensusRuleLabel(consensus.consensusRule);
   const deadlineNotice = proposalDeadlineGroupNotice(proposalDeadlineHours);
+  void timeZone;
   const sectionMessage = eventSchedulingSectionMessage(
     eventStatus,
     passingCount,
@@ -555,7 +554,7 @@ export function EventScheduling({
               canRespond={canRespond}
               canRemoveCandidates={canRemoveCandidates}
               canFinalise={canFinalise}
-              timeZone={timeZone}
+              timeLabel={candidateTimeLabels[candidate.id] ?? ""}
               roster={attendanceRosters[candidate.id] ?? null}
             />
           ))
@@ -579,7 +578,7 @@ export function EventScheduling({
                 canRespond={false}
                 canRemoveCandidates={false}
                 canFinalise={false}
-                timeZone={timeZone}
+                timeLabel={candidateTimeLabels[candidate.id] ?? ""}
               />
             ))}
           </ul>

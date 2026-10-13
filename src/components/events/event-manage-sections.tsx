@@ -18,6 +18,7 @@ import {
   defaultOpenManageSection,
   type ManageSectionId,
 } from "@/domain/events/manage-navigation";
+import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
 import {
   formatClockTime,
   formatLongDay,
@@ -108,6 +109,11 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
   });
 
   const sectionOpen = (id: ManageSectionId) => defaultSection === id;
+
+  const candidateTimeLabels = buildEventTimeLabelMap(
+    [...data.scheduling.candidates, ...data.scheduling.withdrawnCandidates],
+    tz,
+  );
 
   const overviewWhen =
     startsAt && !closed
@@ -228,6 +234,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
             canRespond={data.canRespond}
             canFinalise={data.canFinalise}
             timeZone={data.displayTimeZone}
+            candidateTimeLabels={candidateTimeLabels}
             attendanceRosters={data.attendanceRosters}
           />
         </DisclosureCard>
