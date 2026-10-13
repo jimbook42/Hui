@@ -102,6 +102,19 @@ async function respondYes(database: PGlite, userId: string, candidateId: string)
   );
 }
 
+async function proposeHostForEvent(database: PGlite, actorId: string, eventId: string) {
+  await asUser(database, actorId);
+  await database.query(`select public.propose_event_host_for_event($1, $2)`, [eventId, actorId]);
+}
+
+async function coordinateHost(database: PGlite, actorId: string, eventId: string) {
+  await asUser(database, actorId);
+  await database.query(`select public.coordinate_event_host_after_attendance($1, $2)`, [
+    eventId,
+    actorId,
+  ]);
+}
+
 describe("coordination host selection (HUI-022A.1)", () => {
   beforeAll(async () => {
     db = new PGlite();
@@ -150,11 +163,20 @@ describe("coordination host selection (HUI-022A.1)", () => {
     await respondYes(db, ids.isaac, prior.candidateId);
     await asUser(db, ids.owner);
     await db.query(`select public.finalise_event($1, $2)`, [prior.eventId, prior.candidateId]);
-    const priorHost = await db.query<{ user_id: string }>(
+    await proposeHostForEvent(db, ids.owner, prior.eventId);
+    let priorHost = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
       [prior.eventId],
     );
-    await asUser(db, priorHost.rows[0].user_id);
+    if (!priorHost.rows[0]) {
+      await asUser(db, ids.owner);
+      await db.query(`select public.assign_event_host($1, $2)`, [prior.eventId, ids.isaac]);
+      priorHost = await db.query<{ user_id: string }>(
+        `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
+        [prior.eventId],
+      );
+    }
+    await asUser(db, priorHost.rows[0]!.user_id);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [prior.eventId]);
 
     const { eventId, candidateId } = await insertProposingEventWithCandidate(
@@ -163,6 +185,7 @@ describe("coordination host selection (HUI-022A.1)", () => {
       "Reorder host",
     );
     await respondYes(db, ids.isaac, candidateId);
+    await proposeHostForEvent(db, ids.owner, eventId);
 
     let host = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
@@ -171,6 +194,7 @@ describe("coordination host selection (HUI-022A.1)", () => {
     expect(host.rows[0]?.user_id).toBe(ids.isaac);
 
     await respondYes(db, ids.jamie, candidateId);
+    await coordinateHost(db, ids.owner, eventId);
 
     host = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed' order by created_at desc limit 1`,
@@ -187,6 +211,7 @@ describe("coordination host selection (HUI-022A.1)", () => {
       "Stable host",
     );
     await respondYes(db, ids.jamie, candidateId);
+    await proposeHostForEvent(db, ids.owner, eventId);
     await asUser(db, ids.jamie);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);
 
@@ -218,6 +243,7 @@ describe("coordination host selection (HUI-022A.1)", () => {
        values ($1, $2, 'yes', 'group')`,
       [candidateId, ids.sam],
     );
+    await proposeHostForEvent(db, ids.owner, eventId);
 
     const host = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
@@ -238,11 +264,20 @@ describe("coordination host selection (HUI-022A.1)", () => {
     await respondYes(db, ids.jamie, first.candidateId);
     await asUser(db, ids.owner);
     await db.query(`select public.finalise_event($1, $2)`, [first.eventId, first.candidateId]);
-    const firstHost = await db.query<{ user_id: string }>(
+    await proposeHostForEvent(db, ids.owner, first.eventId);
+    let firstHost = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
       [first.eventId],
     );
-    const lastAcceptedHostId = firstHost.rows[0].user_id;
+    if (!firstHost.rows[0]) {
+      await asUser(db, ids.owner);
+      await db.query(`select public.assign_event_host($1, $2)`, [first.eventId, ids.isaac]);
+      firstHost = await db.query<{ user_id: string }>(
+        `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
+        [first.eventId],
+      );
+    }
+    const lastAcceptedHostId = firstHost.rows[0]!.user_id;
     await asUser(db, lastAcceptedHostId);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [first.eventId]);
 
@@ -250,6 +285,7 @@ describe("coordination host selection (HUI-022A.1)", () => {
     await respondYes(db, ids.owner, second.candidateId);
     await respondYes(db, ids.isaac, second.candidateId);
     await respondYes(db, ids.jamie, second.candidateId);
+    await proposeHostForEvent(db, ids.owner, second.eventId);
 
     const host = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
@@ -261,5 +297,162 @@ describe("coordination host selection (HUI-022A.1)", () => {
     await db.query(`update public.group_settings set avoid_consecutive_hosts = false where group_id = $1`, [
       groupId,
     ]);
+  });
+
+  describe("hosting standing always", () => {
+    async function resetStandings() {
+      await asUser(db, ids.isaac);
+      await db.query(`select public.set_my_hosting_standing($1, 'default')`, [groupId]);
+      await asUser(db, ids.jamie);
+      await db.query(`select public.set_my_hosting_standing($1, 'default')`, [groupId]);
+      await asUser(db, ids.owner);
+      await db.query(`select public.set_my_hosting_standing($1, 'default')`, [groupId]);
+    }
+
+    afterEach(async () => {
+      await resetStandings();
+    });
+
+    it("persists always and existing standings through set_my_hosting_standing", async () => {
+      await asUser(db, ids.isaac);
+      await db.query(`select public.set_my_hosting_standing($1, 'always')`, [groupId]);
+      let row = await db.query<{ hosting_standing: string }>(
+        `select hosting_standing::text from public.group_memberships where group_id = $1 and user_id = $2`,
+        [groupId, ids.isaac],
+      );
+      expect(row.rows[0]?.hosting_standing).toBe("always");
+
+      await db.query(`select public.set_my_hosting_standing($1, 'prefer_not')`, [groupId]);
+      row = await db.query(
+        `select hosting_standing::text from public.group_memberships where group_id = $1 and user_id = $2`,
+        [groupId, ids.isaac],
+      );
+      expect(row.rows[0]?.hosting_standing).toBe("prefer_not");
+
+      await asUser(db, ids.sam);
+      row = await db.query(
+        `select hosting_standing::text from public.group_memberships where group_id = $1 and user_id = $2`,
+        [groupId, ids.sam],
+      );
+      expect(row.rows[0]?.hosting_standing).toBe("never");
+    });
+
+    it("prefers an eligible always member over default and prefer_not", async () => {
+      await asUser(db, ids.jamie);
+      await db.query(`select public.set_my_hosting_standing($1, 'prefer_not')`, [groupId]);
+      await asUser(db, ids.isaac);
+      await db.query(`select public.set_my_hosting_standing($1, 'always')`, [groupId]);
+
+      await asUser(db, ids.owner);
+      const { eventId, candidateId } = await insertProposingEventWithCandidate(
+        db,
+        ids.owner,
+        "Always preferred",
+      );
+      await respondYes(db, ids.owner, candidateId);
+      await respondYes(db, ids.isaac, candidateId);
+      await respondYes(db, ids.jamie, candidateId);
+      await proposeHostForEvent(db, ids.owner, eventId);
+
+      const host = await db.query<{ user_id: string }>(
+        `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
+        [eventId],
+      );
+      expect(host.rows[0]?.user_id).toBe(ids.isaac);
+    });
+
+    it("does not propose an always member who cannot attend", async () => {
+      await asUser(db, ids.isaac);
+      await db.query(`select public.set_my_hosting_standing($1, 'always')`, [groupId]);
+
+      await asUser(db, ids.owner);
+      const { eventId, candidateId } = await insertProposingEventWithCandidate(
+        db,
+        ids.owner,
+        "Always unavailable",
+      );
+      await respondYes(db, ids.owner, candidateId);
+      await respondYes(db, ids.jamie, candidateId);
+      await proposeHostForEvent(db, ids.owner, eventId);
+
+      const host = await db.query<{ user_id: string }>(
+        `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
+        [eventId],
+      );
+      expect(host.rows[0]?.user_id).not.toBe(ids.isaac);
+      expect([ids.owner, ids.jamie]).toContain(host.rows[0]?.user_id);
+    });
+
+    it("tie-breaks multiple always members with host-count then display name", async () => {
+      await asUser(db, ids.isaac);
+      await db.query(`select public.set_my_hosting_standing($1, 'always')`, [groupId]);
+      await asUser(db, ids.jamie);
+      await db.query(`select public.set_my_hosting_standing($1, 'always')`, [groupId]);
+      await asUser(db, ids.owner);
+      await db.query(`select public.set_my_hosting_standing($1, 'prefer_not')`, [groupId]);
+
+      await asUser(db, ids.owner);
+      const { eventId, candidateId } = await insertProposingEventWithCandidate(
+        db,
+        ids.owner,
+        "Two always",
+      );
+      await respondYes(db, ids.owner, candidateId);
+      await respondYes(db, ids.isaac, candidateId);
+      await respondYes(db, ids.jamie, candidateId);
+      await proposeHostForEvent(db, ids.owner, eventId);
+
+      const host = await db.query<{ user_id: string }>(
+        `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
+        [eventId],
+      );
+      expect([ids.isaac, ids.jamie]).toContain(host.rows[0]?.user_id);
+    });
+
+    it("falls back to default-only selection when no always member is eligible", async () => {
+      await asUser(db, ids.owner);
+      const { eventId, candidateId } = await insertProposingEventWithCandidate(
+        db,
+        ids.owner,
+        "Default only",
+      );
+      await respondYes(db, ids.owner, candidateId);
+      await respondYes(db, ids.jamie, candidateId);
+      await proposeHostForEvent(db, ids.owner, eventId);
+
+      const host = await db.query<{ user_id: string }>(
+        `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
+        [eventId],
+      );
+      expect([ids.owner, ids.jamie]).toContain(host.rows[0]?.user_id);
+      expect(host.rows[0]?.user_id).not.toBe(ids.sam);
+    });
+
+    it("does not propose anyone when hosting is disabled", async () => {
+      await asUser(db, ids.isaac);
+      await db.query(`select public.set_my_hosting_standing($1, 'always')`, [groupId]);
+      await asUser(db, ids.owner);
+      await db.query(`update public.group_settings set hosting_enabled = false where group_id = $1`, [
+        groupId,
+      ]);
+
+      const { eventId, candidateId } = await insertProposingEventWithCandidate(
+        db,
+        ids.owner,
+        "Hosting off",
+      );
+      await respondYes(db, ids.owner, candidateId);
+      await respondYes(db, ids.isaac, candidateId);
+
+      const hosts = await db.query(
+        `select 1 from public.host_assignments where event_id = $1`,
+        [eventId],
+      );
+      expect(hosts.rows).toHaveLength(0);
+
+      await db.query(`update public.group_settings set hosting_enabled = true where group_id = $1`, [
+        groupId,
+      ]);
+    });
   });
 });

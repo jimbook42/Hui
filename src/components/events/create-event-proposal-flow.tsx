@@ -1,0 +1,784 @@
+"use client";
+
+import { useActionState, useMemo, useState } from "react";
+
+import type { EventActionState } from "@/app/events/actions";
+import { proposeGroupEventAction } from "@/app/events/proposal-actions";
+import {
+  WallClockDateField,
+  WallClockTimeField,
+} from "@/components/events/wall-clock-picker-field";
+import { ChevronDownIcon, CheckIcon } from "@/components/hui/icons";
+import { EventLocationFields } from "@/components/map/event-location-fields";
+import { HuiSwitchField } from "@/components/hui/hui-switch";
+import { PendingButton } from "@/components/ui/pending-button";
+import type { EventFoodInvolvement } from "@/domain/events/food";
+import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
+import type { EventProposalDraft } from "@/domain/events/proposal";
+import { mergeWallClockIntoCandidates, parseWallClockCandidate } from "@/domain/events/proposal";
+import {
+  buildInitialProposalDraft,
+  groupHasEstablishedRecurrence,
+  initialCandidateDateFromDraft,
+} from "@/domain/events/proposal-defaults";
+import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
+import {
+  formatCadenceLabel,
+  type GroupPlanningCycle,
+  type RecurrenceCadence,
+} from "@/domain/recurrence/planning-cycle";
+import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
+import type { TimeRecommendation } from "@/domain/scheduling/time-recommendations";
+import { ProposalContributionRequestFields } from "@/components/events/proposal-contribution-request-fields";
+import { SuggestedTimesList } from "@/components/events/suggested-times-list";
+import type { ContributionCategoryRow } from "@/lib/contributions/types";
+import type { GroupSettingsRow } from "@/lib/groups/types";
+import { formatNominalPlanningDate } from "@/lib/groups/planning-cycle";
+import { cn } from "@/lib/ui/cn";
+
+/**
+ * Three calm steps. Place, notes and contributions are optional extras (HUI-026U): the place and
+ * notes live under the name step, and the contribution categories are summarised in review.
+ */
+const STEPS = ["name", "time", "review"] as const;
+type Step = (typeof STEPS)[number];
+
+const stepLabels: Record<Step, string> = {
+  name: "Name",
+  time: "Time",
+  review: "Review",
+};
+
+type CreateEventProposalFlowProps = {
+  groupId: string;
+  groupName: string;
+  settings: GroupSettingsRow;
+  isFirstGroupEvent: boolean;
+  contributionCategories: ContributionCategoryRow[];
+  planningCycle: GroupPlanningCycle | null;
+  timeRecommendations: TimeRecommendation[];
+};
+
+const initialActionState: EventActionState = {};
+
+function hostSummary(draft: EventProposalDraft, hostingEnabled: boolean): string {
+  if (!hostingEnabled) {
+    return "Hosting is off for this group.";
+  }
+  if (draft.organiserWillHost) {
+    return "You — confirmed host for this gathering.";
+  }
+  return "No host yet — someone can accept a host proposal later.";
+}
+
+export function CreateEventProposalFlow({
+  groupId,
+  groupName,
+  settings,
+  isFirstGroupEvent,
+  contributionCategories,
+  planningCycle,
+  timeRecommendations,
+}: CreateEventProposalFlowProps) {
+  const initialDraft = useMemo(
+    () =>
+      buildInitialProposalDraft(settings, {
+        groupName,
+        cycle: planningCycle,
+        isFirstGroupEvent,
+      }),
+    [settings, groupName, planningCycle, isFirstGroupEvent],
+  );
+  const initialDate = useMemo(
+    () => initialCandidateDateFromDraft(initialDraft, planningCycle),
+    [initialDraft, planningCycle],
+  );
+  const [step, setStep] = useState<Step>("name");
+  const [draft, setDraft] = useState<EventProposalDraft>(() => initialDraft);
+  const [stepError, setStepError] = useState<string | null>(null);
+  const [timeDate, setTimeDate] = useState(initialDate);
+  const [timeStart, setTimeStart] = useState("12:00");
+  // The end time is optional: an empty value means "start only".
+  const [timeEnd, setTimeEnd] = useState("");
+
+  const [actionState, formAction] = useActionState(
+    proposeGroupEventAction,
+    initialActionState,
+  );
+
+  const stepIndex = STEPS.indexOf(step);
+  const establishedRecurrence = groupHasEstablishedRecurrence(settings);
+  const activeCategories = useMemo(
+    () => contributionCategories.filter((row) => !row.archivedAt),
+    [contributionCategories],
+  );
+  const establishedCadence = useMemo((): RecurrenceCadence | null => {
+    if (!establishedRecurrence) {
+      return null;
+    }
+    return cadenceFromGroupSettings(settings) ?? planningCycle?.cadence ?? null;
+  }, [establishedRecurrence, settings, planningCycle]);
+
+  function goTo(next: Step) {
+    setStepError(null);
+    setStep(next);
+  }
+
+  function goNext() {
+    setStepError(null);
+    if (step === "name") {
+      if (!draft.gatheringType) {
+        setStepError("Choose what you are planning.");
+        return;
+      }
+      if (
+        draft.gatheringType === "other" &&
+        !draft.gatheringTypeCustom.trim()
+      ) {
+        setStepError("Describe what you are planning.");
+        return;
+      }
+      if (draft.eventKind === "recurring" && isFirstGroupEvent) {
+        const startsOn = draft.recurrence?.startsOn?.trim() ?? "";
+        if (!startsOn) {
+          setStepError("Choose when the first gathering should be planned around.");
+          return;
+        }
+        setDraft((current) => ({
+          ...current,
+          recurrence: {
+            ...(current.recurrence ?? {
+              seriesTitle: "",
+              intervalUnit: "month",
+              intervalCount: 1,
+              startsOn: "",
+              planningTargetDate: null,
+            }),
+            startsOn,
+            planningTargetDate: startsOn,
+            seriesTitle:
+              current.title.trim() ||
+              current.recurrence?.seriesTitle?.trim() ||
+              `${groupName} gatherings`,
+          },
+        }));
+      }
+      goTo("time");
+      return;
+    }
+    if (step === "time") {
+      const parsed = parseWallClockCandidate(timeDate, timeStart, timeEnd, settings.timezone);
+      if (!parsed && draft.candidates.length < 1) {
+        setStepError(
+          timeEnd.trim()
+            ? "Enter a valid date and times. The end must be after the start."
+            : "Enter a valid date and start time.",
+        );
+        return;
+      }
+      const merged = mergeWallClockIntoCandidates(draft.candidates, parsed);
+      if (merged.error) {
+        setStepError(merged.error);
+        return;
+      }
+      if (merged.candidates.length < 1) {
+        setStepError("Add at least one proposed time.");
+        return;
+      }
+      setDraft((current) => ({ ...current, candidates: merged.candidates }));
+      goTo("review");
+    }
+  }
+
+  function goBack() {
+    setStepError(null);
+    const prev = STEPS[stepIndex - 1];
+    if (prev) {
+      setStep(prev);
+    }
+  }
+
+  function addCandidate() {
+    setStepError(null);
+    const parsed = parseWallClockCandidate(timeDate, timeStart, timeEnd, settings.timezone);
+    if (!parsed) {
+      setStepError(
+        timeEnd.trim()
+          ? "Enter a valid date and times. The end must be after the start."
+          : "Enter a valid date and start time.",
+      );
+      return;
+    }
+    const merged = mergeWallClockIntoCandidates(draft.candidates, parsed);
+    if (merged.candidates.length === draft.candidates.length) {
+      setStepError("That time is already in your proposal.");
+      return;
+    }
+    setDraft((current) => ({
+      ...current,
+      candidates: merged.candidates,
+    }));
+  }
+
+  function removeCandidate(index: number) {
+    setDraft((current) => ({
+      ...current,
+      candidates: current.candidates.filter((_, i) => i !== index),
+    }));
+  }
+
+  const selectedSuggestionKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const candidate of draft.candidates) {
+      keys.add(`${candidate.startsAt}|${candidate.endsAt ?? ""}`);
+    }
+    return keys;
+  }, [draft.candidates]);
+
+  function applySuggestion(suggestion: TimeRecommendation) {
+    setStepError(null);
+    const merged = mergeWallClockIntoCandidates(draft.candidates, {
+      startsAt: suggestion.startsAt,
+      endsAt: suggestion.endsAt,
+    });
+    if (merged.candidates.length === draft.candidates.length) {
+      return;
+    }
+    setDraft((current) => ({ ...current, candidates: merged.candidates }));
+  }
+
+  const reviewMissing: string[] = [];
+  if (!draft.gatheringType) {
+    reviewMissing.push("Type of gathering");
+  }
+  if (draft.candidates.length < 1) {
+    reviewMissing.push("At least one proposed time");
+  }
+  if (!draft.foodInvolvement) {
+    reviewMissing.push("Whether food is involved");
+  }
+
+  const canOneOff = settings.oneOffEventsAllowed;
+  const canRecurring = settings.recurringEventsEnabled;
+
+  return (
+    <div className="space-y-6">
+      <nav aria-label="Proposal steps">
+        <ol className="flex gap-1.5">
+          {STEPS.map((id, index) => (
+            <li
+              key={id}
+              aria-current={id === step ? "step" : undefined}
+              className="min-w-0 flex-1"
+            >
+              <span
+                className={`block h-1.5 rounded-full transition-colors duration-300 ${
+                  index <= stepIndex ? "bg-primary" : "bg-muted"
+                }`}
+              />
+              <span
+                className={`mt-1.5 block text-xs font-extrabold ${
+                  id === step ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {index + 1}. {stepLabels[id]}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </nav>
+
+      {step === "name" ? (
+        <section className="hui-rise space-y-5">
+          <h2 className="hui-type-page-title text-foreground">What are you planning?</h2>
+          <label className="hui-label">
+            <span>Type of gathering</span>
+            <select
+              className="hui-input"
+              value={draft.gatheringType ?? ""}
+              onChange={(event) => {
+                const value = event.target.value as GatheringType | "";
+                setDraft((current) => ({
+                  ...current,
+                  gatheringType: value || null,
+                  gatheringTypeCustom:
+                    value === "other" ? current.gatheringTypeCustom : "",
+                }));
+              }}
+              required
+            >
+              <option value="" disabled>
+                Choose one…
+              </option>
+              {GATHERING_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {gatheringTypeLabel(type)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {draft.gatheringType === "other" ? (
+            <label className="hui-label">
+              <span>Describe it</span>
+              <input
+                className="hui-input"
+                value={draft.gatheringTypeCustom}
+                maxLength={80}
+                placeholder="Birthday picnic, book club…"
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    gatheringTypeCustom: event.target.value,
+                  }))
+                }
+                required
+              />
+            </label>
+          ) : null}
+          <label className="hui-label">
+            <span>Name this gathering (optional)</span>
+            <input
+              className="hui-input text-lg font-bold"
+              value={draft.title}
+              placeholder="Mum's birthday, October family dinner…"
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, title: event.target.value }))
+              }
+            />
+          </label>
+          <details className="hui-details rounded-hui-lg bg-surface hui-shadow-sm">
+            <summary className="hui-focus-ring flex min-h-14 items-center justify-between gap-3 rounded-hui-lg px-5 py-3">
+              <span>
+                <span className="block font-extrabold text-foreground">Add a place or note</span>
+                <span className="block text-sm font-semibold text-muted-foreground">Optional</span>
+              </span>
+              <span className="hui-details-chevron text-muted-foreground" aria-hidden="true">
+                <ChevronDownIcon size={20} />
+              </span>
+            </summary>
+            <div className="space-y-4 px-5 pb-5">
+              <EventLocationFields
+                location={draft.location}
+                onLocationChange={(location) => setDraft((current) => ({ ...current, location }))}
+                coordinates={draft.locationCoordinates ?? null}
+                onCoordinatesChange={(locationCoordinates) =>
+                  setDraft((current) => ({ ...current, locationCoordinates }))
+                }
+                locationLabel="Proposed place (optional)"
+                searchLabel="Search for a place"
+                helperText={
+                  settings.hostingEnabled
+                    ? "Optional. The accepted host confirms the final place — you do not need to pin it now."
+                    : "Optional. The written place is the main detail; you can pin it on the map too."
+                }
+              />
+              <label className="hui-label">
+                <span>Notes for the group</span>
+                <textarea
+                  rows={3}
+                  className="hui-input"
+                  value={draft.notes}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, notes: event.target.value }))
+                  }
+                />
+              </label>
+            </div>
+          </details>
+          {canOneOff || canRecurring ? (
+            <fieldset className="space-y-2">
+              <legend className="hui-label">
+                <span>Planning model</span>
+              </legend>
+              <div className="grid grid-cols-1 gap-2">
+                {canRecurring ? (
+                  <label
+                    className={cn(
+                      "hui-focus-ring flex min-h-14 cursor-pointer flex-col justify-center rounded-hui-lg px-4 py-3",
+                      draft.eventKind === "recurring"
+                        ? "border-2 border-primary bg-sage-soft"
+                        : "border border-transparent bg-muted",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="event_kind"
+                      className="sr-only"
+                      checked={draft.eventKind === "recurring"}
+                      onChange={() =>
+                        setDraft((current) => ({ ...current, eventKind: "recurring" }))
+                      }
+                    />
+                    <span className="font-extrabold text-foreground">Recurring</span>
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      Continue this group&apos;s normal gathering rhythm.
+                    </span>
+                  </label>
+                ) : null}
+                {canOneOff ? (
+                  <label
+                    className={cn(
+                      "hui-focus-ring flex min-h-14 cursor-pointer flex-col justify-center rounded-hui-lg px-4 py-3",
+                      draft.eventKind === "one_off"
+                        ? "border-2 border-primary bg-sage-soft"
+                        : "border border-transparent bg-muted",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="event_kind"
+                      className="sr-only"
+                      checked={draft.eventKind === "one_off"}
+                      onChange={() =>
+                        setDraft((current) => ({ ...current, eventKind: "one_off" }))
+                      }
+                    />
+                    <span className="font-extrabold text-foreground">One-off</span>
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      Plan this gathering only — not part of the group&apos;s usual rhythm.
+                    </span>
+                  </label>
+                ) : null}
+              </div>
+            </fieldset>
+          ) : null}
+          {draft.eventKind === "recurring" && canRecurring && isFirstGroupEvent ? (
+            <fieldset className="space-y-4 rounded-hui-lg bg-muted p-5">
+              <legend className="px-1 text-sm font-extrabold">How often should this group meet?</legend>
+              <label className="hui-label">
+                <span>Cadence</span>
+                <select
+                  className="hui-input"
+                  value={draft.recurrence?.intervalUnit ?? "month"}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      recurrence: {
+                        ...(current.recurrence ?? {
+                          seriesTitle: "",
+                          intervalUnit: "month",
+                          intervalCount: 1,
+                          startsOn: "",
+                          planningTargetDate: null,
+                        }),
+                        intervalUnit: event.target.value as "week" | "month",
+                      },
+                    }))
+                  }
+                >
+                  <option value="week">Weekly</option>
+                  <option value="month">Monthly</option>
+                </select>
+              </label>
+              <label className="hui-label">
+                <span>Every (interval)</span>
+                <input
+                  type="number"
+                  min={1}
+                  className="hui-input"
+                  value={draft.recurrence?.intervalCount ?? 1}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      recurrence: {
+                        ...(current.recurrence ?? {
+                          seriesTitle: "",
+                          intervalUnit: "month",
+                          intervalCount: 1,
+                          startsOn: "",
+                          planningTargetDate: null,
+                        }),
+                        intervalCount: Number(event.target.value),
+                      },
+                    }))
+                  }
+                />
+              </label>
+              <WallClockDateField
+                label="When should the first gathering be planned around?"
+                value={draft.recurrence?.planningTargetDate ?? draft.recurrence?.startsOn ?? ""}
+                onChange={(date) =>
+                  setDraft((current) => ({
+                    ...current,
+                    recurrence: {
+                      ...(current.recurrence ?? {
+                        seriesTitle: "",
+                        intervalUnit: "month",
+                        intervalCount: 1,
+                        startsOn: "",
+                        planningTargetDate: null,
+                      }),
+                      startsOn: date,
+                      planningTargetDate: date,
+                      seriesTitle:
+                        current.title.trim() ||
+                        current.recurrence?.seriesTitle?.trim() ||
+                        `${groupName} gatherings`,
+                    },
+                  }))
+                }
+              />
+              <p className="text-xs font-semibold text-muted-foreground">
+                This is a planning target for the first cycle — not a confirmed gathering time.
+              </p>
+            </fieldset>
+          ) : null}
+          {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (
+            <p className="rounded-hui-lg bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
+              This hui continues {groupName}&apos;s usual rhythm
+              {establishedCadence ? ` (${formatCadenceLabel(establishedCadence)})` : ""}. Proposed
+              times are options — not confirmed dates yet.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {step === "time" ? (
+        <section className="hui-rise space-y-5">
+          <div>
+            <h2 className="hui-type-page-title text-foreground">When could it happen?</h2>
+            <p className="hui-type-supporting mt-2">
+              Suggest a time. The group answers before anything is confirmed.
+            </p>
+            {draft.recurrence?.planningTargetDate ? (
+              <p className="hui-message-note mt-3" role="status">
+                Planning for around{" "}
+                {formatNominalPlanningDate(draft.recurrence.planningTargetDate)}{" "}
+                — a target for this cycle, not a confirmed gathering time.
+              </p>
+            ) : null}
+          </div>
+          <SuggestedTimesList
+            suggestions={timeRecommendations}
+            timeZone={settings.timezone}
+            selectedKeys={selectedSuggestionKeys}
+            onSelect={applySuggestion}
+          />
+          {draft.candidates.length > 0 ? (
+            <ul className="space-y-2">
+              {draft.candidates.map((candidate, index) => (
+                <li
+                  key={`${candidate.startsAt}-${candidate.endsAt ?? ""}`}
+                  className="flex min-h-14 items-center justify-between gap-3 rounded-hui-lg bg-sage-soft px-4 py-2 text-sm font-extrabold text-foreground"
+                >
+                  <span>
+                    {formatCompactEventTimeRange(
+                      candidate.startsAt,
+                      candidate.endsAt,
+                      settings.timezone,
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    className="hui-link-danger text-sm"
+                    onClick={() => removeCandidate(index)}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="space-y-4 rounded-hui-xl bg-surface p-5 hui-shadow-md">
+            <p className="font-extrabold text-foreground">Add a time</p>
+            <WallClockDateField
+              label="Date"
+              value={timeDate}
+              onChange={setTimeDate}
+            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <WallClockTimeField
+                label="Starts"
+                value={timeStart}
+                onChange={setTimeStart}
+              />
+              <WallClockTimeField
+                label="Ends (optional)"
+                value={timeEnd}
+                onChange={setTimeEnd}
+                clearable
+              />
+            </div>
+            <PendingButton type="button" variant="soft" onClick={addCandidate}>
+              Add another time
+            </PendingButton>
+          </div>
+          <ProposalContributionRequestFields
+            categories={activeCategories}
+            requestedContributions={draft.requestedContributions}
+            onChange={(requestedContributions) =>
+              setDraft((current) => ({ ...current, requestedContributions }))
+            }
+          />
+        </section>
+      ) : null}
+
+      {step === "review" ? (
+        <section className="hui-rise space-y-5">
+          <h2 className="hui-type-page-title text-foreground">Ready to propose?</h2>
+          {reviewMissing.length > 0 ? (
+            <p className="hui-message-error" role="alert">
+              Still needed: {reviewMissing.join(", ")}
+            </p>
+          ) : null}
+          <div className="w-full min-w-0 max-w-full space-y-3 rounded-hui-xl bg-surface p-4 sm:p-5 hui-shadow-md">
+            <div className="px-1">
+              <p className="text-sm font-extrabold text-foreground">Will food be involved?</p>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                Helps the group know whether dietary coordination matters for this hui.
+              </p>
+            </div>
+            <div className="grid w-full min-w-0 grid-cols-1 gap-2">
+              {(
+                [
+                  ["yes", "Yes"],
+                  ["no", "No"],
+                  ["unsure", "Not sure"],
+                ] as const
+              ).map(([value, label]) => {
+                const selected = draft.foodInvolvement === value;
+                return (
+                  <label
+                    key={value}
+                    className={cn(
+                      "hui-focus-ring flex min-h-12 w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-hui-lg px-3 py-3 text-sm font-extrabold sm:px-4",
+                      selected
+                        ? "border-2 border-primary bg-sage-soft text-foreground"
+                        : "border border-transparent bg-muted text-foreground",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="food_involvement"
+                      className="sr-only"
+                      checked={selected}
+                      onChange={() =>
+                        setDraft((current) => ({
+                          ...current,
+                          foodInvolvement: value as EventFoodInvolvement,
+                          requestedContributions:
+                            value === "no" ? [] : current.requestedContributions,
+                        }))
+                      }
+                    />
+                    <span className="min-w-0 text-center leading-snug">{label}</span>
+                    {selected ? <CheckIcon size={18} strokeWidth={3} className="shrink-0" /> : null}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+          {settings.hostingEnabled ? (
+            <>
+              <HuiSwitchField
+                label="I'll host this gathering"
+                description="Optional. You're the confirmed host — not just the organiser."
+                checked={draft.organiserWillHost}
+                onCheckedChange={(checked) =>
+                  setDraft((current) => ({
+                    ...current,
+                    organiserWillHost: checked,
+                  }))
+                }
+              />
+              <HuiSwitchField
+              label="Host confirms the venue"
+              description="When on, whoever accepts hosting sets or confirms the place as part of accepting. Turn off when the venue does not matter yet."
+              checked={draft.hostPlaceRequired}
+              onCheckedChange={(checked) =>
+                setDraft((current) => ({
+                  ...current,
+                  hostPlaceRequired: checked,
+                }))
+              }
+            />
+            </>
+          ) : null}
+          <dl className="grid gap-4 rounded-hui-xl bg-surface p-5 text-sm font-semibold text-foreground hui-shadow-md [&_dt]:hui-type-label [&_dt]:text-muted-foreground [&_dd]:mt-1 [&_dd]:text-base [&_dd]:font-extrabold">
+            <div>
+              <dt>Name</dt>
+              <dd>{draft.title.trim() || "—"}</dd>
+            </div>
+            <div>
+              <dt>Proposed times</dt>
+              <dd>
+                {draft.candidates.length > 0
+                  ? draft.candidates.map((candidate) => (
+                      <div key={`${candidate.startsAt}-${candidate.endsAt ?? ""}`}>
+                        {formatCompactEventTimeRange(
+                          candidate.startsAt,
+                          candidate.endsAt,
+                          settings.timezone,
+                        )}
+                      </div>
+                    ))
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>Proposed place</dt>
+              <dd>
+                {draft.location.trim() || (draft.locationCoordinates ? "Pinned on the map" : "Not specified")}
+                {draft.location.trim() && draft.locationCoordinates ? (
+                  <span className="block text-sm font-semibold text-muted-foreground">
+                    Pinned on the map
+                  </span>
+                ) : null}
+              </dd>
+            </div>
+            <div>
+              <dt>Host</dt>
+              <dd>{hostSummary(draft, settings.hostingEnabled)}</dd>
+            </div>
+            <div>
+              <dt>Contributions</dt>
+              <dd>
+                {draft.requestedContributions.length > 0
+                  ? draft.requestedContributions.map((row) => row.label).join(", ")
+                  : "None requested"}
+              </dd>
+            </div>
+          </dl>
+          <form action={formAction} className="space-y-3">
+            <input type="hidden" name="group_id" value={groupId} />
+            <input type="hidden" name="proposal_draft" value={JSON.stringify(draft)} />
+            {actionState.error ? (
+              <p className="hui-message-error" role="alert">
+                {actionState.error}
+              </p>
+            ) : null}
+            <PendingButton
+              type="submit"
+              disabled={reviewMissing.length > 0}
+              pendingLabel="Proposing…"
+              size="touch"
+            >
+              Propose this hui
+            </PendingButton>
+          </form>
+        </section>
+      ) : null}
+
+      {stepError ? (
+        <p className="hui-message-error" role="alert">{stepError}</p>
+      ) : null}
+
+      {step !== "review" ? (
+        <div className="flex gap-3">
+          {stepIndex > 0 ? (
+            <PendingButton type="button" variant="soft" size="lg" onClick={goBack}>
+              Back
+            </PendingButton>
+          ) : null}
+          <PendingButton type="button" size="lg" onClick={goNext} className="flex-1">
+            Continue
+          </PendingButton>
+        </div>
+      ) : (
+        <PendingButton type="button" variant="soft" onClick={goBack}>
+          Back
+        </PendingButton>
+      )}
+    </div>
+  );
+}

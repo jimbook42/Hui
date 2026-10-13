@@ -4,6 +4,7 @@ import {
   listMemberNotifications,
   syncReconnectReminders,
 } from "@/lib/notifications/queries";
+import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function NotificationsPage() {
@@ -13,17 +14,17 @@ export default async function NotificationsPage() {
   } = await supabase.auth.getUser();
 
   await syncReconnectReminders(supabase);
+  schedulePushDelivery();
 
   const notifications = user
     ? await listMemberNotifications(supabase, user.id)
     : [];
 
   return (
-    <AppShell title="Notifications">
-      <p className="mb-8 text-sm text-zinc-600 dark:text-zinc-400">
-        Updates about events and groups you belong to. Hui does not expose private
-        availability or dietary details in notifications.
-      </p>
+    <AppShell
+      title="Notifications"
+      subtitle="What needs you, and what has changed. Private availability and dietary details never appear here."
+    >
       <NotificationsList notifications={notifications} />
     </AppShell>
   );

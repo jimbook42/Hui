@@ -1,6 +1,9 @@
-import Link from "next/link";
-
+import { HuiBotanical } from "@/components/hui/botanical";
+import { HuiLinkButton } from "@/components/hui/hui-button";
+import { HuiLogo } from "@/components/hui/hui-logo";
+import { HuiWordmark } from "@/components/hui/hui-wordmark";
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -8,40 +11,31 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 py-24">
-      <main className="w-full max-w-lg text-center">
-        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Hui
+    <div className="hui-canvas relative flex min-h-full flex-1 flex-col items-center justify-center px-6 py-16">
+      <HuiBotanical />
+      <main className="relative z-10 w-full max-w-lg text-center">
+        <div className="hui-pop mx-auto flex h-36 w-36 items-center justify-center">
+          <HuiLogo size={144} priority />
+        </div>
+        <h1 className="hui-rise mt-8 flex justify-center">
+          <HuiWordmark height={72} priority />
         </h1>
-        <p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
-          Privacy-first coordination for recurring gatherings. The app proposes,
-          coordinates, and remembers—the group decides.
+        <p className="hui-rise-2 hui-type-supporting mx-auto mt-5 max-w-sm text-lg leading-relaxed">
+          A calm place for the people you gather with. Hui proposes, coordinates and remembers
+          &mdash; the group decides.
         </p>
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          {user ? (
-            <Link
-              href="/dashboard"
-              className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              Go to dashboard
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/sign-in"
-                className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/sign-up"
-                className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 dark:border-zinc-700 dark:text-zinc-100"
-              >
-                Sign up
-              </Link>
-            </>
-          )}
+        <div className="hui-rise-3 mx-auto mt-10 flex max-w-xs flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:justify-center">
+          <HuiLinkButton href="/sign-in" size="lg" shape="melt">
+            Sign in
+          </HuiLinkButton>
+          <HuiLinkButton href="/sign-up" size="lg" variant="soft">
+            Sign up
+          </HuiLinkButton>
         </div>
       </main>
     </div>

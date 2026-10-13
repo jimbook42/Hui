@@ -386,4 +386,59 @@ describe("group invite links (HUI-022B)", () => {
     );
     expect(directRead).toMatch(/permission denied|row-level security/i);
   });
+
+  it("returns group timezone to anon callers and honours gathering focus on resolve", async () => {
+    await asUser(db, ids.owner);
+    const token = (
+      await db.query<{ get_group_invite_link: string }>(
+        `select public.get_group_invite_link($1) as get_group_invite_link`,
+        [groupId],
+      )
+    ).rows[0].get_group_invite_link;
+
+    await db.query(
+      `update public.group_settings set timezone = $2 where group_id = $1`,
+      [groupId, "Pacific/Auckland"],
+    );
+
+    const olderEvent = (
+      await db.query<{ id: string }>(
+        `insert into public.events (group_id, title, status, created_by, planning_target_date)
+         values ($1, 'Older lunch', 'proposing', $2, '2026-11-02')
+         returning id`,
+        [groupId, ids.owner],
+      )
+    ).rows[0].id;
+
+    const newerEvent = (
+      await db.query<{ id: string }>(
+        `insert into public.events (group_id, title, status, created_by, planning_target_date)
+         values ($1, 'Newer dinner', 'proposing', $2, '2026-11-09')
+         returning id`,
+        [groupId, ids.owner],
+      )
+    ).rows[0].id;
+
+    await asUser(db, null, "anon");
+    const newest = parseJson<{ planning?: { eventId?: string }; groupTimeZone?: string }>(
+      (
+        await db.query<{ resolve_group_invite: unknown }>(
+          `select public.resolve_group_invite($1) as resolve_group_invite`,
+          [token],
+        )
+      ).rows[0].resolve_group_invite,
+    );
+    expect(newest.groupTimeZone).toBe("Pacific/Auckland");
+    expect(newest.planning?.eventId).toBe(newerEvent);
+
+    const focused = parseJson<{ planning?: { eventId?: string } }>(
+      (
+        await db.query<{ resolve_group_invite: unknown }>(
+          `select public.resolve_group_invite($1, $2::uuid) as resolve_group_invite`,
+          [token, olderEvent],
+        )
+      ).rows[0].resolve_group_invite,
+    );
+    expect(focused.planning?.eventId).toBe(olderEvent);
+  });
 });

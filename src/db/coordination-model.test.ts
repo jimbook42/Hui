@@ -154,6 +154,8 @@ describe("coordination model (HUI-022A)", () => {
       "2026-04-05T18:00",
       "2026-04-05T21:00",
     );
+    await asUser(db, ids.owner);
+    await db.query(`select public.assign_event_host($1, $2)`, [eventId, ids.owner]);
 
     const proposal = await db.query<{ status: string; user_id: string }>(
       `select status::text as status, user_id::text as user_id
@@ -162,7 +164,7 @@ describe("coordination model (HUI-022A)", () => {
     );
     expect(proposal.rows[0].status).toBe("proposed");
 
-    await asUser(db, proposal.rows[0].user_id);
+    await asUser(db, ids.owner);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);
 
     const accepted = await db.query<{ status: string }>(

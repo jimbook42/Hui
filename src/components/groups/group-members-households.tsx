@@ -1,10 +1,59 @@
+import { avatarToneClass, initialsFor } from "@/components/hui/avatar-stack";
 import type { GroupMembersHouseholdView } from "@/domain/households/group-display";
 import type { GroupMemberRow } from "@/lib/groups/types";
+import { cn } from "@/lib/ui/cn";
 
 function roleLabel(role: string): string {
   if (role === "owner") return "Owner";
   if (role === "admin") return "Admin";
   return "Member";
+}
+
+type Person = { userId: string; displayName: string };
+
+function MemberRows({
+  people,
+  roleByUserId,
+  currentUserId,
+}: {
+  people: Person[];
+  roleByUserId: Map<string, string>;
+  currentUserId: string;
+}) {
+  return (
+    <ul className="space-y-2">
+      {people.map((member) => {
+        const role = roleByUserId.get(member.userId) ?? "member";
+        return (
+          <li
+            key={member.userId}
+            className="flex min-h-14 items-center gap-3 rounded-hui-lg bg-muted px-3 py-2"
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-foreground",
+                avatarToneClass(member.userId),
+              )}
+            >
+              {initialsFor(member.displayName)}
+            </span>
+            <p className="min-w-0 flex-1 truncate font-extrabold text-foreground">
+              {member.displayName}
+              {member.userId === currentUserId ? (
+                <span className="font-semibold text-muted-foreground"> (you)</span>
+              ) : null}
+            </p>
+            {role !== "member" ? (
+              <span className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-xs font-extrabold text-foreground">
+                {roleLabel(role)}
+              </span>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 export function GroupMembersHouseholds({
@@ -16,49 +65,31 @@ export function GroupMembersHouseholds({
   members: GroupMemberRow[];
   currentUserId: string;
 }) {
-  const roleByUserId = new Map(members.map((member) => [member.userId, member.role]));
+  const roleByUserId = new Map<string, string>(members.map((member) => [member.userId, member.role]));
 
   return (
     <div className="space-y-6">
       {view.households.map((household) => (
         <div key={household.householdId}>
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-            {household.householdName}
-          </h3>
-          <ul className="mt-2 divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-            {household.members.map((member) => (
-              <li key={member.userId} className="px-4 py-3 text-sm">
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                  {member.displayName}
-                  {member.userId === currentUserId ? " (you)" : ""}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {roleLabel(roleByUserId.get(member.userId) ?? "member")}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <h3 className="hui-type-label mb-2 text-muted-foreground">{household.householdName}</h3>
+          <MemberRows
+            people={household.members}
+            roleByUserId={roleByUserId}
+            currentUserId={currentUserId}
+          />
         </div>
       ))}
 
       {view.ungroupedMembers.length > 0 ? (
         <div>
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-            No household
-          </h3>
-          <ul className="mt-2 divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-            {view.ungroupedMembers.map((member) => (
-              <li key={member.userId} className="px-4 py-3 text-sm">
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                  {member.displayName}
-                  {member.userId === currentUserId ? " (you)" : ""}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {roleLabel(roleByUserId.get(member.userId) ?? "member")}
-                </p>
-              </li>
-            ))}
-          </ul>
+          {view.households.length > 0 ? (
+            <h3 className="hui-type-label mb-2 text-muted-foreground">No household</h3>
+          ) : null}
+          <MemberRows
+            people={view.ungroupedMembers}
+            roleByUserId={roleByUserId}
+            currentUserId={currentUserId}
+          />
         </div>
       ) : null}
     </div>

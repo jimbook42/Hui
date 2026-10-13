@@ -24,6 +24,11 @@ const baseSettings: GroupSettingsRow = {
   timezone: "Pacific/Auckland",
   reconnectRemindersEnabled: false,
   reconnectAfterDays: null,
+  recurrenceIntervalUnit: null,
+  recurrenceIntervalCount: null,
+  recurrenceAnchorDate: null,
+  planningLeadDays: 14,
+  canonicalRecurrenceSeriesId: null,
 };
 
 describe("scheduling permissions", () => {
@@ -37,8 +42,10 @@ describe("scheduling permissions", () => {
 
   it("lets members respond while the event accepts scheduling input", () => {
     expect(canRespondToCandidates("proposing")).toBe(true);
-    expect(canRespondToCandidates("confirmed")).toBe(false);
+    // HUI-026U.3: plans change, so attendance stays editable after confirmation.
+    expect(canRespondToCandidates("confirmed")).toBe(true);
     expect(canRespondToCandidates("completed")).toBe(false);
+    expect(canRespondToCandidates("cancelled")).toBe(false);
   });
 
   it("lets the proposer or an admin confirm a proposing event", () => {

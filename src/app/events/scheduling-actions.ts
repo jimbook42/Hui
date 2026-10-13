@@ -21,7 +21,11 @@ import {
 } from "@/domain/scheduling/validation";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
+import { getGroupResponseSettings } from "@/lib/groups/response-settings";
 import { getEventSchedulingContext } from "@/lib/scheduling/queries";
+import { schedulePushDelivery } from "@/lib/push/schedule";
+import { devTimed } from "@/lib/perf/dev-server-timing";
+import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { createClient } from "@/lib/supabase/server";
 
 import type { EventActionState } from "./actions";
@@ -59,10 +63,16 @@ export async function addCandidateAction(
     String(formData.get("starts_at") ?? ""),
     timeZone,
   );
-  const endsAt = parseRequiredDateTime(String(formData.get("ends_at") ?? ""), timeZone);
+  // End is optional: blank means a start-only time. A non-blank value must still parse.
+  const endsAtRaw = String(formData.get("ends_at") ?? "");
+  const endsAt =
+    endsAtRaw.trim().length === 0 ? null : parseRequiredDateTime(endsAtRaw, timeZone);
 
-  if (!eventId || !groupId || !startsAt || !endsAt) {
-    return { error: "Enter a valid start and end time." };
+  if (!eventId || !groupId || !startsAt) {
+    return { error: "Enter a valid start time." };
+  }
+  if (endsAtRaw.trim().length > 0 && !endsAt) {
+    return { error: "Enter a valid end time, or leave it blank." };
   }
 
   const windowError = validateCandidateWindow(startsAt, endsAt);
@@ -107,6 +117,8 @@ export async function addCandidateAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/respond`);
+  schedulePushDelivery();
   return { message: "Candidate time added." };
 }
 
@@ -167,6 +179,7 @@ export async function withdrawCandidateAction(
   }
 
   revalidatePath(`/events/${eventId}`);
+  schedulePushDelivery();
   return { message: "Candidate removed." };
 }
 
@@ -174,79 +187,104 @@ export async function setAvailabilityResponseAction(
   _prev: EventActionState,
   formData: FormData,
 ): Promise<EventActionState> {
-  const eventId = String(formData.get("event_id") ?? "");
-  const candidateId = String(formData.get("candidate_id") ?? "");
-  const choice = parseAvailabilityChoice(String(formData.get("response") ?? ""));
+  return devTimed("setAvailabilityResponseAction:total", async () => {
+    const eventId = String(formData.get("event_id") ?? "");
+    const candidateId = String(formData.get("candidate_id") ?? "");
+    const choice = parseAvailabilityChoice(String(formData.get("response") ?? ""));
 
-  if (!eventId || !candidateId || !choice) {
-    return { error: "Choose a valid response." };
-  }
+    if (!eventId || !candidateId || !choice) {
+      return { error: "Choose a valid response." };
+    }
 
-  const { supabase, user } = await requireUser();
-  const detail = await getEventDetail(supabase, eventId, user.id);
-  if (!detail) {
-    return { error: "Event not found." };
-  }
+    const user = await devTimed("setAvailabilityResponseAction:getUser", () =>
+      getServerAuthUser(),
+    );
+    if (!user) {
+      redirect("/sign-in");
+    }
+    const supabase = await getServerSupabase();
 
-  if (!canRespondToCandidates(detail.status)) {
-    return { error: "This event is no longer accepting availability responses." };
-  }
+    const detail = await devTimed("setAvailabilityResponseAction:getEventDetail", () =>
+      getEventDetail(supabase, eventId, user.id),
+    );
+    if (!detail) {
+      return { error: "Event not found." };
+    }
 
-  const group = await getGroupDetail(supabase, detail.groupId, user.id);
-  if (!group) {
-    return { error: "You do not have access to this group." };
-  }
+    if (!canRespondToCandidates(detail.status)) {
+      return { error: "This event is no longer accepting availability responses." };
+    }
 
-  const maybeError = validateAvailabilityChoice(
-    choice,
-    group.settings.maybeResponsesEnabled,
-  );
-  if (maybeError) {
-    return { error: maybeError };
-  }
+    const responseSettings = await devTimed(
+      "setAvailabilityResponseAction:response-settings",
+      () => getGroupResponseSettings(supabase, detail.groupId),
+    );
+    if (!responseSettings) {
+      return { error: "You do not have access to this group." };
+    }
 
-  const { data: candidate, error: candidateError } = await supabase
-    .from("event_candidates")
-    .select("id, status")
-    .eq("id", candidateId)
-    .eq("event_id", eventId)
-    .eq("group_id", detail.groupId)
-    .maybeSingle();
+    const maybeError = validateAvailabilityChoice(
+      choice,
+      responseSettings.maybeResponsesEnabled,
+    );
+    if (maybeError) {
+      return { error: maybeError };
+    }
 
-  if (candidateError) {
-    return { error: candidateError.message };
-  }
-  if (!candidate) {
-    return { error: "Candidate not found." };
-  }
-  if (candidate.status !== "proposed" && candidate.status !== "selected") {
-    return { error: "This candidate is no longer open for responses." };
-  }
+    // Only touch the private note when the caller sent one, so changing an answer from the event
+    // page never wipes a note saved elsewhere.
+    const hasNoteField = formData.has("private_note");
+    const privateNoteRaw = String(formData.get("private_note") ?? "");
+    const privateNote = normalizePrivateAttendanceNote(privateNoteRaw);
+    if (privateNoteRaw.trim().length > 0 && privateNote === null) {
+      return { error: "Private note is too long (500 characters max)." };
+    }
 
-  const privateNoteRaw = String(formData.get("private_note") ?? "");
-  const privateNote = normalizePrivateAttendanceNote(privateNoteRaw);
-  if (privateNoteRaw.trim().length > 0 && privateNote === null) {
-    return { error: "Private note is too long (500 characters max)." };
-  }
+    const { data: candidate, error: candidateError } = await devTimed(
+      "setAvailabilityResponseAction:candidate",
+      async () =>
+        await supabase
+          .from("event_candidates")
+          .select("id, status")
+          .eq("id", candidateId)
+          .eq("event_id", eventId)
+          .eq("group_id", detail.groupId)
+          .maybeSingle(),
+    );
 
-  const dbResponse = availabilityToDbResponse(choice);
-  const { error } = await supabase.from("event_responses").upsert(
-    {
-      candidate_id: candidateId,
-      user_id: user.id,
-      response: dbResponse,
-      visibility: "group",
-      note: privateNote,
-    },
-    { onConflict: "candidate_id,user_id" },
-  );
+    if (candidateError) {
+      return { error: candidateError.message };
+    }
+    if (!candidate) {
+      return { error: "Candidate not found." };
+    }
+    if (candidate.status !== "proposed" && candidate.status !== "selected") {
+      return { error: "This candidate is no longer open for responses." };
+    }
 
-  if (error) {
-    return { error: error.message };
-  }
+    const dbResponse = availabilityToDbResponse(choice);
+    const { error } = await devTimed("setAvailabilityResponseAction:upsert", async () =>
+      await supabase.from("event_responses").upsert(
+        {
+          candidate_id: candidateId,
+          user_id: user.id,
+          response: dbResponse,
+          visibility: "group",
+          ...(hasNoteField ? { note: privateNote } : {}),
+        },
+        { onConflict: "candidate_id,user_id" },
+      ),
+    );
 
-  revalidatePath(`/events/${eventId}`);
-  return { message: "Response saved." };
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath(`/events/${eventId}/respond`);
+    schedulePushDelivery();
+    return { message: "Response saved." };
+  });
 }
 
 export async function finaliseEventAction(
@@ -287,5 +325,6 @@ export async function finaliseEventAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${detail.groupId}/events`);
+  schedulePushDelivery();
   return { message: "Event confirmed." };
 }

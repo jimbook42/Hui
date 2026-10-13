@@ -15,3 +15,7 @@ export function canTransferOwnership(role: MembershipRole): boolean {
 export function canRenameGroup(role: MembershipRole): boolean {
   return role === "owner" || role === "admin";
 }
+
+export function canDeleteGroup(role: MembershipRole): boolean {
+  return role === "owner";
+}

@@ -101,6 +101,11 @@ async function respondYes(database: PGlite, userId: string, candidateId: string)
   );
 }
 
+async function proposeHostForEvent(database: PGlite, eventId: string) {
+  await asUser(database, ids.owner);
+  await database.query(`select public.propose_event_host_for_event($1, $2)`, [eventId, ids.owner]);
+}
+
 async function mainContribution(database: PGlite, eventId: string) {
   return database.query<{ user_id: string | null; status: string }>(
     `select ec.user_id::text as user_id, ec.status::text as status
@@ -175,6 +180,7 @@ describe("coordination HUI-022A.3 host-bound contributions", () => {
   it("proposed host does not receive Main while event is proposing", async () => {
     const { eventId, candidateId } = await insertProposingEvent(db, "Proposed only");
     await respondYes(db, ids.jamie, candidateId);
+    await proposeHostForEvent(db, eventId);
 
     const proposedId = await proposedHostUserId(db, eventId);
     expect(proposedId).toBeTruthy();
@@ -187,6 +193,7 @@ describe("coordination HUI-022A.3 host-bound contributions", () => {
   it("accepting host while proposing assigns Main to accepted host", async () => {
     const { eventId, candidateId } = await insertProposingEvent(db, "Accept assigns Main");
     await respondYes(db, ids.jamie, candidateId);
+    await proposeHostForEvent(db, eventId);
     const proposedId = await proposedHostUserId(db, eventId);
     expect(proposedId).toBeTruthy();
 
@@ -215,6 +222,7 @@ describe("coordination HUI-022A.3 host-bound contributions", () => {
     const { eventId, candidateId } = await insertProposingEvent(db, "Swap Main");
     await respondYes(db, ids.isaac, candidateId);
     await respondYes(db, ids.jamie, candidateId);
+    await proposeHostForEvent(db, eventId);
 
     const swapperId = await proposedHostUserId(db, eventId);
     expect(swapperId).toBeTruthy();
@@ -253,6 +261,7 @@ describe("coordination HUI-022A.3 host-bound contributions", () => {
   it("confirmation preserves accepted host and Main assignment", async () => {
     const { eventId, candidateId } = await insertProposingEvent(db, "Confirm preserves");
     await respondYes(db, ids.jamie, candidateId);
+    await proposeHostForEvent(db, eventId);
     const hostId = await proposedHostUserId(db, eventId);
     await asUser(db, hostId!);
     await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);

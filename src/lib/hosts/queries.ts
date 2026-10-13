@@ -91,6 +91,15 @@ export function buildEventHostView(assignments: HostAssignmentSnapshot[]): Event
   return { acceptedHost, pendingProposal, suggestion: null };
 }
 
+/** Accepted host display name for participant place copy (no group host history). */
+export async function getAcceptedHostDisplayName(
+  supabase: SupabaseClient,
+  eventId: string,
+): Promise<string | null> {
+  const assignments = await listEventHostAssignments(supabase, eventId);
+  return buildEventHostView(assignments).acceptedHost?.displayName ?? null;
+}
+
 export async function getEventHostContext(
   supabase: SupabaseClient,
   eventId: string,

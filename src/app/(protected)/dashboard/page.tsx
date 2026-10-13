@@ -1,48 +1,75 @@
-import Link from "next/link";
+import { Suspense } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
-import { createClient } from "@/lib/supabase/server";
+import { InstallHuiCard } from "@/components/pwa/install-hui";
+import { PushNotificationsOnboardCard } from "@/components/pwa/push-notifications-onboard";
+import { PersonalSetupPrompt } from "@/components/dashboard/personal-setup-prompt";
+import { DashboardEvents, DashboardEventsSkeleton } from "@/components/home/home-sections";
+import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { getVapidPublicKey } from "@/lib/push/config";
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+async function Greeting() {
+  const user = await getServerAuthUser();
+  const supabase = await getServerSupabase();
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name")
     .eq("id", user!.id)
     .maybeSingle();
 
+  const displayName = profile?.display_name?.trim() ?? user?.email ?? "there";
+
+  return <GreetingText name={displayName} />;
+}
+
+function GreetingText({ name }: { name?: string }) {
   return (
-    <AppShell title="Dashboard">
-      <p className="text-zinc-600 dark:text-zinc-400">
-        Signed in as{" "}
-        <span className="font-medium text-zinc-900 dark:text-zinc-100">
-          {profile?.display_name ?? user?.email}
-        </span>
-        .
-      </p>
-      <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-        Manage your gathering circles from the groups area.
-      </p>
-      <p className="mt-6 text-sm">
-        <Link
-          href="/groups"
-          className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
-        >
-          View your groups
-        </Link>
-      </p>
-      <p className="mt-6 text-sm">
-        <Link
-          href="/profile"
-          className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
-        >
-          Edit your profile
-        </Link>
-      </p>
+    <header className="hui-rise pb-6 pt-2">
+      <h1 className="hui-type-hero text-foreground">
+        Kia ora{name ? `, ${name}` : ""}
+      </h1>
+      <p className="mt-1.5 text-lg font-bold hui-type-clay">Ready for this week&apos;s hui?</p>
+    </header>
+  );
+}
+
+async function PersonalSetupGate() {
+  const user = await getServerAuthUser();
+  if (!user) {
+    return null;
+  }
+  const supabase = await getServerSupabase();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("personal_setup_completed_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.personal_setup_completed_at) {
+    return null;
+  }
+  return <PersonalSetupPrompt />;
+}
+
+export default function DashboardPage() {
+  const vapidPublicKey = getVapidPublicKey();
+  const pushConfigured = vapidPublicKey !== null;
+
+  return (
+    <AppShell title="Home" hideTitle>
+      <Suspense fallback={<GreetingText />}>
+        <Greeting />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PersonalSetupGate />
+      </Suspense>
+      <InstallHuiCard />
+      <PushNotificationsOnboardCard
+        pushConfigured={pushConfigured}
+        vapidPublicKey={vapidPublicKey}
+      />
+      <Suspense fallback={<DashboardEventsSkeleton />}>
+        <DashboardEvents />
+      </Suspense>
     </AppShell>
   );
 }

@@ -6,7 +6,7 @@ export type GroupListItem = {
   role: MembershipRole;
 };
 
-export type MemberHostingStanding = "default" | "prefer_not" | "never";
+export type MemberHostingStanding = "default" | "always" | "prefer_not" | "never";
 
 export type GroupMemberRow = {
   userId: string;
@@ -32,6 +32,11 @@ export type GroupSettingsRow = {
   timezone: string;
   reconnectRemindersEnabled: boolean;
   reconnectAfterDays: number | null;
+  recurrenceIntervalUnit: "week" | "month" | null;
+  recurrenceIntervalCount: number | null;
+  recurrenceAnchorDate: string | null;
+  planningLeadDays: number;
+  canonicalRecurrenceSeriesId: string | null;
 };
 
 export type GroupDetail = {

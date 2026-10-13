@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildContributionBoard, buildContributionHistory } from "./display";
+import { buildContributionBoard, buildContributionHistory, formatContributionDisclosureSummary } from "./display";
 
 describe("contribution display", () => {
   it("partitions still needed and claimed categories", () => {
@@ -24,6 +24,19 @@ describe("contribution display", () => {
     ];
     const contributions = [
       {
+        id: "x0",
+        eventId: "e",
+        groupId: "g",
+        categoryId: "c1",
+        categoryName: "Main",
+        userId: null,
+        label: "Main",
+        status: "open",
+        displayName: null,
+        assignedByUserId: null,
+        assignedByDisplayName: null,
+      },
+      {
         id: "x1",
         eventId: "e",
         groupId: "g",
@@ -33,6 +46,8 @@ describe("contribution display", () => {
         label: "Cake",
         status: "accepted",
         displayName: "Isaac",
+        assignedByUserId: "u1",
+        assignedByDisplayName: "Isaac",
       },
     ];
 
@@ -40,6 +55,14 @@ describe("contribution display", () => {
     expect(board.stillNeeded.map((c) => c.name)).toEqual(["Main"]);
     expect(board.claimed).toHaveLength(1);
     expect(board.mine).toHaveLength(0);
+  });
+
+  it("formats disclosure summaries from slot counts", () => {
+    expect(formatContributionDisclosureSummary(0, 0, 0)).toBe(
+      "Nothing requested for this gathering",
+    );
+    expect(formatContributionDisclosureSummary(3, 2, 1)).toBe("1 claimed · 2 still needed");
+    expect(formatContributionDisclosureSummary(3, 0, 3)).toBe("Everything is covered");
   });
 
   it("aggregates contribution history counts", () => {

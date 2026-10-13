@@ -9,29 +9,34 @@ type GroupDietarySectionProps = {
 
 export function GroupDietarySection({ rows }: GroupDietarySectionProps) {
   return (
-    <section className="mt-10">
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+    <section className="hui-card-section">
+      <h2 className="hui-type-section text-foreground">
         Dietary information
       </h2>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-        Only entries members have explicitly shared with this group. Manage yours from{" "}
+      <p className="mt-1 text-sm text-muted-foreground">
+        Only entries members have chosen to share, either with this group or with all of their groups. Manage yours from{" "}
         <Link
           href="/profile"
-          className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
+          className="font-medium text-foreground underline-offset-4 hover:underline"
         >
           account settings
         </Link>
         .
       </p>
       {rows.length === 0 ? (
-        <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-4 text-sm text-muted-foreground">
           No dietary information has been shared with this group.
         </p>
       ) : (
-        <ul className="mt-4 space-y-2 text-sm text-zinc-800 dark:text-zinc-200">
+        <ul className="mt-4 space-y-2 text-sm text-foreground">
           {rows.map((row) => (
             <li key={`${row.entryId}-${row.userId}`}>
               {formatSharedDietaryLine(row.displayName, row.label, row.notes)}
+              {row.scope === "all_groups" ? (
+                <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
+                  Shared with all groups
+                </span>
+              ) : null}
             </li>
           ))}
         </ul>

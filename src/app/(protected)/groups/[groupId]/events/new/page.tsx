@@ -1,14 +1,15 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { createEventAction } from "@/app/events/actions";
 import { AppShell } from "@/components/app/app-shell";
-import { CreateEventForm } from "@/components/events/event-form";
+import { CreateEventProposalFlow } from "@/components/events/create-event-proposal-flow";
+import { listContributionCategories } from "@/lib/contributions/queries";
 import {
   canProposeEvents,
   groupAllowsEventKind,
 } from "@/domain/events/permissions";
 import { getGroupDetail } from "@/lib/groups/queries";
+import { loadGroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
+import { loadProposalTimeRecommendations } from "@/lib/scheduling/time-recommendations-data";
 import { createClient } from "@/lib/supabase/server";
 
 type PageProps = {
@@ -43,29 +44,46 @@ export default async function NewGroupEventPage({ params }: PageProps) {
     .neq("status", "cancelled");
 
   const isFirstGroupEvent = (activeEventCount ?? 0) === 0;
-  const hostEligibleMembers = detail.members.filter(
-    (member) => member.hostingStanding !== "never",
+  const contributionCategories = await listContributionCategories(supabase, groupId);
+  const planningContext = await loadGroupPlanningContext(
+    supabase,
+    groupId,
+    user!.id,
+    detail.name,
+    detail.viewerRole,
+  );
+
+  const planningTargetDate = planningContext?.cycle.cycleTargetDate ?? null;
+
+  const todayDateOnly = new Date().toISOString().slice(0, 10);
+  const timeRecommendations = await loadProposalTimeRecommendations(
+    supabase,
+    user!.id,
+    groupId,
+    {
+      timeZone: detail.settings.timezone,
+      planningTargetDate,
+      maybeResponsesEnabled: detail.settings.maybeResponsesEnabled,
+      todayDateOnly,
+    },
   );
 
   return (
-    <AppShell title={`Propose event — ${detail.name}`}>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        <Link
-          href={`/groups/${groupId}/events`}
-          className="underline-offset-4 hover:underline"
-        >
-          Back to events
-        </Link>
-      </p>
-      <div className="mt-8 max-w-lg">
-        <CreateEventForm
-          action={createEventAction}
-          groupId={groupId}
-          settings={detail.settings}
-          isFirstGroupEvent={isFirstGroupEvent}
-          members={hostEligibleMembers}
-        />
-      </div>
+    <AppShell
+      title="Propose a hui"
+      subtitle={`With ${detail.name}`}
+      back={{ href: `/groups/${groupId}`, label: detail.name }}
+      narrow
+    >
+      <CreateEventProposalFlow
+        groupId={groupId}
+        groupName={detail.name}
+        settings={detail.settings}
+        isFirstGroupEvent={isFirstGroupEvent}
+        contributionCategories={contributionCategories}
+        planningCycle={planningContext?.cycle ?? null}
+        timeRecommendations={timeRecommendations}
+      />
     </AppShell>
   );
 }

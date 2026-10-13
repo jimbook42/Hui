@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { coordinatesFromRow } from "@/domain/events/location";
+import type { EventFoodInvolvement } from "@/domain/events/food";
 import type { EventStatus } from "@/domain/events/types";
 import type { MembershipRole } from "@/domain/groups/permissions";
 
@@ -74,10 +76,17 @@ export async function getEventDetail(
       title,
       status,
       location,
+      location_lat,
+      location_lng,
+      food_involvement,
+      host_place_required,
       notes,
       starts_at,
       ends_at,
       timezone,
+      planning_target_date,
+      gathering_type,
+      gathering_type_custom,
       created_by,
       recurrence_series_id,
       created_at,
@@ -102,14 +111,27 @@ export async function getEventDetail(
   }
 
   const groupId = event.group_id as string;
+  const seriesId = event.recurrence_series_id as string | null;
 
-  const { data: membership, error: membershipError } = await supabase
-    .from("group_memberships")
-    .select("role, status")
-    .eq("group_id", groupId)
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [membershipResult, seriesResult] = await Promise.all([
+    supabase
+      .from("group_memberships")
+      .select("role, status")
+      .eq("group_id", groupId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    seriesId
+      ? supabase
+          .from("recurrence_series")
+          .select(
+            "id, title, interval_unit, interval_count, starts_on, ends_on, archived_at",
+          )
+          .eq("id", seriesId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
 
+  const { data: membership, error: membershipError } = membershipResult;
   if (membershipError) {
     throw new Error(membershipError.message);
   }
@@ -118,20 +140,11 @@ export async function getEventDetail(
   }
 
   let recurrenceSeries: RecurrenceSeriesSummary | null = null;
-  if (event.recurrence_series_id) {
-    const { data: series, error: seriesError } = await supabase
-      .from("recurrence_series")
-      .select(
-        "id, title, interval_unit, interval_count, starts_on, ends_on, archived_at",
-      )
-      .eq("id", event.recurrence_series_id)
-      .maybeSingle();
-    if (seriesError) {
-      throw new Error(seriesError.message);
-    }
-    if (series) {
-      recurrenceSeries = mapSeries(series);
-    }
+  if (seriesResult.error) {
+    throw new Error(seriesResult.error.message);
+  }
+  if (seriesResult.data) {
+    recurrenceSeries = mapSeries(seriesResult.data);
   }
 
   const rawGroup = event.groups as { name: string } | { name: string }[] | null;
@@ -150,6 +163,12 @@ export async function getEventDetail(
     status: event.status as EventStatus,
     kind: event.recurrence_series_id ? "recurring" : "one_off",
     location: event.location as string | null,
+    locationCoordinates: coordinatesFromRow(
+      event.location_lat as number | null,
+      event.location_lng as number | null,
+    ),
+    foodInvolvement: (event.food_involvement as EventFoodInvolvement | null) ?? null,
+    hostPlaceRequired: (event.host_place_required as boolean | null) ?? null,
     notes: event.notes as string | null,
     startsAt: event.starts_at as string | null,
     endsAt: event.ends_at as string | null,
@@ -157,6 +176,9 @@ export async function getEventDetail(
       typeof event.timezone === "string" && event.timezone.length > 0
         ? event.timezone
         : null,
+    planningTargetDate: (event.planning_target_date as string | null) ?? null,
+    gatheringType: (event.gathering_type as string | null) ?? null,
+    gatheringTypeCustom: (event.gathering_type_custom as string | null) ?? null,
     createdBy: event.created_by as string,
     creatorDisplayName: profile?.display_name ?? "Member",
     recurrenceSeries,

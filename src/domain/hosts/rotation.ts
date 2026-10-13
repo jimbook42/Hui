@@ -7,7 +7,7 @@ export type HostHistoryEntry = {
 export type HostEligibleMember = {
   userId: string;
   displayName: string;
-  hostingStanding?: "default" | "prefer_not" | "never";
+  hostingStanding?: "default" | "always" | "prefer_not" | "never";
 };
 
 export function filterHostEligibleMembers(

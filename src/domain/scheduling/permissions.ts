@@ -30,8 +30,14 @@ export function canWithdrawCandidate(
   return canManageEvent(viewerRole, viewerId, createdBy, status);
 }
 
+/**
+ * Whether members can set or change their own Yes / Maybe / No. Open while the group is still
+ * scheduling and, since HUI-026U.3, after confirmation too (plans change). Completed and
+ * cancelled events are locked. Once confirmed only the selected time accepts responses; the
+ * database enforces that as well.
+ */
 export function canRespondToCandidates(status: EventStatus): boolean {
-  return isSchedulingOpen(status);
+  return isSchedulingOpen(status) || status === "confirmed";
 }
 
 export function canFinaliseEvent(

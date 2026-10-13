@@ -23,11 +23,11 @@ function HouseholdGroupCard({
 }) {
   if (!context.household) {
     return (
-      <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+      <div className="rounded-hui-md p-4 bg-muted">
+        <h3 className="text-sm font-extrabold text-foreground">
           {context.groupName}
         </h3>
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           You are not in a household for this group yet.
         </p>
         <div className="mt-4 max-w-md">
@@ -47,11 +47,11 @@ function HouseholdGroupCard({
   const household = context.household;
 
   return (
-    <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+    <div className="rounded-hui-md p-4 bg-muted">
+      <h3 className="text-sm font-extrabold text-foreground">
         {context.groupName}
       </h3>
-      <p className="mt-1 text-xs text-zinc-500">
+      <p className="mt-1 text-xs text-muted-foreground">
         Households are per group. Other members of this group can see household
         names and who is grouped together.
       </p>
@@ -70,16 +70,16 @@ function HouseholdGroupCard({
         </AuthForm>
       </div>
 
-      <h4 className="mt-6 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+      <h4 className="mt-6 text-sm font-medium text-foreground">
         Members
       </h4>
-      <ul className="mt-2 divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+      <ul className="mt-2 divide-y divide-border rounded-hui-md bg-muted">
         {household.members.map((member) => (
           <li
             key={member.userId}
             className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
           >
-            <span className="font-medium text-zinc-900 dark:text-zinc-50">
+            <span className="font-medium text-foreground">
               {member.displayName}
               {member.userId === currentUserId ? " (you)" : ""}
             </span>
@@ -109,7 +109,7 @@ function HouseholdGroupCard({
             autoComplete="off"
             required
           />
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             They must already be an active member of {context.groupName}. Copy their
             member ID from their profile page.
           </p>
@@ -141,12 +141,12 @@ function RemoveHouseholdMemberButton({
       <input type="hidden" name="group_id" value={groupId} />
       <input type="hidden" name="user_id" value={userId} />
       {state.error ? (
-        <p className="text-xs text-red-600" role="alert">{state.error}</p>
+        <p className="hui-message-error" role="alert">{state.error}</p>
       ) : null}
       <button
         type="submit"
         disabled={pending}
-        className="text-xs text-red-700 underline-offset-4 hover:underline dark:text-red-400"
+        className="hui-link-danger text-xs"
       >
         Remove {displayName}
       </button>
@@ -163,7 +163,7 @@ export function HouseholdSettingsSection({
 }) {
   if (contexts.length === 0) {
     return (
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="text-sm text-muted-foreground">
         Join a group to create or manage a household.
       </p>
     );

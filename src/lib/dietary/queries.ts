@@ -2,40 +2,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { DietaryCategory } from "@/domain/dietary/validation";
 import type { GroupSharedDietaryRow, UserDietaryEntry, UserGroupOption } from "@/lib/dietary/types";
+import {
+  listActiveMembershipGroups,
+  type UserMembershipGroup,
+} from "@/lib/groups/user-membership-groups";
 
 export async function listUserGroupsForDietary(
   supabase: SupabaseClient,
   userId: string,
+  preloadedGroups?: UserMembershipGroup[],
 ): Promise<UserGroupOption[]> {
-  const { data, error } = await supabase
-    .from("group_memberships")
-    .select(
-      `
-      group_id,
-      groups:group_id (
-        id,
-        name
-      )
-    `,
-    )
-    .eq("user_id", userId)
-    .eq("status", "active");
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const options: UserGroupOption[] = [];
-  for (const row of data ?? []) {
-    const raw = row.groups as { id: string; name: string } | { id: string; name: string }[] | null;
-    const group = Array.isArray(raw) ? raw[0] : raw;
-    if (group) {
-      options.push({ groupId: group.id, groupName: group.name });
-    }
-  }
-
-  options.sort((a, b) => a.groupName.localeCompare(b.groupName));
-  return options;
+  const groups = preloadedGroups ?? (await listActiveMembershipGroups(supabase, userId));
+  return groups.map((group) => ({
+    groupId: group.groupId,
+    groupName: group.groupName,
+  }));
 }
 
 export async function listUserDietaryEntries(
@@ -49,6 +30,7 @@ export async function listUserDietaryEntries(
       category,
       label,
       notes,
+      share_with_all_groups,
       dietary_entry_shares (
         group_id,
         groups:group_id (
@@ -89,80 +71,37 @@ export async function listUserDietaryEntries(
       label: row.label as string,
       notes: (row.notes as string | null) ?? null,
       shares,
+      shareWithAllGroups: row.share_with_all_groups === true,
     });
   }
 
   return entries;
 }
 
+/**
+ * Dietary entries the caller may see for one group: entries explicitly shared with the group plus
+ * entries whose owner chose "share with all my groups". Visibility is decided in the database
+ * (RLS + `list_group_dietary`), never in the client.
+ */
 export async function listGroupSharedDietary(
   supabase: SupabaseClient,
   groupId: string,
 ): Promise<GroupSharedDietaryRow[]> {
-  const { data, error } = await supabase
-    .from("dietary_entry_shares")
-    .select(
-      `
-      dietary_entry_id,
-      dietary_entries (
-        id,
-        user_id,
-        category,
-        label,
-        notes,
-        profiles:user_id (
-          display_name
-        )
-      )
-    `,
-    )
-    .eq("group_id", groupId);
+  const { data, error } = await supabase.rpc("list_group_dietary", { p_group_id: groupId });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  const rows: GroupSharedDietaryRow[] = [];
-  for (const share of data ?? []) {
-    const raw = share.dietary_entries as
-      | {
-          id: string;
-          user_id: string;
-          category: DietaryCategory;
-          label: string;
-          notes: string | null;
-          profiles: { display_name: string } | { display_name: string }[] | null;
-        }
-      | {
-          id: string;
-          user_id: string;
-          category: DietaryCategory;
-          label: string;
-          notes: string | null;
-          profiles: { display_name: string } | { display_name: string }[] | null;
-        }[]
-      | null;
-
-    const entry = Array.isArray(raw) ? raw[0] : raw;
-    if (!entry) {
-      continue;
-    }
-
-    const profileRaw = entry.profiles;
-    const profile = Array.isArray(profileRaw) ? profileRaw[0] : profileRaw;
-    if (!profile) {
-      continue;
-    }
-
-    rows.push({
-      entryId: entry.id,
-      userId: entry.user_id,
-      displayName: profile.display_name,
-      category: entry.category,
-      label: entry.label,
-      notes: entry.notes,
-    });
-  }
+  const rows: GroupSharedDietaryRow[] = ((data ?? []) as Record<string, unknown>[]).map((row) => ({
+    entryId: row.entry_id as string,
+    userId: row.user_id as string,
+    displayName: row.display_name as string,
+    category: row.category as DietaryCategory,
+    label: row.label as string,
+    notes: (row.notes as string | null) ?? null,
+    scope: row.scope === "group" ? "group" : "all_groups",
+  }));
 
   rows.sort((a, b) => {
     const byName = a.displayName.localeCompare(b.displayName);

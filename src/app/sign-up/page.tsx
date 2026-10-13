@@ -19,7 +19,7 @@ export default async function SignUpPage({
   return (
     <AuthShell
       title="Create your account"
-      description="We will send a verification email before your first sign-in."
+      description="Create your account to continue. If this project requires email confirmation, we will email you a link before your first sign-in."
       footer={
         <>
           Already have an account?{" "}
@@ -46,7 +46,7 @@ export default async function SignUpPage({
           type="password"
           autoComplete="new-password"
         />
-        <p className="text-xs text-zinc-500">Use at least 8 characters.</p>
+        <p className="text-xs text-muted-foreground">Use at least 8 characters.</p>
       </AuthForm>
     </AuthShell>
   );

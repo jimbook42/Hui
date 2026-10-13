@@ -27,21 +27,21 @@ export function DeleteAccountSection() {
   }
 
   return (
-    <div className="border-t border-zinc-200 pt-8 dark:border-zinc-800">
-      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+    <div className="pt-8">
+      <h3 className="text-sm font-extrabold text-foreground">
         Delete account
       </h3>
 
       {step === "idle" ? (
         <div className="mt-2">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             Permanently delete your Hui account and personal data. This action
             cannot be undone.
           </p>
           <button
             type="button"
             onClick={() => setStep("warning")}
-            className="mt-4 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+            className="hui-btn hui-btn-danger rounded-full hui-focus-ring mt-4"
           >
             Delete my account
           </button>
@@ -50,10 +50,10 @@ export function DeleteAccountSection() {
 
       {step === "warning" ? (
         <div className="mt-2 max-w-lg">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          <h3 className="text-sm font-extrabold text-foreground">
             Delete your Hui account?
           </h3>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-400">
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
             <li>
               This permanently deletes your account and personal/private
               information.
@@ -64,21 +64,21 @@ export function DeleteAccountSection() {
               Shared group and event history may remain for other members.
             </li>
           </ul>
-          <p className="mt-4 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+          <p className="mt-4 text-sm font-medium text-foreground">
             Are you sure you want to continue?
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={() => setStep("confirm")}
-              className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+              className="hui-btn hui-btn-danger rounded-full hui-focus-ring"
             >
               Continue to delete
             </button>
             <button
               type="button"
               onClick={handleCancel}
-              className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              className="hui-btn hui-btn-secondary rounded-full hui-focus-ring"
             >
               Cancel
             </button>
@@ -88,9 +88,9 @@ export function DeleteAccountSection() {
 
       {step === "confirm" ? (
         <div className="mt-2 max-w-md">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             To permanently delete your account, type{" "}
-            <span className="font-mono font-semibold text-zinc-900 dark:text-zinc-100">
+            <span className="font-mono font-semibold text-foreground">
               {ACCOUNT_DELETION_CONFIRMATION}
             </span>{" "}
             below.
@@ -98,13 +98,13 @@ export function DeleteAccountSection() {
           <form action={formAction} className="mt-4">
             {state.error ? (
               <p
-                className="mb-2 text-sm text-red-600 dark:text-red-400"
+                className="hui-message-error mb-2"
                 role="alert"
               >
                 {state.error}
               </p>
             ) : null}
-            <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+            <label className="hui-label">
               Type {ACCOUNT_DELETION_CONFIRMATION} to confirm
               <input
                 type="text"
@@ -113,14 +113,14 @@ export function DeleteAccountSection() {
                 disabled={pending}
                 value={confirmation}
                 onChange={(event) => setConfirmation(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className="hui-input"
               />
             </label>
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+                className="hui-btn hui-btn-danger rounded-full hui-focus-ring"
               >
                 {pending ? "Deleting account…" : "Delete my account"}
               </button>
@@ -128,7 +128,7 @@ export function DeleteAccountSection() {
                 type="button"
                 disabled={pending}
                 onClick={handleCancel}
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                className="hui-btn hui-btn-secondary rounded-full hui-focus-ring"
               >
                 Cancel
               </button>

@@ -1,142 +1,109 @@
-import { updateProfileAction } from "@/app/auth/actions";
-import { AccountActionsSection } from "@/components/profile/account-actions-section";
+import { signOutAction } from "@/app/auth/actions";
 import { AppShell } from "@/components/app/app-shell";
-import { AuthField, AuthForm } from "@/components/auth/auth-form";
-import { DietarySettingsSection } from "@/components/dietary/dietary-settings-section";
-import { HouseholdSettingsSection } from "@/components/households/household-section";
-import { listUserDietaryEntries, listUserGroupsForDietary } from "@/lib/dietary/queries";
-import { NotificationPreferencesSection } from "@/components/profile/notification-preferences-section";
-import { getMemberReconnectPreference } from "@/lib/notifications/queries";
-import { SettingsSection } from "@/components/profile/settings-section";
-import { authMethodLabelsForUser } from "@/lib/auth/auth-methods";
-import { listUserHouseholdsByGroup } from "@/lib/households/queries";
-import { createClient } from "@/lib/supabase/server";
+import { HuiSurface } from "@/components/hui/hui-surface";
+import { avatarToneClass, initialsFor } from "@/components/hui/avatar-stack";
+import { ProfileHubLink } from "@/components/profile/profile-hub-link";
+import { cn } from "@/lib/ui/cn";
+import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { buildStamp } from "@/lib/build/stamp";
+import { devTimed } from "@/lib/perf/dev-server-timing";
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await devTimed("profile-page:getUser", () => getServerAuthUser());
+  if (!user) {
+    return null;
+  }
 
+  const supabase = await getServerSupabase();
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .maybeSingle();
 
-  const authMethods = user ? authMethodLabelsForUser(user) : [];
-  const reconnectPref = user
-    ? await getMemberReconnectPreference(supabase, user.id)
-    : true;
-  const [householdContexts, dietaryEntries, dietaryGroups] = user
-    ? await Promise.all([
-        listUserHouseholdsByGroup(supabase, user.id),
-        listUserDietaryEntries(supabase),
-        listUserGroupsForDietary(supabase, user.id),
-      ])
-    : [[], [], []];
+  const displayName = profile?.display_name?.trim() || user.email || "You";
 
   return (
-    <AppShell title="Account settings">
-      <p className="mb-8 text-sm text-zinc-600 dark:text-zinc-400">
-        Manage your Hui profile and sign-in details.
-      </p>
-
-      <div className="space-y-8">
-        <SettingsSection
-          title="Profile"
-          description="Your display name is visible to people who share a group with you."
-        >
-          <AuthForm
-            action={updateProfileAction}
-            submitLabel="Save display name"
-            refreshOnSuccess
+    <AppShell title="Profile" subtitle="Settings and preferences for your account.">
+      <div className="space-y-6">
+        <HuiSurface tone="sage" shape="organic" padding="lg" className="hui-rise flex items-center gap-4">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "hui-shape-blob-a flex h-16 w-16 shrink-0 items-center justify-center text-xl font-black text-foreground",
+              avatarToneClass(user.id),
+            )}
           >
-            <AuthField
-              label="Display name"
-              name="display_name"
-              autoComplete="name"
-              defaultValue={profile?.display_name ?? ""}
-            />
-          </AuthForm>
+            {initialsFor(displayName)}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-xl font-extrabold text-foreground">{displayName}</p>
+            <p className="truncate text-sm font-semibold text-muted-foreground">{user.email ?? ""}</p>
+          </div>
+        </HuiSurface>
 
-          <dl className="mt-6 space-y-4 border-t border-zinc-200 pt-6 dark:border-zinc-800">
-            <div>
-              <dt className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                Account email
-              </dt>
-              <dd className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                {user?.email ?? "—"}
-              </dd>
-              <p className="mt-1 text-xs text-zinc-500">
-                Used to sign in. Contact support if you need to change it.
-              </p>
-            </div>
-
-            {authMethods.length > 0 ? (
-              <div>
-                <dt className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                  Sign-in methods
-                </dt>
-                <dd className="mt-2">
-                  <ul className="flex flex-wrap gap-2">
-                    {authMethods.map((method) => (
-                      <li
-                        key={method}
-                        className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
-                      >
-                        {method}
-                      </li>
-                    ))}
-                  </ul>
-                </dd>
-              </div>
-            ) : null}
-
-            <div>
-              <dt className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                Member ID
-              </dt>
-              <dd className="mt-1 font-mono text-xs break-all text-zinc-600 dark:text-zinc-400">
-                {user?.id}
-              </dd>
-              <p className="mt-1 text-xs text-zinc-500">
-                Share this with a group admin if they need to add you to a group.
-              </p>
-            </div>
-          </dl>
-        </SettingsSection>
-
-        <SettingsSection
-          title="Dietary information"
-          description="Record dietary information once. It stays private until you choose to share it with a group for event planning."
-        >
-          <DietarySettingsSection entries={dietaryEntries} groups={dietaryGroups} />
-        </SettingsSection>
-
-        <SettingsSection
-          title="Household"
-          description="Manage how you are grouped with others in each of your groups. Households are separate from group membership."
-        >
-          <HouseholdSettingsSection
-            contexts={householdContexts}
-            currentUserId={user!.id}
+        <nav className="space-y-3" aria-label="Profile settings">
+          <ProfileHubLink
+            href="/profile/account"
+            title="Account"
+            description="Display name and sign-in details"
           />
-        </SettingsSection>
+          <ProfileHubLink
+            href="/profile/groups"
+            title="Hui groups"
+            description="Households and how you appear in each group"
+          />
+          <ProfileHubLink
+            href="/profile/home"
+            title="Home"
+            description="Saved address for hosting at home"
+          />
+          <ProfileHubLink
+            href="/profile/hosting"
+            title="Hosting"
+            description="How you feel about hosting in each group"
+          />
+          <ProfileHubLink
+            href="/profile/availability"
+            title="Usual availability"
+            description="When you are usually free in each group"
+          />
+          <ProfileHubLink
+            href="/profile/dietary"
+            title="Dietary & food"
+            description="Your dietary information and sharing"
+          />
+          <ProfileHubLink
+            href="/profile/notifications"
+            title="Notifications"
+            description="Push alerts and notification types"
+          />
+          <ProfileHubLink
+            href="/profile/appearance"
+            title="Appearance"
+            description="Light, dark, or match your device"
+          />
+          <ProfileHubLink
+            href="/profile/install"
+            title="Install Hui"
+            description="Add Hui to your home screen"
+          />
+        </nav>
 
-        <SettingsSection
-          title="Notifications"
-          description="Control optional in-app reminders. Event and group updates still appear in your notification list when you are a member."
-        >
-          <NotificationPreferencesSection reconnectRemindersEnabled={reconnectPref} />
-        </SettingsSection>
+        <p className="text-center text-xs font-semibold text-muted-foreground" title="Deployed build">
+          Build {buildStamp()}
+        </p>
 
-        <SettingsSection
-          title="Account"
-          description="Sign out or permanently delete your Hui account."
-        >
-          <AccountActionsSection />
-        </SettingsSection>
+        <HuiSurface elevated padding="md">
+          <p className="text-sm font-semibold text-muted-foreground">
+            Sign out of Hui on this device. You can sign in again at any time.
+          </p>
+          <form action={signOutAction} className="mt-4">
+            <button type="submit" className="hui-btn hui-btn-secondary rounded-full hui-focus-ring">
+              Sign out
+            </button>
+          </form>
+        </HuiSurface>
       </div>
     </AppShell>
   );

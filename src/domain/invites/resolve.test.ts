@@ -17,6 +17,9 @@ describe("invite resolve payloads", () => {
       status: "valid",
       groupId: "g1",
       groupName: "Friends",
+      groupTimeZone: "Pacific/Auckland",
+      inviterDisplayName: null,
+      planning: null,
     });
   });
 

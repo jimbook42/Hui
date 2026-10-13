@@ -2,6 +2,400 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — Merge `feat/hui-026u-visual-design-system` → `main`
+
+- **Shipped on main:** HUI-ONBOARDING-003 / 003A / 003A-R1 (repair 2), plus prior 026U–028 work on the feature branch (`02d324d` tip before merge docs commit).
+- **Production:** Supabase `hui_onboarding_003a_planning_qa_fixes` applied; Vercel production `02d324d` (`dpl_9H16ZBjP1iyys21odPK963xhf9QS`) — see earlier entries same day.
+- **Product (Isaac, 13 Oct):** After confirm, a **host proposal** may still appear when the organiser did **not** use “I'll host” (host switch off) — **intended**; group can accept/decline/swap as usual.
+
+## 2026-10-13 — HUI-ONBOARDING-003A-R1 Repair 2 (live QA)
+
+- **Respond Yes glyph:** `AttendanceChoice` hides the corner check on `AttendanceDot` until the option is saved-selected (fixes “Yes” looking picked before tap / during Saving on single- and multi-time respond).
+- **Contribution copy/UI:** disclosure summaries count **requested slots** (`event_contributions` rows), not all group categories; hide “What to bring” when food is **No** or nothing was requested; section copy says nothing was requested instead of “Everything is covered”.
+- **Confirm → extra categories (not fixed here):** if linked Supabase still runs `finalise_event` from `20261006220000`, it calls `seed_event_contributions` on confirm. **003A** removes that in `20261013100000_hui_onboarding_003a_planning_qa_fixes.sql` — apply that migration to stop confirm injecting Dessert/Drinks/Salad. Host accept still runs `sync_host_bound_contributions` → `seed_event_contributions` (`20261003220000_host_bound_contribution_sync_on_accept.sql`); separate product/DB decision if that should be scoped to requested categories only.
+- **Multi-time summary (reported):** event page `viewerResponse` comes from `focusCandidate` only (`event-page-data.ts`), not an aggregate across candidates — can show “maybe” when another time is Yes.
+- **Tests:** `display.test.ts`; `npm run validate`.
+- **Deploy:** none.
+
+## 2026-10-13 — HUI-ONBOARDING-003A-R1 Contributions display + respond Yes tick
+
+- **Contributions:** `buildContributionSlots` only surfaces categories that have an `event_contributions` row for that hui (fixes respond “What are you bringing?” and event contribution UI listing every group category when only a subset was requested at propose). Propose validation drops contribution requests when food involvement is **No**; review step clears requested contributions when organiser picks No.
+- **Respond attendance:** No optimistic checkmark or step advance until `setAvailabilityResponseAction` succeeds; `AttendanceChoice` hides the tick while pending.
+- **Existing gatherings:** Unchanged when rows already exist (legacy full seed, host-bound sync, or 003/003A requested categories). Huies with **no** contribution rows no longer show phantom open slots.
+- **Tests:** `slots.test.ts`, `display.test.ts`, `proposal.test.ts`; `npm run validate` (611 unit tests; build with CI placeholder Supabase env).
+- **Migration / deploy:** none (app-only).
+
+## 2026-10-13 — HUI-ONBOARDING-003A Planning workflow QA fixes
+
+- **Host on finalise:** `coordinate_event_host_after_attendance` required attendance on `proposed` candidates only; after finalise the selected time is `selected`, so host coordination no-op'd. Fixed in `20261013100000` to count `selected` when the event is `confirmed`.
+- **Contributions at setup:** optional request picker moved to the **Time** step (`ProposalContributionRequestFields`); finalise no longer calls `seed_event_contributions` (avoids copying every group category onto the hui when only a subset was requested at propose).
+- **Respond race:** global `isSavingAttendance` dropped rapid saves for a second candidate; per-candidate pending state allows concurrent saves.
+- **Recurring validation:** `starts_on` now falls back to `planningTargetDate` / cycle target when the cadence anchor is empty (QA 002A recurring propose).
+- **Duplicate cycle (item 5):** rejection when `planning_target_date` already has an open proposing hui is **expected** duplicate-cycle protection (see `recurring-planning-hui-028` / `hui-onboarding-003a` test).
+- **Tests:** `hui-onboarding-003a-planning-qa.test.ts`, `proposal.test.ts`, `proposal-defaults.test.ts`; `npm run validate` — 610 tests, build OK.
+- **Migration:** `20261013100000_hui_onboarding_003a_planning_qa_fixes.sql` pending on linked Supabase (not applied this ticket). `20261006220000` unchanged on disk; apply order 003 → 003a when promoting DB.
+- **Deploy:** none (per ticket).
+
+## 2026-10-12 — HUI-ONBOARDING-003 Event planning workflow
+
+- **Root causes:** gathering invite only on `?proposed=1`; no contribution slots at propose; recurrence series overwritten on later proposals; host auto-proposed on every `event_responses` write; respond flow single-candidate; first-hui host dropdown implied hosting on attendance; food-involvement fieldset legend overflow on small screens.
+- **Schema:** `20261006220000_hui_onboarding_003_event_planning_workflow.sql` — drop host-on-response trigger; `commit_proposer_as_confirmed_host`, `apply_proposal_contribution_requests`; extend `propose_group_event`; preserve canonical recurrence; `finalise_event` proposes host when none accepted.
+- **App:** propose review — optional contributions, “I'll host”, food UI fix; event detail invite for organisers while proposing; multi-candidate respond step.
+- **Tests:** `hui-onboarding-003-planning-workflow.test.ts`, `proposal-contributions.test.ts`; updated host-selection + `propose_group_event` call sites.
+- **Migration:** applied via PGlite in `npm run validate` only (not pushed to linked Supabase in this session).
+- **Manual QA:** full invite E2E with two active gatherings; browser authenticated integration not run in CI.
+
+## 2026-10-06 — HUI-ONBOARDING-002B QA failures (invite, dates, routing)
+
+- **Root causes:** signed-out `/join/[token]` called `group_settings` under member-only RLS → thrown error → HTTP 500; calendar dates formatted via UTC-noon + group TZ shifted NZ dates forward one day; gathering invites shared the group link without `?event=` so `resolve_group_invite` and post-join routing preferred newest active hui.
+- **Schema:** `resolve_group_invite(p_token, p_focus_event_id)` returns `groupTimeZone` + optional focus gathering (`20261006210000_hui_onboarding_002b_invite_and_dates.sql`); applied to linked Supabase.
+- **App:** date-only `formatDateOnlyDisplay`; gathering invite URLs append `?event=` from propose-hui share; join/sign-in preserve focus; post-join redirect prioritises focus event; event cards label proposed times; dashboard uses full display name; profile shows build SHA; sign-up copy matches optional confirmation flow.
+- **Host auto-suggest on respond:** unchanged — `trg_maybe_propose_event_host_on_response` / `coordinate_event_host_after_attendance` (product decision pending).
+- **Tests:** `date-only.test.ts`, invite presentation/urls/resolve, `group-invite-links` focus + timezone, `post-join-redirect` ordering; `npm run validate` pass.
+- **Deploy:** not promoted to production (per ticket). Production at ticket start was `3e9e67b`; fix lands on branch after push.
+- **Manual QA:** signed-out invite link, two-active-gathering invite from propose-hui share (not group-only link), recurrence date entry 2 Nov / 9 Nov, host-suggest behaviour.
+
+## 2026-10-06 — HUI-ONBOARDING-002A First-Hui onboarding correction
+
+- **Schema:** `20261006200000_hui_onboarding_002a_corrections.sql` — idempotent `gathering_type` columns; `propose_group_event` writes gathering atomically; `group_settings` canonical FK fixed (no composite SET NULL on `group_id`); `_delete_group_cascade` deletes `group_settings` before series; PostgREST `reload schema`.
+- **Root causes:** remote DB missing `20261006180000` (PostgREST cache / unapplied migration); group delete failed when `recurrence_series` delete triggered composite FK SET NULL on `group_settings.group_id`.
+- **Product:** group create → first hui propose → invite (group link shows planning preview); optional gathering name; single first-cycle planning date for new recurring groups; invite copy “help plan … with {group}”; join still establishes membership + coordination redirect.
+- **Tests:** group delete with recurrence, gathering invite title helpers, updated RPC signatures; `npm run validate`.
+
+## 2026-10-06 — HUI-ONBOARDING-002 Frictionless participant & event context
+
+- **Audit:** no reusable gathering-type field (only `eventKind` one-off/recurring + `food_involvement`); group-only invite RPC; post-join redirect to group page; `SuggestedTimesList` uses standing availability at propose time (not live re-rank after each response); recurring UX duplicated cadence anchor vs candidate dates; auth `useActionState` cleared fields on failed submit; contribution bring step requires open category (QA “only claimed items” = no open slots, not missing claim UI).
+- **Schema:** `gathering_type` enum + `gathering_type_custom` on `events`; extended `resolve_group_invite` with inviter + active planning snapshot (`20261006180000_hui_onboarding_002_gathering_invite.sql`).
+- **UX:** rich `/join/[token]` preview + “What is Hui?” card; “Join the planning” CTA; post-join → `/events/[id]/respond` when coordination open; proposal “What are you planning?”; recurring cadence vs proposed-time copy; polls terminology; availability copy aligned to behaviour.
+- **Tests:** gathering/invite presentation, auth field preservation, proposal gathering validation, resolve payload; `npm run validate` pass.
+- **Manual QA:** not run in session — use ticket QA-A–E runsheet.
+- **Deferred:** event-specific invite tokens; inviter attribution beyond link `created_by`; mandatory manual QA sign-off.
+
+## 2026-10-05 — HUI-ONBOARDING-001 First Hui onboarding hardening
+
+- **Audit addressed:** group/hui conflation on invite/join/share copy; first proposal defaulting to recurring; missing post-propose orientation; personal setup discarding display name on skip and home on Continue; no first-run Group vs Hui explainer.
+- **Decisions:** first-hui one-off when `groupHasEstablishedRecurrence` is false (cadence parts or canonical series); existing cadence unchanged; post-propose via `?proposed=1` + state-aware `buildProposedHuiGuidance`; setup home/name via `parsePersonalSetupFormData` on skip/complete (no forced tutorials).
+- **Tests:** `proposal-defaults.test.ts`, `proposed-guidance.test.ts`, `personal-setup-update.test.ts`, `terminology.test.ts`; full `npm run validate` pass.
+- **Manual QA:** not run in implementation session — use ticket runsheet A–D.
+- **Deferred (explicit):** group cadence UI, demoting user-ID invites, suggested-times → availability link, join deep-link to active hui, email invites, PWA/push placement, recurrence weekday polish, full onboarding E2E suite.
+- **Migration:** none.
+
+## 2026-10-05 — HUI-026 Explainable time recommendations
+
+- **Model:** `rankTimeRecommendations` in `src/domain/scheduling/time-recommendations.ts` — event response > standing signal > unknown; bounded slot generation around `planning_target_date` / 14-day fallback; deterministic sort; max 3 suggestions with human explanations.
+- **Privacy:** standing availability stays owner-only (RLS unchanged); `loadProposalTimeRecommendations` verifies active membership then reads standing via server secret client; UI receives aggregate slots + copy only.
+- **UX:** `SuggestedTimesList` on propose-hui Time step; proposer can use, ignore, or manually add times.
+- **Tests:** `time-recommendations.test.ts`, `time-recommendations-hui-026.test.ts` (RLS + aggregate payload).
+- **Migration:** none.
+- **Deferred:** recommendations on existing hui scheduling section; full weekday/window recurrence inputs; auto-propose candidates.
+
+## 2026-10-05 — HUI UX follow-up: member decisions + Manage Hui navigation
+
+- **Decisions:** `create_event_decision` now requires active group membership (not event manager); creators may edit drafts with zero responses; finalize/cancel unchanged (event manager). Main hui **Group decisions** card shows empty state + **Ask the group**; reuse 026F form.
+- **Manage Hui:** sectional `DisclosureCard` hub with `#hui`, `#people`, `#time`, `#host`, `#place`, `#contributions`, `#decisions`, `#dietary` + `HashDisclosureOpener`; default section from planning attention heuristics.
+- **Migration:** `20261005230000_hui_decision_member_create.sql`.
+- **Tests:** extended `event-decisions-hui-026f.test.ts`; `permissions.test.ts`, `manage-navigation.test.ts`.
+
+## 2026-10-05 — HUI-025 Persistent availability & preferences
+
+- **Before:** only per-candidate `event_responses` (yes/no/maybe); no standing weekly preferences; respond flow always cold-start.
+- **Data:** `group_member_standing_availability` + `standing_availability_kind` enum; owner-only RLS + membership trigger; migration `20261005210000_hui_025_persistent_availability.sql`.
+- **Domain:** `standing-availability.ts` (window labels, overlap, hint inference; unavailable overlaps beat available).
+- **UX:** Profile **Usual availability** hub + group **More → Usual availability**; `/events/.../respond` shows hint only when viewer has no response yet — explicit tap still required.
+- **Privacy:** members cannot SELECT another member's standing rows; no new group-visible schedule surface.
+- **Tests:** `standing-availability.test.ts`, `standing-availability-hui-025.test.ts`.
+- **Deferred:** HUI-026 recommendation engine, calendar import, prefer/maybe standing tier, personal timezone override per window.
+
+## 2026-10-05 — HUI-028 Recurring planning cycle
+
+- **Before:** `recurrence_series` anchor per proposal only; no group cadence, planning window, cycle identity, or next-planning UX.
+- **Data:** `group_settings` cadence + `planning_lead_days` + `canonical_recurrence_series_id`; `events.planning_target_date` with partial unique index; `propose_group_event` syncs cadence, reuses series, rejects duplicate cycle targets.
+- **Domain:** `src/domain/recurrence/planning-cycle.ts` (phases, next target, planning opens, prefill).
+- **UX:** Group hero card + dashboard **Recurring groups**; propose flow prefills recurring target date when derivable.
+- **Tests:** `planning-cycle.test.ts`, `recurring-planning-hui-028.test.ts`; updated `event-proposal.test.ts` RPC arity.
+- **Deferred:** event completion UI hook, skipped-cycle policies, weekday/time-window recurrence UX, planning push/email reminders, persistent availability (HUI-025).
+
+## 2026-10-05 — HUI-026F Generic decision polls
+
+- **Data:** `event_decisions`, `event_decision_options`, `event_decision_responses` with RLS + RPCs (`create_event_decision`, `respond_event_decision`, `finalize_event_decision`, `cancel_event_decision`, `update_event_decision_draft`); `_delete_event_cascade` extended.
+- **UX:** Open decisions on main hui page + Details disclosure + Manage **Decisions** section; members tap options; managers record result (ties do not auto-select); `buildEventAttention` / home cards add `decision` after contribute.
+- **Tests:** `src/db/event-decisions-hui-026f.test.ts`, `src/domain/decisions/display.test.ts`, attention/home path updates.
+- **Deferred:** ranked/multi-choice polls, deadlines/auto-expiry, push notifications for decisions.
+
+## 2026-10-05 — HUI-026C Home / event attention finish
+
+- **Attention:** `classifyHomeEvent` delegates primary attention to `buildEventAttention` (same respond / host / confirm / contribute rules as event pages); `loadHomeData` supplies proposer `canConfirmTime` via `canFinaliseEvent` + `evaluateCandidateConsensus`, plus contribution claim state for contribute nudges.
+- **Dashboard:** Sections **Needs attention** (only when items exist), **Upcoming** (featured + more confirmed), **Being planned** (proposal/consensus only); `/events` overview keeps parallel grouping; event cards link to `#scheduling`, `#host`, `#contributions` or `/respond`.
+- **Validation:** `lint` / `typecheck` / **506 passed**, 2 skipped / `build` passed.
+- **Manual QA:** Authenticated dashboard flows not run in agent env (sign-in required).
+
+## 2026-10-05 — Production promote `2fb4519` (Manage Hui UX)
+
+- **Production:** `npx vercel promote dpl_AND5pAfK3L521oF2c46wcUwr5r23` → `dpl_HBQC3mr94Lec8g8ZW4P5w6saWVA8` **READY** at git `2fb4519`; aliases https://hui-seven-gamma.vercel.app and https://hui-jimbook.vercel.app.
+
+## 2026-10-05 — Manage Hui sectional UX (finish)
+
+- **Problem:** Manage domains were grouped by `SectionHeader` + `HuiSurface`, but legacy section components still rendered nested `hui-card-section` surfaces and duplicate h2 titles — the page read as one long list.
+- **Fix:** `ManageDomainSection` + `.hui-embedded` on manage surfaces (same pattern as `DisclosureCard`) so Time, Host, Contributions, Dietary, and lifecycle forms flatten inside each domain card; `space-y-6` between domains; semantic `section` + heading ids.
+- **Verification:** `lint` / `typecheck` / 502 tests / `build` passed. Authenticated mobile browser smoke not run in agent env.
+
+## 2026-10-05 — Contribution notification noise fix
+
+- **Problem:** Row-level contribution INSERT/DELETE triggers notified every group member and queued Web Push for each mutation (claim, release, assign, reassign, clear), producing duplicate “claimed” / “slot changed” interrupts.
+- **Fix:** Migration `20261005180000_contribution_notification_policy.sql` — targeted coordinator in-app notifications from contribution RPCs; assignee-only selective push with per-event coalescing; `queue_member_notification` `p_deliver_push` flag; removed `event_contributions_notifications` trigger.
+- **Tests:** `src/db/contribution-notifications.test.ts` (rapid production-style sequence).
+- **Deploy / verify (2026-10-05):** `npx supabase db push --dry-run` showed only `20261005180000` pending; `npx supabase db push` applied; `migration list` local/remote aligned on `20261005180000`. Remote DB: no `event_contributions_notifications` trigger; `notify_contribution_*` helpers present; all five contribution RPCs call them; `queue_member_notification` includes `p_deliver_push`. Vercel Preview **READY** `dpl_G1Wzpa7NfgXsuBiT83nGCyRtCiHs` — https://hui-git-feat-hui-026u-visual-design-system-jimbook.vercel.app (branch alias; git `2f58db6` on `origin`). Production alias https://hui-seven-gamma.vercel.app still serves older production deployment `dpl_BjTj93uVXANo1tKnKGsmyBZ6Zcr4` (pre-`2f58db6`); policy is database-side so linked Supabase carries the fix for production app traffic. **Manual push QA not run** — no authenticated Web Push device/session in agent env.
+
+## 2026-10-05 — HUI-026E Contribution coordination finish
+
+- **Member UX:** per-category contribution cards with clear status (open, claimed, yours, host-bound, manager-assigned) on hui detail, manage, and respond **What are you bringing?** steps.
+- **Coordinator tools:** `assign_event_contribution_as_manager`, `reassign_event_contribution_as_manager`, `release_event_contribution_as_manager` (creator or group admin/owner); host-bound categories stay on accepted-host sync.
+- **Standing preferences:** group admins set optional **Usually brings this** (`default_assignee_user_id`) without rewriting past events.
+- **Claims:** members claim into existing open seeded rows; manual claims blocked on host-bound categories.
+- **Tests:** `src/db/contributions-hui-026e.test.ts`, `src/domain/contributions/slots.test.ts`.
+- **Migration:** `20261005160000_hui_026e_contribution_coordination.sql`.
+- **Deferred:** per-hui contribution category overrides; full GDD standing-preference matrix beyond default assignee.
+- **Verification (autonomous):** `npx supabase db push` applied `20261005160000` to linked project; remote RPCs confirmed; `lint` / `typecheck` / 497 tests / `build` passed; Vercel Preview deployment for `d4c9848` **READY** (`https://hui-re8xmgfps-jimbook.vercel.app`). Authenticated browser smoke not run in CI (no `E2E_TEST_*` in agent env).
+- **Finish pass:** unclaimed slots sort first on detail/manage/respond; disclosure summaries use filled slot counts (`claimedContributionCount`); concise “All set” copy when every category is covered; release/unauthorised-release DB tests in `contributions-hui-026e.test.ts`.
+
+## 2026-10-05 — UX foundation correction (pre–HUI-026E)
+
+- **Manage discoverability:** authorised viewers see a dedicated **Open manage hui** card on the main hui page (not only a small Details header link).
+- **Manage layout:** `/events/[eventId]/manage` grouped into Hui, People & attendance, Time, Host, Place, Contributions, and Dietary sections.
+- **Host place:** accepted host gets **Set the place** / **Change place** on the main hui hero; manage Place reuses the same host location form with **At my home** (no address search when home is selected).
+- **Propose flow:** recurring groups default to **Recurring** planning model; one-off remains an explicit radio alternative.
+- **Theme:** `ThemeSystemSync` + shared `theme-client` helpers so **Match device** follows `prefers-color-scheme` while open; explicit light/dark unchanged.
+- **Next:** **HUI-026E** contribution coordination finish (not started in this pass).
+
+## 2026-10-05 — HUI-026D Hui management & admin surface
+
+- **Manage route:** `/events/[eventId]/manage` (mobile-first sections reusing existing scheduling, host, contribution, and edit components). Participant `/events/[eventId]` unchanged except a **Manage this hui** entry for authorised viewers.
+- **Permissions:** `canAccessEventManagement` (creator/admin edit/cancel/delete, or accepted-host place edit). Delete: creator or group owner/admin only (`canDeleteEvent` + `delete_event` RPC).
+- **Delete:** `_delete_event_cascade` + `delete_event`; `events_delete` RLS policy; PGlite tests in `src/db/events-delete.test.ts`. Cancel remains non-destructive.
+- **Deferred:** per-hui contribution category overrides (still HUI-027/GDD backlog).
+- **Migration:** `20261005140000_hui_026d_delete_event.sql`.
+
+## 2026-10-05 — HUI-027 Onboarding & setup architecture
+
+- **Audit:** User vs Group vs Hui ownership documented in `ROADMAP.md`; contribution categories remain group templates with per-event `event_contributions` (no per-hui category override yet).
+- **User:** `/profile/setup` + dashboard prompt; `/profile/home` for saved home; `personal_setup_completed_at` on profiles.
+- **Group:** `/groups/new` wizard (name → invite link → hosting/maybe toggles → propose CTA); owner `delete_group` RPC + UI.
+- **Host accept:** “At my home” / “Somewhere else” when profile home is set.
+- **UI:** `HuiSwitch` + checkbox→switch pass on group settings, notifications, contributions, propose review.
+- **Deferred:** hard event delete (no delete RLS) → **HUI-026D**; standing contribution preferences → GDD backlog.
+- **Migration:** `20261005120000_hui_027_profile_home_delete_group.sql`.
+
+## 2026-10-05 — HUI-026U.4 final production polish
+
+- **Host accept:** `host_place_required` on events; accept flow uses `EventLocationFields` (confirm vs choose copy); `respond_to_host_assignment` optionally persists place atomically on accept.
+- **Maps:** address-first Open in Maps; map/pin opens when address or coordinates exist (no extra toggle).
+- **Food step:** mobile overflow fix on “Will food be involved?”
+- **Production:** accepted-host location edit verified on https://hui-seven-gamma.vercel.app (manage → confirm place, persist, participant read-only).
+
+## 2026-10-05 — HUI-026U.4 host place persistence (release fix)
+
+- **Gap:** accepted host UI/actions allowed place edits but RLS blocked direct `events` updates for non-creators.
+- **Fix:** `update_event_place` RPC (migration `20261005040000_accepted_host_update_event_place`); `updateEventAction` routes host-only saves through RPC; PGlite tests in `host-event-place.test.ts`.
+- **Deploy:** `supabase db push` on `xmvzzypefpiethefrfka`; Vercel production `dpl_CB7Zgr7cCM3276dRR2gj8HDB8rL3` → https://hui-seven-gamma.vercel.app (git `b67ffb3`).
+
+## 2026-10-05 — HUI-026U.4 final polish (sign-off)
+
+- **Geoapify:** global autocomplete with `bias=countrycode:auto` on every request; optional `bias=proximity:lon,lat` when the user already has a map pin (`proximityLat`/`proximityLng` on `/api/geocode`). No default country filter.
+- **Address UI:** clearer vertical separation between place text and **Open in Maps** on the event hero.
+- **Notifications:** post-install dashboard onboarding card (enable / not now; denied → settings link); shared `enableWebPushNotifications` client helper; dismiss cooldown matches PWA install card.
+- **Propose flow:** time step uses **Continue** with implicit candidate from the picker; **Add another time** is secondary.
+- **Food involvement:** responsive legend/options wrapping; selected state uses sage tint + primary border + check (readable light/dark).
+- **Validation:** `npm run validate` (lint, typecheck, tests, build) passed.
+- **Production smoke:** re-verify address search (incl. `50 Kent Lodge Avenue, Avonhead, Christchurch`), time/food/notifications UX on `https://hui-seven-gamma.vercel.app` after deploy.
+
+## 2026-10-05 — HUI-026U.4 production deploy (partial)
+
+- **Deploy:** Vercel production `https://hui-seven-gamma.vercel.app` — deployments `dpl_CyY3uj3x9Vo48MAxPF7BQ5sV2nHP` then `dpl_*` (second deploy for env); git `d2add56` (Geoapify attribution + prior geocoder adapter).
+- **Vercel env:** `HUI_GEOCODING_PROVIDER=geoapify` set on Production, Preview, and Development. **`HUI_GEOCODING_HTTP_KEY` not set** (no Geoapify key in repo, `.env.local`, or Geoapify login session).
+- **Live smoke:** authenticated `/` → `/dashboard`; signed-out `/` shows landing; `/profile` hub loads; `/api/geocode?q=Wellington%20Cuba` returns `configured:false` until API key added; proposal form shows address search field (manual pin still available).
+- **DB:** `events.food_involvement` confirmed on linked production.
+- **Blocked for U.4 sign-off:** add free-tier Geoapify API key to Vercel, redeploy, re-test autocomplete + food UI on production.
+
+## 2026-10-05 — HUI-026U.4 follow-up (production geocoder + migration)
+
+- **Geocoder:** Geoapify Address Autocomplete adapter (`GeoapifyGeocodingProvider`); configure `HUI_GEOCODING_PROVIDER=geoapify` and `HUI_GEOCODING_HTTP_KEY` (server-only). Chosen for NZ address search, commercial terms, low early-scale cost (3k credits/day free tier), no MapLibre coupling; `HttpGeocodingProvider` retained for custom backends.
+- **Migration:** `supabase db push` applied `20261005030000_event_food_involvement.sql` on linked production `xmvzzypefpiethefrfka`.
+- **Manual:** Add Geoapify API key to Vercel production/preview env before expecting autocomplete in deployed builds.
+
+## 2026-10-05 — HUI-026U.4 UX refinement
+
+- **Entry:** signed-in users hitting `/` redirect to `/dashboard` (middleware + server redirect); unauthenticated landing unchanged; PWA `start_url` still `/`.
+- **Profile hub:** `/profile` is a settings hub; sections at `/profile/account`, `/profile/groups`, `/profile/hosting`, `/profile/dietary`, `/profile/notifications`, `/profile/appearance`, `/profile/install` with back navigation to Profile.
+- **Maps:** address search seam (`src/lib/maps/geocoding.ts`, optional HTTP provider env), `GET /api/geocode`, `AddressSearchField` + `EventLocationFields` on propose/edit; **Open in Maps** link from stored place/coordinates.
+- **Host place:** accepted host may confirm location (`canEditEventLocation`) without full manage rights; proposal copy de-emphasises proposer pin when hosting is on.
+- **Dietary:** sharing controlled at global + per-group scope (existing DB flags/shares); per-entry share UI removed; multi-group summary bug fixed.
+- **Food involvement:** `events.food_involvement` (yes/no/unsure) on new proposals; event dietary section hidden when `no`; legacy null unchanged.
+- **Migration:** `20261005030000_event_food_involvement.sql` (apply before deploy).
+
+## 2026-10-05 — HUI-026U.3 follow-up (ship with production DB)
+
+- **Attendance after confirmation:** members can change Yes/Maybe/No on the confirmed time (`set_availability_response` + `attendance-override` domain rules); respond flow and `AttendanceLive` on event detail; DB tests in `attendance-after-confirmation.test.ts`.
+- **Optional event end time:** proposals, candidates, and confirmed events may omit `ends_at`; validation and display updated across scheduling and proposal flows.
+- **Real event map:** MapLibre GL JS (`src/components/map/`, `src/lib/maps/config.ts`) with replaceable tile/style provider (default OpenFreeMap via env); geocoding helper; event hero + `EventLocationPanel` use coordinates when present; location picker on propose/edit. Worker assets copied at `prebuild` (`public/vendor/` gitignored).
+- **Gathering / brand:** `HuiLogo`, refreshed PWA manifest icons (maskable + apple-touch), push notification badge asset, forest-green map styling in `globals.css`.
+- **PWA install:** `InstallHuiPrompt` + `install-store` (beforeinstallprompt / iOS guidance); manifest name/shortcuts updated.
+- **Dietary:** profile “Share with all groups” scope (`dietary_entry_shares` sentinel group + app actions); `dietary-all-groups.test.ts`.
+- **Migrations** (already applied in production before app deploy): `20261005000000_optional_end_time_and_location_coordinates`, `20261005010000_attendance_changes_after_confirmation`, `20261005020000_dietary_share_with_all_groups`.
+- HUI-026P optimistic attendance, respond primary/deferred split, and Suspense shells unchanged.
+- `npm run lint`, `npx tsc --noEmit`, `npm test` (444 passed, 2 skipped), `npm run build` passed.
+
+## 2026-10-04 — HUI-026U redesign (full UI/UX rewrite)
+
+- Redesigned every route from the reference screens: forest/clay/blue tokens (light + dark), ~32px organic shapes, no bordered cards or dividers. Theme preference is device-local (`hui-theme` in localStorage, set in Profile → Appearance).
+- New IA: bottom nav Home / Hui (`/events`) / Groups / Alerts / You (`/profile`); `/events` lists all gatherings; `/events/new` is a group picker into the existing `/groups/[id]/events/new` proposal flow.
+- Event detail: static map hero, answer strip, "Who is coming" gathering visual, attention card, then a "Details" disclosure list (times, hosting, bring, dietary, members, about, manage). `HashDisclosureOpener` keeps `#host` / `#contributions` / `#scheduling` deep links working.
+- Respond (HUI-026B stages + P optimistic attendance) and proposal (HUI-026A: Name → Time → Review) re-skinned; logic unchanged.
+- Profile gains per-group hosting preference (existing `setMyHostingStandingAction`) and theme toggle.
+- Fixed pre-existing bugs found in QA: locale-dependent date formatting caused hydration mismatches (`formatInstantInTimeZone` now fixed to en-NZ); respond flow called `.catch` on a streamed promise (crashed page).
+- No Supabase schema/RLS/server action/lifecycle changes. `npm run validate` passed. Checked 360/390/412/1280 light + 390 dark: no horizontal overflow.
+
+## 2026-10-04 — HUI-026U.2 visual reference integration
+
+- Located reference mockups and brand assets at repo root; indexed in `docs/reference/REFERENCE_INDEX.md`.
+- Shifted primary palette from terracotta to reference forest green; added date badge, `HuiGatheringMark`, refined gathering/location/shell from `example-screen-*` and logo files.
+- Brand wordmark in `public/brand/`; production deploy `dpl_3Jq5HKEorhtnUnwoc21upe52Nn8L` **READY** — https://hui-seven-gamma.vercel.app (git `69b1515`).
+
+## 2026-10-04 — HUI-026U visual design system & UX foundation
+
+- Warm token system in `globals.css`, Hui primitives under `src/components/hui/`, documented in `docs/DESIGN_SYSTEM.md`.
+- Gathering ring (`GatheringVisual`) wired to real `AttendanceRoster` data on event detail and scheduling; static `EventLocationPanel` for place context (no map SDK).
+- Mobile bottom nav + refreshed shell, groups, dashboard, notifications, profile sections, respond/detail primary actions.
+- HUI-026P.2 optimistic attendance and P.3 Suspense/loading paths unchanged.
+
+## 2026-10-04 — HUI-026P.3 navigation & data-loading performance
+
+**Before:** Respond route awaited full `getGroupDetail` (member roster), host history, contributions, and categories before first paint. Groups page and AppShell blocked on group list / notification unread queries.
+
+**After:** `loadRespondPrimary` + deferred contribution data; groups shell streams list via Suspense; notification badge streams in AppShell; respond/groups `loading.tsx` shells.
+
+**Measurements:** Android before from ticket (~4–5s); after requires device + `hui_perf=1` on new deploy.
+
+- `npm run validate` passed.
+
+## 2026-10-04 — HUI-026P.2 end-to-end interaction latency audit
+
+**Finding:** Server query improvements in P/P.1 did not fix perceived slowness because several flows still blocked visible acknowledgement on server completion + RSC refresh. Attendance waited for `setAvailabilityResponseAction` (including `getEventDetail`) before `pushStep`; notification Open awaited mark-read before `router.push`.
+
+**Instrumentation:** `src/lib/perf/client-interaction-perf.ts` (`?hui_perf=1`), `InteractionPerfBootstrap`, extended `HUI_DEV_PERF` spans on `setAvailabilityResponseAction`, audit doc `docs/performance/HUI-026P.2-audit.md` with Android procedure.
+
+**Fixes:** Optimistic attendance UI (immediate selected state + step advance, deferred `router.refresh`, rollback on error); notification navigate-first; profile `loading.tsx`; form save perf marks.
+
+**Not changed:** Heavy `getEventDetail` inside attendance action; dietary list still uses deferred `router.refresh`; Vercel `iad1` vs Supabase region unconfirmed in dashboard.
+
+- `npm run validate` passed.
+
+## 2026-10-04 — HUI-026P.1 systemic latency (common paths)
+
+**Diagnosis (code + architecture; Android timings from ticket, not re-measured in Cursor):**
+- Protected navigations repeated `auth.getUser()` in middleware, layout, page, and `NotificationsNavLink` (AppShell on every screen) — each call is a Supabase Auth round trip.
+- Protected layout always ran `ensureUserProfile` (extra `profiles` read) even when the layout’s own profile guard query already proved the row exists.
+- Profile page loaded households via `listUserHouseholdsByGroup` with an **N+1** pattern (per-group sequential `household_members` / `households` / members queries) and duplicated active `group_memberships` reads for dietary + household sections.
+- Save display name: server action + `revalidatePath` + `router.refresh()` refetched the full heavy profile RSC tree after success.
+- Dietary saves use the same `refreshOnSuccess` pattern (deferred refresh after success message).
+
+**Fixes:**
+- `getServerAuthUser` / `getServerSupabase` (`React.cache`) — one auth + client per RSC request across layout, page, and shell.
+- Skip `ensureUserProfile` when the layout profile row already exists.
+- Batch household loading; share one `listActiveMembershipGroups` fetch across household + dietary on profile.
+- Profile display name: removed `refreshOnSuccess` and unnecessary `/dashboard` revalidation; success from action state only.
+- `AuthForm` defers `router.refresh()` to the next task so success copy paints first.
+- Dev timing labels on profile layout/page, dietary actions, display-name action, event/respond routes (`HUI_DEV_PERF=1`).
+
+**Region note:** Supabase project host `xmvzzypefpiethefrfka.supabase.co` (from prior OAuth QA). Confirm exact Supabase region in dashboard; Vercel production region not queried (API scope). Cross-region latency may still contribute on NZ mobile — needs correlation with physical traces.
+
+**Physical Android verification:** still required for profile open, display name save, dietary save, notification → respond, 026B flow.
+
+- `npm run validate` passed (incl. new `src/lib/households/queries.test.ts`).
+
+## 2026-10-04 — HUI-026P performance audit + fixes
+
+**Baseline (observed / code-traced bottlenecks):**
+- Event and respond routes blocked on long server waterfalls: sequential `getEventDetail` → `getGroupDetail` → large `Promise.all`, then per-candidate `candidate_attendance_roster` RPCs on the full event page.
+- Attendance Yes/Maybe/No felt multi-second because `useTransition` waited for `router.refresh()` (full RSC refetch) **before** advancing the respond flow; server action also loaded full `getGroupDetail` for one boolean setting.
+- Group → events and notification → respond paths paid extra sequential round trips; no route-level loading UI during navigations.
+- Protected layout still runs auth + profile ensure on every navigation (necessary; not changed).
+
+**Fixes:**
+- Parallelised independent Supabase reads in `getEventDetail`, `getGroupDetail`, respond page, and group events list.
+- `setAvailabilityResponseAction` uses lightweight `getGroupResponseSettings` instead of full group detail.
+- Event page streams heavy sections via `Suspense` + `loading.tsx`; shell (title, breadcrumbs, status) renders after a single event fetch.
+- Respond flow advances step immediately after successful save; `router.refresh()` runs after UI acknowledgement.
+- Dev-only timing logs: set `HUI_DEV_PERF=1` in development.
+
+**Remaining risks:** Full event page still loads all coordination surfaces in one streamed chunk; multiple roster RPCs when many candidates; group detail page still loads full admin surface; physical Android re-measurement recommended on NZ mobile.
+
+- `npm run validate` passed.
+
+## 2026-10-04 — Member hosting standing “always”
+
+- Migration `20261004120000_member_hosting_standing_always.sql`: enum value `always` on `member_hosting_standing`; `pick_host_candidate` prefers eligible `always` members before `default`, then unchanged `prefer_not` fallback and consecutive-host passes.
+- Group settings UI: fourth option **I always host** (standing preference only; proposal/accept/swap lifecycle unchanged).
+- Tests: `src/db/coordination-host-selection.test.ts` (persistence + selection). `npm run validate` passed.
+
+## 2026-10-04 — HUI-026B invitee participation flow
+
+- Added `/events/[eventId]/respond`: staged invitee flow (proposed time → attendance yes/maybe/no → place → contributions → done; declined and alternative-time branches).
+- Reuses `event_responses` / `setAvailabilityResponseAction` and `event_candidates` for structured alternative times (no new attendance state).
+- Participant-facing attendance copy (`Can come` / `Can't come` / …) separate from coordination-page labels.
+- Web Push + in-app notification links for `event_proposed` and `consensus_ready` open the respond route; event page links participants into the flow.
+
+## 2026-10-04 — HUI-026A Android date/time picker (production fix)
+
+- Time step (and recurrence “Series starts on”) used visible native `date`/`time` inputs with `text-sm` styling inside labels. On Android Chrome the picker affordance is easy to miss and empty fields show unusable `mm/dd/yyyy`-style placeholders.
+- Added `WallClockDateField` / `WallClockTimeField`: full-size transparent native inputs over NZ-friendly labels (`formatWallClockDateLabel` / `formatWallClockTimeLabel`), 44px tap targets, `text-base`, and `showPicker()` on user tap. Parsing, timezone, and candidate persistence unchanged.
+- Tests: `src/domain/datetime/wall-clock-display.test.ts`. `npm run validate` passed.
+
+## 2026-10-04 — HUI-026A staged event proposal
+
+- Replaced single-page group event creation with a staged creator flow: Name → Time → Place → What to bring → Review → **Propose event**. Draft data stays client-side until submit; no partial group-visible event is created while the creator is still editing.
+- Migration `20261004100000_propose_group_event.sql` — `propose_group_event` RPC atomically creates a `proposing` event, inserts candidate times, optionally sets first-event initial host, and leaves `events.starts_at` / `ends_at` unset until `finalise_event`.
+- Time step uses separate `date` + `time` inputs and `formatCompactEventTimeRange` instead of `datetime-local` on the creation path. Event detail page: extracted `EventDetailSummary` and `EventDetailManagement` for later 026B–D work.
+- Tests: `src/domain/events/proposal.test.ts`, `src/db/event-proposal.test.ts`. `createEventAction` retained for edits/legacy but no longer used on `/groups/[groupId]/events/new`.
+- Deferred to HUI-026B–E: invitee response flow, dashboard cards, `/manage`, contribution redesign, full event page visual redesign.
+
+## 2026-10-04 — HUI-026 architecture planning
+
+- Architecture diagnosis: the current event page is a long-scroll “god page” combining summary, scheduling, responses, consensus, host coordination, dietary information, contributions, administration, and history.
+- Decision: separate concise event summary, participant response, and proposer/admin management surfaces; use a staged creator flow (**Name → Time → Place → What to bring → Review → Propose**) and invitee flow (**This time → Answer → Place → What you're bringing → Done**).
+- Direction: make the dashboard event-oriented around “What Hui things need my attention?” and require deterministic interaction feedback from acknowledgement through reconciled success/error, including investigation of latency, refreshes, query volume, re-renders, stale props, duplicate submissions, idempotency, and reconciliation.
+- Planned implementation workstream: **HUI-026A–E** — event-flow foundation/proposal, invitee response, dashboard/event entry, management/admin surface, and contribution flow redesign.
+- Existing GDD capability tickets **HUI-025–030 remain unchanged**; the event-flow work uses the HUI-026A–E sub-series and does not renumber historical tickets.
+- No application code, database migrations, or tests were changed by HUI-026 architecture planning.
+
+## 2026-10-04 — HUI-024 Web Push notification preferences
+
+- Added five default-on profile preferences for event proposals, decision-ready, event confirmation, host assignment, and contribution changes. Profile settings can independently update them; the existing master Web Push control and browser permission flow are unchanged.
+- Server-side `queue_member_notification` still creates every `member_notifications` row, but only creates a new Web Push outbox row when the recipient's matching category preference is enabled. Historical notifications and existing outbox rows are untouched.
+- Migration: `20261004030000_push_notification_preferences.sql`.
+- Validation: `npm run validate` passed — lint, typecheck, 301 tests passed / 2 skipped, and production build passed. Next.js reported its existing middleware-to-proxy deprecation warning.
+
+## 2026-10-04 — HUI-023A Web Push finalisation
+
+- Removed temporary failed-delivery diagnostics from the profile control, Web Push delivery path, and delivery test; restored the permanent generic browser error handling and `WebPushError` status normalization.
+- HUI-023 production verification: canonical `member_notifications`, eligible push planning, safe outbox claiming, bounded retries, stale `sending` recovery, VAPID delivery, account opt-in, account-deletion subscription cleanup, notification click routing, signed-out `next` routing, cron backup drain, immediate drain, and no delivery for ineligible kinds.
+- Confirmed production Android Web Push delivery at https://hui-seven-gamma.vercel.app. No VAPID keys, schema, architecture, or HUI-024 notification preferences changed.
+- Validation: `npm run validate` passed — lint, typecheck, 299 tests passed / 2 skipped, and production build passed. Next.js reported its existing middleware-to-proxy deprecation warning.
+
+## 2026-10-04 — HUI-023 production deploy
+
+- Deployed `f0c35f8` to Vercel production without merging main. `dpl_6S5YZXGTMKnz14MwoYnG7N6o8dYQ` READY. Alias https://hui-seven-gamma.vercel.app. Smoke: `/` 200, `/sign-in` 200, `/profile` 307 to sign-in, `/serwist/sw.js` 200.
+- Production env names present: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET`, `SUPABASE_SECRET_KEY`. No `PUSH_DELIVERY_SECRET`.
+- Real browser Web Push delivery QA is still outstanding.
+
+## 2026-10-03 — HUI-023
+
+- Changed: Web Push on the existing HUI-021 records. Migration `20261004020000_web_push_notifications.sql` adds `profiles.web_push_enabled`, `push_subscriptions`, `notification_push_outbox`, and extends `queue_member_notification`. Profile setting subscribes this browser. Serwist service worker shows the push and opens the event, host, contribution, or group path. Sign-in `next` is unchanged.
+- Architecture: in-app row is canonical. One outbox row per new notification. Server drain uses VAPID (`web-push`) after coordination writes (`after`) and via `GET/POST /api/internal/push/drain` (bearer `PUSH_DELIVERY_SECRET` or `CRON_SECRET`). Reconnect reminders are not pushed. Payload is id, title, body, and a same-origin URL. Stale 404/410 subscriptions are deleted; one failed device does not block the others.
+- Env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:` or `https:`), existing `SUPABASE_SECRET_KEY`. No private key is committed. Without VAPID, profile shows push as unavailable and in-app notifications still work.
+- Security: subscription and outbox tables have no client grants; RLS is forced; RPCs are `SECURITY DEFINER` with `search_path = ''`. Keys are not returned by `my_push_subscription_state`.
+- Checked: `npm run validate` — lint, typecheck, 299 tests passed (2 skipped), production build. Built service worker still precaches `/offline` and includes `push` / `notificationclick` / `showNotification`. Linked `supabase db advisors --linked` was run before this migration is applied, so it does not cover the new tables. Migration is not applied to production in this change.
+- Limits: no email/SMS; no push for share-link invites to non-users; no new cancel/reopen kinds; iOS Web Push needs an installed PWA; daily Vercel cron is only a backup.
+
 ## 2026-10-03 — HUI-022B
 
 - Changed: migration `20261004010000_group_invite_links.sql` — `group_invite_links`, `get_group_invite_link`, `regenerate_group_invite_link`, `resolve_group_invite`, `join_group_via_invite` (token-validated membership via security definer RPC; no client-controlled group id). App: `/join/[token]`, group invite section (share/copy/regenerate), sign-up `next` + OAuth handoff, `invite-actions` / `join/actions`.

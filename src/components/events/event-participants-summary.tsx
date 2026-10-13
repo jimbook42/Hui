@@ -17,11 +17,11 @@ export function EventParticipantsSummary({
   const listedCount = householdMemberCount + view.ungroupedMembers.length;
 
   return (
-    <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+    <section className="hui-card-section">
+      <h2 className="hui-type-section text-foreground">
         Group members
       </h2>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mt-2 text-sm text-muted-foreground">
         {eligibleMemberCount} active {eligibleMemberCount === 1 ? "member" : "members"} can
         respond. Private notes stay private; attendance above shows who can come when responses are
         shared with the group.
@@ -30,24 +30,24 @@ export function EventParticipantsSummary({
       <div className="mt-4 space-y-4 text-sm">
         {view.households.map((household) => (
           <div key={household.householdId}>
-            <p className="font-medium text-zinc-800 dark:text-zinc-200">
+            <p className="font-medium text-foreground">
               {household.householdName}
             </p>
-            <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+            <p className="mt-1 text-muted-foreground">
               {household.members.map((member) => member.displayName).join(", ")}
             </p>
           </div>
         ))}
         {view.ungroupedMembers.length > 0 ? (
           <div>
-            <p className="font-medium text-zinc-800 dark:text-zinc-200">No household</p>
-            <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+            <p className="font-medium text-foreground">No household</p>
+            <p className="mt-1 text-muted-foreground">
               {view.ungroupedMembers.map((member) => member.displayName).join(", ")}
             </p>
           </div>
         ) : null}
         {listedCount === 0 ? (
-          <p className="text-zinc-500">No active members listed.</p>
+          <p className="text-muted-foreground">No active members listed.</p>
         ) : null}
       </div>
     </section>

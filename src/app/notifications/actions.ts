@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { notificationHref } from "@/lib/notifications/types";
+import { notificationHref, type MemberNotification } from "@/lib/notifications/types";
 import { createClient } from "@/lib/supabase/server";
 
 export type NotificationActionState = {
@@ -81,6 +81,32 @@ export async function updateReconnectReminderPreferenceAction(
   return { message: "Notification preferences saved." };
 }
 
+export async function updatePushNotificationPreferencesAction(
+  _prev: NotificationActionState,
+  formData: FormData,
+): Promise<NotificationActionState> {
+  const preferences = {
+    push_event_proposals_enabled: formData.get("push_event_proposals_enabled") === "on",
+    push_consensus_ready_enabled: formData.get("push_consensus_ready_enabled") === "on",
+    push_event_confirmed_enabled: formData.get("push_event_confirmed_enabled") === "on",
+    push_host_assignment_enabled: formData.get("push_host_assignment_enabled") === "on",
+    push_contribution_changes_enabled: formData.get("push_contribution_changes_enabled") === "on",
+  };
+
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("profiles")
+    .update(preferences)
+    .eq("id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/profile");
+  return { message: "Push notification preferences saved." };
+}
+
 export async function markNotificationReadByIdAction(
   notificationId: string,
 ): Promise<NotificationActionState> {
@@ -107,6 +133,8 @@ export async function openNotificationAction(formData: FormData): Promise<void> 
   const groupId = String(formData.get("group_id") ?? "").trim();
   const eventIdRaw = String(formData.get("event_id") ?? "").trim();
   const eventId = eventIdRaw.length > 0 ? eventIdRaw : null;
+  const kindRaw = String(formData.get("kind") ?? "").trim();
+  const kind = (kindRaw || "event_confirmed") as MemberNotification["kind"];
 
   if (!notificationId || !groupId) {
     redirect("/notifications");
@@ -125,5 +153,5 @@ export async function openNotificationAction(formData: FormData): Promise<void> 
   });
 
   revalidatePath("/notifications");
-  redirect(notificationHref({ groupId, eventId }));
+  redirect(notificationHref({ groupId, eventId, kind }));
 }

@@ -4,7 +4,8 @@ import type { AvailabilityChoice, CandidateStatus } from "@/domain/scheduling/ty
 export type EventCandidateRow = {
   id: string;
   startsAt: string;
-  endsAt: string;
+  /** Optional: a proposed time may be start-only. */
+  endsAt: string | null;
   status: CandidateStatus;
   proposedBy: string;
   createdAt: string;
@@ -23,7 +24,7 @@ export type EventSchedulingContext = {
 export type CandidateConsensusView = {
   candidateId: string;
   startsAt: string;
-  endsAt: string;
+  endsAt: string | null;
   passes: boolean;
   acceptedCount: number;
   maybeCount: number;

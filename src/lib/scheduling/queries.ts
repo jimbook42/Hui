@@ -126,7 +126,7 @@ export async function getEventSchedulingContext(
   const mapCandidate = (row: Record<string, unknown>): EventCandidateRow => ({
     id: row.id as string,
     startsAt: row.starts_at as string,
-    endsAt: row.ends_at as string,
+    endsAt: (row.ends_at as string | null) ?? null,
     status: row.status as EventCandidateRow["status"],
     proposedBy: row.proposed_by as string,
     createdAt: row.created_at as string,
@@ -204,7 +204,7 @@ function readCandidate(value: unknown): CandidateConsensusView {
   return {
     candidateId,
     startsAt,
-    endsAt: String(row.ends_at ?? ""),
+    endsAt: typeof row.ends_at === "string" && row.ends_at.length > 0 ? row.ends_at : null,
     passes: row.passes === true,
     acceptedCount: readNumber(row.accepted_count),
     maybeCount: readNumber(row.maybe_count),

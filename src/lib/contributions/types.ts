@@ -17,6 +17,8 @@ export type EventContributionRow = {
   label: string;
   status: string;
   displayName: string | null;
+  assignedByUserId: string | null;
+  assignedByDisplayName: string | null;
 };
 
 export type GroupContributionHistory = {

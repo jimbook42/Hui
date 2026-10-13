@@ -1,19 +1,55 @@
-import Link from "next/link";
-
+import { HuiBotanical } from "@/components/hui/botanical";
+import { HuiLinkButton } from "@/components/hui/hui-button";
+import { HuiSurface } from "@/components/hui/hui-surface";
+import { HuiLogo } from "@/components/hui/hui-logo";
+import { HuiWordmark } from "@/components/hui/hui-wordmark";
 import { JoinAuthLinks, JoinInviteButton } from "@/components/join/join-invite-actions";
+import { JoinInvitePreview } from "@/components/join/join-invite-preview";
+import { gatheringEventTitleForInvite, parseGatheringType } from "@/domain/gathering/type";
+import type { InvitePlanningPreview } from "@/domain/invites/presentation";
+import type { InvitePlanningContext } from "@/domain/invites/resolve";
 import { parseInviteResolvePayload } from "@/domain/invites/resolve";
+import { isInviteFocusEventId } from "@/domain/invites/urls";
+import { participantRespondPath } from "@/lib/events/paths";
 import { createClient } from "@/lib/supabase/server";
 
 type PageProps = {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ event?: string }>;
 };
 
-export default async function JoinInvitePage({ params }: PageProps) {
+function mapPlanning(planning: InvitePlanningContext | null): InvitePlanningPreview | null {
+  if (!planning) {
+    return null;
+  }
+
+  return {
+    eventId: planning.eventId,
+    eventTitle: planning.eventTitle,
+    status: planning.status,
+    planningTargetDate: planning.planningTargetDate,
+    gathering: {
+      type: planning.gatheringType,
+      customDescription: planning.gatheringTypeCustom,
+      eventTitle: gatheringEventTitleForInvite(
+        planning.eventTitle,
+        parseGatheringType(planning.gatheringType),
+        planning.gatheringTypeCustom,
+      ),
+    },
+  };
+}
+
+export default async function JoinInvitePage({ params, searchParams }: PageProps) {
   const { token } = await params;
+  const query = await searchParams;
+  const focusEventId = isInviteFocusEventId(query.event) ? query.event : null;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("resolve_group_invite", {
     p_token: token,
+    p_focus_event_id: focusEventId,
   });
 
   const resolved = error ? { status: "invalid" as const } : parseInviteResolvePayload(data);
@@ -22,69 +58,80 @@ export default async function JoinInvitePage({ params }: PageProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const timeZone = resolved.status === "invalid" ? "Pacific/Auckland" : resolved.groupTimeZone;
+
+  const planningPreview =
+    resolved.status === "invalid" ? null : mapPlanning(resolved.planning);
+
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-12">
-      <p className="text-sm font-medium text-zinc-500">Hui</p>
-
-      {resolved.status === "invalid" ? (
-        <>
-          <h1 className="mt-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Invite not valid
-          </h1>
-          <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-            This invite link is no longer valid.
-          </p>
-          <Link
-            href={user ? "/dashboard" : "/sign-in"}
-            className="mt-8 text-sm font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
-          >
-            {user ? "Back to dashboard" : "Sign in to Hui"}
-          </Link>
-        </>
-      ) : null}
-
-      {resolved.status === "already_member" ? (
-        <>
-          <h1 className="mt-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Already a member
-          </h1>
-          <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-            You&apos;re already a member of{" "}
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              {resolved.groupName}
-            </span>
-            .
-          </p>
-          <Link
-            href={`/groups/${resolved.groupId}`}
-            className="mt-8 inline-flex justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
-          >
-            Open Hui
-          </Link>
-        </>
-      ) : null}
-
-      {resolved.status === "valid" ? (
-        <>
-          <h1 className="mt-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-            You&apos;re invited
-          </h1>
-          <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-            You&apos;re invited to join{" "}
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              {resolved.groupName}
-            </span>
-            .
-          </p>
-          {user ? (
-            <div className="mt-8 max-w-sm">
-              <JoinInviteButton token={token} />
+    <div className="hui-canvas relative flex min-h-dvh flex-col items-center justify-center px-5 py-12">
+      <HuiBotanical />
+      <main className="relative z-10 w-full max-w-md">
+        <div className="mx-auto mb-7 flex w-fit flex-col items-center gap-2">
+          <HuiLogo size={64} priority />
+          <HuiWordmark height={36} priority />
+        </div>
+        <HuiSurface shape="organic" padding="lg" elevated className="hui-rise">
+          {resolved.status === "invalid" ? (
+            <div className="text-center">
+              <h1 className="hui-type-page-title text-foreground">Invite not valid</h1>
+              <p className="hui-type-supporting mt-3">This invite link is no longer valid.</p>
+              <div className="mt-7 flex justify-center">
+                <HuiLinkButton href={user ? "/dashboard" : "/sign-in"} variant="soft">
+                  {user ? "Back to dashboard" : "Sign in to Hui"}
+                </HuiLinkButton>
+              </div>
             </div>
-          ) : (
-            <JoinAuthLinks token={token} />
-          )}
-        </>
-      ) : null}
-    </main>
+          ) : null}
+
+          {resolved.status === "already_member" ? (
+            <div className="text-center">
+              <h1 className="hui-type-page-title text-foreground">Already a member</h1>
+              <p className="hui-type-supporting mt-3">
+                You&apos;re already in{" "}
+                <span className="font-extrabold text-foreground">{resolved.groupName}</span>.
+              </p>
+              <div className="mt-7 flex flex-col gap-3">
+                {planningPreview ? (
+                  <HuiLinkButton href={participantRespondPath(planningPreview.eventId)} size="lg">
+                    Continue planning
+                  </HuiLinkButton>
+                ) : null}
+                <HuiLinkButton
+                  href={`/groups/${resolved.groupId}`}
+                  size="lg"
+                  variant={planningPreview ? "soft" : "primary"}
+                >
+                  Open group
+                </HuiLinkButton>
+              </div>
+            </div>
+          ) : null}
+
+          {resolved.status === "valid" ? (
+            <>
+              <JoinInvitePreview
+                groupName={resolved.groupName}
+                inviterDisplayName={resolved.inviterDisplayName}
+                planning={planningPreview}
+                timeZone={timeZone}
+              />
+              {user ? (
+                <div className="mx-auto mt-7 max-w-sm">
+                  <JoinInviteButton
+                    token={token}
+                    groupName={resolved.groupName}
+                    hasActivePlanning={planningPreview !== null}
+                    focusEventId={focusEventId}
+                  />
+                </div>
+              ) : (
+                <JoinAuthLinks token={token} focusEventId={focusEventId} />
+              )}
+            </>
+          ) : null}
+        </HuiSurface>
+      </main>
+    </div>
   );
 }

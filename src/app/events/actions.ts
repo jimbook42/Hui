@@ -11,10 +11,13 @@ import {
 } from "@/domain/events/lifecycle";
 import {
   canCancelEvent,
+  canDeleteEvent,
+  canEditEventLocation,
   canEditEventMetadata,
   canProposeEvents,
   groupAllowsEventKind,
 } from "@/domain/events/permissions";
+import { parseOptionalCoordinates, roundCoordinate } from "@/domain/events/location";
 import {
   normalizeEventLocation,
   normalizeEventNotes,
@@ -27,6 +30,9 @@ import {
 } from "@/domain/events/validation";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getEventDetail } from "@/lib/events/queries";
+import { pickAcceptedHost } from "@/domain/hosts/display";
+import { getEventHostContext } from "@/lib/hosts/queries";
+import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
 
 export type EventActionState = {
@@ -172,6 +178,7 @@ export async function createEventAction(
   }
 
   revalidatePath(`/groups/${groupId}/events`);
+  schedulePushDelivery();
   redirect(`/events/${event.id}`);
 }
 
@@ -211,16 +218,56 @@ export async function updateEventAction(
   if (startsAt && endsAt && endsAt <= startsAt) {
     return { error: "End time must be after start time." };
   }
+  if (endsAt && !startsAt) {
+    return { error: "Add a start time before an end time." };
+  }
 
-  if (
-    !canEditEventMetadata(
-      existing.viewerRole,
-      user.id,
-      existing.createdBy,
-      existing.status,
-    )
-  ) {
+  // The pin is optional and only touched when the form sent it (so older forms never clear it).
+  const hasCoordinateFields = formData.has("location_lat") || formData.has("location_lng");
+  const coordinates = parseOptionalCoordinates(
+    formData.get("location_lat"),
+    formData.get("location_lng"),
+  );
+  if (!coordinates.ok) {
+    return { error: coordinates.error };
+  }
+
+  const hostContext = await getEventHostContext(supabase, eventId, existing.groupId, user.id);
+  const acceptedHostUserId = hostContext
+    ? (pickAcceptedHost(hostContext.assignments)?.userId ?? null)
+    : null;
+
+  const canEditAll = canEditEventMetadata(
+    existing.viewerRole,
+    user.id,
+    existing.createdBy,
+    existing.status,
+  );
+  const canEditLocation = canEditEventLocation(
+    existing.viewerRole,
+    user.id,
+    existing.createdBy,
+    existing.status,
+    acceptedHostUserId,
+  );
+
+  if (!canEditAll && !canEditLocation) {
     return { error: "You cannot edit this event." };
+  }
+
+  if (!canEditAll) {
+    if (title !== existing.title) {
+      return { error: "Only the host can update the place for this hui." };
+    }
+    if (notes !== existing.notes) {
+      return { error: "Only the host can update the place for this hui." };
+    }
+    if (
+      (startsAt ?? null) !== (existing.startsAt ?? null) ||
+      (endsAt ?? null) !== (existing.endsAt ?? null)
+    ) {
+      return { error: "Only the host can update the place for this hui." };
+    }
   }
 
   const statusError = validateMetadataUpdate(existing.status, existing.status);
@@ -234,24 +281,52 @@ export async function updateEventAction(
     notes: string | null;
     starts_at?: string | null;
     ends_at?: string | null;
+    location_lat?: number | null;
+    location_lng?: number | null;
   } = {
-    title,
+    title: canEditAll ? title : existing.title,
     location,
-    notes,
+    notes: canEditAll ? notes : existing.notes,
   };
-  if (canChangeEventSchedule(existing.status)) {
+  if (hasCoordinateFields) {
+    patch.location_lat = coordinates.coordinates?.lat ?? null;
+    patch.location_lng = coordinates.coordinates?.lng ?? null;
+  }
+  if (canEditAll && canChangeEventSchedule(existing.status)) {
     patch.starts_at = startsAt;
     patch.ends_at = endsAt;
   }
 
-  const { error } = await supabase.from("events").update(patch).eq("id", eventId);
+  if (!canEditAll && canEditLocation) {
+    const { error } = await supabase.rpc("update_event_place", {
+      p_event_id: eventId,
+      p_location: location,
+      p_location_lat: hasCoordinateFields
+        ? coordinates.coordinates
+          ? roundCoordinate(coordinates.coordinates.lat)
+          : null
+        : null,
+      p_location_lng: hasCoordinateFields
+        ? coordinates.coordinates
+          ? roundCoordinate(coordinates.coordinates.lng)
+          : null
+        : null,
+    });
 
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      return { error: error.message };
+    }
+  } else {
+    const { error } = await supabase.from("events").update(patch).eq("id", eventId);
+
+    if (error) {
+      return { error: error.message };
+    }
   }
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${existing.groupId}/events`);
+  schedulePushDelivery();
   return { message: "Event updated." };
 }
 
@@ -288,5 +363,34 @@ export async function cancelEventAction(
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${detail.groupId}/events`);
+  schedulePushDelivery();
   return { message: "Event cancelled." };
+}
+
+export async function deleteEventAction(
+  _prev: EventActionState,
+  formData: FormData,
+): Promise<EventActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  if (!eventId) {
+    return { error: "Missing event." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getEventDetail(supabase, eventId, user.id);
+  if (!detail) {
+    return { error: "Event not found." };
+  }
+  if (!canDeleteEvent(detail.viewerRole, user.id, detail.createdBy)) {
+    return { error: "You cannot delete this hui." };
+  }
+
+  const { error } = await supabase.rpc("delete_event", { p_event_id: eventId });
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/events");
+  revalidatePath(`/groups/${detail.groupId}/events`);
+  redirect(`/groups/${detail.groupId}/events`);
 }

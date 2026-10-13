@@ -10,13 +10,13 @@ export function GroupContributionHistorySection({ history }: GroupContributionHi
   }
 
   return (
-    <section className="mt-10">
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Contribution history</h2>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+    <section className="hui-card-section">
+      <h2 className="hui-type-section text-foreground">Contribution history</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
         Counts from confirmed and completed events in this group. No scores or rankings beyond what the
         group can see here.
       </p>
-      <ul className="mt-4 space-y-1 text-sm text-zinc-700 dark:text-zinc-300">
+      <ul className="mt-4 space-y-1 text-sm text-foreground">
         {history.entries.map((entry) => (
           <li key={entry.userId}>
             {entry.displayName} — {entry.count} contribution{entry.count === 1 ? "" : "s"}

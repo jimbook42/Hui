@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
+  canDeleteGroup,
   canEditSettings,
   canManageMembers,
   canRenameGroup,
@@ -16,6 +17,11 @@ import { createClient } from "@/lib/supabase/server";
 export type GroupActionState = {
   error?: string;
   message?: string;
+};
+
+export type GroupSetupActionState = GroupActionState & {
+  groupId?: string;
+  inviteToken?: string;
 };
 
 async function requireUser() {
@@ -47,7 +53,29 @@ export async function createGroupAction(
 
   const groupId = data as string;
   revalidatePath("/groups");
-  redirect(`/groups/${groupId}`);
+  redirect(`/groups/${groupId}/events/new`);
+}
+
+/** Creates a group for the multi-step setup wizard without leaving the flow. */
+export async function createGroupSetupAction(
+  _prev: GroupSetupActionState,
+  formData: FormData,
+): Promise<GroupSetupActionState> {
+  const name = normalizeGroupName(String(formData.get("name") ?? ""));
+  if (!name) {
+    return { error: "Group name must be between 1 and 120 characters." };
+  }
+
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.rpc("create_group", { p_name: name });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  const groupId = data as string;
+  revalidatePath("/groups");
+  redirect(`/groups/${groupId}/events/new`);
 }
 
 export async function updateGroupNameAction(
@@ -162,7 +190,12 @@ export async function setMyHostingStandingAction(
   if (!groupId) {
     return { error: "Missing group." };
   }
-  if (standing !== "default" && standing !== "prefer_not" && standing !== "never") {
+  if (
+    standing !== "default" &&
+    standing !== "always" &&
+    standing !== "prefer_not" &&
+    standing !== "never"
+  ) {
     return { error: "Choose a valid hosting preference." };
   }
 
@@ -351,6 +384,34 @@ export async function leaveGroupAction(
 
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("leave_group", { p_group_id: groupId });
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/groups");
+  redirect("/groups");
+}
+
+export async function deleteGroupAction(
+  _prev: GroupActionState,
+  formData: FormData,
+): Promise<GroupActionState> {
+  const groupId = String(formData.get("group_id") ?? "");
+  const confirmName = normalizeGroupName(String(formData.get("confirm_name") ?? ""));
+  if (!groupId) {
+    return { error: "Missing group." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getGroupDetail(supabase, groupId, user.id);
+  if (!detail || !canDeleteGroup(detail.viewerRole)) {
+    return { error: "Only the owner can delete this group." };
+  }
+  if (confirmName !== detail.name) {
+    return { error: "Type the exact group name to confirm deletion." };
+  }
+
+  const { error } = await supabase.rpc("delete_group", { p_group_id: groupId });
   if (error) {
     return { error: error.message };
   }

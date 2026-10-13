@@ -28,7 +28,7 @@ export function AddMemberForm({ groupId }: { groupId: string }) {
         autoComplete="off"
         required
       />
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-muted-foreground">
         Ask them to copy their member ID from their profile page. Email invitations
         are not implemented yet.
       </p>
@@ -52,12 +52,12 @@ export function RemoveMemberButton({
       <input type="hidden" name="group_id" value={groupId} />
       <input type="hidden" name="user_id" value={userId} />
       {state.error ? (
-        <p className="text-xs text-red-600" role="alert">{state.error}</p>
+        <p className="hui-message-error" role="alert">{state.error}</p>
       ) : null}
       <button
         type="submit"
         disabled={pending}
-        className="text-sm text-red-700 underline-offset-4 hover:underline dark:text-red-400"
+        className="hui-link-danger text-sm"
       >
         Remove {displayName}
       </button>
@@ -84,12 +84,12 @@ export function TransferOwnershipForm({
       submitLabel="Transfer ownership"
       hiddenFields={{ group_id: groupId }}
     >
-      <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+      <label className="hui-label">
         <span>New owner</span>
         <select
           name="new_owner_id"
           required
-          className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+          className="hui-input"
         >
           <option value="">Select a member</option>
           {candidates.map((member) => (
@@ -106,7 +106,7 @@ export function TransferOwnershipForm({
 export function LeaveGroupForm({ groupId }: { groupId: string }) {
   return (
     <AuthForm action={leaveGroupAction} submitLabel="Leave group" hiddenFields={{ group_id: groupId }}>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="text-sm text-muted-foreground">
         You will lose access to this group&apos;s current data. Historical records
         stay intact for remaining members.
       </p>

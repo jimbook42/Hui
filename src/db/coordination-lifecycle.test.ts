@@ -67,6 +67,11 @@ async function respondYes(database: PGlite, userId: string, candidateId: string)
   );
 }
 
+async function proposeHostForEvent(database: PGlite, eventId: string, actorId: string) {
+  await asUser(database, actorId);
+  await database.query(`select public.propose_event_host_for_event($1, $2)`, [eventId, actorId]);
+}
+
 async function createUser(database: PGlite, email: string, displayName: string) {
   await asUser(database, null);
   const created = await database.query<{ id: string }>(
@@ -178,6 +183,7 @@ describe("coordination lifecycle (HUI-022A.1)", () => {
        values ($1, $2, 'yes', 'group')`,
       [candidateId, ids.owner],
     );
+    await proposeHostForEvent(db, eventId, ids.owner);
 
     const beforeConfirm = await db.query<{ status: string }>(
       `select status::text as status from public.events where id = $1`,
@@ -244,7 +250,7 @@ describe("coordination lifecycle (HUI-022A.1)", () => {
        values ($1, $2, 'yes', 'group')`,
       [candidateId, ids.member],
     );
-    await asUser(db, ids.owner);
+    await proposeHostForEvent(db, eventId, ids.owner);
 
     const host = await db.query<{ user_id: string }>(
       `select user_id::text from public.host_assignments where event_id = $1`,

@@ -2,6 +2,7 @@
 
 import { updateGroupSettingsAction } from "@/app/groups/actions";
 import { AuthForm } from "@/components/auth/auth-form";
+import { HuiSwitchField } from "@/components/hui/hui-switch";
 
 import type { GroupSettingsRow } from "@/lib/groups/types";
 
@@ -9,23 +10,6 @@ type GroupSettingsFormProps = {
   groupId: string;
   settings: GroupSettingsRow;
 };
-
-function Checkbox({
-  name,
-  label,
-  checked,
-}: {
-  name: string;
-  label: string;
-  checked: boolean;
-}) {
-  return (
-    <label className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
-      <input type="checkbox" name={name} defaultChecked={checked} className="rounded" />
-      <span>{label}</span>
-    </label>
-  );
-}
 
 export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps) {
   return (
@@ -35,96 +19,104 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
       hiddenFields={{ group_id: groupId }}
     >
       <fieldset className="space-y-4">
-        <legend className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <legend className="text-sm font-bold text-foreground">
           Event rules
         </legend>
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Who may propose events</span>
           <select
             name="who_may_propose"
             defaultValue={settings.whoMayPropose}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           >
             <option value="any_member">Any member</option>
             <option value="admins_only">Admins only</option>
           </select>
         </label>
-        <Checkbox
+        <HuiSwitchField
           name="one_off_events_allowed"
           label="One-off events allowed"
-          checked={settings.oneOffEventsAllowed}
+          defaultChecked={settings.oneOffEventsAllowed}
         />
-        <Checkbox
+        <HuiSwitchField
           name="recurring_events_enabled"
           label="Recurring events enabled"
-          checked={settings.recurringEventsEnabled}
+          defaultChecked={settings.recurringEventsEnabled}
         />
-        <Checkbox
+        <HuiSwitchField
           name="maybe_responses_enabled"
           label="Maybe responses enabled"
-          checked={settings.maybeResponsesEnabled}
+          defaultChecked={settings.maybeResponsesEnabled}
         />
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Minimum attendees</span>
           <input
             type="number"
             name="minimum_attendees"
             min={1}
             defaultValue={settings.minimumAttendees}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           />
         </label>
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Proposal deadline (hours, optional)</span>
           <input
             type="number"
             name="proposal_deadline_hours"
             min={1}
             defaultValue={settings.proposalDeadlineHours ?? ""}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           />
         </label>
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Consensus rule</span>
           <select
             name="consensus_rule"
             defaultValue={settings.consensusRule}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           >
             <option value="required_participants">Required participants</option>
             <option value="minimum_attendees">Minimum attendees</option>
             <option value="all_active_members">All active members</option>
           </select>
         </label>
-        <Checkbox name="admin_veto_enabled" label="Admin veto" checked={settings.adminVetoEnabled} />
-        <Checkbox name="hosting_enabled" label="Use a host for gatherings" checked={settings.hostingEnabled} />
-        <Checkbox
+        <HuiSwitchField
+          name="admin_veto_enabled"
+          label="Admin veto"
+          defaultChecked={settings.adminVetoEnabled}
+        />
+        <HuiSwitchField
+          name="hosting_enabled"
+          label="Use a host for gatherings"
+          defaultChecked={settings.hostingEnabled}
+        />
+        <HuiSwitchField
           name="avoid_consecutive_hosts"
           label="Don't ask the same person to host twice in a row"
-          checked={settings.avoidConsecutiveHosts}
+          defaultChecked={settings.avoidConsecutiveHosts}
         />
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Timezone for event times</span>
           <input
             type="text"
             name="timezone"
             defaultValue={settings.timezone}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           />
         </label>
-        <Checkbox
+        <HuiSwitchField
           name="reconnect_reminders_enabled"
           label="Reconnect reminders"
-          checked={settings.reconnectRemindersEnabled}
+          defaultChecked={settings.reconnectRemindersEnabled}
         />
-        <label className="block text-sm text-zinc-800 dark:text-zinc-200">
+        <label className="hui-label">
           <span>Reconnect after (days, when enabled)</span>
           <input
             type="number"
             name="reconnect_after_days"
             min={1}
             defaultValue={settings.reconnectAfterDays ?? ""}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            className="hui-input"
           />
         </label>
       </fieldset>
