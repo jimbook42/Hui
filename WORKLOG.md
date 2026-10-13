@@ -2,6 +2,11 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — HUI-031-D Planning cycle cron + nudges
+
+- **Cron:** `GET/POST /api/internal/planning-cycle/cron` (Bearer `CRON_SECRET`); Vercel schedule 08:30 UTC; refreshes snapshots in app, `enqueue_planning_cycle_nudges` RPC.
+- **Migration:** `20261013183230` — `planning_cycle_opens` notification kind.
+
 ## 2026-10-13 — HUI-031-C Nominal preview + cadence edit
 
 - **Domain/UI:** `buildNominalDatePreview` (4 upcoming nominals); group recurring card preview; admin cadence form; header propose hidden when paused; first-proposal nominal prefill.

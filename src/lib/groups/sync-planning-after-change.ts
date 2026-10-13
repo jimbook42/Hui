@@ -13,6 +13,7 @@ import {
 export async function syncGroupPlanningAfterChange(
   supabase: SupabaseClient,
   groupId: string,
+  options?: { serviceRole?: boolean },
 ): Promise<void> {
   const settings = await getGroupSettingsByGroupId(supabase, groupId);
   if (!settings?.recurringEventsEnabled) {
@@ -36,5 +37,6 @@ export async function syncGroupPlanningAfterChange(
     settings,
     (eventRows ?? []) as Parameters<typeof mapPlanningEventRow>[0][],
     modifiers,
+    options,
   );
 }

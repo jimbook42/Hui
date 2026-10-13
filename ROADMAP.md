@@ -280,6 +280,7 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 - [x] **HUI-031-A** — `complete_event` RPC + manage UI; migrations `20261013104702`, `20261013104928`
 - [x] **HUI-031-B** — pause/skip/snapshot + cron stub; migrations `20261013105417`, `20261013105855`
 - [x] **HUI-031-C** — nominal preview + admin cadence edit; migration `20261013172849`
+- [x] **HUI-031-D** — planning cycle cron + nudges; migration `20261013183230`
 - [x] **HUI-028** — Recurring planning cycle (group cadence on `group_settings`, nominal `planning_target_date`, planning window/phase derivation, dashboard + group UX, propose prefill, canonical series reuse, duplicate-safe `propose_group_event`; migration `20261005200000_hui_028_recurring_planning_cycle.sql`)
 - [ ] Skipped cycle, moved event, insufficient attendance, consensus failure hooks
 - [ ] **Complete event** workflow → memory/history triggers → fairness state → next cycle due (depends on HUI-029 completion UI)
