@@ -2,7 +2,7 @@
 
 **Phase:** Core MVP — recurring planning, invitations, and delivery  
 **Milestone:** GDD definition of done (not yet reached)  
-**Current branch state:** **HUI-024** — Per-notification-type Web Push preferences are implemented on `feat/hui-023-web-push-notifications`. This branch is not merged to `main`; this document does not claim a production deployment for HUI-024.
+**Current branch state:** **Onboarding + 026U workstream** merged to `main` (2026-10-13) from `feat/hui-026u-visual-design-system` — HUI-ONBOARDING-003 / 003A / 003A-R1 and related UI/performance tickets on that branch.
 **Latest Web Push implementation record:** **HUI-023A** — cleanup/finalisation after the HUI-023 production deploy. HUI-023 Web Push delivery was production-verified; HUI-022B share-link invitations are implemented; HUI-022A.4 remains pending live QA.
 **Overall progress:** Foundation through HUI-023A shipped event, scheduling, host, contribution, dietary, in-app notification, Web Push, and share-link foundations. Core GDD loop (recurring planning cycles, recurrence UX, persistent availability, scheduling recommendations, email delivery, calendar/memories, completed-event → next cycle) remains **open**.
 
@@ -317,7 +317,7 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 - [x] **Onboarding hardening / first-Hui UX** (HUI-ONBOARDING-001): correct group vs hui invite copy; first hui defaults one-off until group cadence is established; post-propose guidance; personal setup name/home persistence; dashboard Group/Hui explainer.
 - [x] **Frictionless participant & event context** (HUI-ONBOARDING-002 / **002A**): gathering type on events; first-hui-first invite flow; rich invite preview + post-join coordination entry; group delete + schema corrections; migrations `20261006180000_hui_onboarding_002_gathering_invite.sql`, `20261006200000_hui_onboarding_002a_corrections.sql`.
 - [x] **Event planning workflow** (HUI-ONBOARDING-003): gathering invite on propose + event detail; contribution requests at propose; recurrence cadence preservation; per-candidate availability in respond flow; organiser host opt-in; no host-on-attendance trigger; migration `20261006220000_hui_onboarding_003_event_planning_workflow.sql`.
-- [x] **Planning workflow QA** (HUI-ONBOARDING-003A): host proposal after finalise; contribution requests on propose time step + no bulk seed on finalise; respond save concurrency; recurring validation prefill; migration `20261013100000_hui_onboarding_003a_planning_qa_fixes.sql` (pending linked Supabase apply).
+- [x] **Planning workflow QA** (HUI-ONBOARDING-003A): host proposal after finalise; contribution requests on propose time step + no bulk seed on finalise; respond save concurrency; recurring validation prefill; migration `20261013100000_hui_onboarding_003a_planning_qa_fixes.sql` (**applied** linked Supabase 2026-10-13). **Product:** host proposal after confirm when organiser did not opt in to host is **intended** (Isaac, 13 Oct).
 - [x] **Planning workflow follow-up** (HUI-ONBOARDING-003A-R1): contribution slots limited to requested/seeded rows; respond Yes check + step advance after save; strip contribution requests when food is No (app-only).
 - [x] Profile home location; host accept “At my home” / “Somewhere else”.
 - [x] Boolean settings → `HuiSwitch` (group settings, notifications, contributions, propose flow).

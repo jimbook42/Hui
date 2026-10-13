@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — Merge `feat/hui-026u-visual-design-system` → `main`
+
+- **Shipped on main:** HUI-ONBOARDING-003 / 003A / 003A-R1 (repair 2), plus prior 026U–028 work on the feature branch (`02d324d` tip before merge docs commit).
+- **Production:** Supabase `hui_onboarding_003a_planning_qa_fixes` applied; Vercel production `02d324d` (`dpl_9H16ZBjP1iyys21odPK963xhf9QS`) — see earlier entries same day.
+- **Product (Isaac, 13 Oct):** After confirm, a **host proposal** may still appear when the organiser did **not** use “I'll host” (host switch off) — **intended**; group can accept/decline/swap as usual.
+
 ## 2026-10-13 — HUI-ONBOARDING-003A-R1 Repair 2 (live QA)
 
 - **Respond Yes glyph:** `AttendanceChoice` hides the corner check on `AttendanceDot` until the option is saved-selected (fixes “Yes” looking picked before tap / during Saving on single- and multi-time respond).
