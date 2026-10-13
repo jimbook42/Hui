@@ -7,7 +7,9 @@ import {
   skipPlanningCycleAction,
   type PlanningCycleActionState,
 } from "@/app/groups/planning-cycle-actions";
+import { pickOpenCycleNominalDate } from "@/domain/recurrence/planning-cycle";
 import type { GroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
+import { useActionStateRefresh } from "@/lib/ui/use-action-state-refresh";
 
 const initialState: PlanningCycleActionState = {};
 
@@ -20,12 +22,14 @@ export function GroupRecurrenceAdminControls({ context }: { context: GroupPlanni
     skipPlanningCycleAction,
     initialState,
   );
+  useActionStateRefresh(pauseState);
+  useActionStateRefresh(skipState);
 
   if (!context.canManageRecurrence) {
     return null;
   }
 
-  const defaultSkipDate = context.cycle.nextTargetDate ?? "";
+  const defaultSkipDate = pickOpenCycleNominalDate(context.cycle) ?? "";
 
   return (
     <div className="mt-6 space-y-6 border-t border-border/60 pt-6">
@@ -62,7 +66,7 @@ export function GroupRecurrenceAdminControls({ context }: { context: GroupPlanni
         <p className="text-sm font-semibold text-muted-foreground">
           Skip one nominal cycle (visible to the group)
         </p>
-        <form action={skipAction} className="mt-3 space-y-3">
+        <form key={defaultSkipDate} action={skipAction} className="mt-3 space-y-3">
           <input type="hidden" name="group_id" value={context.groupId} />
           <label className="block text-sm font-semibold text-foreground">
             Nominal date

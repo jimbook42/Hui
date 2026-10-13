@@ -56,6 +56,7 @@ export async function setRecurrencePausedAction(
 
   await syncGroupPlanningAfterChange(supabase, groupId);
   revalidatePath(`/groups/${groupId}`);
+  revalidatePath(`/groups/${groupId}/events/new`);
   revalidatePath("/dashboard");
   return { message: paused ? "Recurrence paused." : "Recurrence resumed." };
 }
@@ -95,6 +96,7 @@ export async function skipPlanningCycleAction(
 
   await syncGroupPlanningAfterChange(supabase, groupId);
   revalidatePath(`/groups/${groupId}`);
+  revalidatePath(`/groups/${groupId}/events/new`);
   revalidatePath("/dashboard");
   return { message: "Planning cycle skipped." };
 }

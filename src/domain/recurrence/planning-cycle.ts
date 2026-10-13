@@ -59,14 +59,21 @@ export function cadenceFromParts(
   return { intervalUnit: unit, intervalCount: count, anchorDate: anchor };
 }
 
+export type CycleReference = {
+  referenceDate: string;
+  /** True when reference comes from a completed hui or an explicit skip (next target must advance one cadence). */
+  afterClosedCycle: boolean;
+};
+
 /** Latest reference date for advancing the nominal cycle (completed > confirmed past > anchor). */
 export function resolveCycleReferenceDate(
   events: GroupPlanningEventSnapshot[],
   anchorDate: string,
   todayDateOnly: string,
   skippedNominalDates: string[] = [],
-): string {
+): CycleReference {
   let best = anchorDate;
+  let afterClosedCycle = false;
   for (const event of events) {
     if (event.status === "cancelled") {
       continue;
@@ -78,8 +85,9 @@ export function resolveCycleReferenceDate(
       continue;
     }
     if (event.status === "completed") {
-      if (compareDateOnly(nominal, best) > 0) {
+      if (compareDateOnly(nominal, best) >= 0) {
         best = nominal;
+        afterClosedCycle = true;
       }
       continue;
     }
@@ -90,19 +98,24 @@ export function resolveCycleReferenceDate(
     }
   }
   for (const skip of skippedNominalDates) {
-    if (isDateOnly(skip) && compareDateOnly(skip, best) > 0) {
+    if (isDateOnly(skip) && compareDateOnly(skip, best) >= 0) {
       best = skip;
+      afterClosedCycle = true;
     }
   }
-  return best;
+  return { referenceDate: best, afterClosedCycle };
 }
 
 export function computeNextTargetDate(
   cadence: RecurrenceCadence,
   referenceDate: string,
   todayDateOnly: string,
+  afterClosedCycle = false,
 ): string {
   let cursor = referenceDate;
+  if (afterClosedCycle) {
+    cursor = addCadenceToDateOnly(cursor, cadence.intervalUnit, cadence.intervalCount);
+  }
   let guard = 0;
   while (compareDateOnly(cursor, todayDateOnly) <= 0 && guard < 500) {
     cursor = addCadenceToDateOnly(cursor, cadence.intervalUnit, cadence.intervalCount);
@@ -111,11 +124,18 @@ export function computeNextTargetDate(
   return cursor;
 }
 
+/** Nominal date for the next open planning cycle (propose / skip default). */
+export function pickOpenCycleNominalDate(cycle: GroupPlanningCycle): string | null {
+  return cycle.nextTargetDate ?? cycle.cycleTargetDate;
+}
+
 function findBlockingEvent(
   events: GroupPlanningEventSnapshot[],
   targetDate: string | null,
 ): GroupPlanningEventSnapshot | null {
-  const open = events.filter((event) => event.status !== "cancelled");
+  const open = events.filter(
+    (event) => event.status !== "cancelled" && event.status !== "completed",
+  );
   if (open.length === 0) {
     return null;
   }
@@ -159,7 +179,7 @@ export function deriveGroupPlanningCycle(input: {
   }
 
   if (input.recurrencePaused) {
-    const reference = resolveCycleReferenceDate(
+    const { referenceDate, afterClosedCycle } = resolveCycleReferenceDate(
       input.events,
       input.cadence.anchorDate,
       input.todayDateOnly,
@@ -167,8 +187,9 @@ export function deriveGroupPlanningCycle(input: {
     );
     const nextTarget = computeNextTargetDate(
       input.cadence,
-      reference,
+      referenceDate,
       input.todayDateOnly,
+      afterClosedCycle,
     );
     const planningOpens = subtractDaysFromDateOnly(nextTarget, leadDays);
     return {
@@ -182,7 +203,7 @@ export function deriveGroupPlanningCycle(input: {
     };
   }
 
-  const reference = resolveCycleReferenceDate(
+  const { referenceDate, afterClosedCycle } = resolveCycleReferenceDate(
     input.events,
     input.cadence.anchorDate,
     input.todayDateOnly,
@@ -190,17 +211,16 @@ export function deriveGroupPlanningCycle(input: {
   );
   const nextTarget = computeNextTargetDate(
     input.cadence,
-    reference,
+    referenceDate,
     input.todayDateOnly,
+    afterClosedCycle,
   );
   const planningOpens = subtractDaysFromDateOnly(nextTarget, leadDays);
   const blocker = findBlockingEvent(input.events, nextTarget);
 
   let phase: PlanningCyclePhase = "not_due";
   if (blocker) {
-    if (blocker.status === "completed") {
-      phase = "completed";
-    } else if (blocker.status === "confirmed") {
+    if (blocker.status === "confirmed") {
       phase = "hui_confirmed";
     } else {
       phase = "planning_exists";
@@ -246,15 +266,34 @@ export function proposalPrefillFromCycle(
   candidateDate: string;
   planningTargetDate: string | null;
 } | null {
-  if (!cycle.cadence || !cycle.cycleTargetDate) {
+  const nominal = pickOpenCycleNominalDate(cycle);
+  if (!cycle.cadence || !nominal) {
     return null;
   }
   return {
     seriesTitle: groupName,
     startsOn: cycle.cadence.anchorDate,
-    candidateDate: cycle.cycleTargetDate,
-    planningTargetDate: cycle.cycleTargetDate,
+    candidateDate: nominal,
+    planningTargetDate: nominal,
   };
+}
+
+export function shouldShowManualProposeLink(input: {
+  canPropose: boolean;
+  recurrencePaused: boolean;
+  cycle: GroupPlanningCycle;
+}): boolean {
+  if (!input.canPropose || input.recurrencePaused) {
+    return false;
+  }
+  if (
+    input.cycle.phase === "recurrence_paused" ||
+    input.cycle.phase === "planning_exists" ||
+    input.cycle.phase === "hui_confirmed"
+  ) {
+    return false;
+  }
+  return !shouldShowPlanNextCta(input.cycle);
 }
 
 export function formatCadenceLabel(cadence: RecurrenceCadence): string {

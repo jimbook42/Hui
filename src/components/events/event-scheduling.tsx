@@ -36,6 +36,7 @@ import type {
   EventCandidateRow,
   EventConsensusSummary,
 } from "@/lib/scheduling/types";
+import { useActionStateRefresh } from "@/lib/ui/use-action-state-refresh";
 import { GatheringVisual } from "@/components/hui/gathering-visual";
 import { AttendanceLegend } from "@/components/hui/attendance-legend";
 import { HuiSurface } from "@/components/hui/hui-surface";
@@ -226,6 +227,7 @@ function FinaliseCandidateButton({
   candidateId: string;
 }) {
   const [state, formAction, pending] = useActionState(finaliseEventAction, initialState);
+  useActionStateRefresh(state);
 
   return (
     <form action={formAction} className="mt-4 rounded-hui-sm bg-sage-soft p-3">

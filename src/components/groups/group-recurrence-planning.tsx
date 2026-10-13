@@ -3,11 +3,11 @@ import Link from "next/link";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { CalendarIcon, PlusIcon } from "@/components/hui/icons";
-import { formatCadenceLabel } from "@/domain/recurrence/planning-cycle";
 import {
-  formatNominalPlanningDate,
-  shouldShowPlanNextCta,
-} from "@/lib/groups/planning-cycle";
+  formatCadenceLabel,
+  shouldShowManualProposeLink,
+} from "@/domain/recurrence/planning-cycle";
+import { formatNominalPlanningDate } from "@/lib/groups/planning-cycle";
 import { GroupRecurrenceAdminControls } from "@/components/groups/group-recurrence-admin-controls";
 import type { GroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
 
@@ -98,7 +98,7 @@ export function GroupRecurrencePlanningCard({
             Plan next hui
           </HuiLinkButton>
         </div>
-      ) : context.canPropose && cycleAllowsManualPropose(context) ? (
+      ) : shouldShowManualProposeLink(context) ? (
         <p className="mt-4 text-sm font-semibold text-muted-foreground">
           <Link href={proposeHref} className="hui-link">
             Propose a hui
@@ -106,16 +106,23 @@ export function GroupRecurrencePlanningCard({
           when you are ready.
         </p>
       ) : null}
+      {context.recentSkips.length > 0 ? (
+        <div className="mt-4 border-t border-border/60 pt-4">
+          <p className="hui-type-label text-muted-foreground">Skipped cycles</p>
+          <ul className="mt-2 space-y-2 text-sm font-semibold text-foreground">
+            {context.recentSkips.map((skip) => (
+              <li key={skip.nominalDate}>
+                {formatNominalPlanningDate(skip.nominalDate)}
+                {skip.reason ? (
+                  <span className="font-normal text-muted-foreground"> — {skip.reason}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <GroupRecurrenceAdminControls context={context} />
     </HuiSurface>
-  );
-}
-
-function cycleAllowsManualPropose(context: GroupPlanningContext): boolean {
-  return (
-    !shouldShowPlanNextCta(context.cycle) &&
-    context.cycle.phase !== "planning_exists" &&
-    context.cycle.phase !== "hui_confirmed"
   );
 }
 

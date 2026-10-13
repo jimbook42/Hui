@@ -11,10 +11,19 @@ import {
   type BuildGroupPlanningCycleOptions,
 } from "./planning-cycle";
 
+export type PlanningCycleSkipRecord = {
+  nominalDate: string;
+  reason: string | null;
+};
+
+export type RecurrenceCycleModifiers = BuildGroupPlanningCycleOptions & {
+  recentSkips: PlanningCycleSkipRecord[];
+};
+
 export async function loadRecurrenceCycleModifiers(
   supabase: SupabaseClient,
   groupId: string,
-): Promise<BuildGroupPlanningCycleOptions> {
+): Promise<RecurrenceCycleModifiers> {
   const [prefsResult, skipsResult] = await Promise.all([
     supabase
       .from("group_recurrence_preferences")
@@ -23,8 +32,9 @@ export async function loadRecurrenceCycleModifiers(
       .maybeSingle(),
     supabase
       .from("group_planning_cycle_skips")
-      .select("nominal_date")
-      .eq("group_id", groupId),
+      .select("nominal_date, reason")
+      .eq("group_id", groupId)
+      .order("nominal_date", { ascending: false }),
   ]);
 
   if (prefsResult.error) {
@@ -34,9 +44,15 @@ export async function loadRecurrenceCycleModifiers(
     throw new Error(skipsResult.error.message);
   }
 
+  const recentSkips = (skipsResult.data ?? []).map((row) => ({
+    nominalDate: row.nominal_date as string,
+    reason: (row.reason as string | null) ?? null,
+  }));
+
   return {
     recurrencePaused: Boolean(prefsResult.data?.recurrence_paused_at),
-    skippedNominalDates: (skipsResult.data ?? []).map((row) => row.nominal_date as string),
+    skippedNominalDates: recentSkips.map((row) => row.nominalDate),
+    recentSkips,
   };
 }
 

@@ -161,7 +161,7 @@ describe("HUI-031-B pause, skip, snapshots", () => {
     expect(prefs.rows[0]?.recurrence_paused_at).toBeTruthy();
   });
 
-  it("blocks direct skip insert for members and allows snapshot upsert via RPC", async () => {
+  it("blocks direct skip insert for admins (RPC-only writes) and allows snapshot upsert via RPC", async () => {
     await asUser(db, ids.owner);
     const groupId = (
       await db.query<{ create_group: string }>(`select public.create_group($1) as create_group`, [
@@ -175,16 +175,16 @@ describe("HUI-031-B pause, skip, snapshots", () => {
       [groupId, ids.member],
     );
 
-    await asUser(db, ids.member);
+    await asUser(db, ids.owner);
     const insertErr = await expectFail(() =>
       db.query(
         `insert into public.group_planning_cycle_skips (
            group_id, nominal_date, created_by
          ) values ($1, $2::date, $3)`,
-        [groupId, "2026-05-01", ids.member],
+        [groupId, "2026-05-01", ids.owner],
       ),
     );
-    expect(insertErr.toLowerCase()).toMatch(/policy|permission|denied|violates/);
+    expect(insertErr.toLowerCase()).toMatch(/policy|permission|denied|violates|privilege/);
 
     await asUser(db, ids.owner);
     await db.query(`select public.upsert_group_planning_snapshot($1, $2::date, $3::date, $4)`, [

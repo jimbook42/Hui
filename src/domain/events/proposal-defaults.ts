@@ -3,7 +3,10 @@ import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
 
 import type { EventProposalDraft } from "./proposal";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
-import { proposalPrefillFromCycle } from "@/domain/recurrence/planning-cycle";
+import {
+  pickOpenCycleNominalDate,
+  proposalPrefillFromCycle,
+} from "@/domain/recurrence/planning-cycle";
 
 /** Group has configured cadence or an active recurrence series — not a brand-new casual group. */
 export function groupHasEstablishedRecurrence(settings: GroupSettingsRow): boolean {
@@ -46,7 +49,9 @@ export function buildInitialProposalDraft(
       : null;
 
   const anchorFromCadence = cadence?.anchorDate ?? "";
-  const cycleTarget = prefill?.planningTargetDate ?? options.cycle?.cycleTargetDate ?? null;
+  const cycleTarget =
+    prefill?.planningTargetDate ??
+    (options.cycle ? pickOpenCycleNominalDate(options.cycle) : null);
   const prefillStarts = prefill?.startsOn?.trim() ?? "";
   const startsOn =
     (prefillStarts.length > 0 ? prefillStarts : null) ??
@@ -83,8 +88,11 @@ export function initialCandidateDateFromDraft(
   draft: EventProposalDraft,
   cycle: GroupPlanningCycle | null,
 ): string {
-  if (cycle?.cycleTargetDate && draft.eventKind === "recurring") {
-    return cycle.cycleTargetDate;
+  if (draft.eventKind === "recurring" && cycle) {
+    const open = pickOpenCycleNominalDate(cycle);
+    if (open) {
+      return open;
+    }
   }
   return "";
 }

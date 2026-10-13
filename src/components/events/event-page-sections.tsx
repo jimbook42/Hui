@@ -31,6 +31,7 @@ import {
   formatClockTime,
   formatShortDay,
 } from "@/domain/datetime/display";
+import { shouldShowEventHeroTime } from "@/domain/events/event-hero-visibility";
 import { buildProposedHuiGuidance } from "@/domain/events/proposed-guidance";
 import { eventKindLabel } from "@/lib/events/labels";
 import { loadEventPage } from "@/lib/events/event-page-data";
@@ -47,20 +48,20 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
   const startsAt = detail.startsAt ?? data.focusCandidate?.startsAt ?? null;
   const endsAt = detail.startsAt ? detail.endsAt : (data.focusCandidate?.endsAt ?? null);
   const confirmed = detail.status === "confirmed";
-  const closed = detail.status === "cancelled" || detail.status === "completed";
+  const completed = detail.status === "completed";
+  const closed = detail.status === "cancelled" || completed;
   const acceptedHost = data.hostContext?.view.acceptedHost ?? null;
   const isAcceptedHost = acceptedHost?.userId === userId;
   const hasPlace = Boolean(detail.location?.trim());
   const showHostPlaceAction = isAcceptedHost && data.canEditLocation && !closed;
-  const heroDateCopy =
-    startsAt && !closed
-      ? buildEventHeroDateCopy({
-          startsAt,
-          endsAt,
-          timeZone: tz,
-          showRelativeWhen: true,
-        })
-      : null;
+  const heroDateCopy = shouldShowEventHeroTime(detail.status, startsAt)
+    ? buildEventHeroDateCopy({
+        startsAt: startsAt!,
+        endsAt,
+        timeZone: tz,
+        showRelativeWhen: !completed,
+      })
+    : null;
 
   const respondable = data.canRespond && data.primaryCandidate !== null;
   // Contributions that would be released if the viewer declined (host-following categories stay).
@@ -79,8 +80,8 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
       {heroDateCopy ? (
         <EventHeroDateBlock
           copy={heroDateCopy}
-          badgeTone={confirmed ? "sage" : "primary"}
-          showProposedHint={!confirmed && !closed}
+          badgeTone={confirmed || completed ? "sage" : "primary"}
+          showProposedHint={!confirmed && !completed && !closed}
         />
       ) : (
         <div className="flex items-center gap-4">

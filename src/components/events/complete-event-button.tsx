@@ -3,11 +3,13 @@
 import { useActionState } from "react";
 
 import { completeEventAction, type EventActionState } from "@/app/events/actions";
+import { useActionStateRefresh } from "@/lib/ui/use-action-state-refresh";
 
 const initialState: EventActionState = {};
 
 export function CompleteEventButton({ eventId }: { eventId: string }) {
   const [state, formAction, pending] = useActionState(completeEventAction, initialState);
+  useActionStateRefresh(state);
 
   return (
     <form action={formAction} className="mt-4">

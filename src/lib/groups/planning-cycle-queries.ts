@@ -4,7 +4,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { canProposeEvents } from "@/domain/events/permissions";
 import { canEditSettings, type MembershipRole } from "@/domain/groups/permissions";
-import { loadRecurrenceCycleModifiers } from "@/lib/groups/planning-cycle-snapshot";
+import {
+  loadRecurrenceCycleModifiers,
+  type PlanningCycleSkipRecord,
+} from "@/lib/groups/planning-cycle-snapshot";
 import { getGroupSettingsByGroupId } from "@/lib/groups/settings-query";
 import {
   buildGroupPlanningCycle,
@@ -24,6 +27,7 @@ export type GroupPlanningContext = {
   showPlanCta: boolean;
   canManageRecurrence: boolean;
   recurrencePaused: boolean;
+  recentSkips: PlanningCycleSkipRecord[];
 };
 
 export async function loadGroupPlanningContext(
@@ -66,6 +70,7 @@ export async function loadGroupPlanningContext(
     showPlanCta: canPropose && shouldShowPlanNextCta(cycle) && !recurrencePaused,
     canManageRecurrence: canEditSettings(viewerRole),
     recurrencePaused,
+    recentSkips: modifiers.recentSkips,
   };
 }
 

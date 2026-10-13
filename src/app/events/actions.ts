@@ -399,16 +399,13 @@ export async function completeEventAction(
     return { error: error.message };
   }
 
-  try {
-    await syncGroupPlanningAfterChange(supabase, detail.groupId);
-  } catch {
-    // Snapshot is best-effort; completion is authoritative.
-  }
+  await syncGroupPlanningAfterChange(supabase, detail.groupId);
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events/${eventId}/manage`);
   revalidatePath(`/groups/${detail.groupId}`);
   revalidatePath(`/groups/${detail.groupId}/events`);
+  revalidatePath("/dashboard");
   revalidatePath("/events");
   schedulePushDelivery();
   return { message: "Hui marked completed." };
