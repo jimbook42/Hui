@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — Auto-confirm when consensus met (0.13.0)
+
+- **DB:** `apply_event_confirmation`, `try_auto_confirm_event`, `pick_auto_confirm_candidate` (tie-break: earliest `starts_at`, then `id`); response trigger; `finalise_event` delegates to shared path; migration `20261014113000` (not applied on linked Supabase by agent).
+- **Policy:** Skips when `admin_veto_enabled`; uses existing `candidate_consensus` rules.
+- **Tests:** `auto-confirm.test.ts` (domain + DB).
+
 ## 2026-10-13 — Proposal response deadlines (0.12.0)
 
 - **DB:** `events.response_deadline_at`, `event_responses.submitted_late`, `update_event_response_deadline`, `event_proposal_reply_stats`, `enqueue_proposal_deadline_reminders`; migration `20261013220254` (applied linked Supabase).

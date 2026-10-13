@@ -109,6 +109,7 @@ describe("HUI-ONBOARDING-003A planning QA fixes", () => {
     for (const file of files) {
       await db.exec(await readFile(path.join(dir, file), "utf8"));
     }
+    await db.query(`select set_config('hui.skip_auto_confirm', '1', false)`);
 
     ownerId = await createUser(db, "o003a-owner@hui.test", "Owner");
     memberId = await createUser(db, "o003a-member@hui.test", "Member");

@@ -158,6 +158,7 @@ describe("attendance after confirmation (HUI-026U.3)", () => {
     for (const file of files) {
       await db.exec(await readFile(path.join(dir, file), "utf8"));
     }
+    await db.query(`select set_config('hui.skip_auto_confirm', '1', false)`);
 
     ids.owner = await createUser(db, "att-owner@hui.test", "Olivia Owner");
     ids.member = await createUser(db, "att-member@hui.test", "Mia Member");
