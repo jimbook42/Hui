@@ -87,7 +87,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
   }
 
   const huiLifecycle =
-    data.canEdit || data.canCancel || data.canDelete
+    data.canEdit || data.canCancel || data.canComplete || data.canDelete
       ? "Status, details, and lifecycle"
       : "Status and details";
 
@@ -170,12 +170,13 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
             <dd className="mt-1 font-semibold text-foreground">{detail.creatorDisplayName}</dd>
           </div>
         </dl>
-        {data.canEdit || data.canCancel || data.canDelete ? (
+        {data.canEdit || data.canCancel || data.canComplete || data.canDelete ? (
           <div className="mt-6 border-t border-border/60 pt-6">
             <EventDetailManagement
               canEdit={data.canEdit}
               canEditLocation={false}
               canCancel={data.canCancel}
+              canComplete={data.canComplete}
               canDelete={data.canDelete}
               eventId={detail.id}
               updateAction={updateEventAction}

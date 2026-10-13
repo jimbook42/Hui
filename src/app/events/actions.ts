@@ -5,12 +5,14 @@ import { redirect } from "next/navigation";
 
 import {
   INITIAL_EVENT_STATUS,
+  assertCanComplete,
   canChangeEventSchedule,
   cancellationPatch,
   validateMetadataUpdate,
 } from "@/domain/events/lifecycle";
 import {
   canCancelEvent,
+  canCompleteEvent,
   canDeleteEvent,
   canEditEventLocation,
   canEditEventMetadata,
@@ -365,6 +367,44 @@ export async function cancelEventAction(
   revalidatePath(`/groups/${detail.groupId}/events`);
   schedulePushDelivery();
   return { message: "Event cancelled." };
+}
+
+export async function completeEventAction(
+  _prev: EventActionState,
+  formData: FormData,
+): Promise<EventActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  if (!eventId) {
+    return { error: "Missing event." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getEventDetail(supabase, eventId, user.id);
+  if (!detail) {
+    return { error: "Event not found." };
+  }
+
+  const permissionError = assertCanComplete(detail.status);
+  if (permissionError) {
+    return { error: permissionError };
+  }
+
+  if (!canCompleteEvent(detail.viewerRole, user.id, detail.createdBy, detail.status)) {
+    return { error: "You cannot complete this hui." };
+  }
+
+  const { error } = await supabase.rpc("complete_event", { p_event_id: eventId });
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/manage`);
+  revalidatePath(`/groups/${detail.groupId}`);
+  revalidatePath(`/groups/${detail.groupId}/events`);
+  revalidatePath("/events");
+  schedulePushDelivery();
+  return { message: "Hui marked completed." };
 }
 
 export async function deleteEventAction(

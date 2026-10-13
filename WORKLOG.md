@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — HUI-031-A Complete event + cycle reference
+
+- **RPC:** `complete_event` — confirmed → completed; creator or group admin/owner; migration `20261013160000_hui_031a_complete_event.sql` (applied linked Supabase 2026-10-13).
+- **App:** manage lifecycle “Mark hui completed”, `completeEventAction`, domain permissions/lifecycle helpers.
+- **Tests:** `events-complete.test.ts`, planning-cycle confirmed-future vs completed cases.
+
 ## 2026-10-13 — HUI-031-D Recurring cycle engine (design)
 
 - **Deliverable:** `docs/design/HUI-031-recurring-cycle-engine.md` — end-to-end loop, sketched migration/RLS, generation/idempotency/TZ, reuse map, UX touchpoints, product questions, implementation split (031-A–D).

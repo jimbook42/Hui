@@ -5,6 +5,7 @@ import type { GroupSettingsRow } from "@/lib/groups/types";
 import {
   canAccessEventManagement,
   canCancelEvent,
+  canCompleteEvent,
   canDeleteEvent,
   canEditEventLocation,
   canEditEventMetadata,
@@ -66,6 +67,14 @@ describe("event permissions", () => {
     expect(
       canEditEventMetadata("member", "host-user", "creator-user", "proposing"),
     ).toBe(false);
+  });
+
+  it("lets creators and admins complete confirmed events only", () => {
+    expect(canCompleteEvent("member", "user-1", "user-1", "confirmed")).toBe(true);
+    expect(canCompleteEvent("member", "user-2", "user-1", "confirmed")).toBe(false);
+    expect(canCompleteEvent("admin", "user-2", "user-1", "confirmed")).toBe(true);
+    expect(canCompleteEvent("member", "user-1", "user-1", "proposing")).toBe(false);
+    expect(canCompleteEvent("member", "user-1", "user-1", "completed")).toBe(false);
   });
 
   it("lets creators and admins delete any status", () => {
