@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — Proposal response deadlines (0.12.0)
+
+- **DB:** `events.response_deadline_at`, `event_responses.submitted_late`, `update_event_response_deadline`, `event_proposal_reply_stats`, `enqueue_proposal_deadline_reminders`; migration `20261013220254` (applied linked Supabase).
+- **App:** Reply-by on event + respond; manage deadline editor; organiser banner after deadline; daily cron field `proposalDeadlineRemindersQueued`; reopen notification names hui + group.
+- **Tests:** `proposal-response-deadlines.test.ts`, reopen copy in `reschedule-confirmed.test.ts`.
+
 ## 2026-10-13 — Cancel and reopen notifications (0.11.0)
 
 - **Kind:** `event_cancelled`; trigger on manual cancel; stale auto-cancel via `process_stale_proposals` + trigger (idempotent `event_cancelled:{event_id}`).

@@ -25,6 +25,10 @@ import {
   formatShortDay,
   formatTimeSpan,
 } from "@/domain/datetime/display";
+import { eventAcceptsResponseDeadline } from "@/domain/events/response-deadline-status";
+import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
+import { formatDateTimeLocalInTimeZone } from "@/domain/datetime/timezone";
+import { ResponseDeadlineManageForm } from "@/components/events/response-deadline-manage-form";
 import { eventKindLabel } from "@/lib/events/labels";
 import { loadEventPage } from "@/lib/events/event-page-data";
 import type { EventDetail } from "@/lib/events/types";
@@ -114,6 +118,17 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
     [...data.scheduling.candidates, ...data.scheduling.withdrawnCandidates],
     tz,
   );
+  const replyByLabel = replyByLabelForEvent(
+    detail.status,
+    detail.responseDeadlineAt,
+    tz,
+  );
+  const canEditResponseDeadline =
+    data.canEdit && eventAcceptsResponseDeadline(detail.status) && detail.responseDeadlineAt;
+  const defaultDeadlineLocal =
+    detail.responseDeadlineAt
+      ? formatDateTimeLocalInTimeZone(detail.responseDeadlineAt, tz)
+      : "";
 
   const overviewWhen =
     startsAt && !closed
@@ -170,6 +185,20 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
             <dd className="mt-1 font-semibold text-foreground">{detail.creatorDisplayName}</dd>
           </div>
         </dl>
+        {canEditResponseDeadline ? (
+          <div className="mt-6 border-t border-border/60 pt-6">
+            <h3 className="hui-type-section text-foreground">Reply deadline</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {replyByLabel ?? "Set when members should reply by."}
+            </p>
+            <div className="mt-4 max-w-lg">
+              <ResponseDeadlineManageForm
+                eventId={detail.id}
+                defaultDeadlineLocal={defaultDeadlineLocal}
+              />
+            </div>
+          </div>
+        ) : null}
         {data.canEdit || data.canCancel || data.canComplete || data.canReschedule || data.canDelete ? (
           <div className="mt-6 border-t border-border/60 pt-6">
             <EventDetailManagement
@@ -230,6 +259,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
             maybeResponsesEnabled={data.scheduling.maybeResponsesEnabled}
             minimumAttendees={data.scheduling.minimumAttendees}
             proposalDeadlineHours={settings.proposalDeadlineHours ?? null}
+            replyByLabel={replyByLabel}
             consensus={data.consensus}
             canAddCandidates={data.canAdd}
             canRemoveCandidates={data.canRemove}

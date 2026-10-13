@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app/app-shell";
 import { EventParticipantRespondFlow } from "@/components/events/event-participant-respond-flow";
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
 import { formatEventTimeRange } from "@/domain/datetime/timezone";
+import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
 import { loadRespondPrimary, loadRespondSecondary } from "@/lib/events/respond-page-data";
 import { eventDetailPath } from "@/lib/events/paths";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
@@ -65,6 +66,11 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
     primary.candidate.endsAt,
     primary.displayTimeZone,
   );
+  const replyByLabel = replyByLabelForEvent(
+    primary.detail.status,
+    primary.detail.responseDeadlineAt,
+    primary.displayTimeZone,
+  );
 
   return (
     <AppShell title="Your response">
@@ -89,6 +95,7 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
         secondaryDataPromise={secondaryDataPromise}
         focusTimeLabel={focusTimeLabel}
         candidateTimeLabels={candidateTimeLabels}
+        replyByLabel={replyByLabel}
       />
     </AppShell>
   );
