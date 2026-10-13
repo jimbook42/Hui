@@ -175,9 +175,14 @@ export async function oauthSignInAction(
 
 export async function signOutAction(): Promise<void> {
   const supabase = await createClient();
-  await supabase.auth.signOut();
-  revalidatePath("/", "layout");
-  redirect("/sign-in");
+  try {
+    await supabase.auth.signOut({ scope: "global" });
+    revalidatePath("/", "layout");
+    redirect("/sign-in");
+  } catch (error) {
+    unstable_rethrow(error);
+    throw error;
+  }
 }
 
 export async function updateProfileAction(
