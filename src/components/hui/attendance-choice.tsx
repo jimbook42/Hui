@@ -56,7 +56,9 @@ export function AttendanceChoice({
         <AttendanceDot state={state} label={label} size="md" />
       )}
       <span className="min-w-0 flex-1 leading-tight">{pending ? "Saving…" : label}</span>
-      {selected ? <CheckIcon size={20} strokeWidth={3} className="shrink-0" /> : null}
+      {selected && !pending ? (
+        <CheckIcon size={20} strokeWidth={3} className="shrink-0" />
+      ) : null}
     </button>
   );
 }

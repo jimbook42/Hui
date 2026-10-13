@@ -267,11 +267,6 @@ export function EventParticipantRespondFlow({
     markInteraction(interaction, "handler-start");
     setActionError(null);
     setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
-    setResponsesByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
-    if (!multipleTimeOptions && advanceOnSave) {
-      setResponseOverride(choice);
-      pushStep(nextStepAfterAttendanceSave(choice));
-    }
 
     startSaveAttendance(async () => {
       markInteraction(interaction, "request-start");
@@ -291,8 +286,16 @@ export function EventParticipantRespondFlow({
         endInteraction(interaction);
         return;
       }
+      setResponsesByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
       setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
-      if (!multipleTimeOptions) {
+      if (!multipleTimeOptions && advanceOnSave) {
+        setResponseOverride(choice);
+        pushStep(nextStepAfterAttendanceSave(choice));
+        window.setTimeout(() => {
+          router.refresh();
+          endInteraction(interaction);
+        }, 0);
+      } else if (!multipleTimeOptions) {
         window.setTimeout(() => {
           router.refresh();
           endInteraction(interaction);
@@ -460,7 +463,9 @@ export function EventParticipantRespondFlow({
                             key={`${row.id}-${option}`}
                             state={attendanceStateFromChoice(option, true)}
                             label={participantAttendanceChoiceLabel(option)}
-                            selected={rowResponse === option}
+                            selected={
+                              rowResponse === option && !pendingByCandidate[row.id]
+                            }
                             pending={pendingByCandidate[row.id] === option}
                             disabled={!canRespond}
                             onClick={() => saveAttendanceForCandidate(row.id, option, false)}
@@ -517,9 +522,10 @@ export function EventParticipantRespondFlow({
           ) : null}
           <div className="space-y-3">
             {attendanceOptions.map((option) => {
-              const isSelected = viewerResponse === option;
-              const isPending = pendingByCandidate[candidate.id] === option;
               const savingThisCandidate = Boolean(pendingByCandidate[candidate.id]);
+              const isPending = pendingByCandidate[candidate.id] === option;
+              const isSelected =
+                viewerResponse === option && !savingThisCandidate;
               return (
                 <AttendanceChoice
                   key={option}
@@ -685,6 +691,13 @@ export function EventParticipantRespondFlow({
           ) : null}
           {secondary && categories.filter((c) => !c.archivedAt).length === 0 ? (
             <p className="hui-type-supporting">This group has no contribution categories to claim.</p>
+          ) : null}
+          {secondary &&
+          categories.filter((c) => !c.archivedAt).length > 0 &&
+          contributionSlots.length === 0 ? (
+            <p className="hui-type-supporting">
+              Nothing specific was requested to bring for this gathering.
+            </p>
           ) : null}
           {secondary && contributionSlots.length > 0 ? (
             <ul className="space-y-3">

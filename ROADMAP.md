@@ -318,6 +318,7 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 - [x] **Frictionless participant & event context** (HUI-ONBOARDING-002 / **002A**): gathering type on events; first-hui-first invite flow; rich invite preview + post-join coordination entry; group delete + schema corrections; migrations `20261006180000_hui_onboarding_002_gathering_invite.sql`, `20261006200000_hui_onboarding_002a_corrections.sql`.
 - [x] **Event planning workflow** (HUI-ONBOARDING-003): gathering invite on propose + event detail; contribution requests at propose; recurrence cadence preservation; per-candidate availability in respond flow; organiser host opt-in; no host-on-attendance trigger; migration `20261006220000_hui_onboarding_003_event_planning_workflow.sql`.
 - [x] **Planning workflow QA** (HUI-ONBOARDING-003A): host proposal after finalise; contribution requests on propose time step + no bulk seed on finalise; respond save concurrency; recurring validation prefill; migration `20261013100000_hui_onboarding_003a_planning_qa_fixes.sql` (pending linked Supabase apply).
+- [x] **Planning workflow follow-up** (HUI-ONBOARDING-003A-R1): contribution slots limited to requested/seeded rows; respond Yes check + step advance after save; strip contribution requests when food is No (app-only).
 - [x] Profile home location; host accept “At my home” / “Somewhere else”.
 - [x] Boolean settings → `HuiSwitch` (group settings, notifications, contributions, propose flow).
 - [x] Owner group delete (`delete_group` RPC); transfer ownership does not move accepted hosting.

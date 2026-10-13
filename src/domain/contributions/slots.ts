@@ -45,8 +45,12 @@ export function buildContributionSlots(
   acceptedHostUserId: string | null,
 ): ContributionSlot[] {
   const active = categories.filter((category) => category.archivedAt === null);
+  // Only categories the organiser requested (or that were seeded for this hui) get slots.
+  const requested = active.filter((category) =>
+    contributions.some((row) => row.categoryId === category.id),
+  );
 
-  return active.map((category) => {
+  return requested.map((category) => {
     const contribution = pickContributionForCategory(contributions, category.id);
     const assigneeId = contribution?.userId ?? null;
     const filled = isContributionSlotFilled(contribution);

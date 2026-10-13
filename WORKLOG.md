@@ -2,6 +2,14 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — HUI-ONBOARDING-003A-R1 Contributions display + respond Yes tick
+
+- **Contributions:** `buildContributionSlots` only surfaces categories that have an `event_contributions` row for that hui (fixes respond “What are you bringing?” and event contribution UI listing every group category when only a subset was requested at propose). Propose validation drops contribution requests when food involvement is **No**; review step clears requested contributions when organiser picks No.
+- **Respond attendance:** No optimistic checkmark or step advance until `setAvailabilityResponseAction` succeeds; `AttendanceChoice` hides the tick while pending.
+- **Existing gatherings:** Unchanged when rows already exist (legacy full seed, host-bound sync, or 003/003A requested categories). Huies with **no** contribution rows no longer show phantom open slots.
+- **Tests:** `slots.test.ts`, `display.test.ts`, `proposal.test.ts`; `npm run validate` (611 unit tests; build with CI placeholder Supabase env).
+- **Migration / deploy:** none (app-only).
+
 ## 2026-10-13 — HUI-ONBOARDING-003A Planning workflow QA fixes
 
 - **Host on finalise:** `coordinate_event_host_after_attendance` required attendance on `proposed` candidates only; after finalise the selected time is `selected`, so host coordination no-op'd. Fixed in `20261013100000` to count `selected` when the event is `confirmed`.

@@ -656,6 +656,8 @@ export function CreateEventProposalFlow({
                         setDraft((current) => ({
                           ...current,
                           foodInvolvement: value as EventFoodInvolvement,
+                          requestedContributions:
+                            value === "no" ? [] : current.requestedContributions,
                         }))
                       }
                     />

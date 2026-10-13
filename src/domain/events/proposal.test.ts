@@ -265,6 +265,33 @@ describe("event proposal validation (HUI-026A)", () => {
     }
   });
 
+  it("drops contribution requests when food is not involved", () => {
+    const result = validateEventProposalDraft(
+      {
+        ...baseDraft,
+        title: "Coffee",
+        location: "",
+        notes: "",
+        eventKind: "one_off",
+        recurrence: null,
+        candidates: [{ startsAt: "2026-10-31T05:00:00.000Z", endsAt: null }],
+        initialHostUserId: "suggest",
+        foodInvolvement: "no",
+        hostPlaceRequired: false,
+        organiserWillHost: false,
+        requestedContributions: [{ categoryId: "cat-1", label: "Snacks" }],
+      },
+      {
+        ...baseOptions,
+        contributionCategoryNames: new Map([["cat-1", "Snacks"]]),
+      },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.payload.requestedContributions).toEqual([]);
+    }
+  });
+
   it("rejects duplicate start-only candidates", () => {
     const result = validateEventProposalDraft(
       {

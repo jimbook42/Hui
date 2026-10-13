@@ -24,6 +24,19 @@ describe("contribution display", () => {
     ];
     const contributions = [
       {
+        id: "x0",
+        eventId: "e",
+        groupId: "g",
+        categoryId: "c1",
+        categoryName: "Main",
+        userId: null,
+        label: "Main",
+        status: "open",
+        displayName: null,
+        assignedByUserId: null,
+        assignedByDisplayName: null,
+      },
+      {
         id: "x1",
         eventId: "e",
         groupId: "g",

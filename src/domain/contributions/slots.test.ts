@@ -100,11 +100,51 @@ describe("contribution slots", () => {
             assignedByUserId: "u1",
             assignedByDisplayName: "Alex",
           },
+          {
+            id: "ec2",
+            eventId: "e",
+            groupId: "g",
+            categoryId: "dessert",
+            categoryName: "Dessert",
+            userId: null,
+            label: "Dessert",
+            status: "open",
+            displayName: null,
+            assignedByUserId: null,
+            assignedByDisplayName: null,
+          },
         ],
         "viewer",
         null,
       ),
     );
     expect(sorted.map((slot) => slot.category.name)).toEqual(["Dessert", "Main"]);
+  });
+
+  it("omits group categories that were not requested for this hui", () => {
+    const slots = buildContributionSlots(
+      [
+        { id: "salad", name: "Salad", ...baseCategory },
+        { id: "dessert", name: "Dessert", ...baseCategory },
+      ],
+      [
+        {
+          id: "ec1",
+          eventId: "e",
+          groupId: "g",
+          categoryId: "salad",
+          categoryName: "Salad",
+          userId: null,
+          label: "Green salad",
+          status: "open",
+          displayName: null,
+          assignedByUserId: null,
+          assignedByDisplayName: null,
+        },
+      ],
+      "viewer",
+      null,
+    );
+    expect(slots.map((slot) => slot.category.name)).toEqual(["Salad"]);
   });
 });

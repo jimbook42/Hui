@@ -260,8 +260,10 @@ export function validateEventProposalDraft(
   }
 
   const categoryNames = options.contributionCategoryNames ?? new Map<string, string>();
+  const contributionRequests =
+    foodInvolvement === "no" ? [] : (draft.requestedContributions ?? []);
   const contributionResult = normalizeProposalContributionRequests(
-    draft.requestedContributions ?? [],
+    contributionRequests,
     categoryNames,
   );
   if (!contributionResult.ok) {
