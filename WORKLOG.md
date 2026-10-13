@@ -2,6 +2,12 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — Lifecycle gaps (Tier 1)
+
+- **Recurring card:** `cycleDisplayTargetDate` — “Planning around” uses active cycle nominal while a proposal is open (not the following open slot).
+- **Auth:** `signOutAction` uses global sign-out + `unstable_rethrow` so redirect does not surface as “This page couldn’t load”.
+- **Tests:** planning-cycle display target assertion; no migration.
+
 ## 2026-10-13 — HUI-031-D Planning cycle cron + nudges
 
 - **Cron:** `GET/POST /api/internal/planning-cycle/cron` (Bearer `CRON_SECRET`); Vercel schedule 08:30 UTC; refreshes snapshots in app, `enqueue_planning_cycle_nudges` RPC.

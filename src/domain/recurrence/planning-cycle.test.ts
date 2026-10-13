@@ -4,6 +4,7 @@ import {
   cadenceFromParts,
   computeNextTargetDate,
   deriveGroupPlanningCycle,
+  cycleDisplayTargetDate,
   findEarliestOpenNominalTarget,
   resolveCycleReferenceDate,
   shouldShowPlanNextCta,
@@ -66,6 +67,9 @@ describe("recurring planning cycle (HUI-028)", () => {
     });
     expect(cycle.phase).toBe("planning_exists");
     expect(shouldShowPlanNextCta(cycle)).toBe(false);
+    expect(cycle.cycleTargetDate).toBe("2026-03-12");
+    expect(cycle.nextTargetDate).not.toBe("2026-03-12");
+    expect(cycleDisplayTargetDate(cycle)).toBe("2026-03-12");
   });
 
   it("confirmed future hui does not advance the cycle reference", () => {

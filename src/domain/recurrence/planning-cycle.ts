@@ -190,6 +190,17 @@ export function pickOpenCycleNominalDate(cycle: GroupPlanningCycle): string | nu
   return cycle.nextTargetDate ?? cycle.cycleTargetDate;
 }
 
+/** Nominal date to show in recurring UX (may differ from next open slot while a hui is in flight). */
+export function cycleDisplayTargetDate(cycle: GroupPlanningCycle): string | null {
+  if (
+    cycle.phase === "planning_exists" ||
+    cycle.phase === "hui_confirmed"
+  ) {
+    return cycle.cycleTargetDate ?? cycle.nextTargetDate;
+  }
+  return cycle.nextTargetDate ?? cycle.cycleTargetDate;
+}
+
 function findBlockingEvent(
   events: GroupPlanningEventSnapshot[],
   targetDate: string | null,

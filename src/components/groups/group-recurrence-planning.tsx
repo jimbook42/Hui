@@ -4,6 +4,7 @@ import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { CalendarIcon, PlusIcon } from "@/components/hui/icons";
 import {
+  cycleDisplayTargetDate,
   formatCadenceLabel,
   shouldShowManualProposeLink,
 } from "@/domain/recurrence/planning-cycle";
@@ -14,8 +15,8 @@ import type { GroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
 
 function phaseCopy(context: GroupPlanningContext): { title: string; detail: string } {
   const { cycle } = context;
-  const target =
-    cycle.nextTargetDate && formatNominalPlanningDate(cycle.nextTargetDate);
+  const displayDate = cycleDisplayTargetDate(cycle);
+  const target = displayDate && formatNominalPlanningDate(displayDate);
   const opens =
     cycle.planningOpensOn && formatNominalPlanningDate(cycle.planningOpensOn);
 

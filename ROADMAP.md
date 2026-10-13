@@ -198,7 +198,7 @@ Do not treat these as completing the larger GDD capabilities listed in later sec
 - [x] One-off events (same `events` table)
 - [x] Candidate dates and private availability responses (**HUI-009**)
 - [ ] Proposal **deadlines** — `proposal_deadline_hours` exists on `group_settings` but is **not** stored or enforced per event
-- [ ] Event **completion** flow and memories UI — `completed` status and `event_memories` exist in schema; **no** app workflow yet
+- [x] Event **completion** flow (HUI-031-A: `complete_event`, manage UI); [ ] memories UI — `event_memories` in schema, **no** app workflow yet
 - [ ] **Reopen**, material change, and full audit narrative per GDD (partial lifecycle only today)
 
 ### Phase 4 — Scheduling and consensus
