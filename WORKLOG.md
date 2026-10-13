@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — Reschedule confirmed hui (0.10.0)
+
+- **RPC:** `reschedule_confirmed_event_to_time`, `reopen_confirmed_event_for_proposing`; `event_reschedule_audit`; notification kind `event_rescheduled`.
+- **Migrations:** `20261013194706`, `20261013220000` (GUC-only trigger tighten + force RLS on audit); applied linked Supabase 2026-10-13.
+- **App:** manage-page reschedule (new time / reopen proposing) with confirm step; “Rescheduled from …” on event page; cancel confirm; stale nominal update warns when candidates are before new date.
+- **Tests:** `reschedule-confirmed.test.ts`; notification presentation/types.
+
 ## 2026-10-13 — App version footer (0.9.0)
 
 - Global footer `Hui vX.Y.Z · <sha>` from `package.json` + `buildStamp()`; `docs/RELEASING.md`; profile Build line folded into footer.

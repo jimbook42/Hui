@@ -36,6 +36,13 @@ const PRESENTATION: Record<NotificationKind, NotificationPresentation> = {
     actionLabel: "See details",
     actionable: false,
   },
+  event_rescheduled: {
+    label: "Time changed",
+    tone: "clay",
+    icon: "calendar",
+    actionLabel: "Reply",
+    actionable: true,
+  },
   host_proposed: {
     label: "Hosting request",
     tone: "clay",

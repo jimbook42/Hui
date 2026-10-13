@@ -4,6 +4,7 @@ export type NotificationKind =
   | "event_proposed"
   | "consensus_ready"
   | "event_confirmed"
+  | "event_rescheduled"
   | "host_proposed"
   | "host_accepted"
   | "host_declined"
@@ -25,6 +26,7 @@ export type MemberNotification = {
 const PARTICIPANT_RESPOND_KINDS = new Set<NotificationKind>([
   "event_proposed",
   "consensus_ready",
+  "event_rescheduled",
 ]);
 
 export function notificationHref(

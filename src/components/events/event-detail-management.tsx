@@ -1,6 +1,7 @@
 import type { EventActionState } from "@/app/events/actions";
 import { CancelEventButton } from "@/components/events/cancel-event-button";
 import { CompleteEventButton } from "@/components/events/complete-event-button";
+import { RescheduleConfirmedForm } from "@/components/events/reschedule-confirmed-form";
 import { DeleteEventForm } from "@/components/events/delete-event-form";
 import { EditEventForm } from "@/components/events/event-form";
 import { HostEventLocationForm } from "@/components/events/host-event-location-form";
@@ -14,6 +15,7 @@ type EventDetailManagementProps = {
   canEditLocation: boolean;
   canCancel: boolean;
   canComplete?: boolean;
+  canReschedule?: boolean;
   canDelete?: boolean;
   eventId: string;
   updateAction: (
@@ -36,6 +38,7 @@ export function EventDetailManagement({
   canEditLocation,
   canCancel,
   canComplete = false,
+  canReschedule = false,
   canDelete = false,
   eventId,
   updateAction,
@@ -49,7 +52,7 @@ export function EventDetailManagement({
   timeZone,
   viewerHomeLocation = null,
 }: EventDetailManagementProps) {
-  if (!canEdit && !canEditLocation && !canCancel && !canComplete && !canDelete) {
+  if (!canEdit && !canEditLocation && !canCancel && !canComplete && !canReschedule && !canDelete) {
     return null;
   }
 
@@ -96,6 +99,18 @@ export function EventDetailManagement({
               viewerHomeLocation={viewerHomeLocation}
             />
           </div>
+        </section>
+      ) : null}
+
+      {canReschedule && defaultStartsAt ? (
+        <section className="hui-card-section">
+          <h3 className="hui-type-section text-foreground">Reschedule</h3>
+          <RescheduleConfirmedForm
+            eventId={eventId}
+            timeZone={timeZone}
+            defaultStartsAt={defaultStartsAt}
+            defaultEndsAt={defaultEndsAt}
+          />
         </section>
       ) : null}
 

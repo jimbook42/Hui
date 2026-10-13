@@ -13,6 +13,7 @@ import {
   EventProposedGuidanceCard,
   HostSwappedConfirmationCard,
 } from "@/components/events/event-page-sections";
+import { RescheduledFromSection } from "@/components/events/rescheduled-from-section";
 import { StaleProposalSection } from "@/components/events/stale-proposal-section";
 import { EventProposeInviteSection } from "@/components/events/event-propose-invite-section";
 import { AttendanceLiveProvider } from "@/components/events/attendance-live";
@@ -83,6 +84,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
                 prominent={justProposed}
               />
             ) : null}
+            <RescheduledFromSection detail={detail} userId={userId} />
             <StaleProposalSection detail={detail} userId={userId} />
             <EventAttentionCard detail={detail} userId={userId} />
             <EventOpenDecisionsCard detail={detail} userId={userId} />
