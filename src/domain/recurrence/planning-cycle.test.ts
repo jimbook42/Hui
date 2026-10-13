@@ -81,7 +81,8 @@ describe("recurring planning cycle (HUI-028)", () => {
       CADENCE.anchorDate,
       "2026-03-01",
     );
-    expect(reference).toBe(CADENCE.anchorDate);
+    expect(reference.referenceDate).toBe(CADENCE.anchorDate);
+    expect(reference.afterClosedCycle).toBe(false);
   });
 
   it("confirmed past hui advances reference from nominal date", () => {
@@ -98,7 +99,8 @@ describe("recurring planning cycle (HUI-028)", () => {
       CADENCE.anchorDate,
       "2026-03-01",
     );
-    expect(reference).toBe("2026-02-01");
+    expect(reference.referenceDate).toBe("2026-02-01");
+    expect(reference.afterClosedCycle).toBe(false);
   });
 
   it("future confirmed event blocks the next planning cycle", () => {
@@ -121,6 +123,33 @@ describe("recurring planning cycle (HUI-028)", () => {
     expect(shouldShowPlanNextCta(cycle)).toBe(false);
   });
 
+  it("skipped nominal date advances the cycle reference", () => {
+    const reference = resolveCycleReferenceDate(
+      [],
+      CADENCE.anchorDate,
+      "2026-03-01",
+      ["2026-02-15"],
+    );
+    expect(reference.referenceDate).toBe("2026-02-15");
+    expect(reference.afterClosedCycle).toBe(true);
+    expect(
+      computeNextTargetDate(CADENCE, reference.referenceDate, "2026-03-01", true),
+    ).toBe("2026-03-29");
+  });
+
+  it("paused recurrence uses recurrence_paused phase", () => {
+    const cycle = deriveGroupPlanningCycle({
+      recurringEnabled: true,
+      cadence: CADENCE,
+      planningLeadDays: 14,
+      todayDateOnly: "2026-03-12",
+      events: [],
+      recurrencePaused: true,
+    });
+    expect(cycle.phase).toBe("recurrence_paused");
+    expect(shouldShowPlanNextCta(cycle)).toBe(false);
+  });
+
   it("completed hui advances reference for next target", () => {
     const reference = resolveCycleReferenceDate(
       [
@@ -135,9 +164,10 @@ describe("recurring planning cycle (HUI-028)", () => {
       CADENCE.anchorDate,
       "2026-04-01",
     );
-    expect(reference).toBe("2026-03-12");
+    expect(reference.referenceDate).toBe("2026-03-12");
+    expect(reference.afterClosedCycle).toBe(true);
     expect(
-      computeNextTargetDate(CADENCE, reference, "2026-04-01"),
+      computeNextTargetDate(CADENCE, reference.referenceDate, "2026-04-01", true),
     ).toBe("2026-04-23");
   });
 
@@ -155,7 +185,8 @@ describe("recurring planning cycle (HUI-028)", () => {
       CADENCE.anchorDate,
       "2026-03-01",
     );
-    expect(reference).toBe(CADENCE.anchorDate);
+    expect(reference.referenceDate).toBe(CADENCE.anchorDate);
+    expect(reference.afterClosedCycle).toBe(false);
   });
 
   it("one-off group unchanged", () => {

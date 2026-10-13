@@ -32,6 +32,7 @@ import {
 } from "@/domain/events/validation";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getEventDetail } from "@/lib/events/queries";
+import { syncGroupPlanningAfterChange } from "@/lib/groups/sync-planning-after-change";
 import { pickAcceptedHost } from "@/domain/hosts/display";
 import { getEventHostContext } from "@/lib/hosts/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
@@ -398,10 +399,13 @@ export async function completeEventAction(
     return { error: error.message };
   }
 
+  await syncGroupPlanningAfterChange(supabase, detail.groupId);
+
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events/${eventId}/manage`);
   revalidatePath(`/groups/${detail.groupId}`);
   revalidatePath(`/groups/${detail.groupId}/events`);
+  revalidatePath("/dashboard");
   revalidatePath("/events");
   schedulePushDelivery();
   return { message: "Hui marked completed." };
