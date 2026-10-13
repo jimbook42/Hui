@@ -276,6 +276,7 @@ Capabilities may span tickets; nothing below is optional for GDD MVP.
 
 ### Recurring planning / cycle engine
 
+- [x] **HUI-031-D (design)** — Recurring cycle engine spec: `docs/design/HUI-031-recurring-cycle-engine.md` (complete/skip/pause, data sketch, ticket split)
 - [x] **HUI-028** — Recurring planning cycle (group cadence on `group_settings`, nominal `planning_target_date`, planning window/phase derivation, dashboard + group UX, propose prefill, canonical series reuse, duplicate-safe `propose_group_event`; migration `20261005200000_hui_028_recurring_planning_cycle.sql`)
 - [ ] Skipped cycle, moved event, insufficient attendance, consensus failure hooks
 - [ ] **Complete event** workflow → memory/history triggers → fairness state → next cycle due (depends on HUI-029 completion UI)
