@@ -2,6 +2,11 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — HUI-031-C Nominal preview + cadence edit
+
+- **Domain/UI:** `buildNominalDatePreview` (4 upcoming nominals); group recurring card preview; admin cadence form; header propose hidden when paused; first-proposal nominal prefill.
+- **RPC:** `update_group_recurrence_cadence`; migration `20261013172849` (applied linked Supabase 2026-10-13).
+
 ## 2026-10-13 — HUI-031-B Pause, skip, snapshot refresh
 
 - **Schema/RPC:** `group_recurrence_preferences`, `group_planning_cycle_skips`, `group_planning_cycle_snapshots`; `set_group_recurrence_paused`, `skip_group_planning_cycle`, `upsert_group_planning_snapshot`, `refresh_all_group_planning_snapshots` (stub); migrations `20261013105417`, `20261013105855` (applied linked Supabase 2026-10-13).

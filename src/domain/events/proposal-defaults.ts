@@ -3,6 +3,7 @@ import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
 
 import type { EventProposalDraft } from "./proposal";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
+import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nominal";
 import {
   pickOpenCycleNominalDate,
   proposalPrefillFromCycle,
@@ -22,7 +23,7 @@ export function defaultProposalEventKind(
   context?: { isFirstGroupEvent?: boolean },
 ): EventProposalDraft["eventKind"] {
   if (context?.isFirstGroupEvent && !groupHasEstablishedRecurrence(settings)) {
-    return "one_off";
+    return settings.recurringEventsEnabled ? "recurring" : "one_off";
   }
   if (settings.recurringEventsEnabled) {
     return "recurring";
@@ -36,6 +37,7 @@ export function buildInitialProposalDraft(
     groupName: string;
     cycle: GroupPlanningCycle | null;
     isFirstGroupEvent?: boolean;
+    todayDateOnly?: string;
   },
 ): EventProposalDraft {
   const eventKind = defaultProposalEventKind(settings, {
@@ -61,6 +63,23 @@ export function buildInitialProposalDraft(
   const intervalUnit = cadence?.intervalUnit ?? "month";
   const intervalCount = cadence?.intervalCount ?? 1;
 
+  let planningTargetDate = prefill?.planningTargetDate ?? cycleTarget;
+  let resolvedStartsOn = startsOn;
+
+  if (
+    eventKind === "recurring" &&
+    options.isFirstGroupEvent &&
+    !groupHasEstablishedRecurrence(settings) &&
+    options.todayDateOnly
+  ) {
+    const firstNominal = firstGroupCycleNominalDate(
+      { intervalUnit, intervalCount },
+      options.todayDateOnly,
+    );
+    resolvedStartsOn = firstNominal;
+    planningTargetDate = firstNominal;
+  }
+
   return {
     title: "",
     gatheringType: null,
@@ -72,8 +91,8 @@ export function buildInitialProposalDraft(
       seriesTitle: prefill?.seriesTitle ?? (groupHasEstablishedRecurrence(settings) ? options.groupName : ""),
       intervalUnit,
       intervalCount,
-      startsOn,
-      planningTargetDate: prefill?.planningTargetDate ?? cycleTarget,
+      startsOn: resolvedStartsOn,
+      planningTargetDate,
     },
     candidates: [],
     initialHostUserId: "suggest",
@@ -88,10 +107,15 @@ export function initialCandidateDateFromDraft(
   draft: EventProposalDraft,
   cycle: GroupPlanningCycle | null,
 ): string {
-  if (draft.eventKind === "recurring" && cycle) {
-    const open = pickOpenCycleNominalDate(cycle);
-    if (open) {
-      return open;
+  if (draft.eventKind === "recurring") {
+    if (draft.recurrence?.planningTargetDate) {
+      return draft.recurrence.planningTargetDate;
+    }
+    if (cycle) {
+      const open = pickOpenCycleNominalDate(cycle);
+      if (open) {
+        return open;
+      }
     }
   }
   return "";

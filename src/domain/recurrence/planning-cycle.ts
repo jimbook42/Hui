@@ -61,7 +61,7 @@ export function cadenceFromParts(
 
 export type CycleReference = {
   referenceDate: string;
-  /** True when reference comes from a completed hui or an explicit skip (next target must advance one cadence). */
+  /** True when reference comes from a completed hui (next slot is one cadence after that nominal). */
   afterClosedCycle: boolean;
 };
 
@@ -70,7 +70,6 @@ export function resolveCycleReferenceDate(
   events: GroupPlanningEventSnapshot[],
   anchorDate: string,
   todayDateOnly: string,
-  skippedNominalDates: string[] = [],
 ): CycleReference {
   let best = anchorDate;
   let afterClosedCycle = false;
@@ -97,13 +96,75 @@ export function resolveCycleReferenceDate(
       }
     }
   }
-  for (const skip of skippedNominalDates) {
-    if (isDateOnly(skip) && compareDateOnly(skip, best) >= 0) {
-      best = skip;
-      afterClosedCycle = true;
-    }
-  }
   return { referenceDate: best, afterClosedCycle };
+}
+
+function eventAtNominal(
+  events: GroupPlanningEventSnapshot[],
+  nominalDate: string,
+): GroupPlanningEventSnapshot | null {
+  return (
+    events.find(
+      (event) =>
+        event.status !== "cancelled" &&
+        event.planningTargetDate === nominalDate,
+    ) ?? null
+  );
+}
+
+/** Earliest cadence nominal that is not past, skipped, completed, or occupied by an open hui. */
+export function findEarliestOpenNominalTarget(input: {
+  cadence: RecurrenceCadence;
+  todayDateOnly: string;
+  events: GroupPlanningEventSnapshot[];
+  skippedNominalDates?: string[];
+}): string {
+  const skipSet = new Set(input.skippedNominalDates ?? []);
+  let cursor = input.cadence.anchorDate;
+  let guard = 0;
+
+  while (guard < 500) {
+    if (compareDateOnly(cursor, input.todayDateOnly) < 0) {
+      cursor = addCadenceToDateOnly(
+        cursor,
+        input.cadence.intervalUnit,
+        input.cadence.intervalCount,
+      );
+      guard += 1;
+      continue;
+    }
+    if (skipSet.has(cursor)) {
+      cursor = addCadenceToDateOnly(
+        cursor,
+        input.cadence.intervalUnit,
+        input.cadence.intervalCount,
+      );
+      guard += 1;
+      continue;
+    }
+    const event = eventAtNominal(input.events, cursor);
+    if (event?.status === "completed") {
+      cursor = addCadenceToDateOnly(
+        cursor,
+        input.cadence.intervalUnit,
+        input.cadence.intervalCount,
+      );
+      guard += 1;
+      continue;
+    }
+    if (event && (event.status === "proposing" || event.status === "confirmed")) {
+      cursor = addCadenceToDateOnly(
+        cursor,
+        input.cadence.intervalUnit,
+        input.cadence.intervalCount,
+      );
+      guard += 1;
+      continue;
+    }
+    return cursor;
+  }
+
+  throw new Error("unable to find an open nominal planning target");
 }
 
 export function computeNextTargetDate(
@@ -179,18 +240,12 @@ export function deriveGroupPlanningCycle(input: {
   }
 
   if (input.recurrencePaused) {
-    const { referenceDate, afterClosedCycle } = resolveCycleReferenceDate(
-      input.events,
-      input.cadence.anchorDate,
-      input.todayDateOnly,
-      input.skippedNominalDates ?? [],
-    );
-    const nextTarget = computeNextTargetDate(
-      input.cadence,
-      referenceDate,
-      input.todayDateOnly,
-      afterClosedCycle,
-    );
+    const nextTarget = findEarliestOpenNominalTarget({
+      cadence: input.cadence,
+      todayDateOnly: input.todayDateOnly,
+      events: input.events,
+      skippedNominalDates: input.skippedNominalDates,
+    });
     const planningOpens = subtractDaysFromDateOnly(nextTarget, leadDays);
     return {
       cadence: input.cadence,
@@ -203,18 +258,12 @@ export function deriveGroupPlanningCycle(input: {
     };
   }
 
-  const { referenceDate, afterClosedCycle } = resolveCycleReferenceDate(
-    input.events,
-    input.cadence.anchorDate,
-    input.todayDateOnly,
-    input.skippedNominalDates ?? [],
-  );
-  const nextTarget = computeNextTargetDate(
-    input.cadence,
-    referenceDate,
-    input.todayDateOnly,
-    afterClosedCycle,
-  );
+  const nextTarget = findEarliestOpenNominalTarget({
+    cadence: input.cadence,
+    todayDateOnly: input.todayDateOnly,
+    events: input.events,
+    skippedNominalDates: input.skippedNominalDates,
+  });
   const planningOpens = subtractDaysFromDateOnly(nextTarget, leadDays);
   const blocker = findBlockingEvent(input.events, nextTarget);
 

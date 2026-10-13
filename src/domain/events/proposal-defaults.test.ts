@@ -50,4 +50,24 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
     expect(draft.recurrence?.planningTargetDate).toBe("2026-10-26");
     expect(initialCandidateDateFromDraft(draft, cycle)).toBe("2026-10-26");
   });
+
+  it("first group event with recurring enabled pre-fills first nominal target", () => {
+    const freshSettings: GroupSettingsRow = {
+      ...baseSettings,
+      canonicalRecurrenceSeriesId: null,
+      recurrenceIntervalUnit: null,
+      recurrenceIntervalCount: null,
+      recurrenceAnchorDate: null,
+    };
+    const draft = buildInitialProposalDraft(freshSettings, {
+      groupName: "New group",
+      cycle: null,
+      isFirstGroupEvent: true,
+      todayDateOnly: "2026-10-13",
+    });
+    expect(draft.eventKind).toBe("recurring");
+    expect(draft.recurrence?.startsOn).toBe("2026-10-13");
+    expect(draft.recurrence?.planningTargetDate).toBe("2026-10-13");
+    expect(initialCandidateDateFromDraft(draft, null)).toBe("2026-10-13");
+  });
 });

@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { buildNominalDatePreview } from "@/domain/recurrence/nominal-preview";
 import {
-  computeNextTargetDate,
   deriveGroupPlanningCycle,
   pickOpenCycleNominalDate,
-  resolveCycleReferenceDate,
   shouldShowManualProposeLink,
 } from "@/domain/recurrence/planning-cycle";
 
@@ -12,6 +11,12 @@ const WEEKLY = {
   intervalUnit: "week" as const,
   intervalCount: 1,
   anchorDate: "2026-09-28",
+};
+
+const BIWEEKLY_OCT = {
+  intervalUnit: "week" as const,
+  intervalCount: 2,
+  anchorDate: "2026-10-19",
 };
 
 describe("HUI-031 tier-2 QA (planning cycle)", () => {
@@ -75,13 +80,33 @@ describe("HUI-031 tier-2 QA (planning cycle)", () => {
     expect(pickOpenCycleNominalDate(cycle)).toBe("2026-11-02");
   });
 
-  it("4b: skip reference marks closed cycle for computeNextTargetDate", () => {
-    const ref = resolveCycleReferenceDate([], WEEKLY.anchorDate, "2026-10-13", [
-      "2026-10-26",
-    ]);
-    expect(ref.afterClosedCycle).toBe(true);
-    expect(
-      computeNextTargetDate(WEEKLY, ref.referenceDate, "2026-10-13", ref.afterClosedCycle),
-    ).toBe("2026-11-02");
+  it("HUI-031-C QA: skipping a future nominal keeps the current next target", () => {
+    const cycle = deriveGroupPlanningCycle({
+      recurringEnabled: true,
+      cadence: BIWEEKLY_OCT,
+      planningLeadDays: 14,
+      todayDateOnly: "2026-10-13",
+      events: [],
+      skippedNominalDates: ["2026-11-02"],
+    });
+    expect(cycle.nextTargetDate).toBe("2026-10-19");
+
+    const preview = buildNominalDatePreview({
+      cadence: BIWEEKLY_OCT,
+      cycle,
+      todayDateOnly: "2026-10-13",
+      events: [],
+      skippedNominalDates: ["2026-11-02"],
+      skipReasons: {},
+      count: 4,
+    });
+    expect(preview[0]).toMatchObject({
+      nominalDate: "2026-10-19",
+      disposition: "next_open",
+    });
+    expect(preview[1]).toMatchObject({
+      nominalDate: "2026-11-02",
+      disposition: "skipped",
+    });
   });
 });

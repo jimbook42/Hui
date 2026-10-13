@@ -8,7 +8,9 @@ import {
   groupAllowsEventKind,
 } from "@/domain/events/permissions";
 import { getGroupDetail } from "@/lib/groups/queries";
+import { pickOpenCycleNominalDate } from "@/domain/recurrence/planning-cycle";
 import { loadGroupPlanningContext } from "@/lib/groups/planning-cycle-queries";
+import { todayDateOnlyInTimeZone } from "@/lib/groups/planning-cycle";
 import { loadProposalTimeRecommendations } from "@/lib/scheduling/time-recommendations-data";
 import { createClient } from "@/lib/supabase/server";
 
@@ -53,9 +55,12 @@ export default async function NewGroupEventPage({ params }: PageProps) {
     detail.viewerRole,
   );
 
-  const planningTargetDate = planningContext?.cycle.cycleTargetDate ?? null;
-
-  const todayDateOnly = new Date().toISOString().slice(0, 10);
+  const todayDateOnly = todayDateOnlyInTimeZone(detail.settings.timezone);
+  const planningTargetDate =
+    (planningContext?.cycle
+      ? pickOpenCycleNominalDate(planningContext.cycle)
+      : null) ??
+    (isFirstGroupEvent && detail.settings.recurringEventsEnabled ? todayDateOnly : null);
   const timeRecommendations = await loadProposalTimeRecommendations(
     supabase,
     user!.id,

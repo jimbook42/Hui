@@ -89,10 +89,19 @@ export default async function GroupDetailPage({ params }: PageProps) {
   const viewerCanTransfer = canTransferOwnership(detail.viewerRole);
   const viewerCanDelete = canDeleteGroup(detail.viewerRole);
   const viewerCanLeave = detail.viewerRole !== "owner";
+  const planningContext = await loadGroupPlanningContext(
+    supabase,
+    groupId,
+    user!.id,
+    detail.name,
+    detail.viewerRole,
+  );
+
   const viewerCanPropose =
     canProposeEvents(detail.viewerRole, detail.settings) &&
     (groupAllowsEventKind("one_off", detail.settings) ||
-      groupAllowsEventKind("recurring", detail.settings));
+      groupAllowsEventKind("recurring", detail.settings)) &&
+    !planningContext?.recurrencePaused;
   const [
     householdView,
     contributionCategories,
@@ -109,14 +118,6 @@ export default async function GroupDetailPage({ params }: PageProps) {
     listMyStandingAvailabilityForGroup(supabase, groupId, user!.id),
   ]);
   const viewerCanManageCategories = canManageContributionCategories(detail.viewerRole);
-
-  const planningContext = await loadGroupPlanningContext(
-    supabase,
-    groupId,
-    user!.id,
-    detail.name,
-    detail.viewerRole,
-  );
 
   let inviteToken: string | null = null;
   if (viewerCanManage) {

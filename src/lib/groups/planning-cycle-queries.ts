@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { canProposeEvents } from "@/domain/events/permissions";
 import { canEditSettings, type MembershipRole } from "@/domain/groups/permissions";
+import { buildNominalDatePreview, type NominalPreviewRow } from "@/domain/recurrence/nominal-preview";
 import {
   loadRecurrenceCycleModifiers,
   type PlanningCycleSkipRecord,
@@ -13,6 +14,7 @@ import {
   buildGroupPlanningCycle,
   mapPlanningEventRow,
   shouldShowPlanNextCta,
+  todayDateOnlyInTimeZone,
   type GroupPlanningCycle,
 } from "@/lib/groups/planning-cycle";
 import type { GroupSettingsRow } from "@/lib/groups/types";
@@ -28,6 +30,7 @@ export type GroupPlanningContext = {
   canManageRecurrence: boolean;
   recurrencePaused: boolean;
   recentSkips: PlanningCycleSkipRecord[];
+  upcomingNominals: NominalPreviewRow[];
 };
 
 export async function loadGroupPlanningContext(
@@ -59,6 +62,21 @@ export async function loadGroupPlanningContext(
   const cycle = buildGroupPlanningCycle(settings, events, modifiers);
   const canPropose = canProposeEvents(viewerRole, settings);
   const recurrencePaused = Boolean(modifiers.recurrencePaused);
+  const skipReasons = Object.fromEntries(
+    modifiers.recentSkips.map((skip) => [skip.nominalDate, skip.reason]),
+  );
+  const upcomingNominals =
+    cycle.cadence && cycle.phase !== "not_recurring"
+      ? buildNominalDatePreview({
+          cadence: cycle.cadence,
+          cycle,
+          todayDateOnly: todayDateOnlyInTimeZone(settings.timezone),
+          events,
+          skippedNominalDates: modifiers.skippedNominalDates ?? [],
+          skipReasons,
+          count: 4,
+        })
+      : [];
 
   return {
     groupId,
@@ -71,6 +89,7 @@ export async function loadGroupPlanningContext(
     canManageRecurrence: canEditSettings(viewerRole),
     recurrencePaused,
     recentSkips: modifiers.recentSkips,
+    upcomingNominals,
   };
 }
 
