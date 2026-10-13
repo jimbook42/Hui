@@ -2,6 +2,10 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-13 — App version footer (0.9.0)
+
+- Global footer `Hui vX.Y.Z · <sha>` from `package.json` + `buildStamp()`; `docs/RELEASING.md`; profile Build line folded into footer.
+
 ## 2026-10-13 — Stale proposing events
 
 - **Cron:** `process_stale_proposals` in planning cycle worker — organiser in-app nudge when nominal passes; auto-cancel after 3-day grace; snapshot refresh on cancel.

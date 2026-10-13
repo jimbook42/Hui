@@ -5,7 +5,6 @@ import { avatarToneClass, initialsFor } from "@/components/hui/avatar-stack";
 import { ProfileHubLink } from "@/components/profile/profile-hub-link";
 import { cn } from "@/lib/ui/cn";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
-import { buildStamp } from "@/lib/build/stamp";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 
 export default async function ProfilePage() {
@@ -89,10 +88,6 @@ export default async function ProfilePage() {
             description="Add Hui to your home screen"
           />
         </nav>
-
-        <p className="text-center text-xs font-semibold text-muted-foreground" title="Deployed build">
-          Build {buildStamp()}
-        </p>
 
         <HuiSurface elevated padding="md">
           <p className="text-sm font-semibold text-muted-foreground">
