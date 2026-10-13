@@ -7,6 +7,7 @@ const KINDS: NotificationKind[] = [
   "event_proposed",
   "consensus_ready",
   "event_confirmed",
+  "event_rescheduled",
   "host_proposed",
   "host_accepted",
   "host_declined",
@@ -25,6 +26,11 @@ describe("notificationPresentation", () => {
 
   it("marks the kinds that ask for a response as actionable", () => {
     const actionable = KINDS.filter((kind) => notificationPresentation(kind).actionable);
-    expect(actionable).toEqual(["event_proposed", "consensus_ready", "host_proposed"]);
+    expect(actionable).toEqual([
+      "event_proposed",
+      "consensus_ready",
+      "event_rescheduled",
+      "host_proposed",
+    ]);
   });
 });

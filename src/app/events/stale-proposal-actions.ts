@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
+import { compareDateOnly } from "@/domain/recurrence/date-only";
+import { instantToDateOnlyInTimeZone } from "@/domain/events/stale-proposal";
 import { parseStartsOnDate } from "@/domain/events/validation";
+import { ACTIVE_CANDIDATE_STATUSES } from "@/domain/scheduling/types";
 import { getEventDetail } from "@/lib/events/queries";
 import { syncGroupPlanningAfterChange } from "@/lib/groups/sync-planning-after-change";
 import { createClient } from "@/lib/supabase/server";
@@ -47,6 +50,26 @@ export async function rescheduleProposalNominalAction(
     detail.viewerRole !== "admin"
   ) {
     return { error: "You cannot reschedule this proposal." };
+  }
+
+  const timeZone = detail.timezone ?? "Pacific/Auckland";
+  const { data: candidateRows } = await supabase
+    .from("event_candidates")
+    .select("starts_at")
+    .eq("event_id", eventId)
+    .in("status", [...ACTIVE_CANDIDATE_STATUSES]);
+
+  const hasTimesBeforeNominal = (candidateRows ?? []).some((row) => {
+    const day = instantToDateOnlyInTimeZone(row.starts_at as string, timeZone);
+    return compareDateOnly(day, nominal) < 0;
+  });
+
+  const acknowledged = formData.get("ack_stale_candidates") === "1";
+  if (hasTimesBeforeNominal && !acknowledged) {
+    return {
+      error:
+        "Some proposed times are before the new planning date. Remove or update them in Manage, or confirm below to keep them anyway.",
+    };
   }
 
   const { error } = await supabase.rpc("reschedule_proposing_event_nominal", {

@@ -13,6 +13,9 @@ describe("notification href (HUI-026B)", () => {
     expect(
       notificationHref({ kind: "consensus_ready", eventId: EVENT_ID, groupId: GROUP_ID }),
     ).toBe(`/events/${EVENT_ID}/respond`);
+    expect(
+      notificationHref({ kind: "event_rescheduled", eventId: EVENT_ID, groupId: GROUP_ID }),
+    ).toBe(`/events/${EVENT_ID}/respond`);
   });
 
   it("keeps other event notifications on the event page", () => {

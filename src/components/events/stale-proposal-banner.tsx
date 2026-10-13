@@ -36,8 +36,12 @@ export function StaleProposalBanner({
 }: StaleProposalBannerProps) {
   const autoCancelOn = staleProposalAutoCancelDate(nominalDate);
   const [nextDate, setNextDate] = useState(suggestedDate);
+  const [ackStaleCandidates, setAckStaleCandidates] = useState(false);
   const [state, formAction, pending] = useActionState(rescheduleProposalNominalAction, initialState);
   useActionStateRefresh(state);
+
+  const needsCandidateAck =
+    state.error?.includes("Some proposed times are before the new planning date") ?? false;
 
   if (!canManage) {
     return (
@@ -62,6 +66,9 @@ export function StaleProposalBanner({
       <form action={formAction} className="mt-4 space-y-3">
         <input type="hidden" name="event_id" value={eventId} />
         <input type="hidden" name="nominal_date" value={nextDate} />
+        {ackStaleCandidates || needsCandidateAck ? (
+          <input type="hidden" name="ack_stale_candidates" value="1" />
+        ) : null}
         <WallClockDateField
           label="New planning date"
           value={nextDate}
@@ -70,6 +77,17 @@ export function StaleProposalBanner({
         />
         {state.error ? (
           <p className="hui-message-error" role="alert">{state.error}</p>
+        ) : null}
+        {needsCandidateAck ? (
+          <label className="flex items-start gap-2 text-sm font-semibold text-foreground">
+            <input
+              type="checkbox"
+              checked={ackStaleCandidates}
+              onChange={(event) => setAckStaleCandidates(event.target.checked)}
+              className="mt-1"
+            />
+            <span>Update the planning date anyway (some proposed times stay on earlier days)</span>
+          </label>
         ) : null}
         {state.message ? (
           <p className="hui-message-note" role="status">{state.message}</p>

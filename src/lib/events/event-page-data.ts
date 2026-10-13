@@ -24,6 +24,7 @@ import {
   canAccessEventManagement,
   canCancelEvent,
   canCompleteEvent,
+  canRescheduleConfirmedEvent,
   canDeleteEvent,
   canEditEventLocation,
   canEditEventMetadata,
@@ -154,6 +155,12 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
   );
   const canCancel = canCancelEvent(detail.viewerRole, userId, detail.createdBy, detail.status);
   const canComplete = canCompleteEvent(
+    detail.viewerRole,
+    userId,
+    detail.createdBy,
+    detail.status,
+  );
+  const canReschedule = canRescheduleConfirmedEvent(
     detail.viewerRole,
     userId,
     detail.createdBy,
@@ -295,6 +302,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     canEditLocation,
     canCancel,
     canComplete,
+    canReschedule,
     canDelete,
     canAccessManage,
     canRespond,
