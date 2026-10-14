@@ -260,6 +260,29 @@ describe("attendance after confirmation (HUI-026U.3)", () => {
     expect(error).toMatch(/no longer open for scheduling/);
   });
 
+  it("does not apply a late answer on a non-chosen time onto the confirmed time", async () => {
+    const { eventId, earlier, later } = await createEventWithTimes("Stale tab race");
+    await respond(ids.owner, later, "yes");
+    await respond(ids.member, later, "yes");
+    await respond(ids.member, earlier, "maybe");
+
+    await asUser(db, ids.owner);
+    await db.query(`select public.finalise_event($1, $2)`, [eventId, later]);
+
+    await asUser(db, ids.member);
+    const upsertError = await expectFail(() =>
+      db.query(
+        `insert into public.event_responses (candidate_id, user_id, response, visibility)
+         values ($1, $2, 'maybe', 'group')
+         on conflict (candidate_id, user_id) do update set response = excluded.response`,
+        [earlier, ids.member],
+      ),
+    );
+    expect(upsertError).toMatch(/no longer open for scheduling/);
+    expect(await responseOf(ids.member, later)).toBe("yes");
+    expect(await responseOf(ids.member, earlier)).toBe("maybe");
+  });
+
   it("keeps the confirmed time and the candidate list locked", async () => {
     const { eventId, later } = await createEventWithTimes("Still locked");
     await respond(ids.owner, later, "yes");

@@ -5,6 +5,7 @@ import {
   INVITE_SHARE_TITLE,
   canUseWebShare,
   copyInviteLink,
+  shareInviteLink,
   shareOrCopyInviteLink,
 } from "./share";
 
@@ -43,7 +44,14 @@ describe("invite sharing", () => {
     expect(writeText).not.toHaveBeenCalled();
   });
 
-  it("falls back to copy when share is unavailable", async () => {
+  it("returns fallback when share is unavailable (no silent copy)", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn() } });
+
+    const result = await shareInviteLink("https://hui.example/join/abc");
+    expect(result).toEqual({ outcome: "fallback" });
+  });
+
+  it("falls back to copy when share is unavailable via deprecated helper", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { clipboard: { writeText } });
 

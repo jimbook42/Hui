@@ -27,10 +27,100 @@ import { getGroupResponseSettings } from "@/lib/groups/response-settings";
 import { getEventSchedulingContext } from "@/lib/scheduling/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
 import { devTimed } from "@/lib/perf/dev-server-timing";
+import {
+  isSchedulingClosedDbError,
+  resolveConfirmRaceAfterFailedSave,
+  shouldRetryAvailabilitySaveAfterConfirmRace,
+} from "@/domain/scheduling/confirm-during-save";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { EventActionState } from "./actions";
+
+async function upsertMemberAvailability(
+  supabase: SupabaseClient,
+  input: {
+    candidateId: string;
+    userId: string;
+    dbResponse: string;
+    hasNoteField: boolean;
+    privateNote: string | null;
+  },
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.from("event_responses").upsert(
+    {
+      candidate_id: input.candidateId,
+      user_id: input.userId,
+      response: input.dbResponse,
+      visibility: "group",
+      ...(input.hasNoteField ? { note: input.privateNote } : {}),
+    },
+    { onConflict: "candidate_id,user_id" },
+  );
+  return { error: error?.message ?? null };
+}
+
+async function recoverAvailabilityAfterConfirmRace(
+  supabase: SupabaseClient,
+  input: {
+    eventId: string;
+    groupId: string;
+    userId: string;
+    originalCandidateId: string;
+    dbResponse: string;
+    hasNoteField: boolean;
+    privateNote: string | null;
+    timeZone: string;
+  },
+): Promise<EventActionState | null> {
+  const detailAfter = await getEventDetail(supabase, input.eventId, input.userId);
+  if (!detailAfter || detailAfter.status !== "confirmed") {
+    return null;
+  }
+
+  const { data: selected } = await supabase
+    .from("event_candidates")
+    .select("id, starts_at, ends_at, status")
+    .eq("event_id", input.eventId)
+    .eq("group_id", input.groupId)
+    .eq("status", "selected")
+    .maybeSingle();
+
+  const selectedPayload =
+    selected?.id && selected.starts_at
+      ? {
+          id: selected.id,
+          startsAt: selected.starts_at,
+          endsAt: selected.ends_at,
+        }
+      : null;
+
+  let retrySucceeded = false;
+  if (
+    selectedPayload &&
+    shouldRetryAvailabilitySaveAfterConfirmRace(
+      input.originalCandidateId,
+      selectedPayload.id,
+    )
+  ) {
+    const { error } = await upsertMemberAvailability(supabase, {
+      candidateId: input.originalCandidateId,
+      userId: input.userId,
+      dbResponse: input.dbResponse,
+      hasNoteField: input.hasNoteField,
+      privateNote: input.privateNote,
+    });
+    retrySucceeded = !error;
+  }
+
+  return resolveConfirmRaceAfterFailedSave({
+    originalCandidateId: input.originalCandidateId,
+    selected: selectedPayload,
+    timeZone: input.timeZone,
+    retrySucceeded,
+  });
+}
 
 async function requireUser() {
   const supabase = await createClient();
@@ -265,21 +355,37 @@ export async function setAvailabilityResponseAction(
     }
 
     const dbResponse = availabilityToDbResponse(choice);
-    const { error } = await devTimed("setAvailabilityResponseAction:upsert", async () =>
-      await supabase.from("event_responses").upsert(
-        {
-          candidate_id: candidateId,
-          user_id: user.id,
-          response: dbResponse,
-          visibility: "group",
-          ...(hasNoteField ? { note: privateNote } : {}),
-        },
-        { onConflict: "candidate_id,user_id" },
-      ),
+    const timeZone = detail.timezone ?? "Pacific/Auckland";
+    const { error: upsertError } = await devTimed("setAvailabilityResponseAction:upsert", () =>
+      upsertMemberAvailability(supabase, {
+        candidateId,
+        userId: user.id,
+        dbResponse,
+        hasNoteField,
+        privateNote,
+      }),
     );
 
-    if (error) {
-      return { error: error.message };
+    if (upsertError) {
+      if (isSchedulingClosedDbError(upsertError)) {
+        const recovered = await recoverAvailabilityAfterConfirmRace(supabase, {
+          eventId,
+          groupId: detail.groupId,
+          userId: user.id,
+          originalCandidateId: candidateId,
+          dbResponse,
+          hasNoteField,
+          privateNote,
+          timeZone,
+        });
+        if (recovered) {
+          revalidatePath(`/events/${eventId}`);
+          revalidatePath(`/events/${eventId}/respond`);
+          schedulePushDelivery();
+          return recovered;
+        }
+      }
+      return { error: upsertError };
     }
 
     revalidatePath(`/events/${eventId}`);

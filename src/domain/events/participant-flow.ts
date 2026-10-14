@@ -7,7 +7,10 @@ import {
   canAddCandidates,
   canRespondToCandidates,
 } from "@/domain/scheduling/permissions";
+import type { AttendanceVisualState } from "@/domain/scheduling/attendance-visual";
+import { participantAttendanceSummaryLabel } from "@/domain/scheduling/participant-labels";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
+import type { ParticipantPlaceView } from "@/domain/events/participant-place";
 import type { EventStatus } from "@/domain/events/types";
 import type { GroupSettingsRow } from "@/lib/groups/types";
 import type { EventCandidateRow } from "@/lib/scheduling/types";
@@ -139,11 +142,9 @@ export function multiTimeProposingAnswerPresentation(
   let statusChoice: AvailabilityChoice | null = null;
   if (yesCount === total) {
     statusChoice = "available";
-  } else if (yesCount > 0) {
+  } else if (maybeCount > 0 && yesCount === 0) {
     statusChoice = "maybe";
-  } else if (maybeCount > 0) {
-    statusChoice = "maybe";
-  } else if (noCount > 0) {
+  } else if (noCount > 0 && yesCount === 0 && maybeCount === 0) {
     statusChoice = "unavailable";
   }
 
@@ -152,6 +153,43 @@ export function multiTimeProposingAnswerPresentation(
     statusChoice,
     showPlaceFollowUp: yesCount === total && total > 0,
   };
+}
+
+/** Icon on the event page for mixed multi-time answers (avoid Maybe when summary is Yes to N). */
+export function multiTimeViewerVisualState(
+  presentation: MultiTimeViewerAnswerPresentation,
+): AttendanceVisualState {
+  if (presentation.statusChoice === "available") {
+    return "yes";
+  }
+  if (presentation.statusChoice === "maybe") {
+    return "maybe";
+  }
+  if (presentation.statusChoice === "unavailable") {
+    return "no";
+  }
+  if (presentation.summaryLabel.startsWith("Yes to")) {
+    return "yes";
+  }
+  return "pending";
+}
+
+export type MultiTimeAnswerDetailRow = {
+  candidateId: string;
+  timeLabel: string;
+  choice: AvailabilityChoice | null;
+};
+
+export function multiTimeAnswerDetailRows(
+  candidates: ParticipantTimeCandidate[],
+  timeLabels: Record<string, string>,
+): MultiTimeAnswerDetailRow[] {
+  const proposed = candidates.filter((candidate) => candidate.status === "proposed");
+  return proposed.map((candidate) => ({
+    candidateId: candidate.id,
+    timeLabel: timeLabels[candidate.id]?.trim() || "Time",
+    choice: candidate.viewerResponse,
+  }));
 }
 
 export function bestViewerResponseAcrossProposedCandidates(
@@ -179,8 +217,27 @@ export function participantAttendanceBranch(
   return choice === "unavailable" ? "no" : "yes-maybe";
 }
 
-export function nextStepAfterAttendanceSave(choice: AvailabilityChoice): ParticipantFlowStep {
-  return participantAttendanceBranch(choice) === "no" ? "declined" : "place";
+export function shouldShowParticipantPlaceStep(
+  placeView: ParticipantPlaceView,
+  showBringStep: boolean,
+): boolean {
+  if (showBringStep) {
+    return true;
+  }
+  return placeView.kind === "known";
+}
+
+export function nextStepAfterAttendanceSave(
+  choice: AvailabilityChoice,
+  options?: { showPlaceStep?: boolean },
+): ParticipantFlowStep {
+  if (participantAttendanceBranch(choice) === "no") {
+    return "declined";
+  }
+  if (options?.showPlaceStep === false) {
+    return "done";
+  }
+  return "place";
 }
 
 /** Bring step only when something is still needed or the viewer already has a claim to review. */

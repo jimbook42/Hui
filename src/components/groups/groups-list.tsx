@@ -1,11 +1,13 @@
 import Link from "next/link";
 
+import { GroupInviteShareBlock } from "@/components/groups/group-invite-share-block";
 import { AvatarStack } from "@/components/hui/avatar-stack";
 import { EmptyState } from "@/components/hui/empty-state";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { CalendarIcon, ChevronRightIcon, PeopleIcon } from "@/components/hui/icons";
 import { StatusPill } from "@/components/hui/status-pill";
 import { formatClockTime, formatShortDay, relativeDayLabel } from "@/domain/datetime/display";
+import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { eventDetailPath } from "@/lib/events/paths";
 import { loadHomeData, type HomeEvent } from "@/lib/events/home-data";
@@ -69,11 +71,29 @@ export async function GroupsList() {
     );
   }
 
-  const previews = await devTimed("groups-page:previews", () =>
-    listGroupPreviews(
-      supabase,
-      groups.map((group) => group.id),
+  const [previews, appOrigin, inviteTokens] = await Promise.all([
+    devTimed("groups-page:previews", () =>
+      listGroupPreviews(
+        supabase,
+        groups.map((group) => group.id),
+      ),
     ),
+    resolveAuthRedirectOrigin(),
+    devTimed("groups-page:invite-tokens", () =>
+      Promise.all(
+        groups.map(async (group) => {
+          const { data, error } = await supabase.rpc("get_group_invite_link", {
+            p_group_id: group.id,
+          });
+          const token = !error && typeof data === "string" ? data : null;
+          return [group.id, token] as const;
+        }),
+      ),
+    ),
+  ]);
+
+  const inviteTokenByGroupId = new Map(
+    inviteTokens.filter((entry): entry is [string, string] => entry[1] != null),
   );
 
   return (
@@ -83,6 +103,7 @@ export async function GroupsList() {
         const preview = previews.get(group.id);
         const next = nextEventFor(home.events, group.id);
         const memberCount = preview?.memberCount ?? 0;
+        const inviteToken = inviteTokenByGroupId.get(group.id);
 
         return (
           <li key={group.id} className="hui-rise" style={{ animationDelay: `${Math.min(index, 6) * 60}ms` }}>
@@ -117,6 +138,17 @@ export async function GroupsList() {
                 </div>
                 <ChevronRightIcon size={22} className="mt-1 shrink-0 text-muted-foreground" />
               </div>
+
+              {inviteToken ? (
+                <div className="mt-4">
+                  <GroupInviteShareBlock
+                    groupName={group.name}
+                    inviteToken={inviteToken}
+                    appOrigin={appOrigin}
+                    variant="card"
+                  />
+                </div>
+              ) : null}
 
               <div className="mt-5 flex items-center gap-3">
                 <AvatarStack

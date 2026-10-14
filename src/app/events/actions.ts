@@ -41,6 +41,8 @@ import { createClient } from "@/lib/supabase/server";
 export type EventActionState = {
   error?: string;
   message?: string;
+  /** Non-error notice for the client (refresh + toast). */
+  notice?: string;
 };
 
 async function requireUser() {

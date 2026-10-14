@@ -51,7 +51,7 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
     expect(initialCandidateDateFromDraft(draft, cycle)).toBe("2026-10-26");
   });
 
-  it("first group event with recurring enabled pre-fills first nominal target", () => {
+  it("first group event leaves planning target unset until a time is proposed", () => {
     const freshSettings: GroupSettingsRow = {
       ...baseSettings,
       canonicalRecurrenceSeriesId: null,
@@ -65,9 +65,8 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
       isFirstGroupEvent: true,
       todayDateOnly: "2026-10-13",
     });
-    expect(draft.eventKind).toBe("recurring");
-    expect(draft.recurrence?.startsOn).toBe("2026-10-13");
-    expect(draft.recurrence?.planningTargetDate).toBe("2026-10-13");
-    expect(initialCandidateDateFromDraft(draft, null)).toBe("2026-10-13");
+    expect(draft.eventKind).toBe("one_off");
+    expect(draft.recurrence?.planningTargetDate).toBeNull();
+    expect(initialCandidateDateFromDraft(draft, null)).toBe("");
   });
 });

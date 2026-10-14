@@ -18,6 +18,7 @@ import { GatheringVisual } from "@/components/hui/gathering-visual";
 import { HuiButton, HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { attendanceStateFromChoice, viewerStatusLabel } from "@/domain/events/home";
+import type { AttendanceVisualState } from "@/domain/scheduling/attendance-visual";
 import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 import {
   applyViewerOverrideToRoster,
@@ -27,6 +28,8 @@ import {
 } from "@/domain/scheduling/attendance-override";
 import { availabilityResponseOptions } from "@/domain/scheduling/consensus-display";
 import { participantAttendanceChoiceLabel } from "@/domain/scheduling/participant-labels";
+import type { MultiTimeAnswerDetailRow } from "@/domain/events/participant-flow";
+import { participantAttendanceSummaryLabel } from "@/domain/scheduling/participant-labels";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 import { participantRespondPath } from "@/lib/events/paths";
 import {
@@ -84,7 +87,7 @@ export function LiveGatheringVisual({ roster, viewerUserId, ...rest }: LiveGathe
 const SHORT_LABEL: Record<AvailabilityChoice, string> = {
   available: "Yes",
   maybe: "Maybe",
-  unavailable: "No",
+  unavailable: "Can't",
 };
 
 type ViewerResponseCardProps = {
@@ -97,6 +100,8 @@ type ViewerResponseCardProps = {
   serverPrivateNote?: string | null;
   /** When set (multi-time proposing), replaces the single-choice status line. */
   answerSummaryLabel?: string | null;
+  answerDetailRows?: MultiTimeAnswerDetailRow[] | null;
+  answerIconState?: AttendanceVisualState | null;
   showPlaceFollowUp?: boolean;
   maybeResponsesEnabled: boolean;
   confirmed: boolean;
@@ -117,6 +122,8 @@ export function ViewerResponseCard({
   serverResponse,
   serverPrivateNote,
   answerSummaryLabel,
+  answerDetailRows,
+  answerIconState,
   showPlaceFollowUp = true,
   maybeResponsesEnabled,
   confirmed,
@@ -130,16 +137,19 @@ export function ViewerResponseCard({
   const [pendingChoice, setPendingChoice] = useState<AvailabilityChoice | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [followUp, setFollowUp] = useState<AvailabilityChoice | null>(null);
+  const [noticeToast, setNoticeToast] = useState<string | null>(null);
   const [isSaving, startSaving] = useTransition();
 
   const response = effectiveViewerResponse(serverResponse, override);
-  const state = attendanceStateFromChoice(response, maybeResponsesEnabled);
-  const pending = state === "pending";
+  const multiTime = Boolean(answerSummaryLabel?.trim());
+  const state =
+    answerIconState ?? attendanceStateFromChoice(response, maybeResponsesEnabled);
+  const pending = !multiTime && state === "pending";
   const answerLine =
     answerSummaryLabel?.trim() ||
     (isSaving && pendingChoice
       ? "Saving\u2026"
-      : viewerStatusLabel(state));
+      : viewerStatusLabel(state, { confirmed }));
   const options = availabilityResponseOptions(maybeResponsesEnabled);
 
   function save(choice: AvailabilityChoice) {
@@ -165,6 +175,16 @@ export function ViewerResponseCard({
       const result = await setAvailabilityResponseAction({}, formData);
       markInteraction(interaction, "request-end");
       setPendingChoice(null);
+      if (result.notice) {
+        setOverride(null);
+        setFollowUp(choice);
+        setOpen(false);
+        setNoticeToast(result.notice);
+        window.setTimeout(() => setNoticeToast(null), 6000);
+        router.refresh();
+        endInteraction(interaction);
+        return;
+      }
       if (result.error) {
         // Roll back to what the server still has.
         setOverride(null);
@@ -186,18 +206,51 @@ export function ViewerResponseCard({
   const effect = followUp ? responseChangeEffect(null, followUp) : null;
 
   return (
+    <>
     <HuiSurface
       tone={state === "yes" ? "sage" : state === "no" ? "subtle" : "clay"}
       shape="organic-alt"
       padding="md"
     >
       <div className="flex items-center gap-4">
-        <AttendanceDot state={state} label={viewerStatusLabel(state)} size="lg" />
+        <AttendanceDot
+          state={state}
+          label={viewerStatusLabel(state, { confirmed })}
+          size="lg"
+        />
         <div className="min-w-0 flex-1">
           <p className="hui-type-label text-muted-foreground">Your answer</p>
           <p className="text-lg font-extrabold leading-tight text-foreground" role="status">
             {answerLine}
           </p>
+          {answerDetailRows && answerDetailRows.length > 0 ? (
+            <ul className="mt-2 space-y-2">
+              {answerDetailRows.map((row) => {
+                const rowState = row.choice
+                  ? attendanceStateFromChoice(row.choice, maybeResponsesEnabled)
+                  : "pending";
+                const rowLabel = row.choice
+                  ? participantAttendanceSummaryLabel(row.choice)
+                  : "No answer yet";
+                return (
+                  <li
+                    key={row.candidateId}
+                    className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground"
+                  >
+                    <AttendanceDot
+                      state={rowState}
+                      label={rowLabel}
+                      size="sm"
+                      hideBadge={!row.choice}
+                      subdued={!row.choice}
+                    />
+                    <span className="min-w-0 flex-1 text-foreground">{row.timeLabel}</span>
+                    <span className="shrink-0">{rowLabel}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
           {pending ? (
             <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
               {confirmed
@@ -222,6 +275,16 @@ export function ViewerResponseCard({
           className="mt-4 w-full"
         >
           Reply
+        </HuiLinkButton>
+      ) : multiTime ? (
+        <HuiLinkButton
+          href={participantRespondPath(eventId)}
+          variant="secondary"
+          shape="melt"
+          size="touch"
+          className="mt-4 w-full"
+        >
+          Change response
         </HuiLinkButton>
       ) : (
         <>
@@ -261,6 +324,7 @@ export function ViewerResponseCard({
                       label={participantAttendanceChoiceLabel(option)}
                       size="xs"
                       hideBadge
+                      subdued={!selected}
                     />
                     <span>{SHORT_LABEL[option]}</span>
                   </button>
@@ -308,5 +372,14 @@ export function ViewerResponseCard({
         </p>
       ) : null}
     </HuiSurface>
+    {noticeToast ? (
+      <p
+        className="pointer-events-none fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-hui-lg bg-foreground px-4 py-3 text-center text-sm font-semibold text-background hui-shadow-lg"
+        role="status"
+      >
+        {noticeToast}
+      </p>
+    ) : null}
+    </>
   );
 }

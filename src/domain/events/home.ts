@@ -107,14 +107,17 @@ export function attendanceStateFromChoice(
   }
 }
 
-export function viewerStatusLabel(state: AttendanceVisualState): string {
+export function viewerStatusLabel(
+  state: AttendanceVisualState,
+  options?: { confirmed?: boolean },
+): string {
   switch (state) {
     case "yes":
-      return "You're in";
+      return options?.confirmed ? "You're in" : "Yes";
     case "maybe":
-      return "You said maybe";
+      return "Maybe";
     case "no":
-      return "You can't make it";
+      return "Can't";
     case "pending":
       return "Needs your answer";
   }

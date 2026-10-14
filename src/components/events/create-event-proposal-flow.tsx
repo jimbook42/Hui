@@ -31,6 +31,7 @@ import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nomi
 import {
   cadencePresetFromParts,
   FIRST_GROUP_CADENCE_PRESETS,
+  type CadencePresetId,
 } from "@/domain/recurrence/cadence-presets";
 import {
   formatCadenceLabel,
@@ -156,23 +157,15 @@ export function CreateEventProposalFlow({
   const [stepError, setStepError] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState(initialDate);
 
-  function applyFirstGroupCadence(
-    recurrence: EventProposalDraft["recurrence"],
-  ): NonNullable<EventProposalDraft["recurrence"]> {
-    const intervalUnit = recurrence?.intervalUnit ?? "month";
-    const intervalCount = recurrence?.intervalCount ?? 1;
-    const nominal = firstGroupCycleNominalDate(
-      { intervalUnit, intervalCount },
-      todayDateOnly,
-    );
-    return {
-      seriesTitle: recurrence?.seriesTitle ?? "",
-      intervalUnit,
-      intervalCount,
-      startsOn: nominal,
-      planningTargetDate: nominal,
-    };
+  function dateOnlyFromIso(iso: string, zone: string): string {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: zone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(iso));
   }
+
   const [timeStart, setTimeStart] = useState("12:00");
   // The end time is optional: an empty value means "start only".
   const [timeEnd, setTimeEnd] = useState("");
@@ -214,30 +207,47 @@ export function CreateEventProposalFlow({
         setStepError("Describe what you are planning.");
         return;
       }
-      if (draft.eventKind === "recurring" && isFirstGroupEvent) {
-        const nominal = draft.recurrence?.planningTargetDate?.trim() ?? "";
-        if (!nominal) {
-          setStepError("Choose when the first gathering should be planned around.");
+      if ((canOneOff || canRecurring) && !establishedRecurrence) {
+        if (!meetFrequency) {
+          setStepError("Choose how often this group meets.");
           return;
         }
-        setDraft((current) => ({
-          ...current,
-          recurrence: {
-            ...(current.recurrence ?? {
-              seriesTitle: "",
-              intervalUnit: "month",
-              intervalCount: 1,
-              startsOn: "",
-              planningTargetDate: null,
-            }),
-            startsOn: nominal,
-            planningTargetDate: nominal,
-            seriesTitle:
-              current.title.trim() ||
-              current.recurrence?.seriesTitle?.trim() ||
-              `${groupName} gatherings`,
-          },
-        }));
+        if (meetFrequency === "once") {
+          if (!canOneOff) {
+            setStepError("This group only allows recurring gatherings.");
+            return;
+          }
+          setDraft((current) => ({ ...current, eventKind: "one_off" }));
+        } else {
+          if (!canRecurring) {
+            setStepError("This group only allows one-off gatherings.");
+            return;
+          }
+          const preset = FIRST_GROUP_CADENCE_PRESETS.find((row) => row.id === meetFrequency);
+          if (!preset) {
+            setStepError("Choose how often this group meets.");
+            return;
+          }
+          setDraft((current) => ({
+            ...current,
+            eventKind: "recurring",
+            recurrence: {
+              ...(current.recurrence ?? {
+                seriesTitle: "",
+                intervalUnit: "month",
+                intervalCount: 1,
+                startsOn: "",
+                planningTargetDate: null,
+              }),
+              intervalUnit: preset.intervalUnit,
+              intervalCount: preset.intervalCount,
+              seriesTitle:
+                current.title.trim() ||
+                current.recurrence?.seriesTitle?.trim() ||
+                `${groupName} gatherings`,
+            },
+          }));
+        }
       }
       if (draft.eventKind === "recurring" && draft.recurrence?.planningTargetDate) {
         setTimeDate(draft.recurrence.planningTargetDate);
@@ -269,7 +279,32 @@ export function CreateEventProposalFlow({
         setStepError("Add at least one proposed time.");
         return;
       }
-      setDraft((current) => ({ ...current, candidates: merged.candidates }));
+      setDraft((current) => {
+        let next = { ...current, candidates: merged.candidates };
+        if (
+          next.eventKind === "recurring" &&
+          isFirstGroupEvent &&
+          !establishedRecurrence &&
+          merged.candidates[0]
+        ) {
+          const nominal = dateOnlyFromIso(merged.candidates[0].startsAt, settings.timezone);
+          next = {
+            ...next,
+            recurrence: {
+              ...(next.recurrence ?? {
+                seriesTitle: "",
+                intervalUnit: "month",
+                intervalCount: 1,
+                startsOn: "",
+                planningTargetDate: null,
+              }),
+              startsOn: nominal,
+              planningTargetDate: nominal,
+            },
+          };
+        }
+        return next;
+      });
       goTo("review");
     }
   }
@@ -350,6 +385,13 @@ export function CreateEventProposalFlow({
     draft.recurrence?.intervalUnit ?? "month",
     draft.recurrence?.intervalCount ?? 1,
   );
+
+  const [meetFrequency, setMeetFrequency] = useState<null | "once" | CadencePresetId>(() => {
+    if (establishedRecurrence || !isFirstGroupEvent) {
+      return draft.eventKind === "one_off" ? "once" : activeCadencePreset;
+    }
+    return null;
+  });
 
   return (
     <div className="space-y-6">
@@ -479,132 +521,53 @@ export function CreateEventProposalFlow({
             </div>
           </details>
           {canOneOff || canRecurring ? (
-            <fieldset className="space-y-2">
+            <fieldset className="space-y-3">
               <legend className="hui-label">
-                <span>Is this a one-off or ongoing rhythm?</span>
+                <span>How often does this group meet?</span>
               </legend>
-              <div className="grid grid-cols-1 gap-2">
-                {canRecurring ? (
-                  <label
-                    className={cn(
-                      "hui-focus-ring flex min-h-14 cursor-pointer flex-col justify-center rounded-hui-lg px-4 py-3",
-                      draft.eventKind === "recurring"
-                        ? "border-2 border-primary bg-sage-soft"
-                        : "border border-transparent bg-muted",
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="event_kind"
-                      className="sr-only"
-                      checked={draft.eventKind === "recurring"}
-                      onChange={() =>
-                        setDraft((current) => ({ ...current, eventKind: "recurring" }))
-                      }
-                    />
-                    <span className="font-extrabold text-foreground">Ongoing rhythm</span>
-                    <span className="text-sm font-semibold text-muted-foreground">
-                      Regular gatherings — weekly, fortnightly, monthly, and so on.
-                    </span>
-                  </label>
-                ) : null}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {canOneOff ? (
                   <label
                     className={cn(
-                      "hui-focus-ring flex min-h-14 cursor-pointer flex-col justify-center rounded-hui-lg px-4 py-3",
-                      draft.eventKind === "one_off"
-                        ? "border-2 border-primary bg-sage-soft"
-                        : "border border-transparent bg-muted",
+                      "hui-focus-ring flex min-h-12 cursor-pointer items-center justify-center rounded-hui-lg px-3 py-2 text-center text-sm font-extrabold",
+                      meetFrequency === "once"
+                        ? "border-2 border-primary bg-sage-soft text-foreground"
+                        : "border border-transparent bg-muted text-foreground",
                     )}
                   >
                     <input
                       type="radio"
-                      name="event_kind"
+                      name="meet_frequency"
                       className="sr-only"
-                      checked={draft.eventKind === "one_off"}
-                      onChange={() =>
-                        setDraft((current) => ({ ...current, eventKind: "one_off" }))
-                      }
+                      checked={meetFrequency === "once"}
+                      onChange={() => setMeetFrequency("once")}
                     />
-                    <span className="font-extrabold text-foreground">Just this once</span>
-                    <span className="text-sm font-semibold text-muted-foreground">
-                      Plan one gathering without setting up a repeating rhythm.
-                    </span>
+                    Just this once
                   </label>
                 ) : null}
+                {canRecurring
+                  ? FIRST_GROUP_CADENCE_PRESETS.map((preset) => (
+                      <label
+                        key={preset.id}
+                        className={cn(
+                          "hui-focus-ring flex min-h-12 cursor-pointer items-center justify-center rounded-hui-lg px-3 py-2 text-center text-sm font-extrabold",
+                          meetFrequency === preset.id
+                            ? "border-2 border-primary bg-sage-soft text-foreground"
+                            : "border border-transparent bg-muted text-foreground",
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="meet_frequency"
+                          className="sr-only"
+                          checked={meetFrequency === preset.id}
+                          onChange={() => setMeetFrequency(preset.id)}
+                        />
+                        {preset.label}
+                      </label>
+                    ))
+                  : null}
               </div>
-            </fieldset>
-          ) : null}
-          {draft.eventKind === "recurring" && canRecurring && isFirstGroupEvent ? (
-            <fieldset className="space-y-4 rounded-hui-lg bg-muted p-5">
-              <legend className="px-1 text-sm font-extrabold">How often should this group meet?</legend>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {FIRST_GROUP_CADENCE_PRESETS.map((preset) => {
-                  const selected = activeCadencePreset === preset.id;
-                  return (
-                    <label
-                      key={preset.id}
-                      className={cn(
-                        "hui-focus-ring flex min-h-12 cursor-pointer items-center justify-center rounded-hui-lg px-3 py-2 text-center text-sm font-extrabold",
-                        selected
-                          ? "border-2 border-primary bg-sage-soft text-foreground"
-                          : "border border-transparent bg-surface text-foreground",
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        name="cadence_preset"
-                        className="sr-only"
-                        checked={selected}
-                        onChange={() =>
-                          setDraft((current) => {
-                            const next = applyFirstGroupCadence({
-                              ...(current.recurrence ?? {
-                                seriesTitle: "",
-                                intervalUnit: "month",
-                                intervalCount: 1,
-                                startsOn: "",
-                                planningTargetDate: null,
-                              }),
-                              intervalUnit: preset.intervalUnit,
-                              intervalCount: preset.intervalCount,
-                            });
-                            return { ...current, recurrence: next };
-                          })
-                        }
-                      />
-                      {preset.label}
-                    </label>
-                  );
-                })}
-              </div>
-              <WallClockDateField
-                label="When should the first gathering be planned around?"
-                value={draft.recurrence?.planningTargetDate ?? draft.recurrence?.startsOn ?? ""}
-                onChange={(date) => {
-                  setDraft((current) => ({
-                    ...current,
-                    recurrence: {
-                      ...(current.recurrence ?? {
-                        seriesTitle: "",
-                        intervalUnit: "month",
-                        intervalCount: 1,
-                        startsOn: "",
-                        planningTargetDate: null,
-                      }),
-                      startsOn: date,
-                      planningTargetDate: date,
-                      seriesTitle:
-                        current.title.trim() ||
-                        current.recurrence?.seriesTitle?.trim() ||
-                        `${groupName} gatherings`,
-                    },
-                  }));
-                }}
-              />
-              <p className="text-xs font-semibold text-muted-foreground">
-                This is a planning target for the first cycle — not a confirmed gathering time.
-              </p>
             </fieldset>
           ) : null}
           {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (
@@ -626,9 +589,8 @@ export function CreateEventProposalFlow({
             </p>
             {draft.recurrence?.planningTargetDate ? (
               <p className="hui-message-note mt-3" role="status">
-                Planning for around{" "}
-                {formatNominalPlanningDate(draft.recurrence.planningTargetDate)}{" "}
-                — a target for this cycle, not a confirmed gathering time.
+                First proposed time sets the planning date for this cycle (
+                {formatNominalPlanningDate(draft.recurrence.planningTargetDate)}).
               </p>
             ) : null}
           </div>
@@ -763,8 +725,8 @@ export function CreateEventProposalFlow({
           {settings.hostingEnabled ? (
             <>
               <HuiSwitchField
-                label="I'll host this gathering"
-                description="Optional. You're the confirmed host — not just the organiser."
+                label="Who's hosting?"
+                description="Will you host at your place? Optional — someone else can host later."
                 checked={draft.organiserWillHost}
                 onCheckedChange={(checked) =>
                   setDraft((current) => ({

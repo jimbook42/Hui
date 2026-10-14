@@ -10,8 +10,11 @@ import type { InvitePlanningPreview } from "@/domain/invites/presentation";
 import type { InvitePlanningContext } from "@/domain/invites/resolve";
 import { parseInviteResolvePayload } from "@/domain/invites/resolve";
 import { isInviteFocusEventId } from "@/domain/invites/urls";
+import { completeInviteJoinForUser } from "@/lib/invites/complete-join";
+import { resolvePostInviteJoinPath } from "@/lib/invites/post-join-redirect";
 import { participantRespondPath } from "@/lib/events/paths";
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ token: string }>;
@@ -29,6 +32,7 @@ function mapPlanning(planning: InvitePlanningContext | null): InvitePlanningPrev
     status: planning.status,
     planningTargetDate: planning.planningTargetDate,
     proposedStartsAt: planning.proposedStartsAt,
+    proposedTimes: planning.proposedTimes,
     gathering: {
       type: planning.gatheringType,
       customDescription: planning.gatheringTypeCustom,
@@ -63,6 +67,28 @@ export default async function JoinInvitePage({ params, searchParams }: PageProps
 
   const planningPreview =
     resolved.status === "invalid" ? null : mapPlanning(resolved.planning);
+
+  if (user && resolved.status === "valid") {
+    const destination = await completeInviteJoinForUser(
+      supabase,
+      user.id,
+      token,
+      focusEventId,
+    );
+    redirect(destination);
+  }
+
+  if (user && resolved.status === "already_member" && planningPreview) {
+    const destination = await resolvePostInviteJoinPath(
+      supabase,
+      resolved.groupId,
+      user.id,
+      focusEventId ?? planningPreview.eventId,
+    );
+    if (destination.includes("/respond")) {
+      redirect(destination);
+    }
+  }
 
   return (
     <div className="hui-canvas relative flex min-h-dvh flex-col items-center justify-center px-5 py-12">

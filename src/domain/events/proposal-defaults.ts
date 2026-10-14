@@ -3,7 +3,6 @@ import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
 
 import type { EventProposalDraft } from "./proposal";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
-import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nominal";
 import {
   pickOpenCycleNominalDate,
   proposalPrefillFromCycle,
@@ -23,7 +22,7 @@ export function defaultProposalEventKind(
   context?: { isFirstGroupEvent?: boolean },
 ): EventProposalDraft["eventKind"] {
   if (context?.isFirstGroupEvent && !groupHasEstablishedRecurrence(settings)) {
-    return settings.recurringEventsEnabled ? "recurring" : "one_off";
+    return settings.oneOffEventsAllowed ? "one_off" : "recurring";
   }
   if (settings.recurringEventsEnabled) {
     return "recurring";
@@ -69,15 +68,10 @@ export function buildInitialProposalDraft(
   if (
     eventKind === "recurring" &&
     options.isFirstGroupEvent &&
-    !groupHasEstablishedRecurrence(settings) &&
-    options.todayDateOnly
+    !groupHasEstablishedRecurrence(settings)
   ) {
-    const firstNominal = firstGroupCycleNominalDate(
-      { intervalUnit, intervalCount },
-      options.todayDateOnly,
-    );
-    resolvedStartsOn = firstNominal;
-    planningTargetDate = firstNominal;
+    resolvedStartsOn = "";
+    planningTargetDate = null;
   }
 
   return {

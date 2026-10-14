@@ -43,6 +43,8 @@ type AttendanceDotProps = {
   className?: string;
   /** Hide the corner glyph (e.g. inside the legend where the label already explains it). */
   hideBadge?: boolean;
+  /** Unselected option in the respond flow — outline only, no solid fill. */
+  subdued?: boolean;
 };
 
 export function AttendanceDot({
@@ -52,9 +54,18 @@ export function AttendanceDot({
   size = "md",
   className,
   hideBadge = false,
+  subdued = false,
 }: AttendanceDotProps) {
   const styles = stateStyles[state];
   const dims = sizes[size];
+  const subduedDot =
+    subdued && state === "yes"
+      ? "border-2 border-attendance-yes bg-surface"
+      : subdued && state === "maybe"
+        ? "border-2 border-dashed border-attendance-maybe bg-surface"
+        : subdued && state === "no"
+          ? "border-2 border-muted-foreground/40 bg-surface opacity-80"
+          : null;
 
   return (
     <span
@@ -67,7 +78,7 @@ export function AttendanceDot({
         className={cn(
           "inline-flex items-center justify-center rounded-full font-extrabold",
           dims.box,
-          styles.dot,
+          subduedDot ?? styles.dot,
         )}
       >
         {initial ? (
@@ -76,7 +87,7 @@ export function AttendanceDot({
           </span>
         ) : null}
       </span>
-      {styles.badge && !hideBadge ? (
+      {styles.badge && !hideBadge && !subdued ? (
         <span
           aria-hidden="true"
           className={cn(

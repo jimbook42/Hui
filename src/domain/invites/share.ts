@@ -17,8 +17,9 @@ export function inviteShareText(groupName?: string): string {
 
 export type ShareInviteResult =
   | { outcome: "shared" }
-  | { outcome: "copied" }
   | { outcome: "cancelled" }
+  | { outcome: "fallback" }
+  | { outcome: "copied" }
   | { outcome: "failed"; message: string };
 
 export function canUseWebShare(): boolean {
@@ -34,10 +35,8 @@ export async function copyInviteLink(url: string): Promise<ShareInviteResult> {
   }
 }
 
-export async function shareOrCopyInviteLink(
-  url: string,
-  groupName?: string,
-): Promise<ShareInviteResult> {
+/** Prefer native share; otherwise show a link sheet (never silent copy). */
+export async function shareInviteLink(url: string, groupName?: string): Promise<ShareInviteResult> {
   if (canUseWebShare()) {
     try {
       await navigator.share({
@@ -53,10 +52,18 @@ export async function shareOrCopyInviteLink(
     }
   }
 
-  try {
-    await navigator.clipboard.writeText(url);
-    return { outcome: "copied" };
-  } catch {
-    return { outcome: "failed", message: "Could not copy the invite link." };
+  return { outcome: "fallback" };
+}
+
+/** @deprecated Use shareInviteLink + InviteLinkFallbackSheet */
+export async function shareOrCopyInviteLink(
+  url: string,
+  groupName?: string,
+): Promise<ShareInviteResult> {
+  const result = await shareInviteLink(url, groupName);
+  if (result.outcome === "fallback") {
+    const copied = await copyInviteLink(url);
+    return copied;
   }
+  return result;
 }
