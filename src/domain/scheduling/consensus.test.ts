@@ -94,6 +94,26 @@ describe("evaluateCandidateConsensus", () => {
     expect(disabled.failureReason).toBe("below_minimum_attendees");
   });
 
+  it("passes majority rule when more than half of active members say yes", () => {
+    const oneOfThree = evaluate({
+      consensusRule: "majority_active_members",
+      minimumAttendees: 1,
+      responses: [{ userId: "a", response: "yes" }],
+    });
+    const twoOfThree = evaluate({
+      consensusRule: "majority_active_members",
+      minimumAttendees: 1,
+      responses: [
+        { userId: "a", response: "yes" },
+        { userId: "b", response: "yes" },
+      ],
+    });
+
+    expect(oneOfThree.passes).toBe(false);
+    expect(oneOfThree.failureReason).toBe("majority_active_members");
+    expect(twoOfThree.passes).toBe(true);
+  });
+
   it("fails all active members until every eligible member accepts", () => {
     const failing = evaluate({
       consensusRule: "all_active_members",

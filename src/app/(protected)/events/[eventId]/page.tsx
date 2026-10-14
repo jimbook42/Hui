@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/app/app-shell";
 import {
   EventAttentionCard,
+  EventHostGentlePromptSection,
   EventBodySkeleton,
   EventDetailsList,
   EventHeroMeta,
@@ -63,11 +64,12 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
           </EventHero>
 
           <Suspense fallback={<EventBodySkeleton />}>
-            {justProposed ? (
+            {detail.status === "proposing" &&
+            (justProposed || detail.createdBy === userId) ? (
               <EventProposedGuidanceCard
                 detail={detail}
                 userId={userId}
-                justProposed={true}
+                justProposed={justProposed}
               />
             ) : null}
             {justSwappedHost ? (
@@ -89,6 +91,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
             <StaleProposalSection detail={detail} userId={userId} />
             <ResponseDeadlinePassedSection detail={detail} userId={userId} />
             <EventAttentionCard detail={detail} userId={userId} />
+            <EventHostGentlePromptSection detail={detail} userId={userId} />
             <EventOpenDecisionsCard detail={detail} userId={userId} />
             <EventManageEntryCard detail={detail} userId={userId} />
             <EventPeopleCard detail={detail} userId={userId} />

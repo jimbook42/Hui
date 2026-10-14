@@ -2,16 +2,27 @@ import { describe, expect, it } from "vitest";
 
 import { inviteHeadline, inviteSupportingLines } from "./presentation";
 
+const basePlanning = {
+  eventId: "e1",
+  eventTitle: "Dinner",
+  status: "proposing",
+  planningTargetDate: null as string | null,
+  proposedStartsAt: null as string | null,
+  gathering: {
+    type: "dinner_meal" as const,
+    customDescription: null,
+    eventTitle: "Dinner",
+  },
+};
+
 describe("invite presentation (HUI-ONBOARDING-002)", () => {
   it("builds natural planning copy with inviter, group, type, and title", () => {
     const headline = inviteHeadline({
       groupName: "Smith Family",
       inviterDisplayName: "Isaac",
       planning: {
-        eventId: "e1",
+        ...basePlanning,
         eventTitle: "Mum's birthday",
-        status: "proposing",
-        planningTargetDate: null,
         gathering: {
           type: "dinner_meal",
           customDescription: null,
@@ -24,26 +35,42 @@ describe("invite presentation (HUI-ONBOARDING-002)", () => {
     );
   });
 
-  it("does not treat planning target as a confirmed date in supporting copy", () => {
+  it("lists group, hui, and planning target in supporting copy", () => {
     const lines = inviteSupportingLines({
       groupName: "Smith Family",
       inviterDisplayName: null,
       planning: {
-        eventId: "e1",
-        eventTitle: "Dinner",
-        status: "proposing",
+        ...basePlanning,
         planningTargetDate: "2026-10-11",
+      },
+      timeZone: "Pacific/Auckland",
+    });
+    expect(lines[0]).toBe("Group: Smith Family");
+    expect(lines[1]).toBe("Hui: Dinner");
+    expect(lines[2]).toBe(
+      "Planning for around 11 October — not a confirmed date yet.",
+    );
+  });
+
+  it("prefers proposed candidate time over planning target for invite dates", () => {
+    const lines = inviteSupportingLines({
+      groupName: "QA Group",
+      inviterDisplayName: null,
+      planning: {
+        ...basePlanning,
+        eventTitle: "October dinner",
+        planningTargetDate: "2026-10-14",
+        proposedStartsAt: "2026-10-24T08:30:00.000Z",
         gathering: {
           type: "dinner_meal",
           customDescription: null,
-          eventTitle: "Dinner",
+          eventTitle: "October dinner",
         },
       },
       timeZone: "Pacific/Auckland",
     });
-    expect(lines[0]).toBe(
-      "Planning for around 11 October — not a confirmed date yet.",
-    );
+    expect(lines[2]).toMatch(/24 Oct/);
+    expect(lines[2]).not.toMatch(/14 Oct/);
   });
 
   it("does not shift planning target dates forward in NZ time zones", () => {
@@ -51,27 +78,19 @@ describe("invite presentation (HUI-ONBOARDING-002)", () => {
       groupName: "QA Group",
       inviterDisplayName: null,
       planning: {
-        eventId: "e1",
-        eventTitle: "Dinner",
-        status: "proposing",
+        ...basePlanning,
         planningTargetDate: "2026-11-02",
-        gathering: {
-          type: "dinner_meal",
-          customDescription: null,
-          eventTitle: "Dinner",
-        },
       },
       timeZone: "Pacific/Auckland",
     });
-    expect(november[0]).toContain("2 November");
+    expect(november[2]).toContain("2 November");
 
     const second = inviteSupportingLines({
       groupName: "QA Group",
       inviterDisplayName: null,
       planning: {
-        eventId: "e2",
+        ...basePlanning,
         eventTitle: "Lunch",
-        status: "proposing",
         planningTargetDate: "2026-11-09",
         gathering: {
           type: "dinner_meal",
@@ -81,7 +100,7 @@ describe("invite presentation (HUI-ONBOARDING-002)", () => {
       },
       timeZone: "Pacific/Auckland",
     });
-    expect(second[0]).toContain("9 November");
+    expect(second[2]).toContain("9 November");
   });
 
   it("avoids inventing a confirmed gathering date when only type is known", () => {
@@ -89,9 +108,8 @@ describe("invite presentation (HUI-ONBOARDING-002)", () => {
       groupName: "Smith Family",
       inviterDisplayName: "Isaac",
       planning: {
-        eventId: "e1",
+        ...basePlanning,
         eventTitle: "Friday thing",
-        status: "proposing",
         planningTargetDate: "2026-10-09",
         gathering: {
           type: "dinner_meal",

@@ -15,6 +15,7 @@ export const CONSENSUS_RULES = [
   "required_participants",
   "minimum_attendees",
   "all_active_members",
+  "majority_active_members",
 ] as const;
 
 export type ConsensusRule = (typeof CONSENSUS_RULES)[number];
@@ -25,6 +26,7 @@ export const CONSENSUS_FAILURE_REASONS = [
   "below_minimum_attendees",
   "required_participants",
   "all_active_members",
+  "majority_active_members",
 ] as const;
 
 export type ConsensusFailureReason = (typeof CONSENSUS_FAILURE_REASONS)[number];
@@ -147,6 +149,11 @@ export function evaluateCandidateConsensus(
     acceptedCount < eligibleMemberCount
   ) {
     failureReason = "all_active_members";
+  } else if (
+    input.consensusRule === "majority_active_members" &&
+    acceptedCount * 2 <= eligibleMemberCount
+  ) {
+    failureReason = "majority_active_members";
   } else if (
     input.consensusRule === "required_participants" &&
     requiredAcceptedCount < requiredParticipantCount

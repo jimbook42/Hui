@@ -26,6 +26,8 @@ import {
 } from "@/components/hui/icons";
 import { SectionHeader } from "@/components/hui/section-header";
 import { AddToCalendarButton } from "@/components/events/add-to-calendar-button";
+import { EventHostGentlePrompt } from "@/components/events/event-host-gentle-prompt";
+import { formatConfirmedBecauseLine } from "@/domain/scheduling/confirmed-because";
 import { EventHostSection } from "@/components/hosts/event-host-section";
 import { canDownloadEventIcs } from "@/lib/calendar/event-ics-export";
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
@@ -76,6 +78,20 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
   const followsHostCategoryIds = new Set(
     data.contributionCategories.filter((category) => category.followsHost).map((category) => category.id),
   );
+  const confirmedEvaluation =
+    confirmed && data.focusCandidate
+      ? data.consensus.candidates.find(
+          (row) => row.candidateId === data.focusCandidate?.id,
+        )
+      : null;
+  const confirmedBecauseLine =
+    confirmed && confirmedEvaluation
+      ? formatConfirmedBecauseLine({
+          yesCount: confirmedEvaluation.acceptedCount,
+          eligibleMemberCount: confirmedEvaluation.eligibleMemberCount,
+        })
+      : null;
+
   const viewerReleasableContributions = data.eventContributions.filter(
     (row) =>
       row.userId === userId &&
@@ -93,6 +109,11 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
               badgeTone={confirmed || completed ? "sage" : "primary"}
               showProposedHint={!confirmed && !completed && !closed}
             />
+            {confirmedBecauseLine ? (
+              <p className="mt-3 text-sm font-semibold text-muted-foreground" role="status">
+                {confirmedBecauseLine}
+              </p>
+            ) : null}
           </div>
           {canDownloadEventIcs(detail.status, startsAt) ? (
             <AddToCalendarButton eventId={detail.id} variant="page" className="shrink-0" />
@@ -378,6 +399,29 @@ export async function EventOpenDecisionsCard({ detail, userId }: SectionProps) {
         />
       </div>
     </HuiSurface>
+  );
+}
+
+export async function EventHostGentlePromptSection({ detail, userId }: SectionProps) {
+  const data = await loadEventPage(detail, userId);
+  const suggestedName = data.hostContext?.view.pendingProposal?.displayName ?? null;
+  if (!data.canAcceptHost && !data.canSwapHost) {
+    return null;
+  }
+
+  return (
+    <EventHostGentlePrompt
+      eventId={detail.id}
+      canAcceptHost={data.canAcceptHost}
+      canRequestSwap={data.canSwapHost}
+      hostSwapHasReplacement={data.hostSwapReplacementAvailable}
+      suggestedHostName={suggestedName}
+      hostingEnabled={Boolean(data.settings?.hostingEnabled)}
+      hostPlaceRequired={detail.hostPlaceRequired}
+      eventLocation={detail.location}
+      eventCoordinates={detail.locationCoordinates}
+      viewerHomeLocation={data.viewerHomeLocation}
+    />
   );
 }
 

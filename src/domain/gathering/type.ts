@@ -86,6 +86,22 @@ export function normalizeGatheringCustomDescription(raw: string): string | null 
   return trimmed;
 }
 
+function titleContainsWord(title: string, word: string): boolean {
+  const pattern = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+  return pattern.test(title);
+}
+
+function titleWithSuffix(title: string, suffix: string): string {
+  const trimmed = title.trim();
+  if (!trimmed) {
+    return suffix;
+  }
+  if (titleContainsWord(trimmed, suffix) || trimmed.toLowerCase().endsWith(suffix.toLowerCase())) {
+    return trimmed;
+  }
+  return `${trimmed} ${suffix}`;
+}
+
 /** Natural phrase for invitations — never inferred from event title. */
 export function gatheringPlanningPhrase(context: GatheringContext): string {
   const title = context.eventTitle?.trim() ?? "";
@@ -100,22 +116,58 @@ export function gatheringPlanningPhrase(context: GatheringContext): string {
   }
 
   if (type === "dinner_meal") {
-    return title ? `${title} dinner` : "a dinner";
+    if (!title) {
+      return "a dinner";
+    }
+    if (titleContainsWord(title, "dinner") || titleContainsWord(title, "meal")) {
+      return title;
+    }
+    return titleWithSuffix(title, "dinner");
   }
   if (type === "golf") {
-    return title ? `${title} round of golf` : "a round of golf";
+    if (!title) {
+      return "a round of golf";
+    }
+    if (titleContainsWord(title, "golf")) {
+      return title;
+    }
+    return titleWithSuffix(title, "round of golf");
   }
   if (type === "drinks_night_out") {
-    return title ? `${title} night out` : "a night out";
+    if (!title) {
+      return "a night out";
+    }
+    if (titleContainsWord(title, "night")) {
+      return title;
+    }
+    return titleWithSuffix(title, "night out");
   }
   if (type === "game_night") {
-    return title ? `${title} game night` : "a game night";
+    if (!title) {
+      return "a game night";
+    }
+    if (titleContainsWord(title, "game")) {
+      return title;
+    }
+    return titleWithSuffix(title, "game night");
   }
   if (type === "trip_outing") {
-    return title ? `${title} outing` : "an outing";
+    if (!title) {
+      return "an outing";
+    }
+    if (titleContainsWord(title, "outing") || titleContainsWord(title, "trip")) {
+      return title;
+    }
+    return titleWithSuffix(title, "outing");
   }
   if (type === "meeting") {
-    return title ? `${title} meeting` : "a meeting";
+    if (!title) {
+      return "a meeting";
+    }
+    if (titleContainsWord(title, "meeting")) {
+      return title;
+    }
+    return titleWithSuffix(title, "meeting");
   }
 
   return title || "a gathering";

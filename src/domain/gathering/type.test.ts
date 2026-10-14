@@ -33,6 +33,23 @@ describe("gatheringPlanningPhrase", () => {
     ).toBe("Book club");
   });
 
+  it("does not double type words when the title already includes them", () => {
+    expect(
+      gatheringPlanningPhrase({
+        type: "dinner_meal",
+        customDescription: null,
+        eventTitle: "Friday dinner",
+      }),
+    ).toBe("Friday dinner");
+    expect(
+      gatheringPlanningPhrase({
+        type: "game_night",
+        customDescription: null,
+        eventTitle: "Board game night",
+      }),
+    ).toBe("Board game night");
+  });
+
   it("treats default stored titles as no optional name for invites", () => {
     expect(
       gatheringEventTitleForInvite("Dinner", "dinner_meal", null),

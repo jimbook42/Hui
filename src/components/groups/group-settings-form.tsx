@@ -78,6 +78,7 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
             <option value="required_participants">Required participants</option>
             <option value="minimum_attendees">Minimum attendees</option>
             <option value="all_active_members">All active members</option>
+            <option value="majority_active_members">Majority of active members</option>
           </select>
         </label>
         <HuiSwitchField

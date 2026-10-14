@@ -4,6 +4,7 @@ import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
+import { pinGroupToMinimumAttendeesConsensus } from "@/db/pin-group-consensus-for-tests";
 import { formatEventTimeRange, wallClockToUtcIso } from "@/domain/datetime/timezone";
 
 const HARNESS_SQL = `
@@ -107,6 +108,8 @@ describe("coordination lifecycle (HUI-022A.1)", () => {
         "Lifecycle group",
       ])
     ).rows[0].create_group;
+
+    await pinGroupToMinimumAttendeesConsensus(db, groupId);
 
     await db.query(
       `insert into public.group_memberships (group_id, user_id, role) values ($1, $2, 'member'), ($1, $3, 'member'), ($1, $4, 'member')`,
@@ -314,6 +317,7 @@ describe("coordination lifecycle (HUI-022A.1)", () => {
         "First event group",
       ])
     ).rows[0].create_group;
+    await pinGroupToMinimumAttendeesConsensus(db, freshGroup);
     await db.query(`insert into public.group_memberships (group_id, user_id, role) values ($1, $2, 'member')`, [
       freshGroup,
       ids.member,
@@ -355,6 +359,8 @@ describe("coordination lifecycle (HUI-022A.1)", () => {
       ])
     ).rows[0].create_group;
 
+    await pinGroupToMinimumAttendeesConsensus(db, freshGroup);
+
     const event = await db.query<{ id: string }>(
       `insert into public.events (group_id, title, status, created_by)
        values ($1, 'No host dinner', 'proposing', $2) returning id`,
@@ -388,6 +394,7 @@ describe("coordination lifecycle (HUI-022A.1)", () => {
         "Decline group",
       ])
     ).rows[0].create_group;
+    await pinGroupToMinimumAttendeesConsensus(db, freshGroup);
     await db.query(
       `insert into public.group_memberships (group_id, user_id, role) values ($1, $2, 'member'), ($1, $3, 'member')`,
       [freshGroup, ids.member, ids.member2],

@@ -43,6 +43,8 @@ import {
   participantAttendanceChoiceLabel,
   participantAttendanceSummaryLabel,
 } from "@/domain/scheduling/participant-labels";
+import { participantSaveToastMessage } from "@/domain/scheduling/participant-save-feedback";
+import { markHostPromptDeferred } from "@/lib/events/defer-host-prompt";
 import type { StandingAvailabilityHint } from "@/domain/scheduling/standing-availability";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 import { eventDetailPath } from "@/lib/events/paths";
@@ -141,6 +143,8 @@ export function EventParticipantRespondFlow({
     Record<string, AvailabilityChoice | null>
   >({});
   const [actionError, setActionError] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const [noNote, setNoNote] = useState("");
   const [suggestSubmittedRange, setSuggestSubmittedRange] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState("");
   const [timeStart, setTimeStart] = useState("12:00");
@@ -216,16 +220,24 @@ export function EventParticipantRespondFlow({
   }, [timeDate, timeStart, timeEnd, timeZone]);
   const attendanceOptions = availabilityResponseOptions(maybeResponsesEnabled);
 
+  const showSaveToast = useCallback((message: string) => {
+    setSaveToast(message);
+    window.setTimeout(() => setSaveToast(null), 4000);
+  }, []);
+
   const pushStep = useCallback(
     (next: ParticipantFlowStep) => {
       let resolved = next;
       if (next === "bring" && !showBringStep) {
         resolved = "done";
       }
+      if (resolved === "done" || resolved === "place" || resolved === "declined") {
+        markHostPromptDeferred(eventId);
+      }
       setStep(resolved);
       window.history.pushState({ participantStep: resolved }, "", `#${resolved}`);
     },
-    [showBringStep],
+    [eventId, showBringStep],
   );
 
   const goBack = useCallback(() => {
@@ -316,7 +328,11 @@ export function EventParticipantRespondFlow({
     beginInteraction(interaction);
     markInteraction(interaction, "handler-start");
     setActionError(null);
+    setResponsesByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
     setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
+    const timeLabelForToast =
+      candidateTimeLabels[targetCandidateId] ??
+      (targetCandidateId === candidate.id ? focusTimeLabel : "");
 
     startSaveAttendance(async () => {
       markInteraction(interaction, "request-start");
@@ -324,6 +340,9 @@ export function EventParticipantRespondFlow({
       formData.set("event_id", eventId);
       formData.set("candidate_id", targetCandidateId);
       formData.set("response", choice);
+      if (choice === "unavailable" && noNote.trim()) {
+        formData.set("private_note", noNote.trim());
+      }
       const result: EventActionState = await setAvailabilityResponseAction({}, formData);
       markInteraction(interaction, "request-end");
       if (result.error) {
@@ -336,8 +355,10 @@ export function EventParticipantRespondFlow({
         endInteraction(interaction);
         return;
       }
-      setResponsesByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
       setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
+      showSaveToast(
+        participantSaveToastMessage(choice, timeLabelForToast),
+      );
       if (!multipleTimeOptions && advanceOnSave) {
         setResponseOverride(choice);
         pushStep(nextStepAfterAttendanceSave(choice));
@@ -361,6 +382,9 @@ export function EventParticipantRespondFlow({
   }
 
   const openProposedCandidates = proposedCandidates.filter((row) => row.status === "proposed");
+  const multiAnsweredCount = openProposedCandidates.filter(
+    (row) => responsesByCandidate[row.id] !== null,
+  ).length;
   const allMultiTimesAnswered =
     multipleTimeOptions &&
     openProposedCandidates.every((row) => responsesByCandidate[row.id] !== null);
@@ -490,13 +514,23 @@ export function EventParticipantRespondFlow({
         </div>
       ) : null}
 
+      {saveToast ? (
+        <p
+          className="pointer-events-none fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-hui-lg bg-foreground px-4 py-3 text-center text-sm font-semibold text-background hui-shadow-lg"
+          role="status"
+        >
+          {saveToast}
+        </p>
+      ) : null}
+
       {step === "time" ? (
         <section className="hui-rise mt-6 space-y-5">
           {multipleTimeOptions ? (
             <>
-              <h1 className="hui-type-page-title text-foreground">Which times work for you?</h1>
+              <h1 className="hui-type-page-title text-foreground">Can you make it?</h1>
               <p className="hui-type-supporting">
-                Answer each option separately — changing one does not change the others.
+                {multiAnsweredCount} of {openProposedCandidates.length} answered — pick each time
+                separately.
               </p>
               <ul className="space-y-4">
                 {openProposedCandidates.map((row) => {
@@ -518,7 +552,9 @@ export function EventParticipantRespondFlow({
                             state={attendanceStateFromChoice(option, true)}
                             label={participantAttendanceChoiceLabel(option)}
                             selected={
-                              rowResponse === option && !pendingByCandidate[row.id]
+                              rowResponse === option &&
+                              !pendingByCandidate[row.id] &&
+                              rowResponse !== null
                             }
                             pending={pendingByCandidate[row.id] === option}
                             disabled={!canRespond}
@@ -544,23 +580,16 @@ export function EventParticipantRespondFlow({
                     pushStep(nextStepAfterAttendanceSave(multiSummaryChoice));
                   }}
                 >
-                  Continue
+                  Done
                 </PendingButton>
               ) : null}
             </>
           ) : (
             <>
-          {candidate.status === "proposed" ? (
-            <>
-              <h1 className="hui-type-page-title text-foreground">When could you make it?</h1>
-              <p className="hui-type-supporting">
-                Tell the group when you&apos;re available so everyone can work out a time that
-                suits.
-              </p>
-            </>
-          ) : (
-            <h1 className="hui-type-page-title text-foreground">Can you make this?</h1>
-          )}
+          <h1 className="hui-type-page-title text-foreground">Can you make it?</h1>
+          <p className="hui-type-supporting">
+            Tap the option that fits — your answer saves straight away.
+          </p>
           {standingAvailabilityHint && viewerResponse === null ? (
             <HuiSurface padding="sm" className="border border-accent/20 bg-accent/5">
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
@@ -579,7 +608,7 @@ export function EventParticipantRespondFlow({
               const savingThisCandidate = Boolean(pendingByCandidate[candidate.id]);
               const isPending = pendingByCandidate[candidate.id] === option;
               const isSelected =
-                viewerResponse === option && !savingThisCandidate;
+                viewerResponse === option && !savingThisCandidate && viewerResponse !== null;
               return (
                 <AttendanceChoice
                   key={option}
@@ -601,14 +630,23 @@ export function EventParticipantRespondFlow({
               />
             ) : null}
           </div>
+          {(viewerResponse === "unavailable" || pendingByCandidate[candidate.id] === "unavailable") ? (
+            <label className="hui-label block">
+              <span>Optional note (only if you want)</span>
+              <input
+                type="text"
+                name="private_note"
+                value={noNote}
+                onChange={(event) => setNoNote(event.target.value)}
+                maxLength={500}
+                className="hui-input"
+                placeholder="e.g. Away that weekend"
+              />
+            </label>
+          ) : null}
           {actionError ? (
             <p className="hui-message-error" role="alert">
               {actionError}
-            </p>
-          ) : null}
-          {viewerResponse && !pendingByCandidate[candidate.id] ? (
-            <p className="hui-message-success" role="status">
-              Saved: {participantAttendanceSummaryLabel(viewerResponse)}
             </p>
           ) : null}
           {viewerResponse === "available" || viewerResponse === "maybe" ? (

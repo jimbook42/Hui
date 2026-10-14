@@ -20,6 +20,8 @@ export function consensusRuleLabel(rule: ConsensusRule): string {
       return "Minimum attendees";
     case "all_active_members":
       return "All active members";
+    case "majority_active_members":
+      return "Majority of members";
   }
 }
 
@@ -34,6 +36,8 @@ export function consensusFailureLabel(
       return "Not every required participant is available.";
     case "all_active_members":
       return "Not every current member is available.";
+    case "majority_active_members":
+      return "Not enough members have said yes yet.";
     case "candidate_not_active":
       return "This time is no longer active.";
   }

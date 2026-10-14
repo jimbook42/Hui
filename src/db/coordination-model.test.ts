@@ -2,6 +2,8 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { PGlite } from "@electric-sql/pglite";
+
+import { pinGroupToMinimumAttendeesConsensus } from "@/db/pin-group-consensus-for-tests";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { formatEventTimeRange, wallClockToUtcIso } from "@/domain/datetime/timezone";
@@ -132,6 +134,8 @@ describe("coordination model (HUI-022A)", () => {
         "Coordination group",
       ])
     ).rows[0].create_group;
+
+    await pinGroupToMinimumAttendeesConsensus(db, groupId);
 
     await db.query(
       `insert into public.group_memberships (group_id, user_id, role) values ($1, $2, 'member'), ($1, $3, 'member')`,

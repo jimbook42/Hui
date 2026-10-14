@@ -46,14 +46,6 @@ export function buildEventAttention(facts: EventAttentionFacts): EventAttentionI
     });
   }
 
-  if (facts.canAcceptHostProposal) {
-    items.push({
-      kind: "host",
-      title: "You have been asked to host",
-      detail: "Accept, or ask to swap.",
-    });
-  }
-
   if (facts.canConfirmTime) {
     items.push({
       kind: "confirm",

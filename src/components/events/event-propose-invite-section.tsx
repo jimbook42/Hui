@@ -51,6 +51,7 @@ export async function EventProposeInviteSection({
             eventTitle: detail.title,
             status: detail.status,
             planningTargetDate,
+            proposedStartsAt: detail.startsAt,
             gathering: {
               type: parsedType,
               customDescription: gatheringTypeCustom,

@@ -5,12 +5,12 @@ import {
   participantAttendanceSummaryLabel,
 } from "./participant-labels";
 
-describe("participant attendance labels (HUI-026B)", () => {
-  it("uses invitee vocabulary, not coordination-page labels", () => {
-    expect(participantAttendanceChoiceLabel("available")).toBe("Yes, I can come");
-    expect(participantAttendanceChoiceLabel("maybe")).toBe("Maybe, I can make it work");
-    expect(participantAttendanceChoiceLabel("unavailable")).toBe("No, I can't come");
-    expect(participantAttendanceSummaryLabel("available")).toBe("Can come");
+describe("participant attendance labels (HUI-UX1)", () => {
+  it("uses short consistent labels in the respond flow", () => {
+    expect(participantAttendanceChoiceLabel("available")).toBe("Yes");
+    expect(participantAttendanceChoiceLabel("maybe")).toBe("Maybe");
+    expect(participantAttendanceChoiceLabel("unavailable")).toBe("No");
+    expect(participantAttendanceSummaryLabel("maybe")).toBe("Maybe");
     expect(participantAttendanceSummaryLabel("available")).not.toBe("Available");
   });
 });

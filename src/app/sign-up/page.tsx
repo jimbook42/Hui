@@ -5,6 +5,7 @@ import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import { AuthOAuthSection } from "@/components/auth/auth-provider-options";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { sanitizeNextPath } from "@/lib/auth/routes";
+import { loadInviteGroupNameForAuthNext } from "@/lib/invites/auth-invite-context";
 
 export default async function SignUpPage({
   searchParams,
@@ -15,11 +16,19 @@ export default async function SignUpPage({
   const next = sanitizeNextPath(
     typeof params.next === "string" ? params.next : undefined,
   );
+  const inviteGroupName =
+    next !== "/dashboard" ? await loadInviteGroupNameForAuthNext(next) : null;
+  const title = inviteGroupName
+    ? `Create account to join ${inviteGroupName}`
+    : "Create your account";
+  const description = inviteGroupName
+    ? `We'll set up your Hui account so you can join ${inviteGroupName}. If we need to verify your email, we'll send you a link — check your inbox before signing in.`
+    : "We'll set up your Hui account. If we need to verify your email, we'll send you a link — check your inbox before signing in.";
 
   return (
     <AuthShell
-      title="Create your account"
-      description="Create your account to continue. If this project requires email confirmation, we will email you a link before your first sign-in."
+      title={title}
+      description={description}
       footer={
         <>
           Already have an account?{" "}

@@ -4,6 +4,8 @@ import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
+import { pinGroupToMinimumAttendeesConsensus } from "@/db/pin-group-consensus-for-tests";
+
 const HARNESS_SQL = `
 create schema if not exists auth;
 
@@ -114,6 +116,7 @@ async function createGroup(database: PGlite, people: Ids, name: string) {
      values ($1, $2, 'member')`,
     [groupId, people.member],
   );
+  await pinGroupToMinimumAttendeesConsensus(database, groupId);
   return groupId;
 }
 

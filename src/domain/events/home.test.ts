@@ -39,10 +39,10 @@ describe("classifyHomeEvent", () => {
     expect(classifyHomeEvent(facts({ hasCandidate: false }), NOW).bucket).toBe("planning");
   });
 
-  it("surfaces a pending hosting proposal", () => {
+  it("keeps hosting proposals out of the attention bucket after the viewer has answered", () => {
     expect(
       classifyHomeEvent(facts({ viewerResponse: "available", hasPendingHostProposal: true }), NOW),
-    ).toEqual({ bucket: "attention", attention: "host" });
+    ).toEqual({ bucket: "planning", attention: null });
   });
 
   it("prefers the attendance response over hosting when both are open", () => {
@@ -56,13 +56,13 @@ describe("classifyHomeEvent", () => {
     });
   });
 
-  it("surfaces hosting requests on confirmed gatherings", () => {
+  it("does not surface hosting in the attention queue (gentle prompt on the hui page)", () => {
     expect(
       classifyHomeEvent(
         facts({ status: "confirmed", viewerResponse: "available", hasPendingHostProposal: true }),
         NOW,
       ).attention,
-    ).toBe("host");
+    ).toBeNull();
   });
 
   it("surfaces confirm when a proposer can lock a passing time", () => {
