@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   INSTALL_DISMISS_COOLDOWN_DAYS,
+  detectInAppBrowser,
   detectInstallPlatform,
+  inAppBrowserInstallBanner,
   installInstructionsFor,
   isInstallDismissed,
   resolveInstallAvailability,
@@ -22,6 +24,22 @@ const SAFARI_MAC =
 
 const NOW = Date.UTC(2026, 9, 5);
 const DAY = 24 * 60 * 60 * 1000;
+
+describe("detectInAppBrowser", () => {
+  it("detects common in-app webviews", () => {
+    expect(detectInAppBrowser(IPHONE)).toBe(false);
+    expect(detectInAppBrowser("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) FBAN/FBIOS")).toBe(
+      true,
+    );
+    expect(detectInAppBrowser("Instagram 123.0.0.0.0 (iPhone; iOS 17_0)")).toBe(true);
+    expect(detectInAppBrowser("Mozilla/5.0 Line/12.0.0")).toBe(true);
+  });
+
+  it("uses Safari or Chrome wording in the banner", () => {
+    expect(inAppBrowserInstallBanner("ios").title).toContain("Safari");
+    expect(inAppBrowserInstallBanner("android").title).toContain("Chrome");
+  });
+});
 
 describe("detectInstallPlatform", () => {
   it("recognises the main platforms", () => {

@@ -20,6 +20,58 @@ export const INSTALL_DISMISS_COOLDOWN_DAYS = 30;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Social / messenger in-app browsers cannot install PWAs; user must open in Safari or Chrome. */
+export function detectInAppBrowser(userAgent: string): boolean {
+  const ua = userAgent || "";
+  return (
+    /FBAN|FBAV/i.test(ua) ||
+    /Instagram/i.test(ua) ||
+    /\bLine\//i.test(ua) ||
+    /Messenger/i.test(ua) ||
+    /Twitter/i.test(ua) ||
+    /LinkedInApp/i.test(ua) ||
+    /Snapchat/i.test(ua) ||
+    /Pinterest/i.test(ua) ||
+    /MicroMessenger/i.test(ua) ||
+    /; wv\)/i.test(ua)
+  );
+}
+
+export type InAppBrowserInstallBanner = {
+  title: string;
+  steps: string[];
+};
+
+export function inAppBrowserInstallBanner(platform: InstallPlatform): InAppBrowserInstallBanner {
+  if (platform === "ios") {
+    return {
+      title: "Open in Safari to install Hui",
+      steps: [
+        "Tap the menu (\u22ef) in the top or bottom corner.",
+        "Choose \u201cOpen in browser\u201d or \u201cOpen in Safari\u201d.",
+        "Then add Hui to your home screen from Safari.",
+      ],
+    };
+  }
+  if (platform === "android") {
+    return {
+      title: "Open in Chrome to install Hui",
+      steps: [
+        "Tap the menu (\u22ef) in the top corner.",
+        "Choose \u201cOpen in browser\u201d or \u201cOpen in Chrome\u201d.",
+        "Then install Hui from Chrome\u2019s menu.",
+      ],
+    };
+  }
+  return {
+    title: "Open in your browser to install Hui",
+    steps: [
+      "Use your browser\u2019s menu (\u22ef) and open this page in Safari, Chrome, or Edge.",
+      "Install is not available inside in-app browsers.",
+    ],
+  };
+}
+
 export function detectInstallPlatform(userAgent: string, maxTouchPoints = 0): InstallPlatform {
   const ua = userAgent || "";
   // iPadOS 13+ reports as Macintosh; touch points distinguish it from a real Mac.

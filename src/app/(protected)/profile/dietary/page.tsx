@@ -14,7 +14,7 @@ export default async function ProfileDietaryPage() {
   const supabase = await getServerSupabase();
   const membershipGroups = await listActiveMembershipGroups(supabase, user.id);
   const [dietaryEntries, dietaryGroups] = await Promise.all([
-    listUserDietaryEntries(supabase),
+    listUserDietaryEntries(supabase, user.id),
     listUserGroupsForDietary(supabase, user.id, membershipGroups),
   ]);
 

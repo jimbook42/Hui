@@ -333,4 +333,46 @@ describe("dietary privacy (HUI-019)", () => {
     await asUser(db, leaver);
     expect(await canSeeEntry(db, entryId)).toBe(true);
   });
+
+  it("profile dietary query must filter by owner so co-member shares are not listed as your own", async () => {
+    await asUser(db, ids.owner);
+    const ownerEntry = await db.query<{ id: string }>(
+      `insert into public.dietary_entries (user_id, category, label)
+       values ($1, 'allergy', 'Shellfish')
+       returning id`,
+      [ids.owner],
+    );
+    const ownerEntryId = ownerEntry.rows[0].id;
+    await db.query(
+      `insert into public.dietary_entry_shares (dietary_entry_id, group_id) values ($1, $2)`,
+      [ownerEntryId, groupA],
+    );
+
+    await asUser(db, ids.member);
+    const memberEntry = await db.query<{ id: string }>(
+      `insert into public.dietary_entries (user_id, category, label)
+       values ($1, 'preference', 'Vegetarian')
+       returning id`,
+      [ids.member],
+    );
+    const memberEntryId = memberEntry.rows[0].id;
+
+    const visibleToMember = await db.query<{ id: string }>(
+      `select id from public.dietary_entries order by label`,
+    );
+    const visibleIds = visibleToMember.rows.map((row) => row.id);
+    expect(visibleIds).toContain(ownerEntryId);
+
+    const ownEntry = await db.query<{ id: string }>(
+      `select id from public.dietary_entries where user_id = $1 and id = $2`,
+      [ids.member, memberEntryId],
+    );
+    expect(ownEntry.rows).toHaveLength(1);
+
+    const coMemberAsOwn = await db.query<{ id: string }>(
+      `select id from public.dietary_entries where user_id = $1 and id = $2`,
+      [ids.member, ownerEntryId],
+    );
+    expect(coMemberAsOwn.rows).toEqual([]);
+  });
 });
