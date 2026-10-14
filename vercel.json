@@ -8,5 +8,13 @@
       "path": "/api/internal/planning-cycle/cron",
       "schedule": "30 8 * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "qa/*": true,
+      "*": false,
+      "**": false
+    }
+  }
 }
