@@ -241,7 +241,7 @@ Do not treat these as completing the larger GDD capabilities listed in later sec
 
 ### Phase 8 — Calendar export
 
-- [ ] Outbound ICS for confirmed events; optional protected ICS feed
+- [x] Outbound ICS download for confirmed events (per-event `.ics`, v0.14.0); optional protected ICS feed still open
 - [ ] Explicitly **out of MVP:** calendar import/sync
 
 ### Phase 9 — Memories / history
@@ -439,7 +439,7 @@ The original GDD capabilities remain separately tracked: HUI-025 persistent avai
 | Contribution categories, standing rules, event assign/claim/reassign, history | [~] HUI-018 foundation only |
 | Dietary information (privacy tiers) | [x] HUI-019 |
 | Event confirmation | [x] finalise_event |
-| Outbound ICS | [ ] HUI-029 |
+| Outbound ICS (per-event download) | [x] HUI-029 partial (v0.14.0) |
 | Web Push + email + in-app actionable notifications | [~] in-app HUI-021 + Web Push HUI-023; email still open |
 | Reminders (planning, deadline, event) | [ ] |
 | Event completion + memories/history | [ ] HUI-029 |
