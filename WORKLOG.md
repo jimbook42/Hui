@@ -2,6 +2,10 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-14 — First-timer UX, part B (0.16.0, HUI-UX2)
+
+- Fortnightly cadence preset; plainer propose/setup copy; food on time step (skippable); group settings Advanced collapse; post-create `/groups/:id/welcome` with Invite friends (share + copy fallback); YOUR ANSWER private No note across multi-time proposing.
+
 ## 2026-10-14 — PR #37 QA fixes (0.15.0)
 
 - Confirmed hero: rule-based line (e.g. “Confirmed by majority”) plus live coming/pending tallies; no count snapshot.
