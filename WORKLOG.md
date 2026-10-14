@@ -4,7 +4,7 @@ Lightweight record of completed tickets. One entry per ticket.
 
 ## 2026-10-14 — First-timer UX, part C (0.16.1, HUI-UX3)
 
-- Two-step group invite (intro sheet → Get link → share/copy); plain propose frequency step; respond Saved toasts, multi-time summaries, skip empty place step; invite lists all proposed times; auto-join to respond; dashboard Your huis for invitees; labels/tallies/jargon polish.
+- Two-step group invite (intro sheet → Get link → share/copy); plain propose frequency step; respond Saved toasts, multi-time summaries, skip empty place step; invite lists all proposed times; auto-join to respond; dashboard Your hui for invitees; labels/tallies/jargon polish.
 
 ## 2026-10-14 — First-timer UX, part B (0.16.0, HUI-UX2)
 

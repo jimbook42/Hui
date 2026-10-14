@@ -29,7 +29,7 @@ export type PerCandidateWhoIsComingRow = {
 };
 
 /**
- * Before confirmation, multi-time huis show tallies per proposed time; otherwise one focus roster.
+ * Before confirmation, multi-time hui show tallies per proposed time; otherwise one focus roster.
  */
 export function whoIsComingPresentation(input: {
   eventStatus: EventStatus;

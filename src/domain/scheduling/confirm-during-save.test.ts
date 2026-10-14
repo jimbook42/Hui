@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  confirmedDuringSaveCheckAnswerToast,
   confirmedDuringSaveToast,
   isSchedulingClosedDbError,
+  resolveConfirmRaceAfterFailedSave,
+  shouldRetryAvailabilitySaveAfterConfirmRace,
 } from "./confirm-during-save";
 
 describe("confirm-during-save recovery copy", () => {
@@ -21,5 +24,62 @@ describe("confirm-during-save recovery copy", () => {
     );
     expect(toast).toContain("just confirmed");
     expect(toast).toMatch(/saved/i);
+  });
+
+  it("only retries when the answer targeted the selected candidate", () => {
+    expect(
+      shouldRetryAvailabilitySaveAfterConfirmRace("a", "b"),
+    ).toBe(false);
+    expect(
+      shouldRetryAvailabilitySaveAfterConfirmRace("a", "a"),
+    ).toBe(true);
+    expect(shouldRetryAvailabilitySaveAfterConfirmRace("a", null)).toBe(
+      false,
+    );
+  });
+
+  it("returns check-answer copy when save was for a different proposed time", () => {
+    const selected = {
+      id: "tue",
+      startsAt: "2026-11-10T18:00:00.000Z",
+      endsAt: null,
+    };
+    const state = resolveConfirmRaceAfterFailedSave({
+      originalCandidateId: "thu",
+      selected,
+      timeZone: "Pacific/Auckland",
+      retrySucceeded: false,
+    });
+    expect(state.message).toBeUndefined();
+    expect(state.notice).toBe(
+      confirmedDuringSaveCheckAnswerToast(
+        selected.startsAt,
+        selected.endsAt,
+        "Pacific/Auckland",
+      ),
+    );
+    expect(state.notice).toMatch(/check your answer/i);
+  });
+
+  it("returns saved message when retry on selected candidate succeeds", () => {
+    const selected = {
+      id: "tue",
+      startsAt: "2026-11-10T18:00:00.000Z",
+      endsAt: null,
+    };
+    const state = resolveConfirmRaceAfterFailedSave({
+      originalCandidateId: "tue",
+      selected,
+      timeZone: "Pacific/Auckland",
+      retrySucceeded: true,
+    });
+    expect(state.message).toBe("Response saved.");
+    expect(state.notice).toBe(
+      confirmedDuringSaveToast(
+        selected.startsAt,
+        selected.endsAt,
+        "Pacific/Auckland",
+      ),
+    );
   });
 });

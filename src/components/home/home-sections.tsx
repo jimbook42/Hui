@@ -138,7 +138,7 @@ export async function DashboardEvents() {
         <section aria-labelledby="upcoming-hui" className="hui-rise-2">
           <SectionHeader
             id="upcoming-hui"
-            title="Your huis"
+            title="Your hui"
             description="Open a hui to see times and add your answer."
           />
           <div className="mt-4 space-y-4">

@@ -28,8 +28,9 @@ import { getEventSchedulingContext } from "@/lib/scheduling/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 import {
-  confirmedDuringSaveToast,
   isSchedulingClosedDbError,
+  resolveConfirmRaceAfterFailedSave,
+  shouldRetryAvailabilitySaveAfterConfirmRace,
 } from "@/domain/scheduling/confirm-during-save";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { createClient } from "@/lib/supabase/server";
@@ -86,61 +87,39 @@ async function recoverAvailabilityAfterConfirmRace(
     .eq("status", "selected")
     .maybeSingle();
 
-  const tryIds = [input.originalCandidateId];
-  if (selected?.id && !tryIds.includes(selected.id)) {
-    tryIds.push(selected.id);
-  }
+  const selectedPayload =
+    selected?.id && selected.starts_at
+      ? {
+          id: selected.id,
+          startsAt: selected.starts_at,
+          endsAt: selected.ends_at,
+        }
+      : null;
 
-  for (const candidateId of tryIds) {
+  let retrySucceeded = false;
+  if (
+    selectedPayload &&
+    shouldRetryAvailabilitySaveAfterConfirmRace(
+      input.originalCandidateId,
+      selectedPayload.id,
+    )
+  ) {
     const { error } = await upsertMemberAvailability(supabase, {
-      candidateId,
+      candidateId: input.originalCandidateId,
       userId: input.userId,
       dbResponse: input.dbResponse,
       hasNoteField: input.hasNoteField,
       privateNote: input.privateNote,
     });
-    if (!error) {
-      const startsAt = selected?.starts_at ?? detailAfter.startsAt;
-      const endsAt = selected?.ends_at ?? detailAfter.endsAt;
-      const notice =
-        startsAt
-          ? confirmedDuringSaveToast(startsAt, endsAt, input.timeZone)
-          : "This hui was just confirmed — your answer for that time is saved.";
-      return { message: "Response saved.", notice };
-    }
+    retrySucceeded = !error;
   }
 
-  if (selected?.id) {
-    const { data: existing } = await supabase
-      .from("event_responses")
-      .select("response")
-      .eq("candidate_id", selected.id)
-      .eq("user_id", input.userId)
-      .maybeSingle();
-    if (existing?.response) {
-      const notice = confirmedDuringSaveToast(
-        selected.starts_at,
-        selected.ends_at,
-        input.timeZone,
-      );
-      return { message: "Response saved.", notice };
-    }
-  }
-
-  const startsAt = selected?.starts_at ?? detailAfter.startsAt;
-  if (startsAt) {
-    return {
-      notice: confirmedDuringSaveToast(
-        startsAt,
-        selected?.ends_at ?? detailAfter.endsAt,
-        input.timeZone,
-      ),
-    };
-  }
-
-  return {
-    notice: "This hui was just confirmed — your answer for that time is saved.",
-  };
+  return resolveConfirmRaceAfterFailedSave({
+    originalCandidateId: input.originalCandidateId,
+    selected: selectedPayload,
+    timeZone: input.timeZone,
+    retrySucceeded,
+  });
 }
 
 async function requireUser() {
