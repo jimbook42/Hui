@@ -25,7 +25,7 @@ import {
   TransferOwnershipForm,
 } from "@/components/groups/member-actions";
 import { GroupHostHistorySection } from "@/components/hosts/group-host-history";
-import { GroupInviteHeroButton } from "@/components/groups/group-invite-hero-button";
+import { GroupInviteShareBlock } from "@/components/groups/group-invite-share-block";
 import { GroupMembersRosterSheet } from "@/components/groups/group-members-roster-sheet";
 import { DisclosureCard } from "@/components/hui/disclosure-card";
 import { HuiLinkButton } from "@/components/hui/hui-button";
@@ -171,12 +171,13 @@ export default async function GroupDetailPage({ params }: PageProps) {
               memberCount={memberCount}
             />
           </div>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap items-start gap-3">
             {inviteToken ? (
-              <GroupInviteHeroButton
+              <GroupInviteShareBlock
                 groupName={detail.name}
                 inviteToken={inviteToken}
                 appOrigin={appOrigin}
+                variant="onPrimary"
               />
             ) : null}
             {viewerCanPropose ? (
