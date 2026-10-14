@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { EventProposalDraft } from "@/domain/events/proposal";
-import { deriveMeetFrequencyFromDraft } from "./proposal-draft-meet-frequency";
+import {
+  applyMeetFrequencyToDraft,
+  deriveMeetFrequencyFromDraft,
+} from "./proposal-draft-meet-frequency";
 
 const baseDraft = (): EventProposalDraft => ({
   title: "",
@@ -45,5 +48,18 @@ describe("deriveMeetFrequencyFromDraft", () => {
         isFirstGroupEvent: true,
       }),
     ).toBe("fortnightly");
+  });
+
+  it("persists once vs recurring cadence on the draft", () => {
+    const recurring = applyMeetFrequencyToDraft(baseDraft(), "fortnightly", {
+      groupName: "Book club",
+    });
+    expect(recurring.eventKind).toBe("recurring");
+    expect(recurring.recurrence?.intervalUnit).toBe("week");
+    expect(recurring.recurrence?.intervalCount).toBe(2);
+
+    const once = applyMeetFrequencyToDraft(recurring, "once", { groupName: "Book club" });
+    expect(once.eventKind).toBe("one_off");
+    expect(once.recurrence).toBeNull();
   });
 });

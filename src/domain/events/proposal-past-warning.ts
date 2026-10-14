@@ -60,9 +60,7 @@ export function buildProposingPastDateWarning(input: {
 
   if (nominalDate && isProposalDateBeforeToday(nominalDate, input.todayDateOnly)) {
     const autoCancel = formatStaleProposalAutoCancelClause(nominalDate, input.todayDateOnly);
-    lines.push(
-      `The planning date would be in the past. If this hui stays unconfirmed, ${autoCancel}`,
-    );
+    lines.push(`The planning date would be in the past — ${autoCancel}`);
   } else if (nominalDate) {
     lines.push(
       `Unconfirmed proposals with a planning date in the past are auto-cancelled ${STALE_PROPOSAL_GRACE_DAYS} days after that date.`,

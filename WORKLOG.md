@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-15 — HUI-030-fix6 propose draft restore + frequency sync (v0.18.0)
+
+- Restore propose step-1 draft from sessionStorage after client mount (SSR-safe); gate persistence until restore completes.
+- Sync `meetFrequency` into `eventKind`/recurrence on pick and on restore; dedupe past-date warning copy.
+
 ## 2026-10-15 — HUI-030-fix5 propose draft + past-date warnings (v0.18.0)
 
 - Past-date banner on propose time + review; stale auto-cancel copy omits past calendar dates.

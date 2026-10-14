@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 
 import type { EventActionState } from "@/app/events/actions";
 import { proposeGroupEventAction } from "@/app/events/proposal-actions";
@@ -24,18 +24,16 @@ import {
 } from "@/domain/events/proposal-defaults";
 import { isProposalDateBeforeToday } from "@/domain/events/proposal-past-time";
 import { buildProposingPastDateWarning } from "@/domain/events/proposal-past-warning";
+import { applyMeetFrequencyToDraft } from "@/domain/events/proposal-draft-meet-frequency";
+import { resolveProposalFlowStateFromClient } from "@/domain/events/proposal-draft-restore";
 import {
   clearStoredProposalDraft,
-  deriveMeetFrequencyFromDraft,
-  readStoredProposalCadence,
-  readStoredProposalDraft,
   type StoredMeetFrequency,
   writeStoredProposalCadence,
   writeStoredProposalDraft,
 } from "@/domain/events/proposal-draft-storage";
 import { ProposalPastDateWarning } from "@/components/events/proposal-past-date-warning";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
-import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nominal";
 import { FIRST_GROUP_CADENCE_PRESETS } from "@/domain/recurrence/cadence-presets";
 import {
   formatCadenceLabel,
@@ -113,32 +111,10 @@ export function CreateEventProposalFlow({
     () => initialCandidateDateFromDraft(initialDraft, planningCycle),
     [initialDraft, planningCycle],
   );
-  const [step, setStep] = useState<Step>(() => readStoredProposalDraft(groupId)?.step ?? "name");
-  const [draft, setDraft] = useState<EventProposalDraft>(() => {
-    const storedDraft = readStoredProposalDraft(groupId);
-    if (storedDraft?.draft) {
-      return storedDraft.draft;
-    }
-    const stored = isFirstGroupEvent ? readStoredProposalCadence(groupId) : null;
-    if (!stored || groupHasEstablishedRecurrence(settings)) {
-      return initialDraft;
-    }
-    const nominal = firstGroupCycleNominalDate(
-      { intervalUnit: stored.intervalUnit, intervalCount: stored.intervalCount },
-      todayDateOnly,
-    );
-    return {
-      ...initialDraft,
-      eventKind: "recurring",
-      recurrence: {
-        seriesTitle: initialDraft.recurrence?.seriesTitle ?? "",
-        intervalUnit: stored.intervalUnit,
-        intervalCount: stored.intervalCount,
-        startsOn: nominal,
-        planningTargetDate: nominal,
-      },
-    };
-  });
+  const [step, setStep] = useState<Step>("name");
+  const [draft, setDraft] = useState<EventProposalDraft>(initialDraft);
+  const [draftRestoredFromClient, setDraftRestoredFromClient] = useState(false);
+  const restoreAppliedRef = useRef(false);
 
   useEffect(() => {
     if (
@@ -164,9 +140,7 @@ export function CreateEventProposalFlow({
   ]);
 
   const [stepError, setStepError] = useState<string | null>(null);
-  const [timeDate, setTimeDate] = useState(
-    () => readStoredProposalDraft(groupId)?.timeDate ?? initialDate,
-  );
+  const [timeDate, setTimeDate] = useState(initialDate);
 
   function dateOnlyFromIso(iso: string, zone: string): string {
     return new Intl.DateTimeFormat("en-CA", {
@@ -177,28 +151,46 @@ export function CreateEventProposalFlow({
     }).format(new Date(iso));
   }
 
-  const [timeStart, setTimeStart] = useState(
-    () => readStoredProposalDraft(groupId)?.timeStart ?? "12:00",
-  );
+  const [timeStart, setTimeStart] = useState("12:00");
   // The end time is optional: an empty value means "start only".
-  const [timeEnd, setTimeEnd] = useState(() => readStoredProposalDraft(groupId)?.timeEnd ?? "");
+  const [timeEnd, setTimeEnd] = useState("");
 
   const establishedRecurrence = groupHasEstablishedRecurrence(settings);
-  const [meetFrequency, setMeetFrequency] = useState<StoredMeetFrequency>(() => {
-    const storedDraft = readStoredProposalDraft(groupId);
-    if (storedDraft?.meetFrequency !== undefined) {
-      return storedDraft.meetFrequency;
-    }
-    if (storedDraft?.draft) {
-      return deriveMeetFrequencyFromDraft(storedDraft.draft, {
-        establishedRecurrence: groupHasEstablishedRecurrence(settings),
-        isFirstGroupEvent,
-      });
-    }
-    return null;
-  });
+  const [meetFrequency, setMeetFrequency] = useState<StoredMeetFrequency>(null);
 
   useEffect(() => {
+    if (restoreAppliedRef.current) {
+      return;
+    }
+    restoreAppliedRef.current = true;
+    const resolved = resolveProposalFlowStateFromClient({
+      groupId,
+      settings,
+      groupName,
+      planningCycle,
+      isFirstGroupEvent,
+      todayDateOnly,
+    });
+    setStep(resolved.step);
+    setDraft(resolved.draft);
+    setTimeDate(resolved.timeDate);
+    setTimeStart(resolved.timeStart);
+    setTimeEnd(resolved.timeEnd);
+    setMeetFrequency(resolved.meetFrequency);
+    setDraftRestoredFromClient(true);
+  }, [
+    groupId,
+    settings,
+    groupName,
+    planningCycle,
+    isFirstGroupEvent,
+    todayDateOnly,
+  ]);
+
+  useEffect(() => {
+    if (!draftRestoredFromClient) {
+      return;
+    }
     writeStoredProposalDraft(groupId, {
       step,
       draft,
@@ -207,7 +199,21 @@ export function CreateEventProposalFlow({
       timeEnd,
       meetFrequency,
     });
-  }, [groupId, step, draft, timeDate, timeStart, timeEnd, meetFrequency]);
+  }, [
+    groupId,
+    step,
+    draft,
+    timeDate,
+    timeStart,
+    timeEnd,
+    meetFrequency,
+    draftRestoredFromClient,
+  ]);
+
+  function selectMeetFrequency(next: StoredMeetFrequency) {
+    setMeetFrequency(next);
+    setDraft((current) => applyMeetFrequencyToDraft(current, next, { groupName }));
+  }
 
   const [actionState, formAction] = useActionState(
     proposeGroupEventAction,
@@ -255,7 +261,6 @@ export function CreateEventProposalFlow({
             setStepError("This group only allows recurring gatherings.");
             return;
           }
-          setDraft((current) => ({ ...current, eventKind: "one_off" }));
         } else {
           if (!canRecurring) {
             setStepError("This group only allows one-off gatherings.");
@@ -266,26 +271,10 @@ export function CreateEventProposalFlow({
             setStepError("Choose how often this group meets.");
             return;
           }
-          setDraft((current) => ({
-            ...current,
-            eventKind: "recurring",
-            recurrence: {
-              ...(current.recurrence ?? {
-                seriesTitle: "",
-                intervalUnit: "month",
-                intervalCount: 1,
-                startsOn: "",
-                planningTargetDate: null,
-              }),
-              intervalUnit: preset.intervalUnit,
-              intervalCount: preset.intervalCount,
-              seriesTitle:
-                current.title.trim() ||
-                current.recurrence?.seriesTitle?.trim() ||
-                `${groupName} gatherings`,
-            },
-          }));
         }
+        setDraft((current) =>
+          applyMeetFrequencyToDraft(current, meetFrequency, { groupName }),
+        );
       }
       if (draft.eventKind === "recurring" && draft.recurrence?.planningTargetDate) {
         setTimeDate(draft.recurrence.planningTargetDate);
@@ -586,7 +575,7 @@ export function CreateEventProposalFlow({
                       name="meet_frequency"
                       className="sr-only"
                       checked={meetFrequency === "once"}
-                      onChange={() => setMeetFrequency("once")}
+                      onChange={() => selectMeetFrequency("once")}
                     />
                     Just this once
                   </label>
@@ -607,7 +596,7 @@ export function CreateEventProposalFlow({
                           name="meet_frequency"
                           className="sr-only"
                           checked={meetFrequency === preset.id}
-                          onChange={() => setMeetFrequency(preset.id)}
+                          onChange={() => selectMeetFrequency(preset.id)}
                         />
                         {preset.label}
                       </label>
