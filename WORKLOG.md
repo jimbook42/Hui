@@ -5,9 +5,10 @@ Lightweight record of completed tickets. One entry per ticket.
 ## 2026-10-14 — PR #37 QA fixes (0.15.0)
 
 - Confirmed hero: rule-based line (e.g. “Confirmed by majority”) plus live coming/pending tallies; no count snapshot.
-- Majority rule: minimum two yes votes (migration `20261014140003`, domain + PGlite tests).
-- Group page: hero Invite (share sheet) and tappable member roster sheet.
-- Event QA: confirmed-candidate answer card, per-time tallies while proposing, optional No note on multi-time respond.
+- Majority rule: minimum two yes votes (`20261014140003`); majority counts yes-only per candidate (`20261014140004`).
+- Member invite link RPC for all active members (`20261014140005`); hero Invite uses share/copy.
+- Group page: tappable member roster sheet.
+- Event QA: confirmed-candidate answer, per-time tallies, No note persist + respond UX; hide relative hero chip on confirmed (hydration).
 
 ## 2026-10-14 — First-timer UX, part A (0.15.0, HUI-UX1)
 
