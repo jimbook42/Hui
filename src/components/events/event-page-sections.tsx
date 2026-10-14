@@ -191,7 +191,7 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
           }
           answerSummaryLabel={data.multiTimeAnswerPresentation?.summaryLabel ?? null}
           showPlaceFollowUp={data.multiTimeAnswerPresentation?.showPlaceFollowUp ?? true}
-          serverPrivateNote={data.primaryCandidate.viewerPrivateNote}
+          serverPrivateNote={data.viewerPrivateNote}
           maybeResponsesEnabled={data.scheduling.maybeResponsesEnabled}
           confirmed={confirmed}
           hasContribution={viewerReleasableContributions > 0}

@@ -21,5 +21,30 @@ describe("event hero dates", () => {
     expect(copy?.longDay).toContain("October");
     expect(copy?.timeSpan.length).toBeGreaterThan(3);
     expect(copy?.showRelativeWhen).toBe(true);
+    expect(copy?.relativeWhenLabel).toBeTruthy();
+  });
+
+  it("omits relative chip copy for confirmed-style heroes", () => {
+    const now = new Date("2026-10-14T12:00:00.000Z");
+    const copy = buildEventHeroDateCopy({
+      startsAt: "2026-10-19T12:00:00.000Z",
+      endsAt: null,
+      timeZone: TZ,
+      showRelativeWhen: false,
+      referenceNow: now,
+    });
+    expect(copy?.relativeWhenLabel).toBeNull();
+  });
+
+  it("pins relative chip to referenceNow for proposing heroes", () => {
+    const now = new Date("2026-10-14T12:00:00.000Z");
+    const copy = buildEventHeroDateCopy({
+      startsAt: "2026-10-16T05:30:00.000Z",
+      endsAt: null,
+      timeZone: TZ,
+      showRelativeWhen: true,
+      referenceNow: now,
+    });
+    expect(copy?.relativeWhenLabel).toBe("Tomorrow");
   });
 });

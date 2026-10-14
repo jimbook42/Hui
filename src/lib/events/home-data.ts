@@ -10,6 +10,7 @@ import {
   type HomeAttention,
   type HomeBucket,
 } from "@/domain/events/home";
+import { relativeDayLabel } from "@/domain/datetime/display";
 import {
   isProposingEventStale,
   resolveProposalNominalDate,
@@ -72,6 +73,8 @@ export type HomeEvent = {
   contributionsOpen: number | null;
   /** Proposing hui whose nominal date is before today in the group timezone. */
   proposalDatePassed: boolean;
+  /** Server-preformatted relative chip for list cards (null when not shown). */
+  relativeDayChip: string | null;
 };
 
 export type ProposableGroup = { id: string; name: string };
@@ -491,6 +494,10 @@ export async function loadHomeData(
       hostName: hostNameByEvent.get(row.id) ?? null,
       contributionsOpen,
       proposalDatePassed,
+      relativeDayChip:
+        startsAt && bucket !== "past"
+          ? relativeDayLabel(startsAt, timeZone, now)
+          : null,
     };
   });
 

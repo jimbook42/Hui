@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import { acceptHostProposalAction } from "@/app/hosts/actions";
 import { AcceptHostWithPlaceForm } from "@/components/hosts/accept-host-with-place-form";
@@ -35,7 +35,11 @@ export function EventHostGentlePrompt({
   eventCoordinates,
   viewerHomeLocation,
 }: EventHostGentlePromptProps) {
-  const [hidden] = useState(() => isHostPromptDeferred(eventId));
+  const hidden = useSyncExternalStore(
+    () => () => undefined,
+    () => isHostPromptDeferred(eventId),
+    () => false,
+  );
 
   if (!hostingEnabled || hidden || !suggestedHostName) {
     return null;

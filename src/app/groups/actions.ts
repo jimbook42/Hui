@@ -53,7 +53,7 @@ export async function createGroupAction(
 
   const groupId = data as string;
   revalidatePath("/groups");
-  redirect(`/groups/${groupId}/events/new`);
+  redirect(`/groups/${groupId}/welcome`);
 }
 
 /** Creates a group for the multi-step setup wizard without leaving the flow. */
@@ -75,7 +75,7 @@ export async function createGroupSetupAction(
 
   const groupId = data as string;
   revalidatePath("/groups");
-  redirect(`/groups/${groupId}/events/new`);
+  redirect(`/groups/${groupId}/welcome`);
 }
 
 export async function updateGroupNameAction(

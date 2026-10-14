@@ -10,6 +10,8 @@ type SuggestedTimesListProps = {
   timeZone: string;
   selectedKeys: Set<string>;
   onSelect: (suggestion: TimeRecommendation) => void;
+  /** When the user already added times manually, hide the empty-state message. */
+  hideEmptyState?: boolean;
   className?: string;
 };
 
@@ -22,9 +24,13 @@ export function SuggestedTimesList({
   timeZone,
   selectedKeys,
   onSelect,
+  hideEmptyState = false,
   className,
 }: SuggestedTimesListProps) {
   if (suggestions.length === 0) {
+    if (hideEmptyState) {
+      return null;
+    }
     return (
       <p className={cn("hui-message-note", className)} role="status">
         No suggested times yet. Add a few times that could work for the group and we&apos;ll help

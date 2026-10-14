@@ -1,4 +1,4 @@
-import { formatLongDay, formatTimeSpan } from "@/domain/datetime/display";
+import { formatLongDay, formatTimeSpan, relativeDayLabel } from "@/domain/datetime/display";
 
 export type EventDateBadgeParts = {
   day: string;
@@ -12,6 +12,8 @@ export type EventHeroDateCopy = {
   longDay: string;
   timeSpan: string;
   showRelativeWhen: boolean;
+  /** Pre-rendered on the server when `showRelativeWhen` (avoids client Date drift / #418). */
+  relativeWhenLabel: string | null;
 };
 
 export function formatEventDateBadgeParts(
@@ -48,6 +50,11 @@ export function buildEventHeroDateCopy(input: {
   const badge = formatEventDateBadgeParts(input.startsAt, input.timeZone);
   const longDay = formatLongDay(input.startsAt, input.timeZone);
   const timeSpan = formatTimeSpan(input.startsAt, input.endsAt, input.timeZone);
+  const referenceNow = input.referenceNow ?? new Date();
+  const relativeWhenLabel =
+    input.showRelativeWhen
+      ? relativeDayLabel(input.startsAt, input.timeZone, referenceNow)
+      : null;
   return {
     startsAt: input.startsAt,
     timeZone: input.timeZone,
@@ -55,5 +62,6 @@ export function buildEventHeroDateCopy(input: {
     longDay,
     timeSpan,
     showRelativeWhen: input.showRelativeWhen,
+    relativeWhenLabel,
   };
 }
