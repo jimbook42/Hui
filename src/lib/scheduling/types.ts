@@ -27,6 +27,7 @@ export type CandidateConsensusView = {
   endsAt: string | null;
   passes: boolean;
   acceptedCount: number;
+  yesCount: number;
   maybeCount: number;
   unavailableCount: number;
   noResponseCount: number;

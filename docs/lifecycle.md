@@ -34,7 +34,7 @@ stateDiagram-v2
 
 | Path | Entry | Locking | Side effects |
 | --- | --- | --- | --- |
-| **Manual** | `finalise_event(event_id, candidate_id)` by organiser/admin; optional `p_force` after UI confirm when rules are not met but ≥1 Yes | `FOR UPDATE` on candidate + event; `apply_event_confirmation` | Selected candidate; `event_confirmed` to all active members **except the actor** |
+| **Manual** | `finalise_event(event_id, candidate_id, p_force)` by organiser/admin; `p_force` after UI confirm when rules are not met but ≥1 **Yes** (`yes_count`, not maybe) | `apply_event_confirmation(..., p_force)` shares the same force rules | Selected candidate; `event_confirmed` to all active members **except the actor** |
 | **Auto** | `try_auto_confirm_event` after response insert/update when admin veto off | Same `apply_event_confirmation` | Earliest **proposed** candidate that passes `candidate_consensus`; `event_confirmed` to **every** active member (including whoever triggered auto-confirm) |
 
 **Consensus (majority):** requires **≥2 Yes** on that candidate and strictly more than half of active members (Yes only; Maybe does not count). A **solo organiser’s single Yes does not confirm**.

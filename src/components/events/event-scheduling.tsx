@@ -508,7 +508,7 @@ function CandidateCard({
           canFinalise,
           eventStatus,
           candidate.status,
-          evaluation?.acceptedCount ?? 0,
+          evaluation?.yesCount ?? 0,
           evaluation?.passes ?? false,
         ) ? (
         <FinaliseCandidateButton

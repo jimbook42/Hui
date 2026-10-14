@@ -8,7 +8,15 @@ export type AttendanceCountSummary = ReturnType<typeof countAttendance>;
 export function formatWhoIsComingSummary(
   counts: AttendanceCountSummary,
   maybeResponsesEnabled: boolean,
+  options?: { eventStatus?: EventStatus },
 ): string {
+  if (
+    options?.eventStatus === "confirmed" &&
+    counts.yes === 0 &&
+    (counts.pending > 0 || (counts.maybe === 0 && counts.no === 0))
+  ) {
+    return "Awaiting answers";
+  }
   const parts = [`${counts.yes} coming`];
   if (counts.maybe > 0 && maybeResponsesEnabled) {
     parts.push(`${counts.maybe} maybe`);
@@ -52,7 +60,9 @@ export function whoIsComingPresentation(input: {
       const counts = countAttendance(roster.members, input.maybeResponsesEnabled);
       rows.push({
         candidateId: candidate.id,
-        summary: formatWhoIsComingSummary(counts, input.maybeResponsesEnabled),
+        summary: formatWhoIsComingSummary(counts, input.maybeResponsesEnabled, {
+          eventStatus: input.eventStatus,
+        }),
         roster,
       });
     }
@@ -70,6 +80,7 @@ export function whoIsComingPresentation(input: {
       ? formatWhoIsComingSummary(
           countAttendance(roster.members, input.maybeResponsesEnabled),
           input.maybeResponsesEnabled,
+          { eventStatus: input.eventStatus },
         )
       : null;
   return { mode: "single", roster, summary };

@@ -199,6 +199,7 @@ function readCandidate(value: unknown): CandidateConsensusView {
     endsAt: typeof row.ends_at === "string" && row.ends_at.length > 0 ? row.ends_at : null,
     passes: row.passes === true,
     acceptedCount: readNumber(row.accepted_count),
+    yesCount: readNumber(row.yes_count),
     maybeCount: readNumber(row.maybe_count),
     unavailableCount: readNumber(row.unavailable_count),
     noResponseCount: readNumber(row.no_response_count),

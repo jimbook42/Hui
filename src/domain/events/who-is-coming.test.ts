@@ -56,6 +56,24 @@ describe("whoIsComingPresentation", () => {
     }
   });
 
+  it("shows awaiting answers on confirmed hui when nobody has said yes yet", () => {
+    const result = whoIsComingPresentation({
+      eventStatus: "confirmed",
+      candidates: [
+        { ...candidates[0], status: "selected" },
+      ],
+      attendanceRosters: {
+        c1: rosterFor([null, null, null]),
+      },
+      maybeResponsesEnabled: true,
+      focusCandidateId: "c1",
+    });
+    expect(result.mode).toBe("single");
+    if (result.mode === "single") {
+      expect(result.summary).toBe("Awaiting answers");
+    }
+  });
+
   it("uses a single roster after confirmation", () => {
     const result = whoIsComingPresentation({
       eventStatus: "confirmed",
