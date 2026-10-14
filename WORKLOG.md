@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-15 — HUI-030-fix2 privacy page + auth E2E (v0.18.0)
+
+- Public `/privacy` policy (NZ Privacy Act, delete-your-data section); linked from sign-in footer and profile.
+- Auth E2E aligned with OAuth-first sign-in and `/sign-in/email`; group smoke helper + specs retained.
+
 ## 2026-10-14 — HUI-COORD lifecycle audit (v0.17.0)
 
 - Documented transitions, notifications, and cron in `docs/lifecycle.md`.

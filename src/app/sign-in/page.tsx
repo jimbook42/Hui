@@ -57,11 +57,18 @@ export default async function SignInPage({
       title={title}
       description={description}
       footer={
-        <p className="text-center text-sm text-muted-foreground">
-          <Link href={emailSignInHref} className="font-medium underline-offset-4 hover:underline">
-            Sign in with email
-          </Link>
-        </p>
+        <div className="space-y-2 text-center text-sm text-muted-foreground">
+          <p>
+            <Link href={emailSignInHref} className="font-medium underline-offset-4 hover:underline">
+              Sign in with email
+            </Link>
+          </p>
+          <p>
+            <Link href="/privacy" className="font-medium underline-offset-4 hover:underline">
+              Privacy policy
+            </Link>
+          </p>
+        </div>
       }
     >
       {accountDeleted ? (

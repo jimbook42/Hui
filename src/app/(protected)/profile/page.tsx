@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { signOutAction } from "@/app/auth/actions";
 import { AppShell } from "@/components/app/app-shell";
 import { HuiSurface } from "@/components/hui/hui-surface";
@@ -98,6 +100,11 @@ export default async function ProfilePage() {
               Sign out
             </button>
           </form>
+          <p className="mt-6 text-sm font-semibold text-muted-foreground">
+            <Link href="/privacy" className="hui-link text-foreground">
+              Privacy policy
+            </Link>
+          </p>
         </HuiSurface>
       </div>
     </AppShell>
