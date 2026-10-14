@@ -12,9 +12,12 @@ export function EventRespondSavedToast() {
     if (!shouldShow) {
       return;
     }
-    const url = new URL(window.location.href);
-    url.searchParams.delete("saved");
-    router.replace(url.pathname + url.search + url.hash, { scroll: false });
+    const timeoutId = window.setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("saved");
+      router.replace(url.pathname + url.search + url.hash, { scroll: false });
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [router, shouldShow]);
 
   if (!shouldShow) {

@@ -31,11 +31,35 @@ function readGroupTimeZone(groups: unknown): string | null {
   return typeof timeZone === "string" && timeZone.length > 0 ? timeZone : null;
 }
 
+const NOTIFICATION_KINDS = new Set<string>([
+  "event_proposed",
+  "consensus_ready",
+  "event_confirmed",
+  "event_cancelled",
+  "event_rescheduled",
+  "host_proposed",
+  "host_accepted",
+  "host_declined",
+  "contribution_changed",
+  "reconnect_reminder",
+  "proposal_deadline_reminder",
+  "stale_proposal_passed",
+  "stale_proposal_auto_cancelled",
+  "planning_cycle_opens",
+]);
+
+function normalizeNotificationKind(kind: string): NotificationKind {
+  if (NOTIFICATION_KINDS.has(kind)) {
+    return kind as NotificationKind;
+  }
+  return "event_proposed";
+}
+
 function mapRow(row: NotificationRow): MemberNotification {
   const timeZone = readGroupTimeZone(row.groups);
   return {
     id: row.id,
-    kind: row.kind,
+    kind: normalizeNotificationKind(String(row.kind)),
     title: row.title,
     body: row.body,
     groupId: row.group_id,

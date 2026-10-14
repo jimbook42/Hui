@@ -9,6 +9,7 @@ import {
   hasNoResponsesYet,
   isCandidateOpenForResponses,
   proposalDeadlineGroupNotice,
+  shouldOfferOrganiserConfirm,
   shouldShowFinaliseControl,
 } from "./consensus-display";
 
@@ -84,6 +85,18 @@ describe("consensus display (HUI-017)", () => {
     expect(isCandidateOpenForResponses("confirmed", "proposed")).toBe(false);
     expect(isCandidateOpenForResponses("proposing", "selected")).toBe(false);
     expect(isCandidateOpenForResponses("cancelled", "proposed")).toBe(false);
+  });
+
+  it("offers organiser confirm when at least one yes but consensus not met", () => {
+    expect(
+      shouldOfferOrganiserConfirm(true, "proposing", "proposed", 1, false),
+    ).toBe(true);
+    expect(
+      shouldOfferOrganiserConfirm(true, "proposing", "proposed", 0, false),
+    ).toBe(false);
+    expect(
+      shouldOfferOrganiserConfirm(true, "proposing", "proposed", 2, true),
+    ).toBe(false);
   });
 
   it("shows finalise only for authorised proposing events with passing candidates", () => {

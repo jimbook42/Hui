@@ -43,6 +43,7 @@ export async function getCandidateAttendanceRoster(
         response === "yes" || response === "no" || response === "maybe"
           ? response
           : null,
+      submittedLate: record.submitted_late === true,
     };
   });
 

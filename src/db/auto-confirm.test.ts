@@ -160,11 +160,14 @@ describe("auto-confirm on consensus", () => {
     await db.exec("set role service_role");
     const notifications = await db.query<{ user_id: string }>(
       `select user_id::text from public.member_notifications
-       where event_id = $1 and kind = 'event_confirmed'`,
+       where event_id = $1 and kind = 'event_confirmed'
+       order by user_id`,
       [eventId],
     );
-    expect(notifications.rows).toHaveLength(1);
-    expect(notifications.rows[0]?.user_id).toBe(ids.owner);
+    expect(notifications.rows).toHaveLength(2);
+    expect(notifications.rows.map((row) => row.user_id).sort()).toEqual(
+      [ids.member, ids.owner].sort(),
+    );
   });
 
   it("does not confirm below minimum_attendees", async () => {
@@ -274,12 +277,15 @@ describe("auto-confirm on consensus", () => {
     );
 
     await db.exec("set role service_role");
-    const count = await db.query<{ count: string }>(
-      `select count(*)::text as count from public.member_notifications
-       where event_id = $1 and kind = 'event_confirmed'`,
+    const dupes = await db.query(
+      `select user_id
+       from public.member_notifications
+       where event_id = $1 and kind = 'event_confirmed'
+       group by user_id
+       having count(*) > 1`,
       [eventId],
     );
-    expect(Number(count.rows[0]?.count)).toBe(1);
+    expect(dupes.rows).toHaveLength(0);
   });
 
   it("skips auto-confirm when admin veto is enabled", async () => {

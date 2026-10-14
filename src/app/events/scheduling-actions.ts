@@ -422,9 +422,12 @@ export async function finaliseEventAction(
     return { error: "You cannot confirm this event." };
   }
 
+  const forceConfirm = String(formData.get("force_confirm") ?? "") === "1";
+
   const { error } = await supabase.rpc("finalise_event", {
     p_event_id: eventId,
     p_candidate_id: candidateId,
+    p_force: forceConfirm,
   });
 
   if (error) {

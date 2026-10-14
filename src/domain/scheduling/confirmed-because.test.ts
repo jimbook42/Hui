@@ -29,4 +29,14 @@ describe("formatConfirmedHeroStatusLine", () => {
       }),
     ).toBe("Confirmed by majority · 3 coming · 1 yet to answer");
   });
+
+  it("shows awaiting answers when confirmed but nobody has said yes yet", () => {
+    expect(
+      formatConfirmedHeroStatusLine({
+        consensusRule: "majority_active_members",
+        counts: { yes: 0, maybe: 0, pending: 4, no: 0, total: 4 },
+        maybeResponsesEnabled: true,
+      }),
+    ).toBe("Confirmed by majority · Awaiting answers");
+  });
 });

@@ -170,7 +170,7 @@ describe("event cancel and reopen notifications", () => {
     expect(ownerNote.rows).toHaveLength(0);
   });
 
-  it("notifies attendees only when a confirmed hui is reopened for planning", async () => {
+  it("notifies every active member except the actor when a confirmed hui is reopened for planning", async () => {
     await asUser(db, ids.owner);
     const groupId = (
       await db.query<{ create_group: string }>(`select public.create_group($1) as create_group`, [
@@ -243,6 +243,14 @@ describe("event cancel and reopen notifications", () => {
        where user_id = $1 and event_id = $2 and kind = 'event_rescheduled'`,
       [ids.lurker, eventId],
     );
-    expect(lurker.rows).toHaveLength(0);
+    expect(lurker.rows).toHaveLength(1);
+
+    await asUser(db, ids.owner);
+    const ownerNote = await db.query(
+      `select 1 from public.member_notifications
+       where user_id = $1 and event_id = $2 and kind = 'event_rescheduled'`,
+      [ids.owner, eventId],
+    );
+    expect(ownerNote.rows).toHaveLength(0);
   });
 });

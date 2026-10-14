@@ -21,4 +21,22 @@ describe("attendance roster", () => {
       { label: "Haven't responded", names: ["Chen"] },
     ]);
   });
+
+  it("includes late markers for organisers when requested", () => {
+    const groups = groupAttendanceByResponse(
+      {
+        maybeResponsesEnabled: true,
+        members: [
+          { userId: "1", displayName: "Alex", response: "yes", submittedLate: true },
+          { userId: "2", displayName: "Sam", response: "yes", submittedLate: false },
+        ],
+      },
+      { showLateTags: true },
+    );
+
+    expect(groups[0]?.entries).toEqual([
+      { displayName: "Alex", submittedLate: true },
+      { displayName: "Sam", submittedLate: false },
+    ]);
+  });
 });

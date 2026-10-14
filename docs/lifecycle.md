@@ -34,8 +34,8 @@ stateDiagram-v2
 
 | Path | Entry | Locking | Side effects |
 | --- | --- | --- | --- |
-| **Manual** | `finalise_event(event_id, candidate_id)` by organiser/admin | `FOR UPDATE` on candidate + event; `apply_event_confirmation` | Selected candidate; `event_confirmed` notification (trigger on `events.status`) |
-| **Auto** | `try_auto_confirm_event` after response insert/update when admin veto off | Same `apply_event_confirmation` | Earliest **proposed** candidate that passes `candidate_consensus`; host proposed if none accepted |
+| **Manual** | `finalise_event(event_id, candidate_id)` by organiser/admin; optional `p_force` after UI confirm when rules are not met but ≥1 Yes | `FOR UPDATE` on candidate + event; `apply_event_confirmation` | Selected candidate; `event_confirmed` to all active members **except the actor** |
+| **Auto** | `try_auto_confirm_event` after response insert/update when admin veto off | Same `apply_event_confirmation` | Earliest **proposed** candidate that passes `candidate_consensus`; `event_confirmed` to **every** active member (including whoever triggered auto-confirm) |
 
 **Consensus (majority):** requires **≥2 Yes** on that candidate and strictly more than half of active members (Yes only; Maybe does not count). A **solo organiser’s single Yes does not confirm**.
 
@@ -58,7 +58,7 @@ Nominal date: `planning_target_date` or earliest proposed/selected candidate day
 
 ### Confirmed → proposing (reopen)
 
-`reopen_confirmed_event_for_proposing` — withdraws candidates, deletes responses, resets times, new `response_deadline_at`, `event_rescheduled` (reopen copy) to attendees.
+`reopen_confirmed_event_for_proposing` — withdraws candidates, deletes responses, resets times, new `response_deadline_at`, `event_rescheduled` (reopen copy) to **all active members except the actor**.
 
 ### Confirmed stays confirmed
 
