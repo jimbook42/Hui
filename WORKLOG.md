@@ -2,6 +2,13 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-14 — PR #37 QA fixes (0.15.0)
+
+- Confirmed hero: rule-based line (e.g. “Confirmed by majority”) plus live coming/pending tallies; no count snapshot.
+- Majority rule: minimum two yes votes (migration `20261014140003`, domain + PGlite tests).
+- Group page: hero Invite (share sheet) and tappable member roster sheet.
+- Event QA: confirmed-candidate answer card, per-time tallies while proposing, optional No note on multi-time respond.
+
 ## 2026-10-14 — First-timer UX, part A (0.15.0, HUI-UX1)
 
 - **Defaults:** New groups default `consensus_rule` to `majority_active_members` (migrations `20261014140000` enum, `20261014140001` functions, `20261014140002` column default after release; existing groups unchanged).
