@@ -5,7 +5,7 @@ export function eventStatusLabel(status: EventStatus): string {
     case "draft":
       return "Draft";
     case "proposing":
-      return "Proposing";
+      return "Picking a time";
     case "voting":
       return "Voting";
     case "awaiting_agreement":

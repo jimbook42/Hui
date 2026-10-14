@@ -148,7 +148,8 @@ describe("attendance helpers", () => {
   });
 
   it("labels the viewer's status in Hui vocabulary", () => {
-    expect(viewerStatusLabel("yes")).toBe("You're in");
+    expect(viewerStatusLabel("yes")).toBe("Yes");
+    expect(viewerStatusLabel("yes", { confirmed: true })).toBe("You're in");
     expect(viewerStatusLabel("pending")).toBe("Needs your answer");
   });
 });

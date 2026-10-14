@@ -13,6 +13,9 @@ export function formatWhoIsComingSummary(
   if (counts.maybe > 0 && maybeResponsesEnabled) {
     parts.push(`${counts.maybe} maybe`);
   }
+  if (counts.no > 0) {
+    parts.push(`${counts.no} can't`);
+  }
   if (counts.pending > 0) {
     parts.push(`${counts.pending} yet to answer`);
   }

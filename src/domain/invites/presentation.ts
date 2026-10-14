@@ -1,6 +1,8 @@
 import { gatheringPlanningPhrase, type GatheringContext } from "@/domain/gathering/type";
+import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import { formatDateOnlyDisplay } from "@/domain/recurrence/date-only";
 import { formatShortDay, formatClockTime } from "@/domain/datetime/display";
+import type { InviteProposedTime } from "@/domain/invites/resolve";
 
 export type InvitePlanningPreview = {
   eventId: string;
@@ -8,6 +10,7 @@ export type InvitePlanningPreview = {
   status: string;
   planningTargetDate: string | null;
   proposedStartsAt: string | null;
+  proposedTimes?: InviteProposedTime[];
   gathering: GatheringContext;
 };
 
@@ -19,10 +22,23 @@ export type InvitePreviewCopyInput = {
   timeZone?: string;
 };
 
+export function formatInviteProposedTimes(
+  times: InviteProposedTime[],
+  timeZone: string,
+): string[] {
+  return times.map((row) => {
+    const range = formatCompactEventTimeRange(row.startsAt, row.endsAt, timeZone);
+    return `Proposed: ${range}`;
+  });
+}
+
 export function invitePlanningDateLine(
   planning: InvitePlanningPreview,
   timeZone: string,
 ): string | null {
+  if ((planning.proposedTimes ?? []).length > 0) {
+    return null;
+  }
   if (planning.proposedStartsAt) {
     const day = formatShortDay(planning.proposedStartsAt, timeZone);
     const time = formatClockTime(planning.proposedStartsAt, timeZone);
@@ -66,12 +82,15 @@ export function inviteSupportingLines(input: InvitePreviewCopyInput): string[] {
 
   if (input.planning) {
     lines.push(`Hui: ${input.planning.eventTitle}`);
-    const dateLine = invitePlanningDateLine(
-      input.planning,
-      input.timeZone ?? "Pacific/Auckland",
-    );
-    if (dateLine) {
-      lines.push(dateLine);
+    const tz = input.timeZone ?? "Pacific/Auckland";
+    const proposedLines = formatInviteProposedTimes(input.planning.proposedTimes ?? [], tz);
+    if (proposedLines.length > 0) {
+      lines.push(...proposedLines);
+    } else {
+      const dateLine = invitePlanningDateLine(input.planning, tz);
+      if (dateLine) {
+        lines.push(dateLine);
+      }
     }
   }
 

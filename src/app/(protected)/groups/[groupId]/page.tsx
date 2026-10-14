@@ -212,7 +212,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
         <HuiSurface padding="lg" shape="organic-alt" elevated className="hui-rise-3">
           <SectionHeader
             title="People"
-            description="Listed by household where one is set."
+            description="People in this group. Those who share a home are listed together."
           />
           <div className="mt-4">
             <GroupMembersHouseholds

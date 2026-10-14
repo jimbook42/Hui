@@ -41,13 +41,26 @@ export function consensusRuleRequirementSummary(
     case "all_active_members":
       return `Every active member must be available (${input.eligibleMemberCount} members), with ${minimumAttendeesRequirementLabel(input.minimumAttendees).toLowerCase()}.`;
     case "majority_active_members":
-      return `More than half of active members must say yes (${input.eligibleMemberCount} members), with ${minimumAttendeesRequirementLabel(input.minimumAttendees).toLowerCase()}.`;
+      return `More than half of active members must say Yes (${input.eligibleMemberCount} members), with ${minimumAttendeesRequirementLabel(input.minimumAttendees).toLowerCase()}.`;
     case "required_participants":
       if (input.requiredParticipantCount === 0) {
         return `${minimumAttendeesRequirementLabel(input.minimumAttendees)} No members are marked as required yet — group admins can set that on the group page.`;
       }
       return `Every member marked as required must be available (${input.requiredParticipantCount} required), with ${minimumAttendeesRequirementLabel(input.minimumAttendees).toLowerCase()}.`;
   }
+}
+
+export function consensusMaybeAvailabilityLine(
+  rule: ConsensusRule,
+  maybeResponsesEnabled: boolean,
+): string | null {
+  if (!maybeResponsesEnabled) {
+    return "Only Yes counts toward the group rules.";
+  }
+  if (rule === "majority_active_members") {
+    return "Maybe can help reach the minimum number needed, but only Yes counts toward the majority.";
+  }
+  return "Maybe counts as available for the minimum and all-member rules.";
 }
 
 export function availabilityResponseOptions(

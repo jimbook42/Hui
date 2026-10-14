@@ -69,7 +69,10 @@ export async function DashboardEvents() {
   const createHref = createHuiHref(proposableGroups);
 
   const [featured, ...restUpcoming] = sections.upcoming;
-  const shownPlanning = sections.planning.slice(0, 4);
+  const planningHero = sections.upcoming.length === 0 ? sections.planning[0] : null;
+  const shownPlanning = sections.upcoming.length === 0
+    ? sections.planning.slice(planningHero ? 1 : 0, 4)
+    : sections.planning.slice(0, 4);
 
   if (groups.length === 0) {
     return (
@@ -131,9 +134,23 @@ export async function DashboardEvents() {
             ) : null}
           </div>
         </section>
+      ) : planningHero ? (
+        <section aria-labelledby="upcoming-hui" className="hui-rise-2">
+          <SectionHeader
+            id="upcoming-hui"
+            title="Your huis"
+            description="Open a hui to see times and add your answer."
+          />
+          <div className="mt-4 space-y-4">
+            <EventCard event={planningHero} variant="featured" tone="primary" />
+            {shownPlanning.length > 0 ? (
+              <CardList events={shownPlanning.slice(0, 3)} startTone={2} />
+            ) : null}
+          </div>
+        </section>
       ) : null}
 
-      {shownPlanning.length > 0 ? (
+      {shownPlanning.length > 0 && !planningHero ? (
         <section aria-labelledby="being-planned" className="hui-rise-3">
           <SectionHeader
             id="being-planned"

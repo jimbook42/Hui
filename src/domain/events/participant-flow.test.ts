@@ -94,6 +94,7 @@ describe("participant flow (HUI-026B)", () => {
     );
     expect(presentation?.summaryLabel).toBe("Yes to 1 of 2 times");
     expect(presentation?.showPlaceFollowUp).toBe(false);
+    expect(presentation?.statusChoice).toBeNull();
   });
 
   it("lists only the selected time on the respond flow after confirmation", () => {
@@ -119,6 +120,7 @@ describe("participant flow (HUI-026B)", () => {
     expect(participantAttendanceBranch("unavailable")).toBe("no");
     expect(nextStepAfterAttendanceSave("available")).toBe("place");
     expect(nextStepAfterAttendanceSave("unavailable")).toBe("declined");
+    expect(nextStepAfterAttendanceSave("available", { showPlaceStep: false })).toBe("done");
   });
 
   it("is open while proposing or confirmed (HUI-026U.3) and needs a candidate", () => {

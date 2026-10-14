@@ -44,6 +44,7 @@ import {
   participantFlowStepsForBack,
   respondAttendanceCandidates,
   shouldShowParticipantBringStep,
+  shouldShowParticipantPlaceStep,
   type ParticipantFlowStep,
 } from "@/domain/events/participant-flow";
 import { participantPlaceView } from "@/domain/events/participant-place";
@@ -54,7 +55,10 @@ import {
   participantAttendanceChoiceLabel,
   participantAttendanceSummaryLabel,
 } from "@/domain/scheduling/participant-labels";
-import { participantSaveToastMessage } from "@/domain/scheduling/participant-save-feedback";
+import {
+  participantDoneToastMessage,
+  participantSaveToastMessage,
+} from "@/domain/scheduling/participant-save-feedback";
 import { markHostPromptDeferred } from "@/lib/events/defer-host-prompt";
 import type { StandingAvailabilityHint } from "@/domain/scheduling/standing-availability";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
@@ -241,6 +245,11 @@ export function EventParticipantRespondFlow({
     [contributionSlots],
   );
 
+  const showPlaceStep = useMemo(
+    () => shouldShowParticipantPlaceStep(placeView, showBringStep),
+    [placeView, showBringStep],
+  );
+
   const flowProgress = showBringStep ? MAIN_FLOW_WITH_BRING : MAIN_FLOW_WITHOUT_BRING;
 
   const timeLabel = focusTimeLabel;
@@ -259,19 +268,29 @@ export function EventParticipantRespondFlow({
     window.setTimeout(() => setSaveToast(null), 4000);
   }, []);
 
+  const finishRespondFlow = useCallback(() => {
+    showSaveToast(participantDoneToastMessage());
+    router.push(`${eventDetailPath(eventId)}?saved=1`);
+  }, [eventId, router, showSaveToast]);
+
   const pushStep = useCallback(
     (next: ParticipantFlowStep) => {
       let resolved = next;
       if (next === "bring" && !showBringStep) {
         resolved = "done";
       }
-      if (resolved === "done" || resolved === "place" || resolved === "declined") {
+      if (resolved === "done") {
+        markHostPromptDeferred(eventId);
+        finishRespondFlow();
+        return;
+      }
+      if (resolved === "place" || resolved === "declined") {
         markHostPromptDeferred(eventId);
       }
       setStep(resolved);
       window.history.pushState({ participantStep: resolved }, "", `#${resolved}`);
     },
-    [eventId, showBringStep],
+    [eventId, finishRespondFlow, showBringStep],
   );
 
   const goBack = useCallback(() => {
@@ -393,7 +412,7 @@ export function EventParticipantRespondFlow({
         // Note-only update after the user already answered no.
       } else if (advanceOnSave) {
         if (!multipleTimeOptions) {
-          pushStep(nextStepAfterAttendanceSave(choice));
+          pushStep(nextStepAfterAttendanceSave(choice, { showPlaceStep }));
         }
         return Promise.resolve();
       } else {
@@ -443,7 +462,7 @@ export function EventParticipantRespondFlow({
         );
         if (!multipleTimeOptions && advanceOnSave) {
           setResponseOverride(choice);
-          pushStep(nextStepAfterAttendanceSave(choice));
+          pushStep(nextStepAfterAttendanceSave(choice, { showPlaceStep }));
           window.setTimeout(() => {
             router.refresh();
             endInteraction(interaction);
@@ -746,7 +765,9 @@ export function EventParticipantRespondFlow({
                   onClick={() => {
                     void advanceFromTimeStepAfterNotes(() => {
                       setResponseOverride(multiSummaryChoice);
-                      pushStep(nextStepAfterAttendanceSave(multiSummaryChoice));
+                      pushStep(
+                        nextStepAfterAttendanceSave(multiSummaryChoice, { showPlaceStep }),
+                      );
                     });
                   }}
                 >
@@ -826,7 +847,13 @@ export function EventParticipantRespondFlow({
             </p>
           ) : null}
           {viewerResponse === "available" || viewerResponse === "maybe" ? (
-            <PendingButton type="button" size="touch" onClick={() => pushStep("place")}>
+            <PendingButton
+              type="button"
+              size="touch"
+              onClick={() =>
+                pushStep(showPlaceStep ? "place" : nextStepAfterPlace(showBringStep))
+              }
+            >
               Continue
             </PendingButton>
           ) : null}
@@ -837,7 +864,7 @@ export function EventParticipantRespondFlow({
               disabled={flushingNotes}
               onClick={() => {
                 void advanceFromTimeStepAfterNotes(() => {
-                  pushStep(nextStepAfterAttendanceSave("unavailable"));
+                  pushStep(nextStepAfterAttendanceSave("unavailable", { showPlaceStep }));
                 });
               }}
             >

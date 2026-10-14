@@ -2,12 +2,18 @@ import { parseGatheringType, type GatheringType } from "@/domain/gathering/type"
 
 export type InviteResolveStatus = "valid" | "invalid" | "already_member";
 
+export type InviteProposedTime = {
+  startsAt: string;
+  endsAt: string | null;
+};
+
 export type InvitePlanningContext = {
   eventId: string;
   eventTitle: string;
   status: string;
   planningTargetDate: string | null;
   proposedStartsAt: string | null;
+  proposedTimes: InviteProposedTime[];
   gatheringType: GatheringType | null;
   gatheringTypeCustom: string | null;
 };
@@ -47,6 +53,22 @@ function parseInvitePlanning(record: Record<string, unknown>): InvitePlanningCon
     typeof p.planningTargetDate === "string" ? p.planningTargetDate : null;
   const proposedStartsAt =
     typeof p.proposedStartsAt === "string" ? p.proposedStartsAt : null;
+  const proposedTimes: InviteProposedTime[] = [];
+  const rawTimes = p.proposedTimes;
+  if (Array.isArray(rawTimes)) {
+    for (const row of rawTimes) {
+      if (!row || typeof row !== "object") {
+        continue;
+      }
+      const record = row as Record<string, unknown>;
+      const startsAt = typeof record.startsAt === "string" ? record.startsAt : "";
+      if (!startsAt) {
+        continue;
+      }
+      const endsAt = typeof record.endsAt === "string" ? record.endsAt : null;
+      proposedTimes.push({ startsAt, endsAt });
+    }
+  }
   const gatheringType = parseGatheringType(p.gatheringType);
   const gatheringTypeCustom =
     typeof p.gatheringTypeCustom === "string" ? p.gatheringTypeCustom : null;
@@ -56,6 +78,7 @@ function parseInvitePlanning(record: Record<string, unknown>): InvitePlanningCon
     status,
     planningTargetDate,
     proposedStartsAt,
+    proposedTimes,
     gatheringType,
     gatheringTypeCustom,
   };

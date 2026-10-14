@@ -18,6 +18,7 @@ import { RescheduledFromSection } from "@/components/events/rescheduled-from-sec
 import { ResponseDeadlinePassedSection } from "@/components/events/response-deadline-section";
 import { StaleProposalSection } from "@/components/events/stale-proposal-section";
 import { EventProposeInviteSection } from "@/components/events/event-propose-invite-section";
+import { EventRespondSavedToast } from "@/components/events/event-respond-saved-toast";
 import { AttendanceLiveProvider } from "@/components/events/attendance-live";
 import { EventHero, EventHeroMetaSkeleton } from "@/components/hui/event-hero";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
@@ -49,6 +50,9 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   return (
     <AppShell title={detail.title} hideTitle back={{ href: "/events", label: "Hui" }}>
       <AttendanceLiveProvider>
+        <Suspense fallback={null}>
+          <EventRespondSavedToast />
+        </Suspense>
         <div className="space-y-5">
           <EventHero
             title={detail.title}

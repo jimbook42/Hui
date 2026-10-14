@@ -15,6 +15,7 @@ import {
   availabilityResponseOptions,
   buildAttendanceSummaryLines,
   candidateStatusBadge,
+  consensusMaybeAvailabilityLine,
   consensusRuleRequirementSummary,
   eventSchedulingSectionMessage,
   hasNoResponsesYet,
@@ -493,23 +494,28 @@ export function EventScheduling({
 
   return (
     <section className="hui-card-section">
-      <h2 className="hui-type-section text-foreground">
-        Scheduling and consensus
-      </h2>
+      <h2 className="hui-type-section text-foreground">Finding a time</h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        Share your availability for each candidate time. Attendance status is visible to the
-        group; private notes stay private. Group rule:{" "}
-        <span className="font-medium text-foreground">{ruleLabel}</span>
-        .{" "}
-        {consensusRuleRequirementSummary(consensus.consensusRule, {
-          minimumAttendees,
-          eligibleMemberCount: consensus.eligibleMemberCount,
-          requiredParticipantCount: requiredCount,
-        })}
-        {consensus.maybeResponsesEnabled
-          ? " Maybe counts as available."
-          : " Maybe does not count as available."}
+        Share your availability for each time on the table. Your answer is visible to the group;
+        private notes stay private.
       </p>
+      <details className="hui-details mt-3 rounded-hui-lg bg-muted px-4 py-2">
+        <summary className="hui-focus-ring cursor-pointer text-sm font-extrabold text-foreground">
+          Advanced — how confirmation works
+        </summary>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Group rule: <span className="font-medium text-foreground">{ruleLabel}</span>.{" "}
+          {consensusRuleRequirementSummary(consensus.consensusRule, {
+            minimumAttendees,
+            eligibleMemberCount: consensus.eligibleMemberCount,
+            requiredParticipantCount: requiredCount,
+          })}{" "}
+          {consensusMaybeAvailabilityLine(
+            consensus.consensusRule,
+            consensus.maybeResponsesEnabled,
+          )}
+        </p>
+      </details>
       {replyByLabel ? (
         <p className="mt-2 text-sm font-semibold text-foreground">{replyByLabel}</p>
       ) : null}

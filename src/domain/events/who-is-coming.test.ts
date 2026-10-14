@@ -51,6 +51,7 @@ describe("whoIsComingPresentation", () => {
     if (result.mode === "per-candidate") {
       expect(result.rows).toHaveLength(2);
       expect(result.rows[0]?.summary).toContain("1 coming");
+      expect(result.rows[0]?.summary).toContain("1 yet to answer");
       expect(result.rows[1]?.summary).toContain("2 coming");
     }
   });

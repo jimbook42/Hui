@@ -16,10 +16,11 @@ export function participantSaveToastMessage(
   choice: AvailabilityChoice,
   timeLabel: string,
 ): string {
-  const answer = participantAttendanceShortLabel(choice);
-  const trimmedTime = timeLabel.trim();
-  if (!trimmedTime) {
-    return `Saved: you're a ${answer}`;
-  }
-  return `Saved: you're a ${answer} for ${trimmedTime}`;
+  void choice;
+  void timeLabel;
+  return "Saved";
+}
+
+export function participantDoneToastMessage(): string {
+  return "Saved";
 }

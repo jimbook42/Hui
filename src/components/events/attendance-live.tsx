@@ -18,6 +18,7 @@ import { GatheringVisual } from "@/components/hui/gathering-visual";
 import { HuiButton, HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { attendanceStateFromChoice, viewerStatusLabel } from "@/domain/events/home";
+import type { AttendanceVisualState } from "@/domain/scheduling/attendance-visual";
 import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 import {
   applyViewerOverrideToRoster,
@@ -84,7 +85,7 @@ export function LiveGatheringVisual({ roster, viewerUserId, ...rest }: LiveGathe
 const SHORT_LABEL: Record<AvailabilityChoice, string> = {
   available: "Yes",
   maybe: "Maybe",
-  unavailable: "No",
+  unavailable: "Can't",
 };
 
 type ViewerResponseCardProps = {
@@ -97,6 +98,8 @@ type ViewerResponseCardProps = {
   serverPrivateNote?: string | null;
   /** When set (multi-time proposing), replaces the single-choice status line. */
   answerSummaryLabel?: string | null;
+  answerDetailLines?: string[] | null;
+  answerIconState?: AttendanceVisualState | null;
   showPlaceFollowUp?: boolean;
   maybeResponsesEnabled: boolean;
   confirmed: boolean;
@@ -117,6 +120,8 @@ export function ViewerResponseCard({
   serverResponse,
   serverPrivateNote,
   answerSummaryLabel,
+  answerDetailLines,
+  answerIconState,
   showPlaceFollowUp = true,
   maybeResponsesEnabled,
   confirmed,
@@ -133,13 +138,15 @@ export function ViewerResponseCard({
   const [isSaving, startSaving] = useTransition();
 
   const response = effectiveViewerResponse(serverResponse, override);
-  const state = attendanceStateFromChoice(response, maybeResponsesEnabled);
-  const pending = state === "pending";
+  const multiTime = Boolean(answerSummaryLabel?.trim());
+  const state =
+    answerIconState ?? attendanceStateFromChoice(response, maybeResponsesEnabled);
+  const pending = !multiTime && state === "pending";
   const answerLine =
     answerSummaryLabel?.trim() ||
     (isSaving && pendingChoice
       ? "Saving\u2026"
-      : viewerStatusLabel(state));
+      : viewerStatusLabel(state, { confirmed }));
   const options = availabilityResponseOptions(maybeResponsesEnabled);
 
   function save(choice: AvailabilityChoice) {
@@ -192,12 +199,23 @@ export function ViewerResponseCard({
       padding="md"
     >
       <div className="flex items-center gap-4">
-        <AttendanceDot state={state} label={viewerStatusLabel(state)} size="lg" />
+        <AttendanceDot
+          state={state}
+          label={viewerStatusLabel(state, { confirmed })}
+          size="lg"
+        />
         <div className="min-w-0 flex-1">
           <p className="hui-type-label text-muted-foreground">Your answer</p>
           <p className="text-lg font-extrabold leading-tight text-foreground" role="status">
             {answerLine}
           </p>
+          {answerDetailLines && answerDetailLines.length > 0 ? (
+            <ul className="mt-2 space-y-0.5 text-sm font-semibold text-muted-foreground">
+              {answerDetailLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          ) : null}
           {pending ? (
             <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
               {confirmed
@@ -222,6 +240,16 @@ export function ViewerResponseCard({
           className="mt-4 w-full"
         >
           Reply
+        </HuiLinkButton>
+      ) : multiTime ? (
+        <HuiLinkButton
+          href={participantRespondPath(eventId)}
+          variant="secondary"
+          shape="melt"
+          size="touch"
+          className="mt-4 w-full"
+        >
+          Change response
         </HuiLinkButton>
       ) : (
         <>
@@ -261,6 +289,7 @@ export function ViewerResponseCard({
                       label={participantAttendanceChoiceLabel(option)}
                       size="xs"
                       hideBadge
+                      subdued={!selected}
                     />
                     <span>{SHORT_LABEL[option]}</span>
                   </button>

@@ -8,17 +8,20 @@ export function participantAttendanceChoiceLabel(choice: AvailabilityChoice): st
     case "maybe":
       return "Maybe";
     case "unavailable":
-      return "No";
+      return "Can't";
   }
 }
 
-export function participantAttendanceSummaryLabel(choice: AvailabilityChoice): string {
+export function participantAttendanceSummaryLabel(
+  choice: AvailabilityChoice,
+  options?: { confirmed?: boolean },
+): string {
   switch (choice) {
     case "available":
-      return "Yes";
+      return options?.confirmed ? "You're in" : "Yes";
     case "maybe":
       return "Maybe";
     case "unavailable":
-      return "No";
+      return "Can't";
   }
 }
