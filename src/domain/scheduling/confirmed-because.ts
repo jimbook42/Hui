@@ -25,6 +25,14 @@ export function formatConfirmedHeroStatusLine(input: {
   if (!input.counts) {
     return reason;
   }
-  const attendance = formatWhoIsComingSummary(input.counts, input.maybeResponsesEnabled);
+  if (input.counts.yes === 0 && input.counts.pending > 0) {
+    return `${reason} · Awaiting answers`;
+  }
+  const attendance = formatWhoIsComingSummary(input.counts, input.maybeResponsesEnabled, {
+    eventStatus: "confirmed",
+  });
+  if (input.counts.yes === 0 && input.counts.maybe === 0 && input.counts.no === 0) {
+    return `${reason} · Awaiting answers`;
+  }
   return `${reason} · ${attendance}`;
 }

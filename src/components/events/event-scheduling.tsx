@@ -21,6 +21,7 @@ import {
   hasNoResponsesYet,
   isCandidateOpenForResponses,
   proposalDeadlineGroupNotice,
+  shouldOfferOrganiserConfirm,
   shouldShowFinaliseControl,
 } from "@/domain/scheduling/consensus-display";
 import {
@@ -69,12 +70,16 @@ function AttendanceSummary({
   evaluation,
   maybeResponsesEnabled,
   roster,
+  showLateTags,
 }: {
   evaluation: CandidateConsensusView;
   maybeResponsesEnabled: boolean;
   roster?: AttendanceRoster | null;
+  showLateTags?: boolean;
 }) {
-  const namedGroups = roster ? groupAttendanceByResponse(roster) : [];
+  const namedGroups = roster
+    ? groupAttendanceByResponse(roster, { showLateTags })
+    : [];
 
   return (
     <HuiSurface className="mt-3" padding="sm">
@@ -93,7 +98,24 @@ function AttendanceSummary({
           {namedGroups.map((group) => (
             <div key={group.label}>
               <p className="font-medium text-foreground">{group.label}</p>
-              <p>{group.names.join(", ")}</p>
+              {group.entries && showLateTags ? (
+                <ul className="mt-1 space-y-1">
+                  {group.entries.map((entry) => (
+                    <li key={entry.displayName} className="flex flex-wrap items-center gap-2">
+                      <span>{entry.displayName}</span>
+                      {entry.submittedLate ? (
+                        <span
+                          className="rounded-full bg-clay-soft px-2 py-0.5 text-xs font-medium text-foreground"
+                        >
+                          Late
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>{group.names.join(", ")}</p>
+              )}
             </div>
           ))}
         </div>
@@ -230,20 +252,38 @@ function CandidateResponseForm({
 function FinaliseCandidateButton({
   eventId,
   candidateId,
+  requireExtraConfirm,
 }: {
   eventId: string;
   candidateId: string;
+  requireExtraConfirm?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(finaliseEventAction, initialState);
   useActionStateRefresh(state);
 
   return (
-    <form action={formAction} className="mt-4 rounded-hui-sm bg-sage-soft p-3">
+    <form
+      action={formAction}
+      className="mt-4 rounded-hui-sm bg-sage-soft p-3"
+      onSubmit={(event) => {
+        if (
+          requireExtraConfirm &&
+          !window.confirm(
+            "This time does not meet the group rules yet. Confirm only if you are sure everyone who needs to be included has said Yes.",
+          )
+        ) {
+          event.preventDefault();
+        }
+      }}
+    >
       <p className="hui-message-success">
         Confirming selects this time and locks further candidate and availability changes.
       </p>
       <input type="hidden" name="event_id" value={eventId} />
       <input type="hidden" name="candidate_id" value={candidateId} />
+      {requireExtraConfirm ? (
+        <input type="hidden" name="force_confirm" value="1" />
+      ) : null}
       {state.error ? (
         <p className="hui-message-error mt-2" role="alert">
           {state.error}
@@ -271,12 +311,14 @@ function CandidateConsensusNote({
   evaluation,
   maybeResponsesEnabled,
   roster,
+  showLateTags,
 }: {
   eventStatus: EventStatus;
   candidate: EventCandidateRow;
   evaluation: CandidateConsensusView | undefined;
   maybeResponsesEnabled: boolean;
   roster?: AttendanceRoster | null;
+  showLateTags?: boolean;
 }) {
   if (candidate.status === "withdrawn") {
     return (
@@ -318,6 +360,7 @@ function CandidateConsensusNote({
           evaluation={evaluation}
           maybeResponsesEnabled={maybeResponsesEnabled}
           roster={roster}
+          showLateTags={showLateTags}
         />
       </div>
     );
@@ -344,6 +387,7 @@ function CandidateConsensusNote({
         evaluation={evaluation}
         maybeResponsesEnabled={maybeResponsesEnabled}
         roster={roster}
+        showLateTags={showLateTags}
       />
     </div>
   );
@@ -392,6 +436,7 @@ function CandidateCard({
   canFinalise,
   timeLabel,
   roster,
+  showLateTags,
 }: {
   eventId: string;
   eventStatus: EventStatus;
@@ -403,6 +448,7 @@ function CandidateCard({
   canFinalise: boolean;
   timeLabel: string;
   roster?: AttendanceRoster | null;
+  showLateTags?: boolean;
 }) {
   const badge = candidateStatusBadge(
     eventStatus,
@@ -440,6 +486,7 @@ function CandidateCard({
         evaluation={evaluation}
         maybeResponsesEnabled={maybeResponsesEnabled}
         roster={roster}
+        showLateTags={showLateTags}
       />
       {candidate.status !== "withdrawn" ? (
         <CandidateResponseForm
@@ -457,6 +504,18 @@ function CandidateCard({
         evaluation?.passes ?? false,
       ) ? (
         <FinaliseCandidateButton eventId={eventId} candidateId={candidate.id} />
+      ) : shouldOfferOrganiserConfirm(
+          canFinalise,
+          eventStatus,
+          candidate.status,
+          evaluation?.yesCount ?? 0,
+          evaluation?.passes ?? false,
+        ) ? (
+        <FinaliseCandidateButton
+          eventId={eventId}
+          candidateId={candidate.id}
+          requireExtraConfirm
+        />
       ) : null}
       {canRemoveCandidates && candidate.status === "proposed" ? (
         <WithdrawCandidateButton eventId={eventId} candidateId={candidate.id} />
@@ -575,6 +634,7 @@ export function EventScheduling({
               canFinalise={canFinalise}
               timeLabel={candidateTimeLabels[candidate.id] ?? ""}
               roster={attendanceRosters[candidate.id] ?? null}
+              showLateTags={canFinalise}
             />
           ))
         )}

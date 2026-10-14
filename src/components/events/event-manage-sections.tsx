@@ -6,6 +6,8 @@ import { EventDetailManagement } from "@/components/events/event-detail-manageme
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
 import { EventScheduling } from "@/components/events/event-scheduling";
 import { LiveGatheringVisual } from "@/components/events/attendance-live";
+import { OrganiserAttendanceRosterList } from "@/components/events/organiser-attendance-roster-list";
+import { formatWhoIsComingSummary } from "@/domain/events/who-is-coming";
 import { EventHostSection } from "@/components/hosts/event-host-section";
 import { DisclosureCard } from "@/components/hui/disclosure-card";
 import { HashDisclosureOpener } from "@/components/hui/hash-disclosure-opener";
@@ -80,14 +82,11 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
   const roster = data.primaryRoster;
   let peopleSummary = "Nobody has answered a time yet";
   if (roster && roster.members.length > 0 && data.counts) {
-    const parts = [`${data.counts.yes} coming`];
-    if (data.counts.maybe > 0 && data.scheduling.maybeResponsesEnabled) {
-      parts.push(`${data.counts.maybe} maybe`);
-    }
-    if (data.counts.pending > 0) {
-      parts.push(`${data.counts.pending} yet to answer`);
-    }
-    peopleSummary = parts.join(" · ");
+    peopleSummary = formatWhoIsComingSummary(
+      data.counts,
+      data.scheduling.maybeResponsesEnabled,
+      { eventStatus: detail.status },
+    );
   }
 
   const huiLifecycle =
@@ -232,6 +231,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
           defaultOpen={sectionOpen("people")}
         >
           <LiveGatheringVisual roster={roster} viewerUserId={userId} eventTitle={detail.title} />
+          <OrganiserAttendanceRosterList roster={roster} />
           {data.householdView && settings ? (
             <div className="mt-6 border-t border-border/60 pt-6">
               <EventParticipantsSummary

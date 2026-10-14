@@ -15,6 +15,9 @@ const KINDS: NotificationKind[] = [
   "host_declined",
   "contribution_changed",
   "reconnect_reminder",
+  "stale_proposal_passed",
+  "stale_proposal_auto_cancelled",
+  "planning_cycle_opens",
 ];
 
 describe("notificationPresentation", () => {
@@ -24,6 +27,12 @@ describe("notificationPresentation", () => {
       expect(presentation.label.length).toBeGreaterThan(0);
       expect(presentation.actionLabel.length).toBeGreaterThan(0);
     }
+  });
+
+  it("falls back safely for unknown kinds", () => {
+    const presentation = notificationPresentation("future_kind" as NotificationKind);
+    expect(presentation.label).toBe("Update");
+    expect(presentation.actionLabel).toBe("View");
   });
 
   it("marks the kinds that ask for a response as actionable", () => {

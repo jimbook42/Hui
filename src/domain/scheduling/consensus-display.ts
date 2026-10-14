@@ -94,6 +94,23 @@ export function shouldShowFinaliseControl(
   );
 }
 
+/** Organiser may attempt manual confirm when at least one Yes is on the table (maybe does not count). */
+export function shouldOfferOrganiserConfirm(
+  canFinalise: boolean,
+  eventStatus: EventStatus,
+  candidateStatus: CandidateStatus,
+  yesCount: number,
+  passes: boolean,
+): boolean {
+  return (
+    canFinalise &&
+    eventStatus === "proposing" &&
+    candidateStatus === "proposed" &&
+    yesCount >= 1 &&
+    !passes
+  );
+}
+
 export function candidateStatusBadge(
   eventStatus: EventStatus,
   candidateStatus: CandidateStatus,

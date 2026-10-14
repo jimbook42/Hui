@@ -1,5 +1,11 @@
 # Worklog
 
+## 2026-10-14 — HUI-COORD lifecycle audit (v0.17.0)
+
+- Documented transitions, notifications, and cron in `docs/lifecycle.md`.
+- Migration `20261014210000_hui_coord_lifecycle_audit.sql`: clear deadline on confirm/cancel stale path; planning-only deadline reminders; block answers on non-proposed candidates; stale auto-cancel relies on cancel trigger (no duplicate enqueue).
+- PGlite audit tests in `hui-coord-lifecycle-audit.test.ts`.
+
 Lightweight record of completed tickets. One entry per ticket.
 
 ## 2026-10-14 — HUI-FIX1 dietary privacy + in-app install (0.16.2)

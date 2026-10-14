@@ -552,4 +552,106 @@ describe("event consensus finalisation (HUI-010)", () => {
       [eventId],
     );
   });
+
+  it("force finalises with at least one yes when consensus is not met", async () => {
+    await asUser(db, ids.owner);
+    const groupId = (
+      await db.query<{ create_group: string }>(`select public.create_group($1) as create_group`, [
+        "Force confirm group",
+      ])
+    ).rows[0].create_group;
+
+    await db.query(
+      `insert into public.group_memberships (group_id, user_id, role)
+       values ($1, $2, 'member'), ($1, $3, 'member')`,
+      [groupId, ids.member, ids.admin],
+    );
+
+    await db.query(
+      `update public.group_settings
+       set consensus_rule = 'majority_active_members', minimum_attendees = 1
+       where group_id = $1`,
+      [groupId],
+    );
+
+    const eventId = (
+      await db.query<{ id: string }>(
+        `insert into public.events (group_id, title, status, created_by)
+         values ($1, 'Force dinner', 'proposing', $2)
+         returning id`,
+        [groupId, ids.owner],
+      )
+    ).rows[0].id;
+
+    const candidateId = await addCandidate(
+      db,
+      eventId,
+      ids.owner,
+      "2026-12-01T18:00:00Z",
+      "2026-12-01T20:00:00Z",
+    );
+
+    await asUser(db, ids.owner);
+    await db.query(
+      `insert into public.event_responses (candidate_id, user_id, response, visibility)
+       values ($1, $2, 'yes', 'private')`,
+      [candidateId, ids.owner],
+    );
+
+    const summary = await loadSummary(db, ids.owner, eventId);
+    expect(summary.candidates[0].passes).toBe(false);
+
+    await db.query(`select public.finalise_event($1, $2, true)`, [eventId, candidateId]);
+
+    const status = await db.query<{ status: string }>(
+      `select status::text from public.events where id = $1`,
+      [eventId],
+    );
+    expect(status.rows[0]?.status).toBe("confirmed");
+  });
+
+  it("rejects force finalise when only maybe is on the table", async () => {
+    await asUser(db, ids.owner);
+    const groupId = (
+      await db.query<{ create_group: string }>(`select public.create_group($1) as create_group`, [
+        "Force maybe group",
+      ])
+    ).rows[0].create_group;
+
+    await db.query(
+      `update public.group_settings
+       set consensus_rule = 'majority_active_members', minimum_attendees = 1
+       where group_id = $1`,
+      [groupId],
+    );
+
+    const eventId = (
+      await db.query<{ id: string }>(
+        `insert into public.events (group_id, title, status, created_by)
+         values ($1, 'Maybe only', 'proposing', $2)
+         returning id`,
+        [groupId, ids.owner],
+      )
+    ).rows[0].id;
+
+    const candidateId = await addCandidate(
+      db,
+      eventId,
+      ids.owner,
+      "2026-12-02T18:00:00Z",
+      "2026-12-02T20:00:00Z",
+    );
+
+    await asUser(db, ids.owner);
+    await db.query(
+      `insert into public.event_responses (candidate_id, user_id, response, visibility)
+       values ($1, $2, 'maybe', 'private')`,
+      [candidateId, ids.owner],
+    );
+
+    const blocked = await expectFail(() =>
+      db.query(`select public.finalise_event($1, $2, true)`, [eventId, candidateId]),
+    );
+    expect(blocked).toMatch(/at least one yes is required/);
+  });
 });

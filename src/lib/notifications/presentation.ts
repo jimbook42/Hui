@@ -92,8 +92,37 @@ const PRESENTATION: Record<NotificationKind, NotificationPresentation> = {
     actionLabel: "Reply",
     actionable: true,
   },
+  stale_proposal_passed: {
+    label: "Proposal date passed",
+    tone: "clay",
+    icon: "calendar",
+    actionLabel: "View",
+    actionable: false,
+  },
+  stale_proposal_auto_cancelled: {
+    label: "Proposal cancelled",
+    tone: "clay",
+    icon: "calendar",
+    actionLabel: "View",
+    actionable: false,
+  },
+  planning_cycle_opens: {
+    label: "Planning open",
+    tone: "blue",
+    icon: "spark",
+    actionLabel: "View group",
+    actionable: false,
+  },
 };
 
-export function notificationPresentation(kind: NotificationKind): NotificationPresentation {
-  return PRESENTATION[kind];
+const FALLBACK_PRESENTATION: NotificationPresentation = {
+  label: "Update",
+  tone: "neutral",
+  icon: "spark",
+  actionLabel: "View",
+  actionable: false,
+};
+
+export function notificationPresentation(kind: NotificationKind | string): NotificationPresentation {
+  return PRESENTATION[kind as NotificationKind] ?? FALLBACK_PRESENTATION;
 }
