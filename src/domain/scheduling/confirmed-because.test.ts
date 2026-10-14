@@ -30,6 +30,17 @@ describe("formatConfirmedHeroStatusLine", () => {
     ).toBe("Confirmed by majority · 3 coming · 1 yet to answer");
   });
 
+  it("uses organiser wording when force-confirmed", () => {
+    expect(
+      formatConfirmedHeroStatusLine({
+        consensusRule: "majority_active_members",
+        counts: { yes: 2, maybe: 0, pending: 0, no: 0, total: 2 },
+        maybeResponsesEnabled: true,
+        confirmationMethod: "organiser",
+      }),
+    ).toBe("Confirmed by organiser · 2 coming");
+  });
+
   it("shows awaiting answers when confirmed but nobody has said yes yet", () => {
     expect(
       formatConfirmedHeroStatusLine({

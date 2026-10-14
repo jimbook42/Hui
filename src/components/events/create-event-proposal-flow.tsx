@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 
 import type { EventActionState } from "@/app/events/actions";
 import { proposeGroupEventAction } from "@/app/events/proposal-actions";
@@ -22,17 +22,19 @@ import {
   groupHasEstablishedRecurrence,
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
+import { isProposalDateBeforeToday } from "@/domain/events/proposal-past-time";
+import { buildProposingPastDateWarning } from "@/domain/events/proposal-past-warning";
+import { applyMeetFrequencyToDraft } from "@/domain/events/proposal-draft-meet-frequency";
+import { resolveProposalFlowStateFromClient } from "@/domain/events/proposal-draft-restore";
 import {
-  readStoredProposalCadence,
+  clearStoredProposalDraft,
+  type StoredMeetFrequency,
   writeStoredProposalCadence,
+  writeStoredProposalDraft,
 } from "@/domain/events/proposal-draft-storage";
+import { ProposalPastDateWarning } from "@/components/events/proposal-past-date-warning";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
-import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nominal";
-import {
-  cadencePresetFromParts,
-  FIRST_GROUP_CADENCE_PRESETS,
-  type CadencePresetId,
-} from "@/domain/recurrence/cadence-presets";
+import { FIRST_GROUP_CADENCE_PRESETS } from "@/domain/recurrence/cadence-presets";
 import {
   formatCadenceLabel,
   type GroupPlanningCycle,
@@ -110,27 +112,9 @@ export function CreateEventProposalFlow({
     [initialDraft, planningCycle],
   );
   const [step, setStep] = useState<Step>("name");
-  const [draft, setDraft] = useState<EventProposalDraft>(() => {
-    const stored = isFirstGroupEvent ? readStoredProposalCadence(groupId) : null;
-    if (!stored || groupHasEstablishedRecurrence(settings)) {
-      return initialDraft;
-    }
-    const nominal = firstGroupCycleNominalDate(
-      { intervalUnit: stored.intervalUnit, intervalCount: stored.intervalCount },
-      todayDateOnly,
-    );
-    return {
-      ...initialDraft,
-      eventKind: "recurring",
-      recurrence: {
-        seriesTitle: initialDraft.recurrence?.seriesTitle ?? "",
-        intervalUnit: stored.intervalUnit,
-        intervalCount: stored.intervalCount,
-        startsOn: nominal,
-        planningTargetDate: nominal,
-      },
-    };
-  });
+  const [draft, setDraft] = useState<EventProposalDraft>(initialDraft);
+  const [draftRestoredFromClient, setDraftRestoredFromClient] = useState(false);
+  const restoreAppliedRef = useRef(false);
 
   useEffect(() => {
     if (
@@ -154,6 +138,7 @@ export function CreateEventProposalFlow({
     draft.recurrence?.intervalCount,
     draft.recurrence,
   ]);
+
   const [stepError, setStepError] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState(initialDate);
 
@@ -170,13 +155,72 @@ export function CreateEventProposalFlow({
   // The end time is optional: an empty value means "start only".
   const [timeEnd, setTimeEnd] = useState("");
 
+  const establishedRecurrence = groupHasEstablishedRecurrence(settings);
+  const [meetFrequency, setMeetFrequency] = useState<StoredMeetFrequency>(null);
+
+  useEffect(() => {
+    if (restoreAppliedRef.current) {
+      return;
+    }
+    restoreAppliedRef.current = true;
+    const resolved = resolveProposalFlowStateFromClient({
+      groupId,
+      settings,
+      groupName,
+      planningCycle,
+      isFirstGroupEvent,
+      todayDateOnly,
+    });
+    setStep(resolved.step);
+    setDraft(resolved.draft);
+    setTimeDate(resolved.timeDate);
+    setTimeStart(resolved.timeStart);
+    setTimeEnd(resolved.timeEnd);
+    setMeetFrequency(resolved.meetFrequency);
+    setDraftRestoredFromClient(true);
+  }, [
+    groupId,
+    settings,
+    groupName,
+    planningCycle,
+    isFirstGroupEvent,
+    todayDateOnly,
+  ]);
+
+  useEffect(() => {
+    if (!draftRestoredFromClient) {
+      return;
+    }
+    writeStoredProposalDraft(groupId, {
+      step,
+      draft,
+      timeDate,
+      timeStart,
+      timeEnd,
+      meetFrequency,
+    });
+  }, [
+    groupId,
+    step,
+    draft,
+    timeDate,
+    timeStart,
+    timeEnd,
+    meetFrequency,
+    draftRestoredFromClient,
+  ]);
+
+  function selectMeetFrequency(next: StoredMeetFrequency) {
+    setMeetFrequency(next);
+    setDraft((current) => applyMeetFrequencyToDraft(current, next, { groupName }));
+  }
+
   const [actionState, formAction] = useActionState(
     proposeGroupEventAction,
     initialActionState,
   );
 
   const stepIndex = STEPS.indexOf(step);
-  const establishedRecurrence = groupHasEstablishedRecurrence(settings);
   const activeCategories = useMemo(
     () => contributionCategories.filter((row) => !row.archivedAt),
     [contributionCategories],
@@ -217,7 +261,6 @@ export function CreateEventProposalFlow({
             setStepError("This group only allows recurring gatherings.");
             return;
           }
-          setDraft((current) => ({ ...current, eventKind: "one_off" }));
         } else {
           if (!canRecurring) {
             setStepError("This group only allows one-off gatherings.");
@@ -228,26 +271,10 @@ export function CreateEventProposalFlow({
             setStepError("Choose how often this group meets.");
             return;
           }
-          setDraft((current) => ({
-            ...current,
-            eventKind: "recurring",
-            recurrence: {
-              ...(current.recurrence ?? {
-                seriesTitle: "",
-                intervalUnit: "month",
-                intervalCount: 1,
-                startsOn: "",
-                planningTargetDate: null,
-              }),
-              intervalUnit: preset.intervalUnit,
-              intervalCount: preset.intervalCount,
-              seriesTitle:
-                current.title.trim() ||
-                current.recurrence?.seriesTitle?.trim() ||
-                `${groupName} gatherings`,
-            },
-          }));
         }
+        setDraft((current) =>
+          applyMeetFrequencyToDraft(current, meetFrequency, { groupName }),
+        );
       }
       if (draft.eventKind === "recurring" && draft.recurrence?.planningTargetDate) {
         setTimeDate(draft.recurrence.planningTargetDate);
@@ -256,6 +283,15 @@ export function CreateEventProposalFlow({
       return;
     }
     if (step === "time") {
+      if (
+        timeDate &&
+        isProposalDateBeforeToday(timeDate, todayDateOnly) &&
+        !window.confirm(
+          "This date is in the past. Proposing a past time can confuse members. Continue anyway?",
+        )
+      ) {
+        return;
+      }
       const parsed = parseWallClockCandidate(
         timeDate,
         timeStart,
@@ -381,17 +417,16 @@ export function CreateEventProposalFlow({
   const canOneOff = settings.oneOffEventsAllowed;
   const canRecurring = settings.recurringEventsEnabled;
 
-  const activeCadencePreset = cadencePresetFromParts(
-    draft.recurrence?.intervalUnit ?? "month",
-    draft.recurrence?.intervalCount ?? 1,
+  const pastDateWarning = useMemo(
+    () =>
+      buildProposingPastDateWarning({
+        draft,
+        timeZone: settings.timezone,
+        todayDateOnly,
+        pendingDateOnly: step === "time" ? timeDate : undefined,
+      }),
+    [draft, settings.timezone, todayDateOnly, step, timeDate],
   );
-
-  const [meetFrequency, setMeetFrequency] = useState<null | "once" | CadencePresetId>(() => {
-    if (establishedRecurrence || !isFirstGroupEvent) {
-      return draft.eventKind === "one_off" ? "once" : activeCadencePreset;
-    }
-    return null;
-  });
 
   return (
     <div className="space-y-6">
@@ -540,7 +575,7 @@ export function CreateEventProposalFlow({
                       name="meet_frequency"
                       className="sr-only"
                       checked={meetFrequency === "once"}
-                      onChange={() => setMeetFrequency("once")}
+                      onChange={() => selectMeetFrequency("once")}
                     />
                     Just this once
                   </label>
@@ -561,7 +596,7 @@ export function CreateEventProposalFlow({
                           name="meet_frequency"
                           className="sr-only"
                           checked={meetFrequency === preset.id}
-                          onChange={() => setMeetFrequency(preset.id)}
+                          onChange={() => selectMeetFrequency(preset.id)}
                         />
                         {preset.label}
                       </label>
@@ -592,6 +627,14 @@ export function CreateEventProposalFlow({
                 First proposed time sets the planning date for this cycle (
                 {formatNominalPlanningDate(draft.recurrence.planningTargetDate)}).
               </p>
+            ) : null}
+            {pastDateWarning ? (
+              <div className="mt-3">
+                <ProposalPastDateWarning
+                  title={pastDateWarning.title}
+                  detail={pastDateWarning.detail}
+                />
+              </div>
             ) : null}
           </div>
           <SuggestedTimesList
@@ -717,6 +760,12 @@ export function CreateEventProposalFlow({
       {step === "review" ? (
         <section className="hui-rise space-y-5">
           <h2 className="hui-type-page-title text-foreground">Ready to propose?</h2>
+          {pastDateWarning ? (
+            <ProposalPastDateWarning
+              title={pastDateWarning.title}
+              detail={pastDateWarning.detail}
+            />
+          ) : null}
           {reviewMissing.length > 0 ? (
             <p className="hui-message-error" role="alert">
               Still needed: {reviewMissing.join(", ")}
@@ -805,7 +854,13 @@ export function CreateEventProposalFlow({
               </dd>
             </div>
           </dl>
-          <form action={formAction} className="space-y-3">
+          <form
+            action={formAction}
+            className="space-y-3"
+            onSubmit={() => {
+              clearStoredProposalDraft(groupId);
+            }}
+          >
             <input type="hidden" name="group_id" value={groupId} />
             <input type="hidden" name="proposal_draft" value={JSON.stringify(draft)} />
             {actionState.error ? (

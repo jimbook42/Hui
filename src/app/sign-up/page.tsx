@@ -1,8 +1,6 @@
 import Link from "next/link";
 
-import { signUpAction } from "@/app/auth/actions";
-import { AuthField, AuthForm } from "@/components/auth/auth-form";
-import { AuthOAuthSection } from "@/components/auth/auth-provider-options";
+import { EmailSignUpForm } from "@/components/auth/email-sign-up-form";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { sanitizeNextPath } from "@/lib/auth/routes";
 import { loadInviteGroupNameForAuthNext } from "@/lib/invites/auth-invite-context";
@@ -20,10 +18,10 @@ export default async function SignUpPage({
     next !== "/dashboard" ? await loadInviteGroupNameForAuthNext(next) : null;
   const title = inviteGroupName
     ? `Create account to join ${inviteGroupName}`
-    : "Create your account";
+    : "Sign up with email";
   const description = inviteGroupName
-    ? `We'll set up your Hui account so you can join ${inviteGroupName}. If we need to verify your email, we'll send you a link — check your inbox before signing in.`
-    : "We'll set up your Hui account. If we need to verify your email, we'll send you a link — check your inbox before signing in.";
+    ? `We'll set up your Hui account so you can join ${inviteGroupName}.`
+    : "Create your Hui account with email and password.";
 
   return (
     <AuthShell
@@ -41,22 +39,7 @@ export default async function SignUpPage({
         </>
       }
     >
-      <AuthOAuthSection next={next} />
-      <AuthForm action={signUpAction} submitLabel="Sign up" hiddenFields={{ next }}>
-        <AuthField
-          label="Display name"
-          name="display_name"
-          autoComplete="name"
-        />
-        <AuthField label="Email" name="email" type="email" autoComplete="email" />
-        <AuthField
-          label="Password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-        />
-        <p className="text-xs text-muted-foreground">Use at least 8 characters.</p>
-      </AuthForm>
+      <EmailSignUpForm next={next} />
     </AuthShell>
   );
 }

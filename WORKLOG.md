@@ -1,5 +1,31 @@
 # Worklog
 
+## 2026-10-15 — HUI-030-fix6 propose draft restore + frequency sync (v0.18.0)
+
+- Restore propose step-1 draft from sessionStorage after client mount (SSR-safe); gate persistence until restore completes.
+- Sync `meetFrequency` into `eventKind`/recurrence on pick and on restore; dedupe past-date warning copy.
+
+## 2026-10-15 — HUI-030-fix5 propose draft + past-date warnings (v0.18.0)
+
+- Past-date banner on propose time + review; stale auto-cancel copy omits past calendar dates.
+- Proposal session draft persists meet frequency; cleared on successful submit.
+- Dietary group share: confirmed scope model (all entries) — no behaviour change.
+
+## 2026-10-15 — HUI-030-fix4 auth E2E strict labels + main merge (v0.18.0)
+
+- Merged `origin/main` (`vercel.json` git.deploymentEnabled).
+- Auth E2E: exact `getByLabel` for Email/Password on sign-up render test (avoid Confirm field collision).
+
+## 2026-10-15 — HUI-030-fix3 privacy contact + coord-audit merge (v0.18.0)
+
+- Privacy enquiries email `tulllabs@outlook.com` via `privacy-contact.ts` (shown on `/privacy`).
+- Merged `origin/cursor/hui-coord-audit-b1cd`; `RELEASING.md` current `0.18.0`, previous `0.17.0`.
+
+## 2026-10-15 — HUI-030-fix2 privacy page + auth E2E (v0.18.0)
+
+- Public `/privacy` policy (NZ Privacy Act, delete-your-data section); linked from sign-in footer and profile.
+- Auth E2E aligned with OAuth-first sign-in and `/sign-in/email`; group smoke helper + specs retained.
+
 ## 2026-10-14 — HUI-COORD lifecycle audit (v0.17.0)
 
 - Documented transitions, notifications, and cron in `docs/lifecycle.md`.

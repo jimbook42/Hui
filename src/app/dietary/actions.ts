@@ -142,7 +142,20 @@ export async function shareDietaryEntryAction(
     return { error: "Could not share dietary information with that group." };
   }
 
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
+  const { data: entry, error: entryError } = await supabase
+    .from("dietary_entries")
+    .select("user_id")
+    .eq("id", entryId)
+    .maybeSingle();
+
+  if (entryError || !entry) {
+    return { error: "Could not share dietary information with that group." };
+  }
+  if (entry.user_id !== user.id) {
+    return { error: "You can only share your own dietary entries." };
+  }
+
   const { error } = await supabase.from("dietary_entry_shares").insert({
     dietary_entry_id: entryId,
     group_id: groupId,

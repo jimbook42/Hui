@@ -76,7 +76,7 @@ export function buildInitialProposalDraft(
 
   return {
     title: "",
-    gatheringType: null,
+    gatheringType: "dinner_meal",
     gatheringTypeCustom: "",
     location: "",
     notes: "",

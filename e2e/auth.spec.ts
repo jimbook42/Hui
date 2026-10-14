@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 
+import { signInWithEmail } from "./helpers/email-auth";
 import { hasPublicSupabaseConfig } from "../src/lib/supabase/env";
 
 const hasLiveAuth =
@@ -23,6 +24,13 @@ test("unauthenticated profile access redirects to sign-in", async ({ page }) => 
   await expect(page).toHaveURL(/\/sign-in/);
 });
 
+test("privacy policy is public", async ({ page }) => {
+  await page.goto("/privacy");
+  await expect(page).toHaveURL(/\/privacy/);
+  await expect(page.getByRole("heading", { name: "Privacy policy" })).toBeVisible();
+  await expect(page.locator("#delete-your-data")).toBeVisible();
+});
+
 test("sign-in shows confirmation after account deletion", async ({ page }) => {
   await page.goto("/sign-in?deleted=1");
   await expect(page.getByText(/Your account was deleted/)).toBeVisible();
@@ -30,18 +38,23 @@ test("sign-in shows confirmation after account deletion", async ({ page }) => {
 
 test("sign-in and sign-up pages render", async ({ page }) => {
   await page.goto("/sign-in");
-  await expect(page.getByLabel("Email")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Continue with Microsoft" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Continue with Facebook" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(3);
+  await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in with Microsoft" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in with Facebook" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Sign in with/i })).toHaveCount(3);
   await expect(page.getByRole("button", { name: "Continue with Apple" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Sign up with email" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in with email" })).toBeVisible();
+
+  await page.goto("/sign-in/email");
+  await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+
   await page.goto("/sign-up");
   await expect(page.getByLabel("Display name")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Continue with Microsoft" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Continue with Facebook" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Continue with/i })).toHaveCount(3);
+  await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Confirm email")).toBeVisible();
+  await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
 });
 
 test("OAuth cancellation shows a friendly sign-in notice", async ({ page }) => {
@@ -67,13 +80,12 @@ test.describe("live Supabase auth", () => {
     await page.goto("/sign-up");
     await page.getByLabel("Display name").fill(displayName);
     await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Confirm email").fill(email);
     await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Sign up" }).click();
+    await page.getByLabel("Confirm password").fill(password);
+    await page.getByRole("button", { name: "Create account" }).click();
 
-    await page.goto("/sign-in");
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await signInWithEmail(page, email, password);
     await expect(page).toHaveURL(/\/dashboard/);
 
     await page.goto("/profile");

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useActionState } from "react";
 
 import type { AuthActionState } from "@/app/auth/actions";
+import { AuthSlowActionNotice } from "@/components/auth/auth-slow-action-notice";
 import {
   beginInteraction,
   endInteraction,
@@ -21,6 +22,8 @@ type AuthFormProps = {
   hiddenFields?: Record<string, string>;
   /** Re-fetch server data after a successful action message (e.g. profile save). */
   refreshOnSuccess?: boolean;
+  /** Show slow-sign-in messaging while the action is pending. */
+  showSlowSignInNotice?: boolean;
 };
 
 const initialState: AuthActionState = {};
@@ -38,6 +41,7 @@ export function AuthForm({
   children,
   hiddenFields,
   refreshOnSuccess = false,
+  showSlowSignInNotice = false,
 }: AuthFormProps) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const router = useRouter();
@@ -110,6 +114,7 @@ export function AuthForm({
       >
         {pending ? "Please wait…" : submitLabel}
       </button>
+      {showSlowSignInNotice ? <AuthSlowActionNotice pending={pending} /> : null}
     </form>
   );
 }
@@ -121,6 +126,7 @@ export function AuthField({
   autoComplete,
   required = true,
   defaultValue,
+  onPasteBlocked,
 }: {
   label: string;
   name: string;
@@ -128,6 +134,8 @@ export function AuthField({
   autoComplete?: string;
   required?: boolean;
   defaultValue?: string;
+  /** Block paste on confirm-email fields to reduce typos. */
+  onPasteBlocked?: boolean;
 }) {
   const ctx = useContext(AuthFormFieldContext);
   const preserved = ctx?.fields;
@@ -154,6 +162,13 @@ export function AuthField({
         autoComplete={autoComplete}
         required={required}
         defaultValue={name === "password" ? undefined : resolvedDefault}
+        onPaste={
+          onPasteBlocked
+            ? (event) => {
+                event.preventDefault();
+              }
+            : undefined
+        }
       />
     </label>
   );

@@ -38,13 +38,13 @@ describe("auth providers", () => {
   });
 
   it("defines planned OAuth providers with continue labels", () => {
-    expect(getAuthProvider("google")?.continueLabel).toBe("Continue with Google");
+    expect(getAuthProvider("google")?.continueLabel).toBe("Sign in with Google");
     expect(getAuthProvider("azure")?.continueLabel).toBe(
-      "Continue with Microsoft",
+      "Sign in with Microsoft",
     );
     expect(getAuthProvider("apple")?.continueLabel).toBe("Continue with Apple");
     expect(getAuthProvider("facebook")?.continueLabel).toBe(
-      "Continue with Facebook",
+      "Sign in with Facebook",
     );
   });
 

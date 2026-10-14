@@ -100,8 +100,10 @@ export async function countUnreadNotifications(
 export async function listMemberNotifications(
   supabase: SupabaseClient,
   userId: string,
-  limit = 50,
+  options?: { limit?: number; offset?: number },
 ): Promise<MemberNotification[]> {
+  const limit = options?.limit ?? 50;
+  const offset = options?.offset ?? 0;
   const { data, error } = await supabase
     .from("member_notifications")
     .select(
@@ -109,7 +111,7 @@ export async function listMemberNotifications(
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
 
   if (error || !data) {
     return [];

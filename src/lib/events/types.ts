@@ -48,5 +48,6 @@ export type EventDetail = {
   updatedAt: string;
   cancelledAt: string | null;
   responseDeadlineAt: string | null;
+  confirmationMethod: "consensus" | "organiser" | null;
   viewerRole: "owner" | "admin" | "member";
 };

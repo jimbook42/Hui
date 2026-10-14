@@ -45,27 +45,31 @@ import { buildProposedHuiGuidance } from "@/domain/events/proposed-guidance";
 import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
 import { eventKindLabel } from "@/lib/events/labels";
 import { GroupInviteShareBlock } from "@/components/groups/group-invite-share-block";
-import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
 import { loadEventPage } from "@/lib/events/event-page-data";
 import { eventManagePath } from "@/lib/events/paths";
 import type { EventDetail } from "@/lib/events/types";
-import { getServerSupabase } from "@/lib/auth/server-session";
 
 type SectionProps = { detail: EventDetail; userId: string };
 
 /* ------------------------------------------------------------------ hero facts */
 
-export async function EventHeroMeta({ detail, userId }: SectionProps) {
-  const supabase = await getServerSupabase();
-  const [data, appOrigin, inviteTokenResult] = await Promise.all([
-    loadEventPage(detail, userId),
-    resolveAuthRedirectOrigin(),
-    supabase.rpc("get_group_invite_link", { p_group_id: detail.groupId }),
-  ]);
-  const inviteToken =
-    !inviteTokenResult.error && typeof inviteTokenResult.data === "string"
-      ? inviteTokenResult.data
-      : null;
+type EventHeroMetaProps = SectionProps & {
+  pageData?: Awaited<ReturnType<typeof loadEventPage>>;
+  appOrigin?: string;
+  inviteToken?: string | null;
+};
+
+export function EventHeroMeta({
+  detail,
+  userId,
+  pageData,
+  appOrigin,
+  inviteToken = null,
+}: EventHeroMetaProps & {
+  pageData: Awaited<ReturnType<typeof loadEventPage>>;
+  appOrigin: string;
+}) {
+  const data = pageData;
   const tz = data.displayTimeZone;
   const startsAt = detail.startsAt ?? data.focusCandidate?.startsAt ?? null;
   const endsAt = detail.startsAt ? detail.endsAt : (data.focusCandidate?.endsAt ?? null);
@@ -101,6 +105,7 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
           consensusRule: data.settings.consensusRule,
           counts: data.counts,
           maybeResponsesEnabled: data.scheduling.maybeResponsesEnabled,
+          confirmationMethod: detail.confirmationMethod,
         })
       : null;
 

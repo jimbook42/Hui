@@ -19,6 +19,7 @@ export type GroupMemberRow = {
 
 export type GroupSettingsRow = {
   whoMayPropose: "admins_only" | "any_member";
+  planningRemindersAudience: "admins_only" | "everyone";
   oneOffEventsAllowed: boolean;
   recurringEventsEnabled: boolean;
   maybeResponsesEnabled: boolean;

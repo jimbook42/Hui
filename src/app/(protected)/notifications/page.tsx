@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app/app-shell";
-import { NotificationsList } from "@/components/notifications/notifications-list";
+import { NotificationsListPaginated } from "@/components/notifications/notifications-list-paginated";
 import {
   listMemberNotifications,
   syncReconnectReminders,
@@ -17,7 +17,7 @@ export default async function NotificationsPage() {
   schedulePushDelivery();
 
   const notifications = user
-    ? await listMemberNotifications(supabase, user.id)
+    ? await listMemberNotifications(supabase, user.id, { limit: 50, offset: 0 })
     : [];
 
   return (
@@ -25,7 +25,10 @@ export default async function NotificationsPage() {
       title="Notifications"
       subtitle="What needs you, and what has changed. Private availability and dietary details never appear here."
     >
-      <NotificationsList notifications={notifications} />
+      <NotificationsListPaginated
+        initialNotifications={notifications}
+        initialHasMore={notifications.length === 50}
+      />
     </AppShell>
   );
 }

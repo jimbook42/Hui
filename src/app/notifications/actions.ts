@@ -3,8 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { listMemberNotifications } from "@/lib/notifications/queries";
 import { notificationHref, type MemberNotification } from "@/lib/notifications/types";
 import { createClient } from "@/lib/supabase/server";
+
+const NOTIFICATIONS_PAGE_SIZE = 50;
 
 export type NotificationActionState = {
   error?: string;
@@ -154,4 +157,20 @@ export async function openNotificationAction(formData: FormData): Promise<void> 
 
   revalidatePath("/notifications");
   redirect(notificationHref({ groupId, eventId, kind }));
+}
+
+export async function loadMoreNotificationsAction(offset: number): Promise<{
+  notifications: MemberNotification[];
+  hasMore: boolean;
+  error?: string;
+}> {
+  const { supabase, user } = await requireUser();
+  const notifications = await listMemberNotifications(supabase, user.id, {
+    limit: NOTIFICATIONS_PAGE_SIZE,
+    offset,
+  });
+  return {
+    notifications,
+    hasMore: notifications.length === NOTIFICATIONS_PAGE_SIZE,
+  };
 }

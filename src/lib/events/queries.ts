@@ -93,6 +93,7 @@ export async function getEventDetail(
       updated_at,
       cancelled_at,
       response_deadline_at,
+      confirmation_method,
       groups:group_id (
         name
       ),
@@ -187,6 +188,10 @@ export async function getEventDetail(
     updatedAt: event.updated_at as string,
     cancelledAt: event.cancelled_at as string | null,
     responseDeadlineAt: (event.response_deadline_at as string | null) ?? null,
+    confirmationMethod:
+      event.confirmation_method === "organiser" || event.confirmation_method === "consensus"
+        ? event.confirmation_method
+        : null,
     viewerRole: membership.role as MembershipRole,
   };
 }
