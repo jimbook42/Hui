@@ -24,7 +24,9 @@ export type ParticipantFlowStep =
 export type ParticipantTimeCandidate = Pick<
   EventCandidateRow,
   "id" | "startsAt" | "endsAt" | "status" | "viewerResponse"
->;
+> & {
+  viewerPrivateNote?: string | null;
+};
 
 export function pickParticipantTimeCandidate(
   candidates: ParticipantTimeCandidate[],

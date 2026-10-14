@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
 import type { EventActionState } from "@/app/events/actions";
 import { addCandidateAction, setAvailabilityResponseAction } from "@/app/events/scheduling-actions";
@@ -152,8 +159,17 @@ export function EventParticipantRespondFlow({
   >({});
   const [actionError, setActionError] = useState<string | null>(null);
   const [saveToast, setSaveToast] = useState<string | null>(null);
-  const [noNote, setNoNote] = useState("");
-  const [noNotesByCandidate, setNoNotesByCandidate] = useState<Record<string, string>>({});
+  const [noNote, setNoNote] = useState(() => candidate.viewerPrivateNote ?? "");
+  const [noNotesByCandidate, setNoNotesByCandidate] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    for (const row of respondAttendanceCandidates(proposedCandidates, eventStatus)) {
+      if (row.viewerPrivateNote) {
+        initial[row.id] = row.viewerPrivateNote;
+      }
+    }
+    return initial;
+  });
+  const noteSaveTimersRef = useRef<Record<string, number>>({});
   const [suggestSubmittedRange, setSuggestSubmittedRange] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState("");
   const [timeStart, setTimeStart] = useState("12:00");
@@ -315,6 +331,15 @@ export function EventParticipantRespondFlow({
     return () => window.removeEventListener("popstate", onPop);
   }, [step, showBringStep]);
 
+  useEffect(() => {
+    const timers = noteSaveTimersRef.current;
+    return () => {
+      for (const timer of Object.values(timers)) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, []);
+
   function saveAttendanceForCandidate(
     targetCandidateId: string,
     choice: AvailabilityChoice,
@@ -327,11 +352,20 @@ export function EventParticipantRespondFlow({
       return;
     }
     const existing = responsesByCandidate[targetCandidateId] ?? null;
-    if (choice === existing && advanceOnSave) {
-      if (!multipleTimeOptions) {
-        pushStep(nextStepAfterAttendanceSave(choice));
+    const noteForSave = multipleTimeOptions
+      ? (noNotesByCandidate[targetCandidateId] ?? "").trim()
+      : noNote.trim();
+    if (choice === existing) {
+      if (choice === "unavailable") {
+        // Note-only update after the user already answered no.
+      } else if (advanceOnSave) {
+        if (!multipleTimeOptions) {
+          pushStep(nextStepAfterAttendanceSave(choice));
+        }
+        return;
+      } else {
+        return;
       }
-      return;
     }
     const interaction = `attendance_${targetCandidateId}_${choice}`;
     beginInteraction(interaction);
@@ -339,6 +373,9 @@ export function EventParticipantRespondFlow({
     setActionError(null);
     setResponsesByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
     setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
+    if (!multipleTimeOptions) {
+      setResponseOverride(choice);
+    }
     const timeLabelForToast =
       candidateTimeLabels[targetCandidateId] ??
       (targetCandidateId === candidate.id ? focusTimeLabel : "");
@@ -349,10 +386,7 @@ export function EventParticipantRespondFlow({
       formData.set("event_id", eventId);
       formData.set("candidate_id", targetCandidateId);
       formData.set("response", choice);
-      const noteForSave = multipleTimeOptions
-        ? (noNotesByCandidate[targetCandidateId] ?? "").trim()
-        : noNote.trim();
-      if (choice === "unavailable" && noteForSave) {
+      if (choice === "unavailable") {
         formData.set("private_note", noteForSave);
       }
       const result: EventActionState = await setAvailabilityResponseAction({}, formData);
@@ -390,7 +424,22 @@ export function EventParticipantRespondFlow({
   }
 
   function saveAttendance(choice: AvailabilityChoice) {
-    saveAttendanceForCandidate(candidate.id, choice);
+    saveAttendanceForCandidate(candidate.id, choice, choice !== "unavailable");
+  }
+
+  function queueNoteSave(targetCandidateId: string) {
+    const existingTimer = noteSaveTimersRef.current[targetCandidateId];
+    if (existingTimer) {
+      window.clearTimeout(existingTimer);
+    }
+    noteSaveTimersRef.current[targetCandidateId] = window.setTimeout(() => {
+      const choice =
+        responsesByCandidate[targetCandidateId] ??
+        (targetCandidateId === candidate.id ? viewerResponse : null);
+      if (choice === "unavailable") {
+        saveAttendanceForCandidate(targetCandidateId, "unavailable", false);
+      }
+    }, 500);
   }
 
   const multiAnsweredCount = attendanceCandidates.filter(
@@ -581,12 +630,14 @@ export function EventParticipantRespondFlow({
                             type="text"
                             name={`private_note_${row.id}`}
                             value={noNotesByCandidate[row.id] ?? ""}
-                            onChange={(event) =>
+                            onChange={(event) => {
+                              const value = event.target.value;
                               setNoNotesByCandidate((current) => ({
                                 ...current,
-                                [row.id]: event.target.value,
-                              }))
-                            }
+                                [row.id]: value,
+                              }));
+                              queueNoteSave(row.id);
+                            }}
                             maxLength={500}
                             className="hui-input"
                             placeholder="e.g. Away that weekend"
@@ -668,7 +719,10 @@ export function EventParticipantRespondFlow({
                 type="text"
                 name="private_note"
                 value={noNote}
-                onChange={(event) => setNoNote(event.target.value)}
+                onChange={(event) => {
+                  setNoNote(event.target.value);
+                  queueNoteSave(candidate.id);
+                }}
                 maxLength={500}
                 className="hui-input"
                 placeholder="e.g. Away that weekend"
@@ -682,6 +736,15 @@ export function EventParticipantRespondFlow({
           ) : null}
           {viewerResponse === "available" || viewerResponse === "maybe" ? (
             <PendingButton type="button" size="touch" onClick={() => pushStep("place")}>
+              Continue
+            </PendingButton>
+          ) : null}
+          {viewerResponse === "unavailable" ? (
+            <PendingButton
+              type="button"
+              size="touch"
+              onClick={() => pushStep(nextStepAfterAttendanceSave("unavailable"))}
+            >
               Continue
             </PendingButton>
           ) : null}

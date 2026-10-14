@@ -121,13 +121,11 @@ export default async function GroupDetailPage({ params }: PageProps) {
   const viewerCanManageCategories = canManageContributionCategories(detail.viewerRole);
 
   let inviteToken: string | null = null;
-  if (viewerCanManage) {
-    const { data: tokenData, error: inviteError } = await supabase.rpc("get_group_invite_link", {
-      p_group_id: groupId,
-    });
-    if (!inviteError && typeof tokenData === "string") {
-      inviteToken = tokenData;
-    }
+  const { data: tokenData, error: inviteError } = await supabase.rpc("get_group_invite_link", {
+    p_group_id: groupId,
+  });
+  if (!inviteError && typeof tokenData === "string") {
+    inviteToken = tokenData;
   }
   const appOrigin = await resolveAuthRedirectOrigin();
 
@@ -174,7 +172,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
             />
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            {viewerCanManage && inviteToken ? (
+            {inviteToken ? (
               <GroupInviteHeroButton
                 groupName={detail.name}
                 inviteToken={inviteToken}

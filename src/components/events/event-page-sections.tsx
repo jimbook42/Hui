@@ -65,7 +65,7 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
         startsAt: startsAt!,
         endsAt,
         timeZone: tz,
-        showRelativeWhen: !completed,
+        showRelativeWhen: !completed && !confirmed,
       })
     : null;
 
@@ -187,6 +187,7 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
           eventId={detail.id}
           candidateId={data.primaryCandidate.id}
           serverResponse={data.viewerResponse}
+          serverPrivateNote={data.primaryCandidate.viewerPrivateNote}
           maybeResponsesEnabled={data.scheduling.maybeResponsesEnabled}
           confirmed={confirmed}
           hasContribution={viewerReleasableContributions > 0}

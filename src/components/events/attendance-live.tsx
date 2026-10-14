@@ -93,6 +93,8 @@ type ViewerResponseCardProps = {
   candidateId: string;
   /** What the server currently has for the viewer. */
   serverResponse: AvailabilityChoice | null;
+  /** Optional private note when the viewer answered no (visible only to them). */
+  serverPrivateNote?: string | null;
   maybeResponsesEnabled: boolean;
   confirmed: boolean;
   /** Viewer has claimed something to bring (so declining releases it). */
@@ -110,6 +112,7 @@ export function ViewerResponseCard({
   eventId,
   candidateId,
   serverResponse,
+  serverPrivateNote,
   maybeResponsesEnabled,
   confirmed,
   hasContribution,
@@ -190,6 +193,11 @@ export function ViewerResponseCard({
               {confirmed
                 ? "Let the group know if you can make it."
                 : "The group is waiting to hear from you."}
+            </p>
+          ) : null}
+          {!pending && response === "unavailable" && serverPrivateNote?.trim() ? (
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+              Your note: {serverPrivateNote.trim()}
             </p>
           ) : null}
         </div>

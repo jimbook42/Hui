@@ -111,6 +111,7 @@ export function evaluateCandidateConsensus(
   const responses = latestResponses(input.responses);
 
   let acceptedCount = 0;
+  let yesCount = 0;
   let maybeCount = 0;
   let unavailableCount = 0;
   let respondedCount = 0;
@@ -123,6 +124,9 @@ export function evaluateCandidateConsensus(
       continue;
     }
     respondedCount += 1;
+    if (response === "yes") {
+      yesCount += 1;
+    }
     if (response === "maybe") {
       maybeCount += 1;
     }
@@ -151,7 +155,7 @@ export function evaluateCandidateConsensus(
     failureReason = "all_active_members";
   } else if (
     input.consensusRule === "majority_active_members" &&
-    (acceptedCount < 2 || acceptedCount * 2 <= eligibleMemberCount)
+    (yesCount < 2 || yesCount * 2 <= eligibleMemberCount)
   ) {
     failureReason = "majority_active_members";
   } else if (
