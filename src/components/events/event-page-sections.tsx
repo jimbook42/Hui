@@ -26,6 +26,9 @@ import {
 } from "@/components/hui/icons";
 import { SectionHeader } from "@/components/hui/section-header";
 import { AddToCalendarButton } from "@/components/events/add-to-calendar-button";
+import { EventHostGentlePrompt } from "@/components/events/event-host-gentle-prompt";
+import { formatConfirmedHeroStatusLine } from "@/domain/scheduling/confirmed-because";
+import { whoIsComingPresentation } from "@/domain/events/who-is-coming";
 import { EventHostSection } from "@/components/hosts/event-host-section";
 import { canDownloadEventIcs } from "@/lib/calendar/event-ics-export";
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
@@ -62,7 +65,7 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
         startsAt: startsAt!,
         endsAt,
         timeZone: tz,
-        showRelativeWhen: !completed,
+        showRelativeWhen: !completed && !confirmed,
       })
     : null;
 
@@ -76,6 +79,15 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
   const followsHostCategoryIds = new Set(
     data.contributionCategories.filter((category) => category.followsHost).map((category) => category.id),
   );
+  const confirmedStatusLine =
+    confirmed && data.settings
+      ? formatConfirmedHeroStatusLine({
+          consensusRule: data.settings.consensusRule,
+          counts: data.counts,
+          maybeResponsesEnabled: data.scheduling.maybeResponsesEnabled,
+        })
+      : null;
+
   const viewerReleasableContributions = data.eventContributions.filter(
     (row) =>
       row.userId === userId &&
@@ -93,6 +105,11 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
               badgeTone={confirmed || completed ? "sage" : "primary"}
               showProposedHint={!confirmed && !completed && !closed}
             />
+            {confirmedStatusLine ? (
+              <p className="mt-3 text-sm font-semibold text-muted-foreground" role="status">
+                {confirmedStatusLine}
+              </p>
+            ) : null}
           </div>
           {canDownloadEventIcs(detail.status, startsAt) ? (
             <AddToCalendarButton eventId={detail.id} variant="page" className="shrink-0" />
@@ -169,7 +186,12 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
         <ViewerResponseCard
           eventId={detail.id}
           candidateId={data.primaryCandidate.id}
-          serverResponse={data.viewerResponse}
+          serverResponse={
+            data.multiTimeAnswerPresentation?.statusChoice ?? data.viewerResponse
+          }
+          answerSummaryLabel={data.multiTimeAnswerPresentation?.summaryLabel ?? null}
+          showPlaceFollowUp={data.multiTimeAnswerPresentation?.showPlaceFollowUp ?? true}
+          serverPrivateNote={data.primaryCandidate.viewerPrivateNote}
           maybeResponsesEnabled={data.scheduling.maybeResponsesEnabled}
           confirmed={confirmed}
           hasContribution={viewerReleasableContributions > 0}
@@ -248,36 +270,62 @@ export async function EventProposedGuidanceCard({
 
 export async function EventPeopleCard({ detail, userId }: SectionProps) {
   const data = await loadEventPage(detail, userId);
-  const roster = data.primaryRoster;
-  const counts = data.counts;
   const closed = detail.status === "cancelled";
 
   if (closed) {
     return null;
   }
 
-  let summary = "";
-  if (counts) {
-    const parts = [`${counts.yes} coming`];
-    if (counts.maybe > 0 && data.scheduling.maybeResponsesEnabled) {
-      parts.push(`${counts.maybe} maybe`);
-    }
-    if (counts.pending > 0) {
-      parts.push(`${counts.pending} yet to answer`);
-    }
-    summary = parts.join(" · ");
-  }
+  const presentation = whoIsComingPresentation({
+    eventStatus: detail.status,
+    candidates: data.scheduling.candidates,
+    attendanceRosters: data.attendanceRosters,
+    maybeResponsesEnabled: data.scheduling.maybeResponsesEnabled,
+    focusCandidateId: data.focusCandidate?.id ?? null,
+  });
+  const timeLabels =
+    presentation.mode === "per-candidate"
+      ? buildEventTimeLabelMap(
+          data.scheduling.candidates.filter((c) => c.status === "proposed"),
+          data.displayTimeZone,
+          "compact",
+        )
+      : {};
 
   return (
     <HuiSurface padding="lg" shape="organic" elevated className="hui-rise-2">
       <SectionHeader
         title="Who is coming"
-        description={roster && roster.members.length > 0 ? summary : undefined}
+        description={
+          presentation.mode === "single" && presentation.summary
+            ? presentation.summary
+            : undefined
+        }
       />
-      {roster && roster.members.length > 0 ? (
+      {presentation.mode === "per-candidate" ? (
+        <ul className="mt-4 space-y-6">
+          {presentation.rows.map((row) => (
+            <li key={row.candidateId}>
+              <p className="text-sm font-extrabold text-foreground">
+                {timeLabels[row.candidateId] ?? "Proposed time"}
+              </p>
+              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{row.summary}</p>
+              <LiveGatheringVisual
+                roster={row.roster}
+                viewerUserId={userId}
+                eventTitle={detail.title}
+                className="mt-3"
+              />
+            </li>
+          ))}
+          <p className="hui-type-supporting text-center">
+            Shapes show how people answered. Private notes are never shown.
+          </p>
+        </ul>
+      ) : presentation.mode === "single" && presentation.roster && presentation.roster.members.length > 0 ? (
         <>
           <LiveGatheringVisual
-            roster={roster}
+            roster={presentation.roster}
             viewerUserId={userId}
             eventTitle={detail.title}
             className="mt-4"
@@ -378,6 +426,29 @@ export async function EventOpenDecisionsCard({ detail, userId }: SectionProps) {
         />
       </div>
     </HuiSurface>
+  );
+}
+
+export async function EventHostGentlePromptSection({ detail, userId }: SectionProps) {
+  const data = await loadEventPage(detail, userId);
+  const suggestedName = data.hostContext?.view.pendingProposal?.displayName ?? null;
+  if (!data.canAcceptHost && !data.canSwapHost) {
+    return null;
+  }
+
+  return (
+    <EventHostGentlePrompt
+      eventId={detail.id}
+      canAcceptHost={data.canAcceptHost}
+      canRequestSwap={data.canSwapHost}
+      hostSwapHasReplacement={data.hostSwapReplacementAvailable}
+      suggestedHostName={suggestedName}
+      hostingEnabled={Boolean(data.settings?.hostingEnabled)}
+      hostPlaceRequired={detail.hostPlaceRequired}
+      eventLocation={detail.location}
+      eventCoordinates={detail.locationCoordinates}
+      viewerHomeLocation={data.viewerHomeLocation}
+    />
   );
 }
 

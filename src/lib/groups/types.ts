@@ -24,7 +24,11 @@ export type GroupSettingsRow = {
   maybeResponsesEnabled: boolean;
   minimumAttendees: number;
   proposalDeadlineHours: number | null;
-  consensusRule: "required_participants" | "minimum_attendees" | "all_active_members";
+  consensusRule:
+    | "required_participants"
+    | "minimum_attendees"
+    | "all_active_members"
+    | "majority_active_members";
   adminVetoEnabled: boolean;
   hostVetoEnabled: boolean;
   hostingEnabled: boolean;

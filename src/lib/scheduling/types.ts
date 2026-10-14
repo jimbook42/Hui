@@ -36,7 +36,8 @@ export type CandidateConsensusView = {
   maybeResponsesEnabled: boolean;
   requiredParticipantCount: number;
   requiredAcceptedCount: number;
-  failureReason: ConsensusFailureReason | "candidate_not_active" | null;
+  /** Known reasons from the DB, or an unknown string from a newer migration. */
+  failureReason: ConsensusFailureReason | "candidate_not_active" | string | null;
 };
 
 export type EventConsensusSummary = {

@@ -20,7 +20,7 @@ export function JoinInviteButton({
 }) {
   const [state, formAction, pending] = useActionState(joinGroupViaInviteAction, initialState);
   const label = hasActivePlanning
-    ? "Join the planning"
+    ? "Join and answer"
     : groupName.trim()
       ? `Join ${groupName.trim()}`
       : "Join group";
@@ -46,26 +46,35 @@ export function JoinInviteButton({
 export function JoinAuthLinks({
   token,
   focusEventId,
+  groupName,
 }: {
   token: string;
   focusEventId?: string | null;
+  groupName: string;
 }) {
   const joinPath =
     focusEventId ? `/join/${token}?event=${encodeURIComponent(focusEventId)}` : `/join/${token}`;
   const next = encodeURIComponent(joinPath);
+  const trimmedGroup = groupName.trim();
+  const signInLabel = trimmedGroup
+    ? `Sign in to join ${trimmedGroup}`
+    : "Sign in to join";
+  const signUpLabel = trimmedGroup
+    ? `Create account to join ${trimmedGroup}`
+    : "Create account to join";
   return (
     <div className="mt-6 flex flex-col gap-3 text-sm">
       <Link
         href={`/sign-in?next=${next}`}
         className="hui-btn hui-btn-primary rounded-full hui-focus-ring"
       >
-        Sign in to join
+        {signInLabel}
       </Link>
       <Link
         href={`/sign-up?next=${next}`}
         className="hui-btn hui-btn-secondary rounded-full hui-focus-ring"
       >
-        Create account to join
+        {signUpLabel}
       </Link>
     </div>
   );

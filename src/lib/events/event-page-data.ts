@@ -17,8 +17,9 @@ import { buildContributionSlots, isContributionSlotFilled } from "@/domain/contr
 import { buildEventAttention } from "@/domain/events/attention";
 import { attendanceStateFromChoice } from "@/domain/events/home";
 import {
-  bestViewerResponseAcrossProposedCandidates,
+  multiTimeProposingAnswerPresentation,
   pickParticipantTimeCandidate,
+  viewerResponseForDisplay,
 } from "@/domain/events/participant-flow";
 import {
   canAccessEventManagement,
@@ -198,10 +199,14 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
 
   const displayTimeZone = detail.timezone ?? settings?.timezone ?? "Pacific/Auckland";
 
-  const viewerResponse =
-    bestViewerResponseAcrossProposedCandidates(scheduling.candidates) ??
-    focusCandidate?.viewerResponse ??
-    null;
+  const multiTimeAnswerPresentation = multiTimeProposingAnswerPresentation(
+    scheduling.candidates,
+    detail.status,
+  );
+  const viewerResponse = viewerResponseForDisplay(
+    scheduling.candidates,
+    detail.status,
+  );
   const viewerState = attendanceStateFromChoice(viewerResponse, scheduling.maybeResponsesEnabled);
   const counts = primaryRoster
     ? countAttendance(primaryRoster.members, scheduling.maybeResponsesEnabled)
@@ -292,6 +297,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     primaryRoster,
     displayTimeZone,
     viewerResponse,
+    multiTimeAnswerPresentation,
     viewerState,
     counts,
     attention,

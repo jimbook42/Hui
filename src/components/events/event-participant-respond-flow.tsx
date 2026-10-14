@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
 import type { EventActionState } from "@/app/events/actions";
 import { addCandidateAction, setAvailabilityResponseAction } from "@/app/events/scheduling-actions";
@@ -28,10 +35,13 @@ import {
   sortContributionSlotsForDisplay,
 } from "@/domain/contributions/slots";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
+import { privateAttendanceNoteForCandidate } from "@/domain/events/private-attendance-note";
+import type { EventStatus } from "@/domain/events/types";
 import {
   nextStepAfterAttendanceSave,
   nextStepAfterPlace,
   participantFlowStepsForBack,
+  respondAttendanceCandidates,
   shouldShowParticipantBringStep,
   type ParticipantFlowStep,
 } from "@/domain/events/participant-flow";
@@ -43,6 +53,8 @@ import {
   participantAttendanceChoiceLabel,
   participantAttendanceSummaryLabel,
 } from "@/domain/scheduling/participant-labels";
+import { participantSaveToastMessage } from "@/domain/scheduling/participant-save-feedback";
+import { markHostPromptDeferred } from "@/lib/events/defer-host-prompt";
 import type { StandingAvailabilityHint } from "@/domain/scheduling/standing-availability";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 import { eventDetailPath } from "@/lib/events/paths";
@@ -78,6 +90,7 @@ type EventParticipantRespondFlowProps = {
   focusTimeLabel: string;
   candidateTimeLabels: Record<string, string>;
   replyByLabel: string | null;
+  eventStatus: EventStatus;
 };
 
 const MAIN_FLOW_WITH_BRING: ParticipantFlowStep[] = ["time", "place", "bring", "done"];
@@ -121,17 +134,22 @@ export function EventParticipantRespondFlow({
   focusTimeLabel,
   candidateTimeLabels,
   replyByLabel,
+  eventStatus,
 }: EventParticipantRespondFlowProps) {
   const router = useRouter();
   const [step, setStep] = useState<ParticipantFlowStep>("time");
   const [responseOverride, setResponseOverride] = useState<AvailabilityChoice | null>(null);
   const viewerResponse = responseOverride ?? initialViewerResponse;
+  const attendanceCandidates = useMemo(
+    () => respondAttendanceCandidates(proposedCandidates, eventStatus),
+    [proposedCandidates, eventStatus],
+  );
   const multipleTimeOptions =
-    proposedCandidates.filter((row) => row.status === "proposed").length > 1;
+    eventStatus !== "confirmed" && attendanceCandidates.length > 1;
   const [responsesByCandidate, setResponsesByCandidate] = useState<Record<string, AvailabilityChoice | null>>(
     () => {
       const initial: Record<string, AvailabilityChoice | null> = {};
-      for (const row of proposedCandidates) {
+      for (const row of attendanceCandidates) {
         initial[row.id] = row.viewerResponse;
       }
       return initial;
@@ -141,6 +159,22 @@ export function EventParticipantRespondFlow({
     Record<string, AvailabilityChoice | null>
   >({});
   const [actionError, setActionError] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const initialNotesByCandidate = (() => {
+    const initial: Record<string, string> = {};
+    for (const row of respondAttendanceCandidates(proposedCandidates, eventStatus)) {
+      if (row.viewerPrivateNote) {
+        initial[row.id] = row.viewerPrivateNote;
+      }
+    }
+    return initial;
+  })();
+  const [noNote, setNoNote] = useState(() => candidate.viewerPrivateNote ?? "");
+  const [noNotesByCandidate, setNoNotesByCandidate] =
+    useState<Record<string, string>>(initialNotesByCandidate);
+  const noteSaveTimersRef = useRef<Record<string, number>>({});
+  const noNoteRef = useRef(candidate.viewerPrivateNote ?? "");
+  const noNotesByCandidateRef = useRef<Record<string, string>>(initialNotesByCandidate);
   const [suggestSubmittedRange, setSuggestSubmittedRange] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState("");
   const [timeStart, setTimeStart] = useState("12:00");
@@ -216,16 +250,24 @@ export function EventParticipantRespondFlow({
   }, [timeDate, timeStart, timeEnd, timeZone]);
   const attendanceOptions = availabilityResponseOptions(maybeResponsesEnabled);
 
+  const showSaveToast = useCallback((message: string) => {
+    setSaveToast(message);
+    window.setTimeout(() => setSaveToast(null), 4000);
+  }, []);
+
   const pushStep = useCallback(
     (next: ParticipantFlowStep) => {
       let resolved = next;
       if (next === "bring" && !showBringStep) {
         resolved = "done";
       }
+      if (resolved === "done" || resolved === "place" || resolved === "declined") {
+        markHostPromptDeferred(eventId);
+      }
       setStep(resolved);
       window.history.pushState({ participantStep: resolved }, "", `#${resolved}`);
     },
-    [showBringStep],
+    [eventId, showBringStep],
   );
 
   const goBack = useCallback(() => {
@@ -294,6 +336,32 @@ export function EventParticipantRespondFlow({
     return () => window.removeEventListener("popstate", onPop);
   }, [step, showBringStep]);
 
+  useEffect(() => {
+    const timers = noteSaveTimersRef.current;
+    return () => {
+      for (const timer of Object.values(timers)) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, []);
+
+  function readNoteForCandidate(targetCandidateId: string): string {
+    return privateAttendanceNoteForCandidate({
+      multipleTimeOptions,
+      candidateId: targetCandidateId,
+      notesByCandidate: noNotesByCandidateRef.current,
+      singleNote: noNoteRef.current,
+    });
+  }
+
+  function clearNoteSaveTimer(targetCandidateId: string) {
+    const existingTimer = noteSaveTimersRef.current[targetCandidateId];
+    if (existingTimer) {
+      window.clearTimeout(existingTimer);
+      delete noteSaveTimersRef.current[targetCandidateId];
+    }
+  }
+
   function saveAttendanceForCandidate(
     targetCandidateId: string,
     choice: AvailabilityChoice,
@@ -306,24 +374,41 @@ export function EventParticipantRespondFlow({
       return;
     }
     const existing = responsesByCandidate[targetCandidateId] ?? null;
-    if (choice === existing && advanceOnSave) {
-      if (!multipleTimeOptions) {
-        pushStep(nextStepAfterAttendanceSave(choice));
+    if (choice === existing) {
+      if (choice === "unavailable") {
+        // Note-only update after the user already answered no.
+      } else if (advanceOnSave) {
+        if (!multipleTimeOptions) {
+          pushStep(nextStepAfterAttendanceSave(choice));
+        }
+        return;
+      } else {
+        return;
       }
-      return;
     }
     const interaction = `attendance_${targetCandidateId}_${choice}`;
     beginInteraction(interaction);
     markInteraction(interaction, "handler-start");
     setActionError(null);
+    setResponsesByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
     setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
+    if (!multipleTimeOptions) {
+      setResponseOverride(choice);
+    }
+    const timeLabelForToast =
+      candidateTimeLabels[targetCandidateId] ??
+      (targetCandidateId === candidate.id ? focusTimeLabel : "");
 
     startSaveAttendance(async () => {
       markInteraction(interaction, "request-start");
+      const noteForSave = readNoteForCandidate(targetCandidateId);
       const formData = new FormData();
       formData.set("event_id", eventId);
       formData.set("candidate_id", targetCandidateId);
       formData.set("response", choice);
+      if (choice === "unavailable") {
+        formData.set("private_note", noteForSave);
+      }
       const result: EventActionState = await setAvailabilityResponseAction({}, formData);
       markInteraction(interaction, "request-end");
       if (result.error) {
@@ -336,8 +421,10 @@ export function EventParticipantRespondFlow({
         endInteraction(interaction);
         return;
       }
-      setResponsesByCandidate((current) => ({ ...current, [targetCandidateId]: choice }));
       setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
+      showSaveToast(
+        participantSaveToastMessage(choice, timeLabelForToast),
+      );
       if (!multipleTimeOptions && advanceOnSave) {
         setResponseOverride(choice);
         pushStep(nextStepAfterAttendanceSave(choice));
@@ -357,18 +444,37 @@ export function EventParticipantRespondFlow({
   }
 
   function saveAttendance(choice: AvailabilityChoice) {
-    saveAttendanceForCandidate(candidate.id, choice);
+    saveAttendanceForCandidate(candidate.id, choice, choice !== "unavailable");
   }
 
-  const openProposedCandidates = proposedCandidates.filter((row) => row.status === "proposed");
+  function flushNoteSave(targetCandidateId: string) {
+    clearNoteSaveTimer(targetCandidateId);
+    const choice =
+      responsesByCandidate[targetCandidateId] ??
+      (targetCandidateId === candidate.id ? viewerResponse : null);
+    if (choice === "unavailable") {
+      saveAttendanceForCandidate(targetCandidateId, "unavailable", false);
+    }
+  }
+
+  function queueNoteSave(targetCandidateId: string) {
+    clearNoteSaveTimer(targetCandidateId);
+    noteSaveTimersRef.current[targetCandidateId] = window.setTimeout(() => {
+      flushNoteSave(targetCandidateId);
+    }, 500);
+  }
+
+  const multiAnsweredCount = attendanceCandidates.filter(
+    (row) => responsesByCandidate[row.id] !== null,
+  ).length;
   const allMultiTimesAnswered =
     multipleTimeOptions &&
-    openProposedCandidates.every((row) => responsesByCandidate[row.id] !== null);
+    attendanceCandidates.every((row) => responsesByCandidate[row.id] !== null);
   const multiSummaryChoice: AvailabilityChoice | null = (() => {
     if (!multipleTimeOptions) {
       return viewerResponse;
     }
-    const values = openProposedCandidates
+    const values = attendanceCandidates
       .map((row) => responsesByCandidate[row.id])
       .filter((value): value is AvailabilityChoice => value !== null);
     if (values.some((value) => value === "available")) {
@@ -490,17 +596,28 @@ export function EventParticipantRespondFlow({
         </div>
       ) : null}
 
+      {saveToast ? (
+        <p
+          className="pointer-events-none fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-hui-lg bg-foreground px-4 py-3 text-center text-sm font-semibold text-background hui-shadow-lg"
+          role="status"
+        >
+          {saveToast}
+        </p>
+      ) : null}
+
       {step === "time" ? (
         <section className="hui-rise mt-6 space-y-5">
           {multipleTimeOptions ? (
             <>
-              <h1 className="hui-type-page-title text-foreground">Which times work for you?</h1>
+              <h1 className="hui-type-page-title text-foreground">Can you make it?</h1>
               <p className="hui-type-supporting">
-                Answer each option separately — changing one does not change the others.
+                {multiAnsweredCount} of {attendanceCandidates.length} answered — pick each time
+                separately.
               </p>
               <ul className="space-y-4">
-                {openProposedCandidates.map((row) => {
+                {attendanceCandidates.map((row) => {
                   const rowResponse = responsesByCandidate[row.id] ?? null;
+                  const rowPendingUnavailable = pendingByCandidate[row.id] === "unavailable";
                   return (
                     <li key={row.id} className="rounded-hui-xl bg-surface p-4 hui-shadow-sm">
                       <p className="text-sm font-extrabold text-foreground">
@@ -518,7 +635,9 @@ export function EventParticipantRespondFlow({
                             state={attendanceStateFromChoice(option, true)}
                             label={participantAttendanceChoiceLabel(option)}
                             selected={
-                              rowResponse === option && !pendingByCandidate[row.id]
+                              rowResponse === option &&
+                              !pendingByCandidate[row.id] &&
+                              rowResponse !== null
                             }
                             pending={pendingByCandidate[row.id] === option}
                             disabled={!canRespond}
@@ -526,6 +645,29 @@ export function EventParticipantRespondFlow({
                           />
                         ))}
                       </div>
+                      {rowResponse === "unavailable" || rowPendingUnavailable ? (
+                        <label className="hui-label mt-3 block">
+                          <span>Optional note (only if you want)</span>
+                          <input
+                            type="text"
+                            name={`private_note_${row.id}`}
+                            value={noNotesByCandidate[row.id] ?? ""}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              setNoNotesByCandidate((current) => {
+                                const next = { ...current, [row.id]: value };
+                                noNotesByCandidateRef.current = next;
+                                return next;
+                              });
+                              queueNoteSave(row.id);
+                            }}
+                            onBlur={() => flushNoteSave(row.id)}
+                            maxLength={500}
+                            className="hui-input"
+                            placeholder="e.g. Away that weekend"
+                          />
+                        </label>
+                      ) : null}
                     </li>
                   );
                 })}
@@ -544,23 +686,16 @@ export function EventParticipantRespondFlow({
                     pushStep(nextStepAfterAttendanceSave(multiSummaryChoice));
                   }}
                 >
-                  Continue
+                  Done
                 </PendingButton>
               ) : null}
             </>
           ) : (
             <>
-          {candidate.status === "proposed" ? (
-            <>
-              <h1 className="hui-type-page-title text-foreground">When could you make it?</h1>
-              <p className="hui-type-supporting">
-                Tell the group when you&apos;re available so everyone can work out a time that
-                suits.
-              </p>
-            </>
-          ) : (
-            <h1 className="hui-type-page-title text-foreground">Can you make this?</h1>
-          )}
+          <h1 className="hui-type-page-title text-foreground">Can you make it?</h1>
+          <p className="hui-type-supporting">
+            Tap the option that fits — your answer saves straight away.
+          </p>
           {standingAvailabilityHint && viewerResponse === null ? (
             <HuiSurface padding="sm" className="border border-accent/20 bg-accent/5">
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
@@ -579,7 +714,7 @@ export function EventParticipantRespondFlow({
               const savingThisCandidate = Boolean(pendingByCandidate[candidate.id]);
               const isPending = pendingByCandidate[candidate.id] === option;
               const isSelected =
-                viewerResponse === option && !savingThisCandidate;
+                viewerResponse === option && !savingThisCandidate && viewerResponse !== null;
               return (
                 <AttendanceChoice
                   key={option}
@@ -601,18 +736,45 @@ export function EventParticipantRespondFlow({
               />
             ) : null}
           </div>
+          {(viewerResponse === "unavailable" || pendingByCandidate[candidate.id] === "unavailable") ? (
+            <label className="hui-label block">
+              <span>Optional note (only if you want)</span>
+              <input
+                type="text"
+                name="private_note"
+                value={noNote}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setNoNote(value);
+                  noNoteRef.current = value;
+                  queueNoteSave(candidate.id);
+                }}
+                onBlur={() => flushNoteSave(candidate.id)}
+                maxLength={500}
+                className="hui-input"
+                placeholder="e.g. Away that weekend"
+              />
+            </label>
+          ) : null}
           {actionError ? (
             <p className="hui-message-error" role="alert">
               {actionError}
             </p>
           ) : null}
-          {viewerResponse && !pendingByCandidate[candidate.id] ? (
-            <p className="hui-message-success" role="status">
-              Saved: {participantAttendanceSummaryLabel(viewerResponse)}
-            </p>
-          ) : null}
           {viewerResponse === "available" || viewerResponse === "maybe" ? (
             <PendingButton type="button" size="touch" onClick={() => pushStep("place")}>
+              Continue
+            </PendingButton>
+          ) : null}
+          {viewerResponse === "unavailable" ? (
+            <PendingButton
+              type="button"
+              size="touch"
+              onClick={() => {
+                flushNoteSave(candidate.id);
+                pushStep(nextStepAfterAttendanceSave("unavailable"));
+              }}
+            >
               Continue
             </PendingButton>
           ) : null}

@@ -1,24 +1,24 @@
 import type { AvailabilityChoice } from "./types";
 
-/** Invitee task flow labels — not the coordination-page availability vocabulary. */
+/** Invitee task flow labels — short and consistent across the respond flow. */
 export function participantAttendanceChoiceLabel(choice: AvailabilityChoice): string {
   switch (choice) {
     case "available":
-      return "Yes, I can come";
+      return "Yes";
     case "maybe":
-      return "Maybe, I can make it work";
+      return "Maybe";
     case "unavailable":
-      return "No, I can't come";
+      return "No";
   }
 }
 
 export function participantAttendanceSummaryLabel(choice: AvailabilityChoice): string {
   switch (choice) {
     case "available":
-      return "Can come";
+      return "Yes";
     case "maybe":
-      return "Can make it work";
+      return "Maybe";
     case "unavailable":
-      return "Can't come";
+      return "No";
   }
 }

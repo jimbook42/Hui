@@ -7,6 +7,7 @@ export type InvitePlanningContext = {
   eventTitle: string;
   status: string;
   planningTargetDate: string | null;
+  proposedStartsAt: string | null;
   gatheringType: GatheringType | null;
   gatheringTypeCustom: string | null;
 };
@@ -44,6 +45,8 @@ function parseInvitePlanning(record: Record<string, unknown>): InvitePlanningCon
   }
   const planningTargetDate =
     typeof p.planningTargetDate === "string" ? p.planningTargetDate : null;
+  const proposedStartsAt =
+    typeof p.proposedStartsAt === "string" ? p.proposedStartsAt : null;
   const gatheringType = parseGatheringType(p.gatheringType);
   const gatheringTypeCustom =
     typeof p.gatheringTypeCustom === "string" ? p.gatheringTypeCustom : null;
@@ -52,6 +55,7 @@ function parseInvitePlanning(record: Record<string, unknown>): InvitePlanningCon
     eventTitle,
     status,
     planningTargetDate,
+    proposedStartsAt,
     gatheringType,
     gatheringTypeCustom,
   };

@@ -25,7 +25,7 @@ describe("buildEventAttention", () => {
     expect(buildEventAttention({ ...base, viewerResponse: null, hasCandidate: false })).toEqual([]);
   });
 
-  it("orders respond, host, confirm, contribute, decision", () => {
+  it("orders respond, confirm, contribute, decision (host is a separate gentle prompt)", () => {
     const items = buildEventAttention({
       ...base,
       status: "confirmed",
@@ -37,12 +37,11 @@ describe("buildEventAttention", () => {
     });
     expect(items.map((i) => i.kind)).toEqual([
       "respond",
-      "host",
       "confirm",
       "contribute",
       "decision",
     ]);
-    expect(items[3].title).toBe("3 things still need someone");
+    expect(items[2].title).toBe("3 things still need someone");
   });
 
   it("surfaces open generic decisions after contributions", () => {

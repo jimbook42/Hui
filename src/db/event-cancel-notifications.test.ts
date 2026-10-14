@@ -4,6 +4,8 @@ import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
+import { pinGroupToMinimumAttendeesConsensus } from "@/db/pin-group-consensus-for-tests";
+
 const HARNESS_SQL = `
 create schema if not exists auth;
 
@@ -99,6 +101,8 @@ describe("event cancel and reopen notifications", () => {
       ])
     ).rows[0].create_group;
 
+    await pinGroupToMinimumAttendeesConsensus(db, groupId);
+
     await db.query(
       `insert into public.group_memberships (group_id, user_id, role)
        values ($1, $2, 'member'), ($1, $3, 'member')`,
@@ -173,6 +177,8 @@ describe("event cancel and reopen notifications", () => {
         "Reopen notify group",
       ])
     ).rows[0].create_group;
+
+    await pinGroupToMinimumAttendeesConsensus(db, groupId);
 
     await db.query(
       `insert into public.group_memberships (group_id, user_id, role)

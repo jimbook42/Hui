@@ -94,6 +94,55 @@ describe("evaluateCandidateConsensus", () => {
     expect(disabled.failureReason).toBe("below_minimum_attendees");
   });
 
+  it("passes majority rule when more than half of active members say yes", () => {
+    const oneOfThree = evaluate({
+      consensusRule: "majority_active_members",
+      minimumAttendees: 1,
+      responses: [{ userId: "a", response: "yes" }],
+    });
+    const twoOfThree = evaluate({
+      consensusRule: "majority_active_members",
+      minimumAttendees: 1,
+      responses: [
+        { userId: "a", response: "yes" },
+        { userId: "b", response: "yes" },
+      ],
+    });
+
+    expect(oneOfThree.passes).toBe(false);
+    expect(oneOfThree.failureReason).toBe("majority_active_members");
+    expect(twoOfThree.passes).toBe(true);
+  });
+
+  it("does not pass majority when one member said yes and another maybe on the same candidate", () => {
+    const result = evaluate({
+      consensusRule: "majority_active_members",
+      minimumAttendees: 1,
+      maybeResponsesEnabled: true,
+      members: [
+        { userId: "a", consensusRequired: false },
+        { userId: "b", consensusRequired: false },
+      ],
+      responses: [
+        { userId: "a", response: "yes" },
+        { userId: "b", response: "maybe" },
+      ],
+    });
+    expect(result.passes).toBe(false);
+    expect(result.failureReason).toBe("majority_active_members");
+  });
+
+  it("does not pass majority on a single yes in a one-person group", () => {
+    const solo = evaluate({
+      consensusRule: "majority_active_members",
+      minimumAttendees: 1,
+      members: [{ userId: "solo", consensusRequired: false }],
+      responses: [{ userId: "solo", response: "yes" }],
+    });
+    expect(solo.passes).toBe(false);
+    expect(solo.failureReason).toBe("majority_active_members");
+  });
+
   it("fails all active members until every eligible member accepts", () => {
     const failing = evaluate({
       consensusRule: "all_active_members",

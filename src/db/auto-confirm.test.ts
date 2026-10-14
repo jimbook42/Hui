@@ -2,6 +2,8 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { PGlite } from "@electric-sql/pglite";
+
+import { pinGroupToMinimumAttendeesConsensus } from "@/db/pin-group-consensus-for-tests";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 const HARNESS_SQL = `
@@ -103,10 +105,7 @@ describe("auto-confirm on consensus", () => {
       [groupId, ids.member],
     );
 
-    await db.query(
-      `update public.group_settings set minimum_attendees = $2 where group_id = $1`,
-      [groupId, minimumAttendees],
-    );
+    await pinGroupToMinimumAttendeesConsensus(db, groupId, minimumAttendees);
 
     const eventId = (
       await db.query<{ id: string }>(

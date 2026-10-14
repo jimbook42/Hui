@@ -12,7 +12,10 @@ import {
   participantAttendanceBranch,
   participantFlowStepsForBack,
   pickParticipantTimeCandidate,
+  multiTimeProposingAnswerPresentation,
+  respondAttendanceCandidates,
   shouldShowParticipantBringStep,
+  viewerResponseForDisplay,
 } from "./participant-flow";
 
 describe("participant flow (HUI-026B)", () => {
@@ -62,6 +65,52 @@ describe("participant flow (HUI-026B)", () => {
       },
     ]);
     expect(picked?.id).toBe("c2");
+  });
+
+  it("uses the selected candidate answer when the hui is confirmed", () => {
+    expect(
+      viewerResponseForDisplay(
+        [
+          { ...candidate, viewerResponse: "maybe" },
+          {
+            ...candidate,
+            id: "c2",
+            status: "selected",
+            viewerResponse: "available",
+          },
+        ],
+        "confirmed",
+      ),
+    ).toBe("available");
+  });
+
+  it("summarises multi-time answers without treating one yes as yes to all times", () => {
+    const presentation = multiTimeProposingAnswerPresentation(
+      [
+        { ...candidate, viewerResponse: "maybe" },
+        { ...candidate, id: "c2", viewerResponse: "available" },
+      ],
+      "proposing",
+    );
+    expect(presentation?.summaryLabel).toBe("Yes to 1 of 2 times");
+    expect(presentation?.showPlaceFollowUp).toBe(false);
+  });
+
+  it("lists only the selected time on the respond flow after confirmation", () => {
+    const rows = respondAttendanceCandidates(
+      [
+        { ...candidate, viewerResponse: "maybe" },
+        {
+          ...candidate,
+          id: "c2",
+          status: "selected",
+          viewerResponse: "available",
+        },
+      ],
+      "confirmed",
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.id).toBe("c2");
   });
 
   it("branches yes/maybe vs no after attendance", () => {

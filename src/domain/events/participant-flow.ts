@@ -24,7 +24,9 @@ export type ParticipantFlowStep =
 export type ParticipantTimeCandidate = Pick<
   EventCandidateRow,
   "id" | "startsAt" | "endsAt" | "status" | "viewerResponse"
->;
+> & {
+  viewerPrivateNote?: string | null;
+};
 
 export function pickParticipantTimeCandidate(
   candidates: ParticipantTimeCandidate[],
@@ -38,6 +40,91 @@ export function pickParticipantTimeCandidate(
 }
 
 /** Best answer across open proposed times: Yes beats Maybe beats No (HUI-003A-T1). */
+/** Times the respond flow should list for attendance (confirmed → selected only). */
+export function respondAttendanceCandidates(
+  candidates: ParticipantTimeCandidate[],
+  eventStatus: EventStatus,
+): ParticipantTimeCandidate[] {
+  if (eventStatus === "confirmed") {
+    const selected = candidates.filter((candidate) => candidate.status === "selected");
+    if (selected.length > 0) {
+      return selected;
+    }
+  }
+  return candidates.filter((candidate) => candidate.status === "proposed");
+}
+
+/** Viewer answer for hero/summary: confirmed events use the selected time only. */
+export function viewerResponseForDisplay(
+  candidates: ParticipantTimeCandidate[],
+  eventStatus: EventStatus,
+): AvailabilityChoice | null {
+  if (eventStatus === "confirmed") {
+    const selected = candidates.find((candidate) => candidate.status === "selected");
+    return selected?.viewerResponse ?? null;
+  }
+  const proposed = bestViewerResponseAcrossProposedCandidates(candidates);
+  if (proposed !== null) {
+    return proposed;
+  }
+  const focus = pickParticipantTimeCandidate(candidates);
+  return focus?.viewerResponse ?? null;
+}
+
+export type MultiTimeViewerAnswerPresentation = {
+  summaryLabel: string;
+  statusChoice: AvailabilityChoice | null;
+  /** Show place/bring follow-up only when every proposed time is yes. */
+  showPlaceFollowUp: boolean;
+};
+
+/** Multi-time proposing: summarise per-time answers instead of "best" yes across times. */
+export function multiTimeProposingAnswerPresentation(
+  candidates: ParticipantTimeCandidate[],
+  eventStatus: EventStatus,
+): MultiTimeViewerAnswerPresentation | null {
+  if (eventStatus !== "proposing") {
+    return null;
+  }
+  const proposed = candidates.filter((candidate) => candidate.status === "proposed");
+  if (proposed.length <= 1) {
+    return null;
+  }
+
+  const yesCount = proposed.filter((candidate) => candidate.viewerResponse === "available").length;
+  const maybeCount = proposed.filter((candidate) => candidate.viewerResponse === "maybe").length;
+  const noCount = proposed.filter((candidate) => candidate.viewerResponse === "unavailable").length;
+  const total = proposed.length;
+
+  let summaryLabel = "No answer yet";
+  if (yesCount > 0) {
+    summaryLabel = `Yes to ${yesCount} of ${total} ${total === 1 ? "time" : "times"}`;
+  } else if (maybeCount > 0) {
+    summaryLabel = `Maybe for ${maybeCount} of ${total} ${total === 1 ? "time" : "times"}`;
+  } else if (noCount > 0 && noCount === proposed.filter((c) => c.viewerResponse !== null).length) {
+    summaryLabel = `No to ${noCount} of ${total} ${total === 1 ? "time" : "times"}`;
+  } else if (maybeCount === 0 && yesCount === 0 && noCount === 0) {
+    summaryLabel = "No answer yet";
+  }
+
+  let statusChoice: AvailabilityChoice | null = null;
+  if (yesCount === total) {
+    statusChoice = "available";
+  } else if (yesCount > 0) {
+    statusChoice = "maybe";
+  } else if (maybeCount > 0) {
+    statusChoice = "maybe";
+  } else if (noCount > 0) {
+    statusChoice = "unavailable";
+  }
+
+  return {
+    summaryLabel,
+    statusChoice,
+    showPlaceFollowUp: yesCount === total && total > 0,
+  };
+}
+
 export function bestViewerResponseAcrossProposedCandidates(
   candidates: ParticipantTimeCandidate[],
 ): AvailabilityChoice | null {

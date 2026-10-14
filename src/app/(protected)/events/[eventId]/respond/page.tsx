@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app/app-shell";
 import { EventParticipantRespondFlow } from "@/components/events/event-participant-respond-flow";
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
 import { formatEventTimeRange } from "@/domain/datetime/timezone";
+import { viewerResponseForDisplay } from "@/domain/events/participant-flow";
 import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
 import { loadRespondPrimary, loadRespondSecondary } from "@/lib/events/respond-page-data";
 import { eventDetailPath } from "@/lib/events/paths";
@@ -90,7 +91,11 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
         coordinates={primary.detail.locationCoordinates}
         hostingEnabled={primary.hostingEnabled}
         viewerUserId={user.id}
-        initialViewerResponse={primary.candidate.viewerResponse}
+        initialViewerResponse={viewerResponseForDisplay(
+          primary.proposedCandidates,
+          primary.detail.status,
+        )}
+        eventStatus={primary.detail.status}
         standingAvailabilityHint={primary.standingAvailabilityHint}
         secondaryDataPromise={secondaryDataPromise}
         focusTimeLabel={focusTimeLabel}

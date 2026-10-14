@@ -170,7 +170,7 @@ describe("group invite links (HUI-022B)", () => {
     expect(url).toMatch(/^https:\/\/hui\.example\/join\//);
   });
 
-  it("allows admins to fetch or create a link and blocks outsiders", async () => {
+  it("allows active members to fetch or create a link and blocks outsiders", async () => {
     await asUser(db, ids.admin);
     const token = (
       await db.query<{ get_group_invite_link: string }>(
@@ -181,10 +181,13 @@ describe("group invite links (HUI-022B)", () => {
     expect(token.length).toBeGreaterThan(0);
 
     await asUser(db, ids.member);
-    const denied = await expectFail(() =>
-      db.query(`select public.get_group_invite_link($1)`, [groupId]),
-    );
-    expect(denied).toMatch(/not authorised/);
+    const memberToken = (
+      await db.query<{ get_group_invite_link: string }>(
+        `select public.get_group_invite_link($1) as get_group_invite_link`,
+        [groupId],
+      )
+    ).rows[0].get_group_invite_link;
+    expect(memberToken.length).toBeGreaterThan(0);
 
     await asUser(db, ids.outsider);
     const outsiderDenied = await expectFail(() =>

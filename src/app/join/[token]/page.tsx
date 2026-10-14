@@ -28,6 +28,7 @@ function mapPlanning(planning: InvitePlanningContext | null): InvitePlanningPrev
     eventTitle: planning.eventTitle,
     status: planning.status,
     planningTargetDate: planning.planningTargetDate,
+    proposedStartsAt: planning.proposedStartsAt,
     gathering: {
       type: planning.gatheringType,
       customDescription: planning.gatheringTypeCustom,
@@ -126,7 +127,11 @@ export default async function JoinInvitePage({ params, searchParams }: PageProps
                   />
                 </div>
               ) : (
-                <JoinAuthLinks token={token} focusEventId={focusEventId} />
+                <JoinAuthLinks
+                  token={token}
+                  focusEventId={focusEventId}
+                  groupName={resolved.groupName}
+                />
               )}
             </>
           ) : null}

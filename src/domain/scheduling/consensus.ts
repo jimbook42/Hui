@@ -15,6 +15,7 @@ export const CONSENSUS_RULES = [
   "required_participants",
   "minimum_attendees",
   "all_active_members",
+  "majority_active_members",
 ] as const;
 
 export type ConsensusRule = (typeof CONSENSUS_RULES)[number];
@@ -25,6 +26,7 @@ export const CONSENSUS_FAILURE_REASONS = [
   "below_minimum_attendees",
   "required_participants",
   "all_active_members",
+  "majority_active_members",
 ] as const;
 
 export type ConsensusFailureReason = (typeof CONSENSUS_FAILURE_REASONS)[number];
@@ -109,6 +111,7 @@ export function evaluateCandidateConsensus(
   const responses = latestResponses(input.responses);
 
   let acceptedCount = 0;
+  let yesCount = 0;
   let maybeCount = 0;
   let unavailableCount = 0;
   let respondedCount = 0;
@@ -121,6 +124,9 @@ export function evaluateCandidateConsensus(
       continue;
     }
     respondedCount += 1;
+    if (response === "yes") {
+      yesCount += 1;
+    }
     if (response === "maybe") {
       maybeCount += 1;
     }
@@ -147,6 +153,11 @@ export function evaluateCandidateConsensus(
     acceptedCount < eligibleMemberCount
   ) {
     failureReason = "all_active_members";
+  } else if (
+    input.consensusRule === "majority_active_members" &&
+    (yesCount < 2 || yesCount * 2 <= eligibleMemberCount)
+  ) {
+    failureReason = "majority_active_members";
   } else if (
     input.consensusRule === "required_participants" &&
     requiredAcceptedCount < requiredParticipantCount

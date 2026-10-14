@@ -2,6 +2,19 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-14 — PR #37 QA fixes (0.15.0)
+
+- Confirmed hero: rule-based line (e.g. “Confirmed by majority”) plus live coming/pending tallies; no count snapshot.
+- Majority rule: minimum two yes votes (`20261014140003`); majority counts yes-only per candidate (`20261014140004`).
+- Member invite link RPC for all active members (`20261014140005`); hero Invite uses share/copy.
+- Group page: tappable member roster sheet.
+- Event QA: confirmed-candidate answer, per-time tallies, No note persist + respond UX; hide relative hero chip on confirmed (hydration).
+
+## 2026-10-14 — First-timer UX, part A (0.15.0, HUI-UX1)
+
+- **Defaults:** New groups default `consensus_rule` to `majority_active_members` (migrations `20261014140000` enum, `20261014140001` functions, `20261014140002` column default after release; existing groups unchanged).
+- **Respond / invites:** Save toasts, optimistic answers, Maybe labelling, invite preview uses proposed candidate time, join → answer flow, deferred host prompt on hui page, confirmed “X of Y said yes”.
+
 ## 2026-10-14 — Calendar export UX polish (0.14.1, HUI-029b)
 
 - **UI:** Icon “Add to calendar” on home/group hui tiles (confirmed + `starts_at`); secondary button with icon on event hero beside date/time; fetch download + brief auto-dismiss feedback (toast on tiles, inline on event page).

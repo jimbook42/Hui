@@ -5,6 +5,7 @@ import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import { AuthOAuthSection } from "@/components/auth/auth-provider-options";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { sanitizeNextPath } from "@/lib/auth/routes";
+import { loadInviteGroupNameForAuthNext } from "@/lib/invites/auth-invite-context";
 import { createClient } from "@/lib/supabase/server";
 
 const OAUTH_SIGN_IN_MESSAGES: Record<string, string> = {
@@ -25,6 +26,12 @@ export default async function SignInPage({
   const next = sanitizeNextPath(
     typeof params.next === "string" ? params.next : undefined,
   );
+  const inviteGroupName =
+    next !== "/dashboard" ? await loadInviteGroupNameForAuthNext(next) : null;
+  const title = inviteGroupName ? `Sign in to join ${inviteGroupName}` : "Sign in";
+  const description = inviteGroupName
+    ? `Use your Hui account to join ${inviteGroupName} and answer the hui invite.`
+    : "Use your email and password to access your Hui account.";
   const oauthNotice =
     typeof params.oauth === "string"
       ? OAUTH_SIGN_IN_MESSAGES[params.oauth]
@@ -42,8 +49,8 @@ export default async function SignInPage({
 
   return (
     <AuthShell
-      title="Sign in"
-      description="Use your email and password to access your Hui account."
+      title={title}
+      description={description}
       footer={
         <>
           No account yet?{" "}

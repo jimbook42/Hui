@@ -55,8 +55,8 @@ export function buildProposedHuiGuidance(
   if (input.isProposer && input.canRespond && input.hasCandidate && input.viewerResponse === null) {
     nextStepTitle = options?.justProposed ? "Invite people to this gathering" : "Your next step";
     nextStepDetail = options?.justProposed
-      ? "Share the invite link below — they will join the group through this hui and land in the coordination flow."
-      : "Add your availability too — then Hui can wait for the rest of the group.";
+      ? "Share the invite link below — then answer the proposed time yourself so Hui can tally responses."
+      : "Answer the proposed time yourself — then Hui can wait for the rest of the group.";
   } else if (input.isProposer && input.viewerResponse !== null) {
     nextStepTitle = "Waiting on the group";
     nextStepDetail = input.anyCandidatePassesConsensus
