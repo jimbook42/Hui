@@ -205,7 +205,7 @@ export function ViewerResponseCard({
                 : "The group is waiting to hear from you."}
             </p>
           ) : null}
-          {!pending && response === "unavailable" && serverPrivateNote?.trim() ? (
+          {!pending && serverPrivateNote?.trim() ? (
             <p className="mt-1 text-sm font-semibold text-muted-foreground">
               Your note: {serverPrivateNote.trim()}
             </p>

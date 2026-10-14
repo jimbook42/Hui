@@ -28,6 +28,31 @@ describe("viewerPrivateNoteForDisplay", () => {
     expect(note).toBe("Away that day");
   });
 
+  it("returns a No note when the viewer answered Yes to one time and No to another", () => {
+    const note = viewerPrivateNoteForDisplay(
+      [
+        {
+          id: "t1",
+          startsAt: "2026-10-20T12:00:00Z",
+          endsAt: null,
+          status: "proposed",
+          viewerResponse: "available",
+          viewerPrivateNote: null,
+        },
+        {
+          id: "t2",
+          startsAt: "2026-10-21T12:00:00Z",
+          endsAt: null,
+          status: "proposed",
+          viewerResponse: "unavailable",
+          viewerPrivateNote: "Busy that day QA",
+        },
+      ],
+      "proposing",
+    );
+    expect(note).toBe("Busy that day QA");
+  });
+
   it("uses the selected time note when confirmed", () => {
     const note = viewerPrivateNoteForDisplay(
       [

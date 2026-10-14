@@ -10,7 +10,6 @@ import {
   formatClockTime,
   formatShortDay,
   formatTimeSpan,
-  relativeDayLabel,
 } from "@/domain/datetime/display";
 import { viewerStatusLabel } from "@/domain/events/home";
 import { eventStatusLabel } from "@/lib/events/labels";
@@ -92,7 +91,7 @@ export function EventCard({ event, variant = "standard", tone = "primary", class
     : planning
       ? "Time proposed — not confirmed yet"
       : "Time still to be agreed";
-  const when = event.startsAt && event.bucket !== "past" ? relativeDayLabel(event.startsAt, event.timeZone) : null;
+  const when = event.relativeDayChip;
   const showAddToCalendar = canDownloadEventIcs(event.status, event.startsAt);
   const hasAttentionAction = event.attention !== null;
 

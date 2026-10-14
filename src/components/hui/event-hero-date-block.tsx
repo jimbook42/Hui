@@ -1,12 +1,6 @@
-"use client";
-
-import { useCallback } from "react";
-
 import type { EventHeroDateCopy } from "@/domain/datetime/event-hero-dates";
-import { relativeDayLabel } from "@/domain/datetime/display";
 import { ClockIcon } from "@/components/hui/icons";
 import { EventDateBadge } from "@/components/hui/event-date-badge";
-import { HydrationClientOnlyText } from "@/components/hui/hydration-deferred-text";
 
 type EventHeroDateBlockProps = {
   copy: EventHeroDateCopy;
@@ -19,11 +13,6 @@ export function EventHeroDateBlock({
   badgeTone,
   showProposedHint,
 }: EventHeroDateBlockProps) {
-  const computeWhen = useCallback(
-    () => relativeDayLabel(copy.startsAt, copy.timeZone),
-    [copy.startsAt, copy.timeZone],
-  );
-
   return (
     <>
       <div className="flex items-center gap-4">
@@ -40,9 +29,9 @@ export function EventHeroDateBlock({
             <span>{copy.timeSpan}</span>
           </p>
           <p className="mt-1.5 flex flex-wrap items-center gap-2">
-            {copy.showRelativeWhen ? (
+            {copy.relativeWhenLabel ? (
               <span className="rounded-full bg-clay-soft px-2.5 py-0.5 text-xs font-extrabold text-foreground">
-                <HydrationClientOnlyText compute={computeWhen} />
+                {copy.relativeWhenLabel}
               </span>
             ) : null}
             {showProposedHint ? (
