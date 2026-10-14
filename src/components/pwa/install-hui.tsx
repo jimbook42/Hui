@@ -5,7 +5,12 @@ import { useState } from "react";
 import { HuiLogo } from "@/components/hui/hui-logo";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { huiButtonClass } from "@/components/hui/hui-button";
-import { installInstructionsFor, shouldShowInstallCard } from "@/domain/pwa/install";
+import {
+  detectInAppBrowser,
+  installInstructionsFor,
+  shouldShowInstallCard,
+} from "@/domain/pwa/install";
+import { InAppBrowserInstallBanner } from "@/components/pwa/in-app-browser-install-banner";
 import {
   dismissInstallCard,
   promptInstall,
@@ -47,10 +52,13 @@ export function InstallHuiSettings() {
   }
 
   const instructions = installInstructionsFor(state.platform);
+  const inAppBrowser =
+    typeof navigator !== "undefined" && detectInAppBrowser(navigator.userAgent);
 
   return (
     <div className="space-y-4">
-      {state.availability === "prompt" ? (
+      {inAppBrowser ? <InAppBrowserInstallBanner platform={state.platform} /> : null}
+      {state.availability === "prompt" && !inAppBrowser ? (
         <>
           <p className="hui-type-supporting">
             Add Hui to this device for quicker access and a full-screen app without the browser bar.
@@ -72,7 +80,7 @@ export function InstallHuiSettings() {
             Install Hui
           </button>
         </>
-      ) : (
+      ) : inAppBrowser ? null : (
         <>
           <p className="text-sm font-bold text-foreground">{instructions.title}</p>
           <InstructionSteps platform={state.platform} />
@@ -120,7 +128,11 @@ export function InstallHuiCard() {
           </p>
           {expanded && state.availability === "instructions" ? (
             <div className="mt-3">
-              <InstructionSteps platform={state.platform} />
+              {typeof navigator !== "undefined" && detectInAppBrowser(navigator.userAgent) ? (
+                <InAppBrowserInstallBanner platform={state.platform} />
+              ) : (
+                <InstructionSteps platform={state.platform} />
+              )}
             </div>
           ) : null}
           <div className="mt-3 flex flex-wrap gap-2">

@@ -21,6 +21,7 @@ export async function listUserGroupsForDietary(
 
 export async function listUserDietaryEntries(
   supabase: SupabaseClient,
+  userId: string,
 ): Promise<UserDietaryEntry[]> {
   const { data, error } = await supabase
     .from("dietary_entries")
@@ -40,6 +41,7 @@ export async function listUserDietaryEntries(
       )
     `,
     )
+    .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
   if (error) {
