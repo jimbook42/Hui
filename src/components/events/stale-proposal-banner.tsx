@@ -10,10 +10,7 @@ import { HuiLinkButton } from "@/components/hui/hui-button";
 import { PendingButton } from "@/components/ui/pending-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { eventManagePath } from "@/lib/events/paths";
-import {
-  STALE_PROPOSAL_GRACE_DAYS,
-  staleProposalAutoCancelDate,
-} from "@/domain/events/stale-proposal";
+import { formatStaleProposalAutoCancelClause } from "@/domain/events/stale-proposal";
 import { formatNominalPlanningDate } from "@/lib/groups/planning-cycle";
 import { useActionStateRefresh } from "@/lib/ui/use-action-state-refresh";
 
@@ -34,7 +31,7 @@ export function StaleProposalBanner({
   minDate,
   suggestedDate,
 }: StaleProposalBannerProps) {
-  const autoCancelOn = staleProposalAutoCancelDate(nominalDate);
+  const autoCancelClause = formatStaleProposalAutoCancelClause(nominalDate, minDate);
   const [nextDate, setNextDate] = useState(suggestedDate);
   const [ackStaleCandidates, setAckStaleCandidates] = useState(false);
   const [state, formAction, pending] = useActionState(rescheduleProposalNominalAction, initialState);
@@ -59,9 +56,7 @@ export function StaleProposalBanner({
       <p className="text-lg font-extrabold text-foreground">This proposal&apos;s date has passed</p>
       <p className="mt-1 text-sm font-semibold text-muted-foreground">
         It was planned around {formatNominalPlanningDate(nominalDate)}. Pick a new planning date or
-        cancel — otherwise it will be cancelled automatically on{" "}
-        {formatNominalPlanningDate(autoCancelOn)} ({STALE_PROPOSAL_GRACE_DAYS} days after the
-        passed date).
+        cancel — {autoCancelClause}
       </p>
       <form action={formAction} className="mt-4 space-y-3">
         <input type="hidden" name="event_id" value={eventId} />

@@ -1,4 +1,8 @@
 import type { EventProposalDraft } from "@/domain/events/proposal";
+import type { StoredMeetFrequency } from "@/domain/events/proposal-draft-meet-frequency";
+
+export type { StoredMeetFrequency } from "@/domain/events/proposal-draft-meet-frequency";
+export { deriveMeetFrequencyFromDraft } from "@/domain/events/proposal-draft-meet-frequency";
 
 export type { StoredProposalCadence } from "@/domain/events/proposal-draft-cadence";
 export {
@@ -6,7 +10,7 @@ export {
   writeStoredProposalCadence,
 } from "@/domain/events/proposal-draft-cadence";
 
-const DRAFT_VERSION = 1;
+const DRAFT_VERSION = 2;
 
 type StoredProposalDraft = {
   version: number;
@@ -15,6 +19,7 @@ type StoredProposalDraft = {
   timeDate: string;
   timeStart: string;
   timeEnd: string;
+  meetFrequency?: StoredMeetFrequency;
 };
 
 function draftStorageKey(groupId: string): string {

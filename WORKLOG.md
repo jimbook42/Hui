@@ -1,5 +1,11 @@
 # Worklog
 
+## 2026-10-15 — HUI-030-fix5 propose draft + past-date warnings (v0.18.0)
+
+- Past-date banner on propose time + review; stale auto-cancel copy omits past calendar dates.
+- Proposal session draft persists meet frequency; cleared on successful submit.
+- Dietary group share: confirmed scope model (all entries) — no behaviour change.
+
 ## 2026-10-15 — HUI-030-fix4 auth E2E strict labels + main merge (v0.18.0)
 
 - Merged `origin/main` (`vercel.json` git.deploymentEnabled).

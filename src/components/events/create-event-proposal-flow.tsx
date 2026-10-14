@@ -23,19 +23,20 @@ import {
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
 import { isProposalDateBeforeToday } from "@/domain/events/proposal-past-time";
+import { buildProposingPastDateWarning } from "@/domain/events/proposal-past-warning";
 import {
+  clearStoredProposalDraft,
+  deriveMeetFrequencyFromDraft,
   readStoredProposalCadence,
   readStoredProposalDraft,
+  type StoredMeetFrequency,
   writeStoredProposalCadence,
   writeStoredProposalDraft,
 } from "@/domain/events/proposal-draft-storage";
+import { ProposalPastDateWarning } from "@/components/events/proposal-past-date-warning";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
 import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nominal";
-import {
-  cadencePresetFromParts,
-  FIRST_GROUP_CADENCE_PRESETS,
-  type CadencePresetId,
-} from "@/domain/recurrence/cadence-presets";
+import { FIRST_GROUP_CADENCE_PRESETS } from "@/domain/recurrence/cadence-presets";
 import {
   formatCadenceLabel,
   type GroupPlanningCycle,
@@ -182,6 +183,21 @@ export function CreateEventProposalFlow({
   // The end time is optional: an empty value means "start only".
   const [timeEnd, setTimeEnd] = useState(() => readStoredProposalDraft(groupId)?.timeEnd ?? "");
 
+  const establishedRecurrence = groupHasEstablishedRecurrence(settings);
+  const [meetFrequency, setMeetFrequency] = useState<StoredMeetFrequency>(() => {
+    const storedDraft = readStoredProposalDraft(groupId);
+    if (storedDraft?.meetFrequency !== undefined) {
+      return storedDraft.meetFrequency;
+    }
+    if (storedDraft?.draft) {
+      return deriveMeetFrequencyFromDraft(storedDraft.draft, {
+        establishedRecurrence: groupHasEstablishedRecurrence(settings),
+        isFirstGroupEvent,
+      });
+    }
+    return null;
+  });
+
   useEffect(() => {
     writeStoredProposalDraft(groupId, {
       step,
@@ -189,8 +205,9 @@ export function CreateEventProposalFlow({
       timeDate,
       timeStart,
       timeEnd,
+      meetFrequency,
     });
-  }, [groupId, step, draft, timeDate, timeStart, timeEnd]);
+  }, [groupId, step, draft, timeDate, timeStart, timeEnd, meetFrequency]);
 
   const [actionState, formAction] = useActionState(
     proposeGroupEventAction,
@@ -198,7 +215,6 @@ export function CreateEventProposalFlow({
   );
 
   const stepIndex = STEPS.indexOf(step);
-  const establishedRecurrence = groupHasEstablishedRecurrence(settings);
   const activeCategories = useMemo(
     () => contributionCategories.filter((row) => !row.archivedAt),
     [contributionCategories],
@@ -412,17 +428,16 @@ export function CreateEventProposalFlow({
   const canOneOff = settings.oneOffEventsAllowed;
   const canRecurring = settings.recurringEventsEnabled;
 
-  const activeCadencePreset = cadencePresetFromParts(
-    draft.recurrence?.intervalUnit ?? "month",
-    draft.recurrence?.intervalCount ?? 1,
+  const pastDateWarning = useMemo(
+    () =>
+      buildProposingPastDateWarning({
+        draft,
+        timeZone: settings.timezone,
+        todayDateOnly,
+        pendingDateOnly: step === "time" ? timeDate : undefined,
+      }),
+    [draft, settings.timezone, todayDateOnly, step, timeDate],
   );
-
-  const [meetFrequency, setMeetFrequency] = useState<null | "once" | CadencePresetId>(() => {
-    if (establishedRecurrence || !isFirstGroupEvent) {
-      return draft.eventKind === "one_off" ? "once" : activeCadencePreset;
-    }
-    return null;
-  });
 
   return (
     <div className="space-y-6">
@@ -624,6 +639,14 @@ export function CreateEventProposalFlow({
                 {formatNominalPlanningDate(draft.recurrence.planningTargetDate)}).
               </p>
             ) : null}
+            {pastDateWarning ? (
+              <div className="mt-3">
+                <ProposalPastDateWarning
+                  title={pastDateWarning.title}
+                  detail={pastDateWarning.detail}
+                />
+              </div>
+            ) : null}
           </div>
           <SuggestedTimesList
             suggestions={timeRecommendations}
@@ -748,6 +771,12 @@ export function CreateEventProposalFlow({
       {step === "review" ? (
         <section className="hui-rise space-y-5">
           <h2 className="hui-type-page-title text-foreground">Ready to propose?</h2>
+          {pastDateWarning ? (
+            <ProposalPastDateWarning
+              title={pastDateWarning.title}
+              detail={pastDateWarning.detail}
+            />
+          ) : null}
           {reviewMissing.length > 0 ? (
             <p className="hui-message-error" role="alert">
               Still needed: {reviewMissing.join(", ")}
@@ -836,7 +865,13 @@ export function CreateEventProposalFlow({
               </dd>
             </div>
           </dl>
-          <form action={formAction} className="space-y-3">
+          <form
+            action={formAction}
+            className="space-y-3"
+            onSubmit={() => {
+              clearStoredProposalDraft(groupId);
+            }}
+          >
             <input type="hidden" name="group_id" value={groupId} />
             <input type="hidden" name="proposal_draft" value={JSON.stringify(draft)} />
             {actionState.error ? (

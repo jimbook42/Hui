@@ -58,6 +58,7 @@ test.describe("live group smoke", () => {
 
     await page.getByLabel("Date").fill("2020-01-15");
     await page.getByLabel("Starts").fill("18:00");
+    await expect(page.getByText(/proposed time is in the past/i)).toBeVisible();
 
     const dialogPromise = page.waitForEvent("dialog");
     await page.getByRole("button", { name: "Continue" }).click();

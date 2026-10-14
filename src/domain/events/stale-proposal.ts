@@ -68,3 +68,19 @@ export function staleProposalAutoCancelDate(
 ): string {
   return addDaysToDateOnly(nominalDate, graceDays);
 }
+
+/**
+ * Clause for organiser copy when a stale proposal may be auto-cancelled.
+ * Omits a calendar date when the derived auto-cancel day is already in the past.
+ */
+export function formatStaleProposalAutoCancelClause(
+  nominalDate: string,
+  todayDateOnly: string,
+  graceDays: number = STALE_PROPOSAL_GRACE_DAYS,
+): string {
+  const cancelOn = staleProposalAutoCancelDate(nominalDate, graceDays);
+  if (compareDateOnly(todayDateOnly, cancelOn) >= 0) {
+    return "it may be cancelled automatically soon if it stays unconfirmed.";
+  }
+  return `otherwise it will be cancelled automatically on ${cancelOn} (${graceDays} days after the passed date).`;
+}

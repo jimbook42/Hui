@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   STALE_PROPOSAL_GRACE_DAYS,
+  formatStaleProposalAutoCancelClause,
   isProposingEventStale,
   isStaleProposalAutoCancelDue,
   resolveProposalNominalDate,
@@ -46,5 +47,14 @@ describe("stale proposing events", () => {
     expect(isStaleProposalAutoCancelDue(nominal, "2026-10-11")).toBe(false);
     expect(isStaleProposalAutoCancelDue(nominal, "2026-10-12")).toBe(true);
     expect(isStaleProposalAutoCancelDue(nominal, "2026-10-13")).toBe(true);
+  });
+
+  it("omits a past auto-cancel date from organiser copy", () => {
+    const nominal = "2026-10-01";
+    expect(formatStaleProposalAutoCancelClause(nominal, "2026-10-14")).toMatch(
+      /cancelled automatically soon/i,
+    );
+    expect(formatStaleProposalAutoCancelClause(nominal, "2026-10-14")).not.toMatch(/2026-10-04/);
+    expect(formatStaleProposalAutoCancelClause(nominal, "2026-10-02")).toMatch(/2026-10-04/);
   });
 });
