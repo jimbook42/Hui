@@ -19,6 +19,7 @@ import { attendanceStateFromChoice } from "@/domain/events/home";
 import {
   multiTimeProposingAnswerPresentation,
   pickParticipantTimeCandidate,
+  viewerPrivateNoteForDisplay,
   viewerResponseForDisplay,
 } from "@/domain/events/participant-flow";
 import {
@@ -207,6 +208,10 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     scheduling.candidates,
     detail.status,
   );
+  const viewerPrivateNote = viewerPrivateNoteForDisplay(
+    scheduling.candidates,
+    detail.status,
+  );
   const viewerState = attendanceStateFromChoice(viewerResponse, scheduling.maybeResponsesEnabled);
   const counts = primaryRoster
     ? countAttendance(primaryRoster.members, scheduling.maybeResponsesEnabled)
@@ -297,6 +302,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     primaryRoster,
     displayTimeZone,
     viewerResponse,
+    viewerPrivateNote,
     multiTimeAnswerPresentation,
     viewerState,
     counts,

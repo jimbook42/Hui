@@ -356,10 +356,4 @@ export function shouldShowManualProposeLink(input: {
   return !shouldShowPlanNextCta(input.cycle);
 }
 
-export function formatCadenceLabel(cadence: RecurrenceCadence): string {
-  const unitLabel = cadence.intervalUnit === "week" ? "week" : "month";
-  if (cadence.intervalCount === 1) {
-    return cadence.intervalUnit === "week" ? "Every week" : "Every month";
-  }
-  return `Every ${cadence.intervalCount} ${unitLabel}s`;
-}
+export { formatCadenceLabel } from "@/domain/recurrence/cadence-presets";

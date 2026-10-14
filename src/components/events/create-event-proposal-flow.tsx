@@ -13,6 +13,7 @@ import { EventLocationFields } from "@/components/map/event-location-fields";
 import { HuiSwitchField } from "@/components/hui/hui-switch";
 import { PendingButton } from "@/components/ui/pending-button";
 import type { EventFoodInvolvement } from "@/domain/events/food";
+import { HUI_ONE_LINE_EXPLAINER } from "@/domain/events/hui-explainer";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import type { EventProposalDraft } from "@/domain/events/proposal";
 import { mergeWallClockIntoCandidates, parseWallClockCandidate } from "@/domain/events/proposal";
@@ -23,6 +24,10 @@ import {
 } from "@/domain/events/proposal-defaults";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
 import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nominal";
+import {
+  cadencePresetFromParts,
+  FIRST_GROUP_CADENCE_PRESETS,
+} from "@/domain/recurrence/cadence-presets";
 import {
   formatCadenceLabel,
   type GroupPlanningCycle,
@@ -291,15 +296,19 @@ export function CreateEventProposalFlow({
   if (draft.candidates.length < 1) {
     reviewMissing.push("At least one proposed time");
   }
-  if (!draft.foodInvolvement) {
-    reviewMissing.push("Whether food is involved");
-  }
-
   const canOneOff = settings.oneOffEventsAllowed;
   const canRecurring = settings.recurringEventsEnabled;
 
+  const activeCadencePreset = cadencePresetFromParts(
+    draft.recurrence?.intervalUnit ?? "month",
+    draft.recurrence?.intervalCount ?? 1,
+  );
+
   return (
     <div className="space-y-6">
+      {isFirstGroupEvent ? (
+        <p className="text-sm font-semibold text-muted-foreground">{HUI_ONE_LINE_EXPLAINER}</p>
+      ) : null}
       <nav aria-label="Proposal steps">
         <ol className="flex gap-1.5">
           {STEPS.map((id, index) => (
@@ -425,7 +434,7 @@ export function CreateEventProposalFlow({
           {canOneOff || canRecurring ? (
             <fieldset className="space-y-2">
               <legend className="hui-label">
-                <span>Planning model</span>
+                <span>Is this a one-off or ongoing rhythm?</span>
               </legend>
               <div className="grid grid-cols-1 gap-2">
                 {canRecurring ? (
@@ -446,9 +455,9 @@ export function CreateEventProposalFlow({
                         setDraft((current) => ({ ...current, eventKind: "recurring" }))
                       }
                     />
-                    <span className="font-extrabold text-foreground">Recurring</span>
+                    <span className="font-extrabold text-foreground">Ongoing rhythm</span>
                     <span className="text-sm font-semibold text-muted-foreground">
-                      Continue this group&apos;s normal gathering rhythm.
+                      Regular gatherings — weekly, fortnightly, monthly, and so on.
                     </span>
                   </label>
                 ) : null}
@@ -470,9 +479,9 @@ export function CreateEventProposalFlow({
                         setDraft((current) => ({ ...current, eventKind: "one_off" }))
                       }
                     />
-                    <span className="font-extrabold text-foreground">One-off</span>
+                    <span className="font-extrabold text-foreground">Just this once</span>
                     <span className="text-sm font-semibold text-muted-foreground">
-                      Plan this gathering only — not part of the group&apos;s usual rhythm.
+                      Plan one gathering without setting up a repeating rhythm.
                     </span>
                   </label>
                 ) : null}
@@ -482,55 +491,46 @@ export function CreateEventProposalFlow({
           {draft.eventKind === "recurring" && canRecurring && isFirstGroupEvent ? (
             <fieldset className="space-y-4 rounded-hui-lg bg-muted p-5">
               <legend className="px-1 text-sm font-extrabold">How often should this group meet?</legend>
-              <label className="hui-label">
-                <span>Cadence</span>
-                <select
-                  className="hui-input"
-                  value={draft.recurrence?.intervalUnit ?? "month"}
-                  onChange={(event) =>
-                    setDraft((current) => {
-                      const next = applyFirstGroupCadence({
-                        ...(current.recurrence ?? {
-                          seriesTitle: "",
-                          intervalUnit: "month",
-                          intervalCount: 1,
-                          startsOn: "",
-                          planningTargetDate: null,
-                        }),
-                        intervalUnit: event.target.value as "week" | "month",
-                      });
-                      return { ...current, recurrence: next };
-                    })
-                  }
-                >
-                  <option value="week">Weekly</option>
-                  <option value="month">Monthly</option>
-                </select>
-              </label>
-              <label className="hui-label">
-                <span>Every (interval)</span>
-                <input
-                  type="number"
-                  min={1}
-                  className="hui-input"
-                  value={draft.recurrence?.intervalCount ?? 1}
-                  onChange={(event) =>
-                    setDraft((current) => {
-                      const next = applyFirstGroupCadence({
-                        ...(current.recurrence ?? {
-                          seriesTitle: "",
-                          intervalUnit: "month",
-                          intervalCount: 1,
-                          startsOn: "",
-                          planningTargetDate: null,
-                        }),
-                        intervalCount: Number(event.target.value),
-                      });
-                      return { ...current, recurrence: next };
-                    })
-                  }
-                />
-              </label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {FIRST_GROUP_CADENCE_PRESETS.map((preset) => {
+                  const selected = activeCadencePreset === preset.id;
+                  return (
+                    <label
+                      key={preset.id}
+                      className={cn(
+                        "hui-focus-ring flex min-h-12 cursor-pointer items-center justify-center rounded-hui-lg px-3 py-2 text-center text-sm font-extrabold",
+                        selected
+                          ? "border-2 border-primary bg-sage-soft text-foreground"
+                          : "border border-transparent bg-surface text-foreground",
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="cadence_preset"
+                        className="sr-only"
+                        checked={selected}
+                        onChange={() =>
+                          setDraft((current) => {
+                            const next = applyFirstGroupCadence({
+                              ...(current.recurrence ?? {
+                                seriesTitle: "",
+                                intervalUnit: "month",
+                                intervalCount: 1,
+                                startsOn: "",
+                                planningTargetDate: null,
+                              }),
+                              intervalUnit: preset.intervalUnit,
+                              intervalCount: preset.intervalCount,
+                            });
+                            return { ...current, recurrence: next };
+                          })
+                        }
+                      />
+                      {preset.label}
+                    </label>
+                  );
+                })}
+              </div>
               <WallClockDateField
                 label="When should the first gathering be planned around?"
                 value={draft.recurrence?.planningTargetDate ?? draft.recurrence?.startsOn ?? ""}
@@ -590,6 +590,7 @@ export function CreateEventProposalFlow({
             timeZone={settings.timezone}
             selectedKeys={selectedSuggestionKeys}
             onSelect={applySuggestion}
+            hideEmptyState={draft.candidates.length > 0}
           />
           {draft.candidates.length > 0 ? (
             <ul className="space-y-2">
@@ -637,8 +638,62 @@ export function CreateEventProposalFlow({
               />
             </div>
             <PendingButton type="button" variant="soft" onClick={addCandidate}>
-              Add another time
+              Add time
             </PendingButton>
+          </div>
+          <div className="w-full min-w-0 max-w-full space-y-3 rounded-hui-xl bg-surface p-4 sm:p-5 hui-shadow-md">
+            <div className="px-1">
+              <p className="text-sm font-extrabold text-foreground">Will food be part of it?</p>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                Optional — helps with dietary coordination. You can skip if you&apos;re not sure yet.
+              </p>
+            </div>
+            <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
+              {(
+                [
+                  ["yes", "Yes"],
+                  ["no", "No"],
+                  ["unsure", "Not sure"],
+                  ["skip", "Skip"],
+                ] as const
+              ).map(([value, label]) => {
+                const foodValue = value === "skip" ? null : value;
+                const selected =
+                  value === "skip"
+                    ? !draft.foodInvolvement
+                    : draft.foodInvolvement === value;
+                return (
+                  <label
+                    key={value}
+                    className={cn(
+                      "hui-focus-ring flex min-h-12 w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-hui-lg px-3 py-3 text-sm font-extrabold",
+                      selected
+                        ? "border-2 border-primary bg-sage-soft text-foreground"
+                        : "border border-transparent bg-muted text-foreground",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="food_involvement_time_step"
+                      className="sr-only"
+                      checked={selected}
+                      onChange={() =>
+                        setDraft((current) => ({
+                          ...current,
+                          foodInvolvement: foodValue as EventFoodInvolvement | null,
+                          requestedContributions:
+                            foodValue === "no" ? [] : current.requestedContributions,
+                        }))
+                      }
+                    />
+                    <span className="min-w-0 text-center leading-snug">{label}</span>
+                    {selected && value !== "skip" ? (
+                      <CheckIcon size={18} strokeWidth={3} className="shrink-0" />
+                    ) : null}
+                  </label>
+                );
+              })}
+            </div>
           </div>
           <ProposalContributionRequestFields
             categories={activeCategories}
@@ -658,53 +713,6 @@ export function CreateEventProposalFlow({
               Still needed: {reviewMissing.join(", ")}
             </p>
           ) : null}
-          <div className="w-full min-w-0 max-w-full space-y-3 rounded-hui-xl bg-surface p-4 sm:p-5 hui-shadow-md">
-            <div className="px-1">
-              <p className="text-sm font-extrabold text-foreground">Will food be involved?</p>
-              <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                Helps the group know whether dietary coordination matters for this hui.
-              </p>
-            </div>
-            <div className="grid w-full min-w-0 grid-cols-1 gap-2">
-              {(
-                [
-                  ["yes", "Yes"],
-                  ["no", "No"],
-                  ["unsure", "Not sure"],
-                ] as const
-              ).map(([value, label]) => {
-                const selected = draft.foodInvolvement === value;
-                return (
-                  <label
-                    key={value}
-                    className={cn(
-                      "hui-focus-ring flex min-h-12 w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-hui-lg px-3 py-3 text-sm font-extrabold sm:px-4",
-                      selected
-                        ? "border-2 border-primary bg-sage-soft text-foreground"
-                        : "border border-transparent bg-muted text-foreground",
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="food_involvement"
-                      className="sr-only"
-                      checked={selected}
-                      onChange={() =>
-                        setDraft((current) => ({
-                          ...current,
-                          foodInvolvement: value as EventFoodInvolvement,
-                          requestedContributions:
-                            value === "no" ? [] : current.requestedContributions,
-                        }))
-                      }
-                    />
-                    <span className="min-w-0 text-center leading-snug">{label}</span>
-                    {selected ? <CheckIcon size={18} strokeWidth={3} className="shrink-0" /> : null}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
           {settings.hostingEnabled ? (
             <>
               <HuiSwitchField
@@ -735,6 +743,18 @@ export function CreateEventProposalFlow({
             <div>
               <dt>Name</dt>
               <dd>{draft.title.trim() || "—"}</dd>
+            </div>
+            <div>
+              <dt>Food</dt>
+              <dd>
+                {draft.foodInvolvement === "yes"
+                  ? "Yes"
+                  : draft.foodInvolvement === "no"
+                    ? "No"
+                    : draft.foodInvolvement === "unsure"
+                      ? "Not sure"
+                      : "Decide later"}
+              </dd>
             </div>
             <div>
               <dt>Proposed times</dt>

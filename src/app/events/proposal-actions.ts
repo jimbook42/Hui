@@ -46,6 +46,10 @@ export async function proposeGroupEventAction(
     return { error: "Proposal data is invalid." };
   }
 
+  if (!draft.foodInvolvement) {
+    draft = { ...draft, foodInvolvement: "unsure" };
+  }
+
   const kind = parseEventKind(draft.eventKind);
   if (!kind) {
     return { error: "Choose a valid event type." };

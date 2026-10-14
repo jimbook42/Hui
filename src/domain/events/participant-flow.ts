@@ -55,6 +55,35 @@ export function respondAttendanceCandidates(
 }
 
 /** Viewer answer for hero/summary: confirmed events use the selected time only. */
+/** Private No note for the YOUR ANSWER card (viewer-only). */
+export function viewerPrivateNoteForDisplay(
+  candidates: ParticipantTimeCandidate[],
+  eventStatus: EventStatus,
+): string | null {
+  const trimmed = (candidate: ParticipantTimeCandidate): string | null => {
+    const note = candidate.viewerPrivateNote?.trim();
+    return note ? note : null;
+  };
+
+  if (eventStatus === "confirmed") {
+    const selected = candidates.find((candidate) => candidate.status === "selected");
+    return selected ? trimmed(selected) : null;
+  }
+
+  const proposed = candidates.filter((candidate) => candidate.status === "proposed");
+  for (const candidate of proposed) {
+    if (candidate.viewerResponse === "unavailable") {
+      const note = trimmed(candidate);
+      if (note) {
+        return note;
+      }
+    }
+  }
+
+  const focus = pickParticipantTimeCandidate(candidates);
+  return focus ? trimmed(focus) : null;
+}
+
 export function viewerResponseForDisplay(
   candidates: ParticipantTimeCandidate[],
   eventStatus: EventStatus,
