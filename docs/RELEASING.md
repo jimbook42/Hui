@@ -6,6 +6,8 @@ The app version lives in **`package.json`** (`version` field). The UI footer and
 
 **Current line:** `0.17.0` — pre-beta: the core coordination loop is largely in place (propose → respond → confirm → recurring cycle, notifications, profile), but we have not declared a public beta yet. `0.9.x` signals “almost beta” without implying production GA.
 
+**Previous release:** `0.16.2` — pre-beta: the core coordination loop is largely in place (propose → respond → confirm → recurring cycle, notifications, profile), but we have not declared a public beta yet. `0.9.x` signals “almost beta” without implying production GA.
+
 ## When to bump
 
 Bump the version **in the same ticket/PR** that ships the release (or the last PR before deploy), then deploy from that commit.

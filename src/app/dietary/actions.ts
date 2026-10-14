@@ -85,14 +85,19 @@ export async function updateDietaryEntryAction(
     return { error: "Optional detail must be between 1 and 500 characters." };
   }
 
-  const { supabase } = await requireUser();
-  const { error } = await supabase
+  const { supabase, user } = await requireUser();
+  const { data, error } = await supabase
     .from("dietary_entries")
     .update({ category, label, notes })
-    .eq("id", entryId);
+    .eq("id", entryId)
+    .eq("user_id", user.id)
+    .select("id");
 
   if (error) {
     return { error: error.message };
+  }
+  if (!data || data.length === 0) {
+    return { error: "Could not update that dietary entry." };
   }
 
   revalidateDietaryPaths();
@@ -108,11 +113,19 @@ export async function deleteDietaryEntryAction(
     return { error: "Could not remove dietary information." };
   }
 
-  const { supabase } = await requireUser();
-  const { error } = await supabase.from("dietary_entries").delete().eq("id", entryId);
+  const { supabase, user } = await requireUser();
+  const { data, error } = await supabase
+    .from("dietary_entries")
+    .delete()
+    .eq("id", entryId)
+    .eq("user_id", user.id)
+    .select("id");
 
   if (error) {
     return { error: error.message };
+  }
+  if (!data || data.length === 0) {
+    return { error: "Could not remove that dietary entry." };
   }
 
   revalidateDietaryPaths();
@@ -185,11 +198,12 @@ export async function setDietaryShareAllGroupsAction(
   }
   const enabled = enabledRaw === "true";
 
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const { data, error } = await supabase
     .from("dietary_entries")
     .update({ share_with_all_groups: enabled })
     .eq("id", entryId)
+    .eq("user_id", user.id)
     .select("id");
 
   if (error) {
