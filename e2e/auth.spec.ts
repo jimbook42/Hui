@@ -47,14 +47,14 @@ test("sign-in and sign-up pages render", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Sign in with email" })).toBeVisible();
 
   await page.goto("/sign-in/email");
-  await expect(page.getByLabel("Email")).toBeVisible();
-  await expect(page.getByLabel("Password")).toBeVisible();
+  await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
 
   await page.goto("/sign-up");
   await expect(page.getByLabel("Display name")).toBeVisible();
-  await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Confirm email")).toBeVisible();
-  await expect(page.getByLabel("Password")).toBeVisible();
+  await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
 });
 
 test("OAuth cancellation shows a friendly sign-in notice", async ({ page }) => {

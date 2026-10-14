@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-15 — HUI-030-fix4 auth E2E strict labels + main merge (v0.18.0)
+
+- Merged `origin/main` (`vercel.json` git.deploymentEnabled).
+- Auth E2E: exact `getByLabel` for Email/Password on sign-up render test (avoid Confirm field collision).
+
 ## 2026-10-15 — HUI-030-fix3 privacy contact + coord-audit merge (v0.18.0)
 
 - Privacy enquiries email `tulllabs@outlook.com` via `privacy-contact.ts` (shown on `/privacy`).
