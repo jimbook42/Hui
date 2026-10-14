@@ -12,6 +12,7 @@ import {
   participantAttendanceBranch,
   participantFlowStepsForBack,
   pickParticipantTimeCandidate,
+  multiTimeProposingAnswerPresentation,
   respondAttendanceCandidates,
   shouldShowParticipantBringStep,
   viewerResponseForDisplay,
@@ -81,6 +82,18 @@ describe("participant flow (HUI-026B)", () => {
         "confirmed",
       ),
     ).toBe("available");
+  });
+
+  it("summarises multi-time answers without treating one yes as yes to all times", () => {
+    const presentation = multiTimeProposingAnswerPresentation(
+      [
+        { ...candidate, viewerResponse: "maybe" },
+        { ...candidate, id: "c2", viewerResponse: "available" },
+      ],
+      "proposing",
+    );
+    expect(presentation?.summaryLabel).toBe("Yes to 1 of 2 times");
+    expect(presentation?.showPlaceFollowUp).toBe(false);
   });
 
   it("lists only the selected time on the respond flow after confirmation", () => {

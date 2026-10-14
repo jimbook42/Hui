@@ -71,6 +71,60 @@ export function viewerResponseForDisplay(
   return focus?.viewerResponse ?? null;
 }
 
+export type MultiTimeViewerAnswerPresentation = {
+  summaryLabel: string;
+  statusChoice: AvailabilityChoice | null;
+  /** Show place/bring follow-up only when every proposed time is yes. */
+  showPlaceFollowUp: boolean;
+};
+
+/** Multi-time proposing: summarise per-time answers instead of "best" yes across times. */
+export function multiTimeProposingAnswerPresentation(
+  candidates: ParticipantTimeCandidate[],
+  eventStatus: EventStatus,
+): MultiTimeViewerAnswerPresentation | null {
+  if (eventStatus !== "proposing") {
+    return null;
+  }
+  const proposed = candidates.filter((candidate) => candidate.status === "proposed");
+  if (proposed.length <= 1) {
+    return null;
+  }
+
+  const yesCount = proposed.filter((candidate) => candidate.viewerResponse === "available").length;
+  const maybeCount = proposed.filter((candidate) => candidate.viewerResponse === "maybe").length;
+  const noCount = proposed.filter((candidate) => candidate.viewerResponse === "unavailable").length;
+  const total = proposed.length;
+
+  let summaryLabel = "No answer yet";
+  if (yesCount > 0) {
+    summaryLabel = `Yes to ${yesCount} of ${total} ${total === 1 ? "time" : "times"}`;
+  } else if (maybeCount > 0) {
+    summaryLabel = `Maybe for ${maybeCount} of ${total} ${total === 1 ? "time" : "times"}`;
+  } else if (noCount > 0 && noCount === proposed.filter((c) => c.viewerResponse !== null).length) {
+    summaryLabel = `No to ${noCount} of ${total} ${total === 1 ? "time" : "times"}`;
+  } else if (maybeCount === 0 && yesCount === 0 && noCount === 0) {
+    summaryLabel = "No answer yet";
+  }
+
+  let statusChoice: AvailabilityChoice | null = null;
+  if (yesCount === total) {
+    statusChoice = "available";
+  } else if (yesCount > 0) {
+    statusChoice = "maybe";
+  } else if (maybeCount > 0) {
+    statusChoice = "maybe";
+  } else if (noCount > 0) {
+    statusChoice = "unavailable";
+  }
+
+  return {
+    summaryLabel,
+    statusChoice,
+    showPlaceFollowUp: yesCount === total && total > 0,
+  };
+}
+
 export function bestViewerResponseAcrossProposedCandidates(
   candidates: ParticipantTimeCandidate[],
 ): AvailabilityChoice | null {

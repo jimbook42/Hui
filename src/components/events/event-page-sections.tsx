@@ -186,7 +186,11 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
         <ViewerResponseCard
           eventId={detail.id}
           candidateId={data.primaryCandidate.id}
-          serverResponse={data.viewerResponse}
+          serverResponse={
+            data.multiTimeAnswerPresentation?.statusChoice ?? data.viewerResponse
+          }
+          answerSummaryLabel={data.multiTimeAnswerPresentation?.summaryLabel ?? null}
+          showPlaceFollowUp={data.multiTimeAnswerPresentation?.showPlaceFollowUp ?? true}
           serverPrivateNote={data.primaryCandidate.viewerPrivateNote}
           maybeResponsesEnabled={data.scheduling.maybeResponsesEnabled}
           confirmed={confirmed}

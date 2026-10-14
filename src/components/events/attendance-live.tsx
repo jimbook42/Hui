@@ -95,6 +95,9 @@ type ViewerResponseCardProps = {
   serverResponse: AvailabilityChoice | null;
   /** Optional private note when the viewer answered no (visible only to them). */
   serverPrivateNote?: string | null;
+  /** When set (multi-time proposing), replaces the single-choice status line. */
+  answerSummaryLabel?: string | null;
+  showPlaceFollowUp?: boolean;
   maybeResponsesEnabled: boolean;
   confirmed: boolean;
   /** Viewer has claimed something to bring (so declining releases it). */
@@ -113,6 +116,8 @@ export function ViewerResponseCard({
   candidateId,
   serverResponse,
   serverPrivateNote,
+  answerSummaryLabel,
+  showPlaceFollowUp = true,
   maybeResponsesEnabled,
   confirmed,
   hasContribution,
@@ -130,6 +135,11 @@ export function ViewerResponseCard({
   const response = effectiveViewerResponse(serverResponse, override);
   const state = attendanceStateFromChoice(response, maybeResponsesEnabled);
   const pending = state === "pending";
+  const answerLine =
+    answerSummaryLabel?.trim() ||
+    (isSaving && pendingChoice
+      ? "Saving\u2026"
+      : viewerStatusLabel(state));
   const options = availabilityResponseOptions(maybeResponsesEnabled);
 
   function save(choice: AvailabilityChoice) {
@@ -186,7 +196,7 @@ export function ViewerResponseCard({
         <div className="min-w-0 flex-1">
           <p className="hui-type-label text-muted-foreground">Your answer</p>
           <p className="text-lg font-extrabold leading-tight text-foreground" role="status">
-            {isSaving && pendingChoice ? "Saving\u2026" : viewerStatusLabel(state)}
+            {answerLine}
           </p>
           {pending ? (
             <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
@@ -269,7 +279,7 @@ export function ViewerResponseCard({
 
       {!pending && followUp && !error ? (
         <div className="mt-3 space-y-2 text-sm font-semibold text-muted-foreground" role="status">
-          {effect === "offer-details" ? (
+          {effect === "offer-details" && showPlaceFollowUp ? (
             <p>
               You&apos;re in.{" "}
               <Link
