@@ -358,6 +358,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
           ) : null}
 
           <DisclosureCard
+            id="group-settings"
             title="Group settings"
             summary={viewerCanEditSettings ? "Rules for proposing and agreeing" : "How this group decides"}
             icon={<SparkIcon size={20} />}

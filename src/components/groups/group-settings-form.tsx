@@ -32,6 +32,17 @@ export function GroupSettingsForm({ groupId, settings }: GroupSettingsFormProps)
             <option value="admins_only">Admins only</option>
           </select>
         </label>
+        <label className="hui-label">
+          <span>Planning reminders</span>
+          <select
+            name="planning_reminders_audience"
+            defaultValue={settings.planningRemindersAudience}
+            className="hui-input"
+          >
+            <option value="admins_only">Admins only</option>
+            <option value="everyone">Everyone in the group</option>
+          </select>
+        </label>
         <HuiSwitchField
           name="hosting_enabled"
           label="Use a host for gatherings"

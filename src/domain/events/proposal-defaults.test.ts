@@ -6,6 +6,7 @@ import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
 
 const baseSettings: GroupSettingsRow = {
   whoMayPropose: "any_member",
+  planningRemindersAudience: "admins_only",
   oneOffEventsAllowed: true,
   recurringEventsEnabled: true,
   maybeResponsesEnabled: true,

@@ -27,6 +27,12 @@ import {
   preservedFieldsOnSignUpValidationError,
   type PreservedAuthFields,
 } from "@/domain/auth/form-field-preservation";
+import { passwordsMeetRules } from "@/domain/auth/password-rules";
+import {
+  authTimeoutUserMessage,
+  AuthActionTimeoutError,
+  withAuthActionTimeout,
+} from "@/lib/auth/action-timeout";
 
 export type AuthActionState = {
   error?: string;
@@ -39,7 +45,9 @@ export async function signUpAction(
   formData: FormData,
 ): Promise<AuthActionState> {
   const email = String(formData.get("email") ?? "").trim();
+  const emailConfirm = String(formData.get("email_confirm") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const passwordConfirm = String(formData.get("password_confirm") ?? "");
   const displayNameRaw = String(formData.get("display_name") ?? "");
   const displayName = normalizeDisplayName(displayNameRaw);
   const next = sanitizeNextPath(String(formData.get("next") ?? ""));
@@ -60,9 +68,19 @@ export async function signUpAction(
       fields: { display_name: displayNameRaw.trim(), email },
     };
   }
-  if (password.length < 8) {
+  if (email !== emailConfirm) {
     return {
-      error: "Password must be at least 8 characters.",
+      error: "Email addresses do not match.",
+      fields: preservedFieldsOnSignUpValidationError({
+        email,
+        password,
+        displayName,
+      }),
+    };
+  }
+  if (!passwordsMeetRules(password, passwordConfirm)) {
+    return {
+      error: "Password must be at least 8 characters and match the confirmation.",
       fields: preservedFieldsOnSignUpValidationError({
         email,
         password,
@@ -72,13 +90,26 @@ export async function signUpAction(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { display_name: displayName },
-    },
-  });
+  let data;
+  let error;
+  try {
+    const result = await withAuthActionTimeout(() =>
+      supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { display_name: displayName },
+        },
+      }),
+    );
+    data = result.data;
+    error = result.error;
+  } catch (caught) {
+    if (caught instanceof AuthActionTimeoutError) {
+      return { error: authTimeoutUserMessage() };
+    }
+    throw caught;
+  }
 
   if (error) {
     return { error: error.message };
@@ -89,10 +120,13 @@ export async function signUpAction(
     redirect(next);
   }
 
-  return {
-    message:
-      "Check your email for a verification link. You can sign in after verifying your address.",
-  };
+  const signInAttempt = await supabase.auth.signInWithPassword({ email, password });
+  if (signInAttempt.data.session) {
+    await ensureUserProfile(supabase, signInAttempt.data.user.id, displayName);
+    redirect(next);
+  }
+
+  return { error: "Could not create your account. Try again or use a different email." };
 }
 
 export async function signInAction(
@@ -111,25 +145,35 @@ export async function signInAction(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  try {
+    const { data, error } = await withAuthActionTimeout(() =>
+      supabase.auth.signInWithPassword({
+        email,
+        password,
+      }),
+    );
 
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      return { error: error.message };
+    }
+
+    const ensured = await ensureUserProfile(
+      supabase,
+      data.user.id,
+      initialDisplayNameFromAuthMetadata(data.user.user_metadata, data.user.email),
+    );
+    if (!ensured.ok) {
+      return { error: ensured.error };
+    }
+
+    redirect(next);
+  } catch (caught) {
+    if (caught instanceof AuthActionTimeoutError) {
+      return { error: authTimeoutUserMessage() };
+    }
+    unstable_rethrow(caught);
+    return { error: "Sign-in failed. Try again." };
   }
-
-  const ensured = await ensureUserProfile(
-    supabase,
-    data.user.id,
-    initialDisplayNameFromAuthMetadata(data.user.user_metadata, data.user.email),
-  );
-  if (!ensured.ok) {
-    return { error: ensured.error };
-  }
-
-  redirect(next);
 }
 
 export async function oauthSignInAction(

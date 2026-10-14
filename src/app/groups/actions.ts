@@ -138,6 +138,10 @@ export async function updateGroupSettingsAction(
     timezone: String(formData.get("timezone") ?? "Pacific/Auckland").trim(),
     reconnect_reminders_enabled: formData.get("reconnect_reminders_enabled") === "on",
     reconnect_after_days: reconnectDaysRaw === "" ? null : Number(reconnectDaysRaw),
+    planning_reminders_audience:
+      String(formData.get("planning_reminders_audience") ?? "admins_only") === "everyone"
+        ? "everyone"
+        : "admins_only",
   };
 
   if (!Number.isFinite(minimumAttendees) || minimumAttendees < 1) {

@@ -11,6 +11,7 @@ import {
 
 const baseSettings: GroupSettingsRow = {
   whoMayPropose: "any_member",
+  planningRemindersAudience: "admins_only",
   oneOffEventsAllowed: true,
   recurringEventsEnabled: true,
   maybeResponsesEnabled: true,

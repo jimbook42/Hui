@@ -1,9 +1,8 @@
 import Link from "next/link";
 
-import { signInAction } from "@/app/auth/actions";
-import { AuthField, AuthForm } from "@/components/auth/auth-form";
-import { AuthOAuthSection } from "@/components/auth/auth-provider-options";
+import { AuthPrimaryOAuth } from "@/components/auth/auth-primary-oauth";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { getEnabledOAuthProviders } from "@/lib/auth/providers";
 import { sanitizeNextPath } from "@/lib/auth/routes";
 import { loadInviteGroupNameForAuthNext } from "@/lib/invites/auth-invite-context";
 import { createClient } from "@/lib/supabase/server";
@@ -31,11 +30,12 @@ export default async function SignInPage({
   const title = inviteGroupName ? `Sign in to join ${inviteGroupName}` : "Sign in";
   const description = inviteGroupName
     ? `Use your Hui account to join ${inviteGroupName} and answer the hui invite.`
-    : "Use your email and password to access your Hui account.";
+    : "Choose how you want to sign in.";
   const oauthNotice =
     typeof params.oauth === "string"
       ? OAUTH_SIGN_IN_MESSAGES[params.oauth]
       : undefined;
+  const providers = getEnabledOAuthProviders();
 
   if (accountDeleted) {
     const supabase = await createClient();
@@ -47,17 +47,21 @@ export default async function SignInPage({
     }
   }
 
+  const signUpHref =
+    next === "/dashboard" ? "/sign-up" : `/sign-up?next=${encodeURIComponent(next)}`;
+  const emailSignInHref =
+    next === "/dashboard" ? "/sign-in/email" : `/sign-in/email?next=${encodeURIComponent(next)}`;
+
   return (
     <AuthShell
       title={title}
       description={description}
       footer={
-        <>
-          No account yet?{" "}
-          <Link href="/sign-up" className="font-medium underline-offset-4 hover:underline">
-            Sign up
+        <p className="text-center text-sm text-muted-foreground">
+          <Link href={emailSignInHref} className="font-medium underline-offset-4 hover:underline">
+            Sign in with email
           </Link>
-        </>
+        </p>
       }
     >
       {accountDeleted ? (
@@ -76,16 +80,13 @@ export default async function SignInPage({
           {oauthNotice}
         </p>
       ) : null}
-      <AuthOAuthSection next={next} />
-      <AuthForm action={signInAction} submitLabel="Sign in" hiddenFields={{ next }}>
-        <AuthField label="Email" name="email" type="email" autoComplete="email" />
-        <AuthField
-          label="Password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-        />
-      </AuthForm>
+      <AuthPrimaryOAuth providers={providers} next={next} />
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        No account yet?{" "}
+        <Link href={signUpHref} className="font-medium underline-offset-4 hover:underline">
+          Sign up with email
+        </Link>
+      </p>
     </AuthShell>
   );
 }

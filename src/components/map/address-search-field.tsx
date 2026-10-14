@@ -246,6 +246,24 @@ export function AddressSearchField({
 
           </a>
 
+          {" · "}
+
+          <a
+
+            href="https://www.openstreetmap.org/copyright"
+
+            className="hui-focus-ring underline"
+
+            target="_blank"
+
+            rel="noopener noreferrer"
+
+          >
+
+            © OpenStreetMap contributors
+
+          </a>
+
         </p>
 
       ) : null}

@@ -35,7 +35,7 @@ const OAUTH_PROVIDER_META: Record<
   }
 > = {
   google: {
-    continueLabel: "Continue with Google",
+    continueLabel: "Sign in with Google",
     supabaseOAuthProvider: "google",
   },
   apple: {
@@ -43,11 +43,11 @@ const OAUTH_PROVIDER_META: Record<
     supabaseOAuthProvider: "apple",
   },
   facebook: {
-    continueLabel: "Continue with Facebook",
+    continueLabel: "Sign in with Facebook",
     supabaseOAuthProvider: "facebook",
   },
   azure: {
-    continueLabel: "Continue with Microsoft",
+    continueLabel: "Sign in with Microsoft",
     supabaseOAuthProvider: "azure",
     oauthScopes: "email",
   },

@@ -20,9 +20,11 @@ import { StaleProposalSection } from "@/components/events/stale-proposal-section
 import { EventProposeInviteSection } from "@/components/events/event-propose-invite-section";
 import { EventRespondSavedToast } from "@/components/events/event-respond-saved-toast";
 import { AttendanceLiveProvider } from "@/components/events/attendance-live";
-import { EventHero, EventHeroMetaSkeleton } from "@/components/hui/event-hero";
+import { EventHero } from "@/components/hui/event-hero";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { loadEventPage } from "@/lib/events/event-page-data";
 import { getEventDetail } from "@/lib/events/queries";
+import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 
 type PageProps = {
@@ -46,6 +48,15 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   }
 
   const userId = user!.id;
+  const [heroPageData, appOrigin, inviteTokenResult] = await Promise.all([
+    loadEventPage(detail, userId),
+    resolveAuthRedirectOrigin(),
+    supabase.rpc("get_group_invite_link", { p_group_id: detail.groupId }),
+  ]);
+  const inviteToken =
+    !inviteTokenResult.error && typeof inviteTokenResult.data === "string"
+      ? inviteTokenResult.data
+      : null;
 
   return (
     <AppShell title={detail.title} hideTitle back={{ href: "/events", label: "Hui" }}>
@@ -62,9 +73,13 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
             location={detail.location}
             coordinates={detail.locationCoordinates}
           >
-            <Suspense fallback={<EventHeroMetaSkeleton />}>
-              <EventHeroMeta detail={detail} userId={userId} />
-            </Suspense>
+            <EventHeroMeta
+              detail={detail}
+              userId={userId}
+              pageData={heroPageData}
+              appOrigin={appOrigin}
+              inviteToken={inviteToken}
+            />
           </EventHero>
 
           <Suspense fallback={<EventBodySkeleton />}>

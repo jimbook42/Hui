@@ -22,9 +22,12 @@ import {
   groupHasEstablishedRecurrence,
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
+import { isProposalDateBeforeToday } from "@/domain/events/proposal-past-time";
 import {
   readStoredProposalCadence,
+  readStoredProposalDraft,
   writeStoredProposalCadence,
+  writeStoredProposalDraft,
 } from "@/domain/events/proposal-draft-storage";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
 import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nominal";
@@ -109,8 +112,12 @@ export function CreateEventProposalFlow({
     () => initialCandidateDateFromDraft(initialDraft, planningCycle),
     [initialDraft, planningCycle],
   );
-  const [step, setStep] = useState<Step>("name");
+  const [step, setStep] = useState<Step>(() => readStoredProposalDraft(groupId)?.step ?? "name");
   const [draft, setDraft] = useState<EventProposalDraft>(() => {
+    const storedDraft = readStoredProposalDraft(groupId);
+    if (storedDraft?.draft) {
+      return storedDraft.draft;
+    }
     const stored = isFirstGroupEvent ? readStoredProposalCadence(groupId) : null;
     if (!stored || groupHasEstablishedRecurrence(settings)) {
       return initialDraft;
@@ -154,8 +161,11 @@ export function CreateEventProposalFlow({
     draft.recurrence?.intervalCount,
     draft.recurrence,
   ]);
+
   const [stepError, setStepError] = useState<string | null>(null);
-  const [timeDate, setTimeDate] = useState(initialDate);
+  const [timeDate, setTimeDate] = useState(
+    () => readStoredProposalDraft(groupId)?.timeDate ?? initialDate,
+  );
 
   function dateOnlyFromIso(iso: string, zone: string): string {
     return new Intl.DateTimeFormat("en-CA", {
@@ -166,9 +176,21 @@ export function CreateEventProposalFlow({
     }).format(new Date(iso));
   }
 
-  const [timeStart, setTimeStart] = useState("12:00");
+  const [timeStart, setTimeStart] = useState(
+    () => readStoredProposalDraft(groupId)?.timeStart ?? "12:00",
+  );
   // The end time is optional: an empty value means "start only".
-  const [timeEnd, setTimeEnd] = useState("");
+  const [timeEnd, setTimeEnd] = useState(() => readStoredProposalDraft(groupId)?.timeEnd ?? "");
+
+  useEffect(() => {
+    writeStoredProposalDraft(groupId, {
+      step,
+      draft,
+      timeDate,
+      timeStart,
+      timeEnd,
+    });
+  }, [groupId, step, draft, timeDate, timeStart, timeEnd]);
 
   const [actionState, formAction] = useActionState(
     proposeGroupEventAction,
@@ -256,6 +278,15 @@ export function CreateEventProposalFlow({
       return;
     }
     if (step === "time") {
+      if (
+        timeDate &&
+        isProposalDateBeforeToday(timeDate, todayDateOnly) &&
+        !window.confirm(
+          "This date is in the past. Proposing a past time can confuse members. Continue anyway?",
+        )
+      ) {
+        return;
+      }
       const parsed = parseWallClockCandidate(
         timeDate,
         timeStart,

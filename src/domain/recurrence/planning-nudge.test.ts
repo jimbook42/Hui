@@ -10,6 +10,7 @@ import type { GroupSettingsRow } from "@/lib/groups/types";
 
 const baseSettings: GroupSettingsRow = {
   whoMayPropose: "admins_only",
+  planningRemindersAudience: "admins_only",
   oneOffEventsAllowed: true,
   recurringEventsEnabled: true,
   maybeResponsesEnabled: true,

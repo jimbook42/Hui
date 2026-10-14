@@ -5,6 +5,8 @@ export function mapGroupSettingsRow(row: Record<string, unknown>): GroupSettings
   const intervalUnit = row.recurrence_interval_unit;
   return {
     whoMayPropose: row.who_may_propose as GroupSettingsRow["whoMayPropose"],
+    planningRemindersAudience:
+      row.planning_reminders_audience === "everyone" ? "everyone" : "admins_only",
     oneOffEventsAllowed: Boolean(row.one_off_events_allowed),
     recurringEventsEnabled: Boolean(row.recurring_events_enabled),
     maybeResponsesEnabled: Boolean(row.maybe_responses_enabled),
