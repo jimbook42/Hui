@@ -36,6 +36,7 @@ import {
 } from "@/domain/contributions/slots";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import { privateAttendanceNoteForCandidate } from "@/domain/events/private-attendance-note";
+import { candidateIdsNeedingNoteFlushBeforeAdvance } from "@/domain/events/participant-respond-note-flush";
 import type { EventStatus } from "@/domain/events/types";
 import {
   nextStepAfterAttendanceSave,
@@ -173,8 +174,11 @@ export function EventParticipantRespondFlow({
   const [noNotesByCandidate, setNoNotesByCandidate] =
     useState<Record<string, string>>(initialNotesByCandidate);
   const noteSaveTimersRef = useRef<Record<string, number>>({});
+  const candidateSavePromisesRef = useRef<Record<string, Promise<void>>>({});
+  const responsesByCandidateRef = useRef(responsesByCandidate);
   const noNoteRef = useRef(candidate.viewerPrivateNote ?? "");
   const noNotesByCandidateRef = useRef<Record<string, string>>(initialNotesByCandidate);
+  const [flushingNotes, setFlushingNotes] = useState(false);
   const [suggestSubmittedRange, setSuggestSubmittedRange] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState("");
   const [timeStart, setTimeStart] = useState("12:00");
@@ -337,6 +341,10 @@ export function EventParticipantRespondFlow({
   }, [step, showBringStep]);
 
   useEffect(() => {
+    responsesByCandidateRef.current = responsesByCandidate;
+  }, [responsesByCandidate]);
+
+  useEffect(() => {
     const timers = noteSaveTimersRef.current;
     return () => {
       for (const timer of Object.values(timers)) {
@@ -366,14 +374,20 @@ export function EventParticipantRespondFlow({
     targetCandidateId: string,
     choice: AvailabilityChoice,
     advanceOnSave = true,
-  ) {
+  ): Promise<void> {
+    const inFlight = candidateSavePromisesRef.current[targetCandidateId];
+    if (inFlight) {
+      return inFlight.then(() =>
+        saveAttendanceForCandidate(targetCandidateId, choice, advanceOnSave),
+      );
+    }
     if (!canRespond) {
-      return;
+      return Promise.resolve();
     }
     if (pendingByCandidate[targetCandidateId]) {
-      return;
+      return inFlight ?? Promise.resolve();
     }
-    const existing = responsesByCandidate[targetCandidateId] ?? null;
+    const existing = responsesByCandidateRef.current[targetCandidateId] ?? null;
     if (choice === existing) {
       if (choice === "unavailable") {
         // Note-only update after the user already answered no.
@@ -381,9 +395,9 @@ export function EventParticipantRespondFlow({
         if (!multipleTimeOptions) {
           pushStep(nextStepAfterAttendanceSave(choice));
         }
-        return;
+        return Promise.resolve();
       } else {
-        return;
+        return Promise.resolve();
       }
     }
     const interaction = `attendance_${targetCandidateId}_${choice}`;
@@ -399,61 +413,107 @@ export function EventParticipantRespondFlow({
       candidateTimeLabels[targetCandidateId] ??
       (targetCandidateId === candidate.id ? focusTimeLabel : "");
 
-    startSaveAttendance(async () => {
-      markInteraction(interaction, "request-start");
-      const noteForSave = readNoteForCandidate(targetCandidateId);
-      const formData = new FormData();
-      formData.set("event_id", eventId);
-      formData.set("candidate_id", targetCandidateId);
-      formData.set("response", choice);
-      if (choice === "unavailable") {
-        formData.set("private_note", noteForSave);
-      }
-      const result: EventActionState = await setAvailabilityResponseAction({}, formData);
-      markInteraction(interaction, "request-end");
-      if (result.error) {
-        setActionError(result.error);
+    const savePromise = new Promise<void>((resolve, reject) => {
+      startSaveAttendance(async () => {
+        markInteraction(interaction, "request-start");
+        const noteForSave = readNoteForCandidate(targetCandidateId);
+        const formData = new FormData();
+        formData.set("event_id", eventId);
+        formData.set("candidate_id", targetCandidateId);
+        formData.set("response", choice);
+        if (choice === "unavailable") {
+          formData.set("private_note", noteForSave);
+        }
+        const result: EventActionState = await setAvailabilityResponseAction({}, formData);
+        markInteraction(interaction, "request-end");
+        if (result.error) {
+          setActionError(result.error);
+          setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
+          setResponsesByCandidate((current) => ({
+            ...current,
+            [targetCandidateId]: existing,
+          }));
+          endInteraction(interaction);
+          reject(new Error(result.error));
+          return;
+        }
         setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
-        setResponsesByCandidate((current) => ({
-          ...current,
-          [targetCandidateId]: existing,
-        }));
-        endInteraction(interaction);
-        return;
-      }
-      setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
-      showSaveToast(
-        participantSaveToastMessage(choice, timeLabelForToast),
-      );
-      if (!multipleTimeOptions && advanceOnSave) {
-        setResponseOverride(choice);
-        pushStep(nextStepAfterAttendanceSave(choice));
-        window.setTimeout(() => {
-          router.refresh();
+        showSaveToast(
+          participantSaveToastMessage(choice, timeLabelForToast),
+        );
+        if (!multipleTimeOptions && advanceOnSave) {
+          setResponseOverride(choice);
+          pushStep(nextStepAfterAttendanceSave(choice));
+          window.setTimeout(() => {
+            router.refresh();
+            endInteraction(interaction);
+            resolve();
+          }, 0);
+        } else if (!multipleTimeOptions) {
+          window.setTimeout(() => {
+            router.refresh();
+            endInteraction(interaction);
+            resolve();
+          }, 0);
+        } else {
           endInteraction(interaction);
-        }, 0);
-      } else if (!multipleTimeOptions) {
-        window.setTimeout(() => {
-          router.refresh();
-          endInteraction(interaction);
-        }, 0);
-      } else {
-        endInteraction(interaction);
+          resolve();
+        }
+      });
+    });
+
+    candidateSavePromisesRef.current[targetCandidateId] = savePromise;
+    return savePromise.finally(() => {
+      if (candidateSavePromisesRef.current[targetCandidateId] === savePromise) {
+        delete candidateSavePromisesRef.current[targetCandidateId];
       }
     });
   }
 
   function saveAttendance(choice: AvailabilityChoice) {
-    saveAttendanceForCandidate(candidate.id, choice, choice !== "unavailable");
+    void saveAttendanceForCandidate(candidate.id, choice, choice !== "unavailable");
   }
 
-  function flushNoteSave(targetCandidateId: string) {
+  async function flushNoteSave(targetCandidateId: string): Promise<void> {
     clearNoteSaveTimer(targetCandidateId);
+    const inFlight = candidateSavePromisesRef.current[targetCandidateId];
+    if (inFlight) {
+      await inFlight;
+    }
     const choice =
-      responsesByCandidate[targetCandidateId] ??
+      responsesByCandidateRef.current[targetCandidateId] ??
       (targetCandidateId === candidate.id ? viewerResponse : null);
-    if (choice === "unavailable") {
-      saveAttendanceForCandidate(targetCandidateId, "unavailable", false);
+    if (choice !== "unavailable") {
+      return;
+    }
+    await saveAttendanceForCandidate(targetCandidateId, "unavailable", false);
+  }
+
+  async function flushNotesBeforeTimeStepAdvance(): Promise<void> {
+    const ids = candidateIdsNeedingNoteFlushBeforeAdvance(
+      responsesByCandidateRef.current,
+      attendanceCandidates.map((row) => row.id),
+    );
+    for (const id of ids) {
+      await flushNoteSave(id);
+    }
+  }
+
+  async function advanceFromTimeStepAfterNotes(advance: () => void) {
+    if (flushingNotes) {
+      return;
+    }
+    setFlushingNotes(true);
+    setActionError(null);
+    try {
+      await flushNotesBeforeTimeStepAdvance();
+      advance();
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "Could not save your note. Try again.",
+      );
+    } finally {
+      setFlushingNotes(false);
     }
   }
 
@@ -681,12 +741,16 @@ export function EventParticipantRespondFlow({
                 <PendingButton
                   type="button"
                   size="touch"
+                  disabled={flushingNotes}
+                  pendingLabel="Saving…"
                   onClick={() => {
-                    setResponseOverride(multiSummaryChoice);
-                    pushStep(nextStepAfterAttendanceSave(multiSummaryChoice));
+                    void advanceFromTimeStepAfterNotes(() => {
+                      setResponseOverride(multiSummaryChoice);
+                      pushStep(nextStepAfterAttendanceSave(multiSummaryChoice));
+                    });
                   }}
                 >
-                  Done
+                  {flushingNotes ? "Saving…" : "Done"}
                 </PendingButton>
               ) : null}
             </>
@@ -770,12 +834,14 @@ export function EventParticipantRespondFlow({
             <PendingButton
               type="button"
               size="touch"
+              disabled={flushingNotes}
               onClick={() => {
-                flushNoteSave(candidate.id);
-                pushStep(nextStepAfterAttendanceSave("unavailable"));
+                void advanceFromTimeStepAfterNotes(() => {
+                  pushStep(nextStepAfterAttendanceSave("unavailable"));
+                });
               }}
             >
-              Continue
+              {flushingNotes ? "Saving…" : "Continue"}
             </PendingButton>
           ) : null}
             </>

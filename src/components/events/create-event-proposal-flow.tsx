@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 
 import type { EventActionState } from "@/app/events/actions";
 import { proposeGroupEventAction } from "@/app/events/proposal-actions";
@@ -22,6 +22,10 @@ import {
   groupHasEstablishedRecurrence,
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
+import {
+  readStoredProposalCadence,
+  writeStoredProposalCadence,
+} from "@/domain/events/proposal-draft-storage";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
 import { firstGroupCycleNominalDate } from "@/domain/recurrence/first-cycle-nominal";
 import {
@@ -105,7 +109,50 @@ export function CreateEventProposalFlow({
     [initialDraft, planningCycle],
   );
   const [step, setStep] = useState<Step>("name");
-  const [draft, setDraft] = useState<EventProposalDraft>(() => initialDraft);
+  const [draft, setDraft] = useState<EventProposalDraft>(() => {
+    const stored = isFirstGroupEvent ? readStoredProposalCadence(groupId) : null;
+    if (!stored || groupHasEstablishedRecurrence(settings)) {
+      return initialDraft;
+    }
+    const nominal = firstGroupCycleNominalDate(
+      { intervalUnit: stored.intervalUnit, intervalCount: stored.intervalCount },
+      todayDateOnly,
+    );
+    return {
+      ...initialDraft,
+      eventKind: "recurring",
+      recurrence: {
+        seriesTitle: initialDraft.recurrence?.seriesTitle ?? "",
+        intervalUnit: stored.intervalUnit,
+        intervalCount: stored.intervalCount,
+        startsOn: nominal,
+        planningTargetDate: nominal,
+      },
+    };
+  });
+
+  useEffect(() => {
+    if (
+      !isFirstGroupEvent ||
+      groupHasEstablishedRecurrence(settings) ||
+      draft.eventKind !== "recurring" ||
+      !draft.recurrence
+    ) {
+      return;
+    }
+    writeStoredProposalCadence(groupId, {
+      intervalUnit: draft.recurrence.intervalUnit,
+      intervalCount: draft.recurrence.intervalCount,
+    });
+  }, [
+    groupId,
+    isFirstGroupEvent,
+    settings,
+    draft.eventKind,
+    draft.recurrence?.intervalUnit,
+    draft.recurrence?.intervalCount,
+    draft.recurrence,
+  ]);
   const [stepError, setStepError] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState(initialDate);
 
