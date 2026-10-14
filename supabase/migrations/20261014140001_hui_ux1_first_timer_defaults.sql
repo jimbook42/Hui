@@ -1,7 +1,5 @@
--- HUI-UX1: majority default for new groups; invite preview uses proposed candidate time.
-
-alter table public.group_settings
-  alter column consensus_rule set default 'majority_active_members';
+-- HUI-UX1: invite preview uses proposed candidate time; majority consensus evaluation.
+-- Column default for new groups ships in 20261014140002 (after app release).
 
 create or replace function public.candidate_consensus(p_candidate_id uuid)
 returns jsonb

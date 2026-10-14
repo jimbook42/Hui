@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   compareCandidatesBySchedule,
   isConsensusRule,
-  type ConsensusFailureReason,
   type ConsensusRule,
 } from "@/domain/scheduling/consensus";
 import { dbResponseToAvailability } from "@/domain/scheduling/mapping";
@@ -151,14 +150,6 @@ export async function getEventSchedulingContext(
   };
 }
 
-const FAILURE_REASONS = new Set<CandidateConsensusView["failureReason"]>([
-  "below_minimum_attendees",
-  "required_participants",
-  "all_active_members",
-  "candidate_not_active",
-  null,
-]);
-
 function readRecord(value: unknown): Record<string, unknown> {
   if (typeof value === "string") {
     return JSON.parse(value) as Record<string, unknown>;
@@ -188,10 +179,10 @@ function readFailureReason(value: unknown): CandidateConsensusView["failureReaso
   if (value === null || value === undefined) {
     return null;
   }
-  if (typeof value === "string" && FAILURE_REASONS.has(value as ConsensusFailureReason)) {
-    return value as CandidateConsensusView["failureReason"];
+  if (typeof value === "string" && value.length > 0) {
+    return value;
   }
-  throw new Error("Consensus summary was incomplete.");
+  return null;
 }
 
 function readCandidate(value: unknown): CandidateConsensusView {

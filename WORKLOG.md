@@ -4,7 +4,7 @@ Lightweight record of completed tickets. One entry per ticket.
 
 ## 2026-10-14 — First-timer UX, part A (0.15.0, HUI-UX1)
 
-- **Defaults:** New groups default `consensus_rule` to `majority_active_members` (migrations `20261014140000_hui_ux1_consensus_enum.sql`, `20261014140001_hui_ux1_first_timer_defaults.sql`; existing groups unchanged).
+- **Defaults:** New groups default `consensus_rule` to `majority_active_members` (migrations `20261014140000` enum, `20261014140001` functions, `20261014140002` column default after release; existing groups unchanged).
 - **Respond / invites:** Save toasts, optimistic answers, Maybe labelling, invite preview uses proposed candidate time, join → answer flow, deferred host prompt on hui page, confirmed “X of Y said yes”.
 
 ## 2026-10-14 — Calendar export UX polish (0.14.1, HUI-029b)

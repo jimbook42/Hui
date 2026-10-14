@@ -25,8 +25,12 @@ export function consensusRuleLabel(rule: ConsensusRule): string {
   }
 }
 
+export function consensusFailureFallbackLabel(): string {
+  return "This time does not meet the group's rules yet.";
+}
+
 export function consensusFailureLabel(
-  reason: ConsensusFailureReason | "candidate_not_active",
+  reason: ConsensusFailureReason | "candidate_not_active" | string,
   counts: { acceptedCount: number; minimumAttendees: number },
 ): string {
   switch (reason) {
@@ -40,5 +44,7 @@ export function consensusFailureLabel(
       return "Not enough members have said yes yet.";
     case "candidate_not_active":
       return "This time is no longer active.";
+    default:
+      return consensusFailureFallbackLabel();
   }
 }
