@@ -2,6 +2,11 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-14 — Calendar export UX polish (0.14.1, HUI-029b)
+
+- **UI:** Icon “Add to calendar” on home/group hui tiles (confirmed + `starts_at`); secondary button with icon on event hero beside date/time; fetch download + brief auto-dismiss feedback (toast on tiles, inline on event page).
+- **No migration**; reuses `GET /api/events/[eventId]/calendar.ics`.
+
 ## 2026-10-13 — ICS calendar export (0.14.0, HUI-029 partial)
 
 - **ICS:** `GET /api/events/[eventId]/calendar.ics` for active members (RLS via `getEventDetail`); confirmed hui with start time only.

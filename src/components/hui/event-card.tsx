@@ -14,6 +14,8 @@ import {
 } from "@/domain/datetime/display";
 import { viewerStatusLabel } from "@/domain/events/home";
 import { eventStatusLabel } from "@/lib/events/labels";
+import { AddToCalendarButton } from "@/components/events/add-to-calendar-button";
+import { canDownloadEventIcs } from "@/lib/calendar/event-ics-export";
 import { eventAttentionPath, eventDetailPath, participantRespondPath } from "@/lib/events/paths";
 import type { HomeEvent } from "@/lib/events/home-data";
 import { cn } from "@/lib/ui/cn";
@@ -91,6 +93,8 @@ export function EventCard({ event, variant = "standard", tone = "primary", class
       ? "Time proposed — not confirmed yet"
       : "Time still to be agreed";
   const when = event.startsAt && event.bucket !== "past" ? relativeDayLabel(event.startsAt, event.timeZone) : null;
+  const showAddToCalendar = canDownloadEventIcs(event.status, event.startsAt);
+  const hasAttentionAction = event.attention !== null;
 
   return (
     <article
@@ -176,6 +180,13 @@ export function EventCard({ event, variant = "standard", tone = "primary", class
           />
         ) : null}
 
+        {showAddToCalendar ? (
+          <AddToCalendarButton
+            eventId={event.id}
+            variant="icon"
+            className={hasAttentionAction ? undefined : "ml-auto"}
+          />
+        ) : null}
         {event.attention === "respond" ? (
           <HuiLinkButton
             href={participantRespondPath(event.id)}
