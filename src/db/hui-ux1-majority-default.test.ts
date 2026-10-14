@@ -161,4 +161,42 @@ describe("majority default for new groups (HUI-UX1)", () => {
     );
     expect(twoYes.rows[0].candidate_consensus.passes).toBe(true);
   });
+
+  it("does not pass consensus on one yes when only the organiser is in the group", async () => {
+    await asUser(db, ids.owner);
+    const groupId = (
+      await db.query<{ create_group: string }>(`select public.create_group($1) as create_group`, [
+        "Solo majority",
+      ])
+    ).rows[0].create_group;
+
+    const eventId = (
+      await db.query<{ id: string }>(
+        `insert into public.events (group_id, title, status, created_by)
+         values ($1, 'Solo hui', 'proposing', $2) returning id`,
+        [groupId, ids.owner],
+      )
+    ).rows[0].id;
+
+    const candidateId = (
+      await db.query<{ id: string }>(
+        `insert into public.event_candidates (event_id, group_id, starts_at, status, proposed_by)
+         values ($1, $2, now() + interval '7 days', 'proposed', $3) returning id`,
+        [eventId, groupId, ids.owner],
+      )
+    ).rows[0].id;
+
+    await db.query(
+      `insert into public.event_responses (event_id, candidate_id, user_id, response)
+       values ($1, $2, $3, 'yes')`,
+      [eventId, candidateId, ids.owner],
+    );
+
+    await asUser(db, null);
+    const consensus = await db.query<{ candidate_consensus: { passes: boolean } }>(
+      `select public.candidate_consensus($1) as candidate_consensus`,
+      [candidateId],
+    );
+    expect(consensus.rows[0].candidate_consensus.passes).toBe(false);
+  });
 });

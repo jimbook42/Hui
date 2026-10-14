@@ -25,7 +25,8 @@ import {
   TransferOwnershipForm,
 } from "@/components/groups/member-actions";
 import { GroupHostHistorySection } from "@/components/hosts/group-host-history";
-import { AvatarStack } from "@/components/hui/avatar-stack";
+import { GroupInviteHeroButton } from "@/components/groups/group-invite-hero-button";
+import { GroupMembersRosterSheet } from "@/components/groups/group-members-roster-sheet";
 import { DisclosureCard } from "@/components/hui/disclosure-card";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
@@ -163,14 +164,23 @@ export default async function GroupDetailPage({ params }: PageProps) {
             </div>
           </div>
           <div className="mt-5">
-            <AvatarStack
-              people={detail.members.map((member) => ({ id: member.userId, name: member.displayName }))}
-              max={7}
-              size="md"
-              label={`${memberCount} ${memberCount === 1 ? "member" : "members"}`}
+            <GroupMembersRosterSheet
+              members={detail.members.map((member) => ({
+                userId: member.userId,
+                displayName: member.displayName,
+                role: member.role,
+              }))}
+              memberCount={memberCount}
             />
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
+            {viewerCanManage && inviteToken ? (
+              <GroupInviteHeroButton
+                groupName={detail.name}
+                inviteToken={inviteToken}
+                appOrigin={appOrigin}
+              />
+            ) : null}
             {viewerCanPropose ? (
               <HuiLinkButton
                 href={`/groups/${groupId}/events/new`}

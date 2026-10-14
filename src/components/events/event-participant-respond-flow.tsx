@@ -28,10 +28,12 @@ import {
   sortContributionSlotsForDisplay,
 } from "@/domain/contributions/slots";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
+import type { EventStatus } from "@/domain/events/types";
 import {
   nextStepAfterAttendanceSave,
   nextStepAfterPlace,
   participantFlowStepsForBack,
+  respondAttendanceCandidates,
   shouldShowParticipantBringStep,
   type ParticipantFlowStep,
 } from "@/domain/events/participant-flow";
@@ -80,6 +82,7 @@ type EventParticipantRespondFlowProps = {
   focusTimeLabel: string;
   candidateTimeLabels: Record<string, string>;
   replyByLabel: string | null;
+  eventStatus: EventStatus;
 };
 
 const MAIN_FLOW_WITH_BRING: ParticipantFlowStep[] = ["time", "place", "bring", "done"];
@@ -123,17 +126,22 @@ export function EventParticipantRespondFlow({
   focusTimeLabel,
   candidateTimeLabels,
   replyByLabel,
+  eventStatus,
 }: EventParticipantRespondFlowProps) {
   const router = useRouter();
   const [step, setStep] = useState<ParticipantFlowStep>("time");
   const [responseOverride, setResponseOverride] = useState<AvailabilityChoice | null>(null);
   const viewerResponse = responseOverride ?? initialViewerResponse;
+  const attendanceCandidates = useMemo(
+    () => respondAttendanceCandidates(proposedCandidates, eventStatus),
+    [proposedCandidates, eventStatus],
+  );
   const multipleTimeOptions =
-    proposedCandidates.filter((row) => row.status === "proposed").length > 1;
+    eventStatus !== "confirmed" && attendanceCandidates.length > 1;
   const [responsesByCandidate, setResponsesByCandidate] = useState<Record<string, AvailabilityChoice | null>>(
     () => {
       const initial: Record<string, AvailabilityChoice | null> = {};
-      for (const row of proposedCandidates) {
+      for (const row of attendanceCandidates) {
         initial[row.id] = row.viewerResponse;
       }
       return initial;
@@ -145,6 +153,7 @@ export function EventParticipantRespondFlow({
   const [actionError, setActionError] = useState<string | null>(null);
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [noNote, setNoNote] = useState("");
+  const [noNotesByCandidate, setNoNotesByCandidate] = useState<Record<string, string>>({});
   const [suggestSubmittedRange, setSuggestSubmittedRange] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState("");
   const [timeStart, setTimeStart] = useState("12:00");
@@ -340,8 +349,11 @@ export function EventParticipantRespondFlow({
       formData.set("event_id", eventId);
       formData.set("candidate_id", targetCandidateId);
       formData.set("response", choice);
-      if (choice === "unavailable" && noNote.trim()) {
-        formData.set("private_note", noNote.trim());
+      const noteForSave = multipleTimeOptions
+        ? (noNotesByCandidate[targetCandidateId] ?? "").trim()
+        : noNote.trim();
+      if (choice === "unavailable" && noteForSave) {
+        formData.set("private_note", noteForSave);
       }
       const result: EventActionState = await setAvailabilityResponseAction({}, formData);
       markInteraction(interaction, "request-end");
@@ -381,18 +393,17 @@ export function EventParticipantRespondFlow({
     saveAttendanceForCandidate(candidate.id, choice);
   }
 
-  const openProposedCandidates = proposedCandidates.filter((row) => row.status === "proposed");
-  const multiAnsweredCount = openProposedCandidates.filter(
+  const multiAnsweredCount = attendanceCandidates.filter(
     (row) => responsesByCandidate[row.id] !== null,
   ).length;
   const allMultiTimesAnswered =
     multipleTimeOptions &&
-    openProposedCandidates.every((row) => responsesByCandidate[row.id] !== null);
+    attendanceCandidates.every((row) => responsesByCandidate[row.id] !== null);
   const multiSummaryChoice: AvailabilityChoice | null = (() => {
     if (!multipleTimeOptions) {
       return viewerResponse;
     }
-    const values = openProposedCandidates
+    const values = attendanceCandidates
       .map((row) => responsesByCandidate[row.id])
       .filter((value): value is AvailabilityChoice => value !== null);
     if (values.some((value) => value === "available")) {
@@ -529,12 +540,13 @@ export function EventParticipantRespondFlow({
             <>
               <h1 className="hui-type-page-title text-foreground">Can you make it?</h1>
               <p className="hui-type-supporting">
-                {multiAnsweredCount} of {openProposedCandidates.length} answered — pick each time
+                {multiAnsweredCount} of {attendanceCandidates.length} answered — pick each time
                 separately.
               </p>
               <ul className="space-y-4">
-                {openProposedCandidates.map((row) => {
+                {attendanceCandidates.map((row) => {
                   const rowResponse = responsesByCandidate[row.id] ?? null;
+                  const rowPendingUnavailable = pendingByCandidate[row.id] === "unavailable";
                   return (
                     <li key={row.id} className="rounded-hui-xl bg-surface p-4 hui-shadow-sm">
                       <p className="text-sm font-extrabold text-foreground">
@@ -562,6 +574,25 @@ export function EventParticipantRespondFlow({
                           />
                         ))}
                       </div>
+                      {rowResponse === "unavailable" || rowPendingUnavailable ? (
+                        <label className="hui-label mt-3 block">
+                          <span>Optional note (only if you want)</span>
+                          <input
+                            type="text"
+                            name={`private_note_${row.id}`}
+                            value={noNotesByCandidate[row.id] ?? ""}
+                            onChange={(event) =>
+                              setNoNotesByCandidate((current) => ({
+                                ...current,
+                                [row.id]: event.target.value,
+                              }))
+                            }
+                            maxLength={500}
+                            className="hui-input"
+                            placeholder="e.g. Away that weekend"
+                          />
+                        </label>
+                      ) : null}
                     </li>
                   );
                 })}

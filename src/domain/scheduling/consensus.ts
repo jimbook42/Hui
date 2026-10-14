@@ -151,7 +151,7 @@ export function evaluateCandidateConsensus(
     failureReason = "all_active_members";
   } else if (
     input.consensusRule === "majority_active_members" &&
-    acceptedCount * 2 <= eligibleMemberCount
+    (acceptedCount < 2 || acceptedCount * 2 <= eligibleMemberCount)
   ) {
     failureReason = "majority_active_members";
   } else if (

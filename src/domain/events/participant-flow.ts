@@ -38,6 +38,37 @@ export function pickParticipantTimeCandidate(
 }
 
 /** Best answer across open proposed times: Yes beats Maybe beats No (HUI-003A-T1). */
+/** Times the respond flow should list for attendance (confirmed → selected only). */
+export function respondAttendanceCandidates(
+  candidates: ParticipantTimeCandidate[],
+  eventStatus: EventStatus,
+): ParticipantTimeCandidate[] {
+  if (eventStatus === "confirmed") {
+    const selected = candidates.filter((candidate) => candidate.status === "selected");
+    if (selected.length > 0) {
+      return selected;
+    }
+  }
+  return candidates.filter((candidate) => candidate.status === "proposed");
+}
+
+/** Viewer answer for hero/summary: confirmed events use the selected time only. */
+export function viewerResponseForDisplay(
+  candidates: ParticipantTimeCandidate[],
+  eventStatus: EventStatus,
+): AvailabilityChoice | null {
+  if (eventStatus === "confirmed") {
+    const selected = candidates.find((candidate) => candidate.status === "selected");
+    return selected?.viewerResponse ?? null;
+  }
+  const proposed = bestViewerResponseAcrossProposedCandidates(candidates);
+  if (proposed !== null) {
+    return proposed;
+  }
+  const focus = pickParticipantTimeCandidate(candidates);
+  return focus?.viewerResponse ?? null;
+}
+
 export function bestViewerResponseAcrossProposedCandidates(
   candidates: ParticipantTimeCandidate[],
 ): AvailabilityChoice | null {

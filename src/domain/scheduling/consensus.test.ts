@@ -114,6 +114,17 @@ describe("evaluateCandidateConsensus", () => {
     expect(twoOfThree.passes).toBe(true);
   });
 
+  it("does not pass majority on a single yes in a one-person group", () => {
+    const solo = evaluate({
+      consensusRule: "majority_active_members",
+      minimumAttendees: 1,
+      members: [{ userId: "solo", consensusRequired: false }],
+      responses: [{ userId: "solo", response: "yes" }],
+    });
+    expect(solo.passes).toBe(false);
+    expect(solo.failureReason).toBe("majority_active_members");
+  });
+
   it("fails all active members until every eligible member accepts", () => {
     const failing = evaluate({
       consensusRule: "all_active_members",
