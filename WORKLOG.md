@@ -8,6 +8,10 @@
 
 Lightweight record of completed tickets. One entry per ticket.
 
+## 2026-10-14 — HUI-FIX1 dietary privacy + in-app install (0.16.2)
+
+- `listUserDietaryEntries` filters by `user_id`; update/delete/share-all scope to owner; in-app browser install banner on Profile > Install.
+
 ## 2026-10-14 — First-timer UX, part C (0.16.1, HUI-UX3)
 
 - Two-step group invite (intro sheet → Get link → share/copy); plain propose frequency step; respond Saved toasts, multi-time summaries, skip empty place step; invite lists all proposed times; auto-join to respond; dashboard Your hui for invitees; labels/tallies/jargon polish.
