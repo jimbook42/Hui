@@ -445,6 +445,14 @@ export function EventParticipantRespondFlow({
         }
         const result: EventActionState = await setAvailabilityResponseAction({}, formData);
         markInteraction(interaction, "request-end");
+        if (result.notice) {
+          setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
+          showSaveToast(result.notice);
+          router.refresh();
+          endInteraction(interaction);
+          resolve();
+          return;
+        }
         if (result.error) {
           setActionError(result.error);
           setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
@@ -453,7 +461,7 @@ export function EventParticipantRespondFlow({
             [targetCandidateId]: existing,
           }));
           endInteraction(interaction);
-          reject(new Error(result.error));
+          resolve();
           return;
         }
         setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));

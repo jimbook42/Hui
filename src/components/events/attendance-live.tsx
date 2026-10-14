@@ -28,6 +28,8 @@ import {
 } from "@/domain/scheduling/attendance-override";
 import { availabilityResponseOptions } from "@/domain/scheduling/consensus-display";
 import { participantAttendanceChoiceLabel } from "@/domain/scheduling/participant-labels";
+import type { MultiTimeAnswerDetailRow } from "@/domain/events/participant-flow";
+import { participantAttendanceSummaryLabel } from "@/domain/scheduling/participant-labels";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 import { participantRespondPath } from "@/lib/events/paths";
 import {
@@ -98,7 +100,7 @@ type ViewerResponseCardProps = {
   serverPrivateNote?: string | null;
   /** When set (multi-time proposing), replaces the single-choice status line. */
   answerSummaryLabel?: string | null;
-  answerDetailLines?: string[] | null;
+  answerDetailRows?: MultiTimeAnswerDetailRow[] | null;
   answerIconState?: AttendanceVisualState | null;
   showPlaceFollowUp?: boolean;
   maybeResponsesEnabled: boolean;
@@ -120,7 +122,7 @@ export function ViewerResponseCard({
   serverResponse,
   serverPrivateNote,
   answerSummaryLabel,
-  answerDetailLines,
+  answerDetailRows,
   answerIconState,
   showPlaceFollowUp = true,
   maybeResponsesEnabled,
@@ -135,6 +137,7 @@ export function ViewerResponseCard({
   const [pendingChoice, setPendingChoice] = useState<AvailabilityChoice | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [followUp, setFollowUp] = useState<AvailabilityChoice | null>(null);
+  const [noticeToast, setNoticeToast] = useState<string | null>(null);
   const [isSaving, startSaving] = useTransition();
 
   const response = effectiveViewerResponse(serverResponse, override);
@@ -172,6 +175,16 @@ export function ViewerResponseCard({
       const result = await setAvailabilityResponseAction({}, formData);
       markInteraction(interaction, "request-end");
       setPendingChoice(null);
+      if (result.notice) {
+        setOverride(null);
+        setFollowUp(choice);
+        setOpen(false);
+        setNoticeToast(result.notice);
+        window.setTimeout(() => setNoticeToast(null), 6000);
+        router.refresh();
+        endInteraction(interaction);
+        return;
+      }
       if (result.error) {
         // Roll back to what the server still has.
         setOverride(null);
@@ -193,6 +206,7 @@ export function ViewerResponseCard({
   const effect = followUp ? responseChangeEffect(null, followUp) : null;
 
   return (
+    <>
     <HuiSurface
       tone={state === "yes" ? "sage" : state === "no" ? "subtle" : "clay"}
       shape="organic-alt"
@@ -209,11 +223,32 @@ export function ViewerResponseCard({
           <p className="text-lg font-extrabold leading-tight text-foreground" role="status">
             {answerLine}
           </p>
-          {answerDetailLines && answerDetailLines.length > 0 ? (
-            <ul className="mt-2 space-y-0.5 text-sm font-semibold text-muted-foreground">
-              {answerDetailLines.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
+          {answerDetailRows && answerDetailRows.length > 0 ? (
+            <ul className="mt-2 space-y-2">
+              {answerDetailRows.map((row) => {
+                const rowState = row.choice
+                  ? attendanceStateFromChoice(row.choice, maybeResponsesEnabled)
+                  : "pending";
+                const rowLabel = row.choice
+                  ? participantAttendanceSummaryLabel(row.choice)
+                  : "No answer yet";
+                return (
+                  <li
+                    key={row.candidateId}
+                    className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground"
+                  >
+                    <AttendanceDot
+                      state={rowState}
+                      label={rowLabel}
+                      size="sm"
+                      hideBadge={!row.choice}
+                      subdued={!row.choice}
+                    />
+                    <span className="min-w-0 flex-1 text-foreground">{row.timeLabel}</span>
+                    <span className="shrink-0">{rowLabel}</span>
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
           {pending ? (
@@ -337,5 +372,14 @@ export function ViewerResponseCard({
         </p>
       ) : null}
     </HuiSurface>
+    {noticeToast ? (
+      <p
+        className="pointer-events-none fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-hui-lg bg-foreground px-4 py-3 text-center text-sm font-semibold text-background hui-shadow-lg"
+        role="status"
+      >
+        {noticeToast}
+      </p>
+    ) : null}
+    </>
   );
 }

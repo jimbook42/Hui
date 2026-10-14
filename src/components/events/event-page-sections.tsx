@@ -29,7 +29,7 @@ import { AddToCalendarButton } from "@/components/events/add-to-calendar-button"
 import { EventHostGentlePrompt } from "@/components/events/event-host-gentle-prompt";
 import { formatConfirmedHeroStatusLine } from "@/domain/scheduling/confirmed-because";
 import {
-  multiTimeAnswerDetailLines,
+  multiTimeAnswerDetailRows,
   multiTimeViewerVisualState,
 } from "@/domain/events/participant-flow";
 import { whoIsComingPresentation } from "@/domain/events/who-is-coming";
@@ -215,9 +215,9 @@ export async function EventHeroMeta({ detail, userId }: SectionProps) {
             data.multiTimeAnswerPresentation?.statusChoice ?? data.viewerResponse
           }
           answerSummaryLabel={data.multiTimeAnswerPresentation?.summaryLabel ?? null}
-          answerDetailLines={
+          answerDetailRows={
             data.multiTimeAnswerPresentation
-              ? multiTimeAnswerDetailLines(
+              ? multiTimeAnswerDetailRows(
                   data.scheduling.candidates,
                   buildEventTimeLabelMap(data.scheduling.candidates, tz),
                 )

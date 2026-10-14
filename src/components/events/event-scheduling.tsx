@@ -145,6 +145,7 @@ function CandidateResponseForm({
     setAvailabilityResponseAction,
     initialState,
   );
+  useActionStateRefresh(state);
   const options = availabilityResponseOptions(maybeResponsesEnabled);
   const open = canRespond && isCandidateOpenForResponses(eventStatus, candidate.status);
 
@@ -205,7 +206,12 @@ function CandidateResponseForm({
           {state.error}
         </p>
       ) : null}
-      {state.message ? (
+      {state.notice ? (
+        <p className="hui-message-success" role="status">
+          {state.notice}
+        </p>
+      ) : null}
+      {state.message && !state.notice ? (
         <p className="hui-message-success" role="status">
           {state.message}
         </p>

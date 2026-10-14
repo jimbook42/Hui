@@ -174,20 +174,22 @@ export function multiTimeViewerVisualState(
   return "pending";
 }
 
-export function multiTimeAnswerDetailLines(
+export type MultiTimeAnswerDetailRow = {
+  candidateId: string;
+  timeLabel: string;
+  choice: AvailabilityChoice | null;
+};
+
+export function multiTimeAnswerDetailRows(
   candidates: ParticipantTimeCandidate[],
   timeLabels: Record<string, string>,
-): string[] {
+): MultiTimeAnswerDetailRow[] {
   const proposed = candidates.filter((candidate) => candidate.status === "proposed");
-  return proposed.map((candidate) => {
-    const label = timeLabels[candidate.id]?.trim() || "Time";
-    const response = candidate.viewerResponse;
-    const answer =
-      response === "available" || response === "maybe" || response === "unavailable"
-        ? participantAttendanceSummaryLabel(response)
-        : "No answer yet";
-    return `${label}: ${answer}`;
-  });
+  return proposed.map((candidate) => ({
+    candidateId: candidate.id,
+    timeLabel: timeLabels[candidate.id]?.trim() || "Time",
+    choice: candidate.viewerResponse,
+  }));
 }
 
 export function bestViewerResponseAcrossProposedCandidates(
