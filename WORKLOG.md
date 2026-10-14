@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-15 — HUI-030-fix3 privacy contact + coord-audit merge (v0.18.0)
+
+- Privacy enquiries email `tulllabs@outlook.com` via `privacy-contact.ts` (shown on `/privacy`).
+- Merged `origin/cursor/hui-coord-audit-b1cd`; `RELEASING.md` current `0.18.0`, previous `0.17.0`.
+
 ## 2026-10-15 — HUI-030-fix2 privacy page + auth E2E (v0.18.0)
 
 - Public `/privacy` policy (NZ Privacy Act, delete-your-data section); linked from sign-in footer and profile.
