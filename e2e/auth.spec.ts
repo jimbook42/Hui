@@ -51,10 +51,45 @@ test("sign-in and sign-up pages render", async ({ page }) => {
   await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
 
   await page.goto("/sign-up");
+  await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
   await expect(page.getByLabel("Display name")).toBeVisible();
   await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Confirm email")).toBeVisible();
   await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+});
+
+test("invite next survives sign-in ↔ sign-up and OAuth forms", async ({ page }) => {
+  const inviteNext = "/join/e2e-invite-token";
+  const encoded = encodeURIComponent(inviteNext);
+
+  await page.goto(`/sign-in?next=${encoded}`);
+  await expect(page.getByRole("link", { name: "Sign up with email" })).toHaveAttribute(
+    "href",
+    `/sign-up?next=${encoded}`,
+  );
+
+  await page.goto(`/sign-up?next=${encoded}`);
+  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute(
+    "href",
+    `/sign-in?next=${encoded}`,
+  );
+  await expect(page.getByRole("link", { name: "Sign in with email" })).toHaveAttribute(
+    "href",
+    `/sign-in/email?next=${encoded}`,
+  );
+
+  const googleForm = page
+    .locator("form")
+    .filter({ has: page.getByRole("button", { name: "Sign in with Google" }) })
+    .first();
+  await expect(googleForm.locator('input[name="next"]')).toHaveValue(inviteNext);
+
+  await page.goto(`/sign-in/email?next=${encoded}`);
+  await expect(page.getByRole("link", { name: "Sign up with email" })).toHaveAttribute(
+    "href",
+    `/sign-up?next=${encoded}`,
+  );
+  await expect(page.locator('input[name="next"]')).toHaveValue(inviteNext);
 });
 
 test("OAuth cancellation shows a friendly sign-in notice", async ({ page }) => {

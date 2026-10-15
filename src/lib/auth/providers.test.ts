@@ -89,6 +89,15 @@ describe("buildOAuthCallbackUrl", () => {
       "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard",
     );
   });
+
+  it("preserves group invite paths for OAuth return", () => {
+    const invite = "/join/secret-invite-token";
+    expect(
+      buildOAuthCallbackUrl("https://huiapp.vercel.app", invite),
+    ).toBe(
+      `https://huiapp.vercel.app/auth/callback?next=${encodeURIComponent(invite)}`,
+    );
+  });
 });
 
 describe("oauthCallbackFailureReason", () => {

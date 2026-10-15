@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 
 import { joinGroupViaInviteAction, type JoinActionState } from "@/app/join/actions";
+import { authPathWithNext } from "@/lib/auth/routes";
 
 const initialState: JoinActionState = {};
 
@@ -54,7 +55,6 @@ export function JoinAuthLinks({
 }) {
   const joinPath =
     focusEventId ? `/join/${token}?event=${encodeURIComponent(focusEventId)}` : `/join/${token}`;
-  const next = encodeURIComponent(joinPath);
   const trimmedGroup = groupName.trim();
   const signInLabel = trimmedGroup
     ? `Sign in to join ${trimmedGroup}`
@@ -65,13 +65,13 @@ export function JoinAuthLinks({
   return (
     <div className="mt-6 flex flex-col gap-3 text-sm">
       <Link
-        href={`/sign-in?next=${next}`}
+        href={authPathWithNext("/sign-in", joinPath)}
         className="hui-btn hui-btn-primary rounded-full hui-focus-ring"
       >
         {signInLabel}
       </Link>
       <Link
-        href={`/sign-up?next=${next}`}
+        href={authPathWithNext("/sign-up", joinPath)}
         className="hui-btn hui-btn-secondary rounded-full hui-focus-ring"
       >
         {signUpLabel}
