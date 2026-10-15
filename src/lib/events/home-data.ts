@@ -419,14 +419,17 @@ export async function loadHomeData(
     );
     const finalisableRostersByCandidate = new Map<string, AttendanceRoster>();
     if (finalisableCandidateIds.length > 0) {
-      const rosterRpcResult = await supabase.rpc("candidate_attendance_rosters", {
-        p_candidate_ids: finalisableCandidateIds,
-      });
-      if (rosterRpcResult.error) {
-        throw new Error(rosterRpcResult.error.message);
-      }
-      for (const [candidateId, roster] of parseCandidateAttendanceRostersMap(rosterRpcResult.data)) {
-        finalisableRostersByCandidate.set(candidateId, roster);
+      // candidate_attendance_rosters accepts at most 50 ids per call.
+      for (let i = 0; i < finalisableCandidateIds.length; i += 50) {
+        const rosterRpcResult = await supabase.rpc("candidate_attendance_rosters", {
+          p_candidate_ids: finalisableCandidateIds.slice(i, i + 50),
+        });
+        if (rosterRpcResult.error) {
+          throw new Error(rosterRpcResult.error.message);
+        }
+        for (const [candidateId, roster] of parseCandidateAttendanceRostersMap(rosterRpcResult.data)) {
+          finalisableRostersByCandidate.set(candidateId, roster);
+        }
       }
     }
 
