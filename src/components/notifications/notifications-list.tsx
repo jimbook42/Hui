@@ -76,7 +76,7 @@ function NotificationCard({ notification }: { notification: MemberNotification }
             ) : null}
           </div>
           <h3 className="mt-1 text-[1.0625rem] font-extrabold leading-snug text-foreground">
-            {displayNotificationTitle(notification.title)}
+            {displayNotificationTitle(notification.title, notification.body)}
           </h3>
           <p className="mt-1 text-sm font-semibold leading-snug text-muted-foreground">
             {notification.body}

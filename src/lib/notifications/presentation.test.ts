@@ -26,7 +26,12 @@ const KINDS: NotificationKind[] = [
 describe("displayNotificationTitle", () => {
   it("maps legacy contribution notification titles", () => {
     expect(displayNotificationTitle("Contribution updated")).toBe("What to bring updated");
-    expect(displayNotificationTitle("Event confirmed")).toBe("Event confirmed");
+    expect(displayNotificationTitle("Event confirmed", '"Dinner" in Family is confirmed.')).toBe(
+      "Hui confirmed: Dinner",
+    );
+    expect(displayNotificationTitle("New event proposal", '"Potluck" was proposed in Family.')).toBe(
+      "New hui: Potluck",
+    );
   });
 });
 

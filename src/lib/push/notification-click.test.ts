@@ -11,11 +11,11 @@ describe("service worker push handling", () => {
     const display = pushEventDisplay({
       notificationId: NOTE_ID,
       title: "Event confirmed",
-      body: "Dinner is confirmed.",
+      body: '"Dinner" in Family is confirmed.',
       url: `/events/${EVENT_ID}`,
     });
-    expect(display.title).toBe("Event confirmed");
-    expect(display.options.body).toBe("Dinner is confirmed.");
+    expect(display.title).toBe("Hui confirmed: Dinner");
+    expect(display.options.body).toBe('"Dinner" in Family is confirmed.');
     expect(display.options.data.url).toBe(`/events/${EVENT_ID}`);
   });
 

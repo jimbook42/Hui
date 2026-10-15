@@ -211,7 +211,7 @@ export function pushEventDisplay(raw: unknown): PushDisplay {
     };
   }
   return {
-    title: displayNotificationTitle(payload.title),
+    title: displayNotificationTitle(payload.title, payload.body),
     options: {
       body: payload.body,
       tag: payload.notificationId,

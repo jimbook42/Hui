@@ -12,7 +12,10 @@ import {
   type ReactNode,
 } from "react";
 
-import { setAvailabilityResponseAction } from "@/app/events/scheduling-actions";
+import {
+  revalidateHomeGatheringSurfacesAction,
+  setAvailabilityResponseAction,
+} from "@/app/events/scheduling-actions";
 import { AttendanceDot } from "@/components/hui/attendance-dot";
 import { GatheringVisual } from "@/components/hui/gathering-visual";
 import { HuiButton, HuiLinkButton } from "@/components/hui/hui-button";
@@ -203,6 +206,7 @@ export function ViewerResponseCard({
       }
       setFollowUp(choice);
       setOpen(false);
+      void revalidateHomeGatheringSurfacesAction();
       markInteraction(interaction, "navigation-start");
       // One refresh reconciles everything derived from the answer (counts, consensus, host and
       // contribution sections). The optimistic UI above has already updated.

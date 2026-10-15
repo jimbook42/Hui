@@ -256,6 +256,12 @@ export async function withdrawCandidateAction(
   return { message: "Candidate removed." };
 }
 
+/** Refresh home / Your hui lists after attendance saves (debounce on the client). */
+export async function revalidateHomeGatheringSurfacesAction(): Promise<void> {
+  revalidatePath("/dashboard");
+  revalidatePath("/events");
+}
+
 export async function setAvailabilityResponseAction(
   _prev: EventActionState,
   formData: FormData,
@@ -350,9 +356,6 @@ export async function setAvailabilityResponseAction(
     const revalidateAfterAvailabilitySave = () => {
       revalidatePath(`/events/${eventId}`);
       revalidatePath(`/events/${eventId}/respond`);
-      revalidatePath("/events");
-      revalidatePath("/dashboard");
-      revalidatePath(`/groups/${detail.groupId}/events`);
     };
 
     if (upsertError) {
@@ -378,8 +381,15 @@ export async function setAvailabilityResponseAction(
     schedulePushDelivery();
     revalidateAfterAvailabilitySave();
 
-    const detailAfter = await getEventDetail(supabase, eventId, user.id);
-    if (!detailAfter || detailAfter.status !== "confirmed") {
+    const { data: statusRow, error: statusError } = await supabase
+      .from("events")
+      .select("status")
+      .eq("id", eventId)
+      .maybeSingle();
+    if (statusError) {
+      return { error: statusError.message };
+    }
+    if (statusRow?.status !== "confirmed") {
       return { message: "Response saved." };
     }
 

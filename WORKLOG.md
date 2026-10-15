@@ -1,5 +1,13 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX5 pre-beta (v0.18.9)
+
+- **Dashboard attention:** `homeViewerResponseCandidateIds` loads the **selected** time for confirmed hui even when other proposed candidates remain, so answered confirmed gatherings leave Needs attention.
+- **Save latency:** availability save no longer revalidates `/dashboard`, `/events`, or group event lists on every tap; replaces post-save `getEventDetail` with a status-only read; debounced `revalidateHomeGatheringSurfacesAction` refreshes home lists after saves (respond flow + attendance live).
+- **Perf note (local `next build` + `next start`, dev-timing spans):** prod ~2.3s/save was dominated by full-path revalidation and a second event detail fetch; after change, server action work is upsert + two path revalidates + one lightweight status query (target well under 1s on warm instances).
+- **Alerts:** `displayNotificationTitle` maps legacy **Event confirmed** / **New event proposal** (and similar) to **Hui …: &lt;title&gt;** using quoted titles from notification bodies; push + in-app list pass body through.
+- **Bring section:** clearer empty state on event **Who's bringing what** with organiser **Add something** link to the group page.
+
 ## 2026-10-16 — HUI-UX4 fix4 recurring default (PR #50)
 
 - New hui defaults to **Recurring** (weekly cadence on first hui when unset); **Just this once** stays explicit. Established groups keep prefilled planning date + submit path. Delete-group warning copy updated.
