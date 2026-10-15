@@ -80,9 +80,15 @@ export function AttendanceChoice({
           Saving…
         </span>
       </span>
-      {showPressed && !pending ? (
-        <CheckIcon size={20} strokeWidth={3} className="shrink-0" />
-      ) : null}
+      <CheckIcon
+        size={20}
+        strokeWidth={3}
+        className={cn(
+          "shrink-0",
+          showPressed && !pending ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+        aria-hidden={!(showPressed && !pending)}
+      />
     </button>
   );
 }

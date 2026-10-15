@@ -205,11 +205,12 @@ describe("HUI-UX3 per-hui confirm rules and host Yes gate", () => {
     await sayYes(ids.owner, candidateId, eventId);
     await asUser(db, ids.owner);
     await db.query(`select public.finalise_event($1, $2, false)`, [eventId, candidateId]);
-    const status = await db.query<{ status: string }>(
-      `select status::text from public.events where id = $1`,
+    const status = await db.query<{ status: string; confirmation_method: string }>(
+      `select status::text, confirmation_method::text from public.events where id = $1`,
       [eventId],
     );
     expect(status.rows[0]?.status).toBe("confirmed");
+    expect(status.rows[0]?.confirmation_method).toBe("organiser");
   });
 
   it("blocks confirm when accepted host has not said Yes", async () => {

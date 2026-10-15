@@ -9,6 +9,7 @@ import {
   hasNoResponsesYet,
   isCandidateOpenForResponses,
   organiserPicksCanConfirmNow,
+  organiserPicksHostHasSaidYesOnCandidate,
   proposalDeadlineGroupNotice,
   shouldOfferOrganiserConfirm,
   isWaitingOnHostFailure,
@@ -185,6 +186,10 @@ describe("consensus display (HUI-017)", () => {
         },
       ], new Set(["c1"])),
     ).toBeNull();
+    expect(
+      organiserPicksHostHasSaidYesOnCandidate("c1", "host-1", new Map([["c1", rosterWithHostYes]])),
+    ).toBe(true);
+    expect(organiserPicksHostHasSaidYesOnCandidate("c1", null, new Map())).toBe(false);
   });
 
   it("supports organiser_picks manual confirm and host waiting", () => {

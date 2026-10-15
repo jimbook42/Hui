@@ -167,6 +167,25 @@ function acceptedHostBlocksOrganiserConfirm(
   return host?.response !== "yes";
 }
 
+/** True when an accepted host has said Yes on this candidate (matches server finalise gate). */
+export function organiserPicksHostHasSaidYesOnCandidate(
+  candidateId: string,
+  acceptedHostUserId: string | null | undefined,
+  rosterByCandidateId: ReadonlyMap<string, AttendanceRoster> | Readonly<Record<string, AttendanceRoster>>,
+): boolean {
+  if (!acceptedHostUserId) {
+    return false;
+  }
+  const roster: AttendanceRoster | undefined =
+    rosterByCandidateId instanceof Map
+      ? rosterByCandidateId.get(candidateId)
+      : rosterByCandidateId[candidateId as keyof typeof rosterByCandidateId];
+  const host = roster?.members.find(
+    (member: AttendanceRoster["members"][number]) => member.userId === acceptedHostUserId,
+  );
+  return host?.response === "yes";
+}
+
 /** Organiser-picks hui: manual confirm once the host has said Yes to a proposed time. */
 export function organiserPicksCanConfirmNow(
   canFinalise: boolean,

@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX3-fix11 review gaps (PR #49)
+
+- Respond: reserve check-icon width on attendance choices; Playwright `boundingBox()` row stability across Saving/Saved.
+- Organiser confirm: assert `confirmation_method = organiser` in PGlite; `finaliseEventAction` unit test; host-Yes banner copy gated on roster.
+
 ## 2026-10-16 — HUI-UX3-fix10 QA (v0.18.7)
 
 - Second propose: hide first-hui cadence picker on established groups; planning-date field + `fillRecurringPlanningDates`; submit test.

@@ -31,6 +31,7 @@ import { EventHostGentlePrompt } from "@/components/events/event-host-gentle-pro
 import { eventConfirmRuleDisplayLine } from "@/domain/events/confirm-rule";
 import {
   eventShowsWaitingOnHost,
+  organiserPicksHostHasSaidYesOnCandidate,
   WAITING_ON_HOST_STATUS_MESSAGE,
 } from "@/domain/scheduling/consensus-display";
 import {
@@ -140,7 +141,13 @@ export function EventHeroMeta({
         <HuiSurface tone="sage" shape="soft" padding="md" className="hui-rise-2" role="status">
           <p className="text-lg font-extrabold text-foreground">Ready to confirm a time?</p>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            The host has said Yes. Pick the time you want to lock in for the group.
+            {organiserPicksHostHasSaidYesOnCandidate(
+              data.organiserPicksConfirm.candidateId,
+              data.acceptedHostUserId,
+              data.attendanceRosters,
+            )
+              ? "The host has said Yes. Pick the time you want to lock in for the group."
+              : "Pick the time you want to lock in for the group."}
           </p>
           <div className="mt-4">
             <ConfirmThisTimeButton
