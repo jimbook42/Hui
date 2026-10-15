@@ -576,13 +576,12 @@ create or replace function public.proposed_host_remains_eligible(
 returns boolean
 language sql
 stable
-security definer
-set search_path = ''
-as $$
+set search_path = public
+as $function$
   select
     p_user_id is not null
     and public.member_has_yes_for_hosting(p_user_id, p_event_id);
-$$;
+$function$;
 
 create or replace function public.assign_event_host(
   p_event_id uuid,
@@ -812,6 +811,7 @@ begin
     where m.group_id = p_group_id
       and m.status = 'active'
       and m.hosting_standing in ('always', 'default')
+      and m.user_id is distinct from p_exclude_user
       and public.member_has_yes_for_hosting(m.user_id, p_event_id)
       and not exists (
         select 1
@@ -820,7 +820,43 @@ begin
           and ha.user_id = m.user_id
           and ha.status in ('declined', 'swapped_out')
       )
+    order by
+      case when m.hosting_standing = 'always' then 0 else 1 end,
+      (
+        select count(*)::integer
+        from public.host_assignments ha
+        join public.events e on e.id = ha.event_id
+        where ha.group_id = p_group_id
+          and ha.user_id = m.user_id
+          and ha.status = 'accepted'
+          and e.status in ('confirmed', 'completed')
+      ),
+      p.display_name collate "C",
+      m.user_id
+    limit 1;
+  end if;
+
+  if v_pick is not null then
+    return v_pick;
+  end if;
+
+  if coalesce(v_avoid_consecutive, false) and v_last_host is not null then
+    select m.user_id
+    into v_pick
+    from public.group_memberships m
+    join public.profiles p on p.id = m.user_id
+    where m.group_id = p_group_id
+      and m.status = 'active'
+      and m.hosting_standing = 'prefer_not'
       and m.user_id is distinct from p_exclude_user
+      and public.member_has_yes_for_hosting(m.user_id, p_event_id)
+      and not exists (
+        select 1
+        from public.host_assignments ha
+        where ha.event_id = p_event_id
+          and ha.user_id = m.user_id
+          and ha.status in ('declined', 'swapped_out')
+      )
     order by
       (
         select count(*)::integer

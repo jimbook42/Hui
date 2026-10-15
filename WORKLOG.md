@@ -5,6 +5,7 @@
 - Per-hui `confirm_rule` on propose + manage; host must say Yes before auto/manual confirm; migration `20261015200000_hui_ux3_confirm_rules.sql` (not applied in prod).
 - PM: confirm whether `p_force` may ever bypass accepted-host Yes (implemented: **no**).
 - **fix2-ci (91faeb7):** PGlite CI — `DROP` 14-arg `propose_group_event` before 15-arg + default `p_confirm_rule`; restore `when_most_can_come` → group `consensus_rule` mapping; `assign_event_host` inserts `proposed` again; prod-shaped RPC tests in `hui-ux3-confirm-rules.test.ts`.
+- **fix3:** `pick_host_candidate` restored from prod (avoid-consecutive `always` ordering + `prefer_not` fallback); `proposed_host_remains_eligible` stays SECURITY INVOKER; PGlite host-pick tests.
 
 ## 2026-10-15 — HUI-UX3 blind fixes (v0.18.7)
 

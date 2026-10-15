@@ -363,4 +363,119 @@ describe("HUI-UX3 per-hui confirm rules and host Yes gate", () => {
     );
     expect(pick.rows[0]?.pick_host_candidate).toBe(ids.owner);
   });
+
+  async function seedPriorAcceptedHost(groupId: string, hostUserId: string) {
+    await db.query(`select set_config('hui.skip_auto_confirm', '1', false)`);
+    const { eventId, candidateId } = await seedEvent(groupId, "when_most_can_come");
+    await sayYes(ids.owner, candidateId, eventId);
+    await sayYes(ids.member, candidateId, eventId);
+    await asUser(db, ids.owner);
+    await db.query(`select public.finalise_event($1, $2, false)`, [eventId, candidateId]);
+    await db.query(`select public.propose_event_host_for_event($1, $2)`, [eventId, ids.owner]);
+    let proposed = await db.query<{ user_id: string }>(
+      `select user_id::text from public.host_assignments
+       where event_id = $1 and status = 'proposed'
+       order by created_at desc limit 1`,
+      [eventId],
+    );
+    if (proposed.rows[0]?.user_id !== hostUserId) {
+      await asUser(db, ids.owner);
+      await db.query(`select public.assign_event_host($1, $2)`, [eventId, hostUserId]);
+      proposed = await db.query<{ user_id: string }>(
+        `select user_id::text from public.host_assignments
+         where event_id = $1 and status = 'proposed'
+         order by created_at desc limit 1`,
+        [eventId],
+      );
+    }
+    await asUser(db, proposed.rows[0]!.user_id);
+    await db.query(`select public.respond_to_host_assignment($1, true)`, [eventId]);
+    const accepted = await db.query(
+      `select 1
+       from public.host_assignments ha
+       join public.events e on e.id = ha.event_id
+       where ha.group_id = $1
+         and ha.user_id = $2
+         and ha.status = 'accepted'
+         and e.status = 'confirmed'`,
+      [groupId, hostUserId],
+    );
+    expect(accepted.rows).toHaveLength(1);
+  }
+
+  it("pick_host_candidate with avoid_consecutive prefers always over default", async () => {
+    const groupId = await seedGroup([ids.member, ids.third]);
+    await db.query(
+      `update public.group_settings set avoid_consecutive_hosts = true where group_id = $1`,
+      [groupId],
+    );
+    await seedPriorAcceptedHost(groupId, ids.owner);
+    await asUser(db, ids.owner);
+    await db.query(`select public.set_my_hosting_standing($1, 'default')`, [groupId]);
+    await asUser(db, ids.member);
+    await db.query(`select public.set_my_hosting_standing($1, 'always')`, [groupId]);
+    await asUser(db, ids.third);
+    await db.query(`select public.set_my_hosting_standing($1, 'default')`, [groupId]);
+
+    await asUser(db, ids.owner);
+    const { eventId, candidateId } = await seedEvent(groupId, "when_most_can_come");
+    await sayYes(ids.owner, candidateId, eventId);
+    await sayYes(ids.member, candidateId, eventId);
+    await sayYes(ids.third, candidateId, eventId);
+
+    const pick = await db.query<{ pick_host_candidate: string | null }>(
+      `select public.pick_host_candidate($1, $2) as pick_host_candidate`,
+      [groupId, eventId],
+    );
+    expect(pick.rows[0]?.pick_host_candidate).toBe(ids.member);
+  });
+
+  it("pick_host_candidate avoid-consecutive fallback prefers always over default host count", async () => {
+    const groupId = await seedGroup([ids.member]);
+    await db.query(
+      `update public.group_settings set avoid_consecutive_hosts = true where group_id = $1`,
+      [groupId],
+    );
+    await seedPriorAcceptedHost(groupId, ids.owner);
+    await asUser(db, ids.owner);
+    await db.query(`select public.set_my_hosting_standing($1, 'default')`, [groupId]);
+    await asUser(db, ids.member);
+    await db.query(`select public.set_my_hosting_standing($1, 'always')`, [groupId]);
+
+    await asUser(db, ids.owner);
+    const { eventId, candidateId } = await seedEvent(groupId, "when_most_can_come");
+    await sayYes(ids.owner, candidateId, eventId);
+    await sayYes(ids.member, candidateId, eventId);
+
+    const pick = await db.query<{ pick_host_candidate: string | null }>(
+      `select public.pick_host_candidate($1, $2, $3::uuid) as pick_host_candidate`,
+      [groupId, eventId, ids.member],
+    );
+    expect(pick.rows[0]?.pick_host_candidate).toBe(ids.owner);
+    const pickWithoutExclude = await db.query<{ pick_host_candidate: string | null }>(
+      `select public.pick_host_candidate($1, $2) as pick_host_candidate`,
+      [groupId, eventId],
+    );
+    expect(pickWithoutExclude.rows[0]?.pick_host_candidate).toBe(ids.member);
+  });
+
+  it("pick_host_candidate avoid-consecutive fallback includes prefer_not when needed", async () => {
+    const groupId = await seedGroup();
+    await db.query(
+      `update public.group_settings set avoid_consecutive_hosts = true where group_id = $1`,
+      [groupId],
+    );
+    await seedPriorAcceptedHost(groupId, ids.owner);
+    await asUser(db, ids.owner);
+    await db.query(`select public.set_my_hosting_standing($1, 'prefer_not')`, [groupId]);
+
+    const { eventId, candidateId } = await seedEvent(groupId, "when_most_can_come");
+    await sayYes(ids.owner, candidateId, eventId);
+
+    const pick = await db.query<{ pick_host_candidate: string | null }>(
+      `select public.pick_host_candidate($1, $2) as pick_host_candidate`,
+      [groupId, eventId],
+    );
+    expect(pick.rows[0]?.pick_host_candidate).toBe(ids.owner);
+  });
 });
