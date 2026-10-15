@@ -2,9 +2,10 @@
 
 ## 2026-10-15 — HUI-0186 answer reliability (v0.18.6)
 
-- **Root cause:** `event-participant-respond-flow.tsx` wrapped every `setAvailabilityResponseAction` call in a single shared `useTransition` (`startSaveAttendance`, ~line 436). Rapid Yes taps on different proposed times (QA i2, prod event `fa0ac585-d8f9-4a7a-bd4a-6c2bc5f3b64b`) started overlapping transitions; React kept only the latest transition callback, so the middle candidate’s in-flight save never ran while optimistic UI for the first/third times stuck. A secondary guard (`pendingByCandidate` without a chained promise, ~line 406) could also drop a same-candidate tap between `setPending` and registering `candidateSavePromisesRef`.
-- **Fix:** Run per-candidate saves as independent async work (no shared transition), per-row inline error + Retry, respond `loading.tsx` multi-time skeleton (no “Can you make this time?” without buttons).
-- **Tests:** component coverage for overlapping out-of-order saves, rejected save + Retry, loading skeleton.
+- **Root cause (fix1):** `event-participant-respond-flow.tsx` wrapped every `setAvailabilityResponseAction` call in a single shared `useTransition` (`startSaveAttendance`, ~line 436). Rapid Yes taps on different proposed times started overlapping transitions; React kept only the latest transition callback, so the middle candidate’s in-flight save never ran.
+- **Root cause (fix1 QA fail, 53850ff):** After removing the shared transition, three overlapping `setAvailabilityResponseAction` calls still ran in parallel. The first completion’s `revalidatePath` in `scheduling-actions.ts` (~391–392) aborted the other in-flight Next server-action streams (`The destination stream closed early` in `/tmp/s0186.log`); the client treated an empty/aborted action result as success (`event-participant-respond-flow.tsx` ~450–474, no explicit success check), so the middle candidate never reached `event_responses` (PM read-only: rows for 4 Nov + 11 Nov, none for 6 Nov). Offline Retry showed raw `Failed to fetch` (~491–493).
+- **Fix:** Serialize attendance saves on the client (`serialize-attendance-saves.ts` + `event-participant-respond-flow.tsx` ~439); require explicit `{ message | notice }` success (`availability-action-outcome.ts`); friendly connection copy + Retry re-send; skip `router.refresh` on multi-time saves (~455, ~488). PGlite proves concurrent DB upserts all persist (`concurrent-member-availability-save.test.ts`).
+- **Tests:** serialized multi-time saves, aborted/empty action + `Failed to fetch` + Retry, PGlite concurrent upserts, serializer unit test.
 
 ## 2026-10-15 — HUI-0185 polish (v0.18.5)
 

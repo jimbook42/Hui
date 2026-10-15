@@ -56,9 +56,15 @@ import {
   participantAttendanceSummaryLabel,
 } from "@/domain/scheduling/participant-labels";
 import {
+  attendanceActionErrorMessage,
+  attendanceSaveCatchMessage,
+  isAttendanceActionSuccess,
+} from "@/domain/scheduling/availability-action-outcome";
+import {
   participantDoneToastMessage,
   participantSaveToastMessage,
 } from "@/domain/scheduling/participant-save-feedback";
+import { createAttendanceSaveSerializer } from "@/lib/scheduling/serialize-attendance-saves";
 import { markHostPromptDeferred } from "@/lib/events/defer-host-prompt";
 import type { StandingAvailabilityHint } from "@/domain/scheduling/standing-availability";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
@@ -180,6 +186,7 @@ export function EventParticipantRespondFlow({
     useState<Record<string, string>>(initialNotesByCandidate);
   const noteSaveTimersRef = useRef<Record<string, number>>({});
   const candidateSavePromisesRef = useRef<Record<string, Promise<void>>>({});
+  const runSerializedAttendanceSaveRef = useRef(createAttendanceSaveSerializer());
   const lastAttemptedChoiceByCandidateRef = useRef<Record<string, AvailabilityChoice>>({});
   const responsesByCandidateRef = useRef(responsesByCandidate);
   const noNoteRef = useRef(candidate.viewerPrivateNote ?? "");
@@ -436,7 +443,7 @@ export function EventParticipantRespondFlow({
       candidateTimeLabels[targetCandidateId] ??
       (targetCandidateId === candidate.id ? focusTimeLabel : "");
 
-    const savePromise = (async () => {
+    const savePromise = runSerializedAttendanceSaveRef.current(async () => {
       try {
         markInteraction(interaction, "request-start");
         const noteForSave = readNoteForCandidate(targetCandidateId);
@@ -452,12 +459,14 @@ export function EventParticipantRespondFlow({
         if (result.notice) {
           setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
           showSaveToast(result.notice);
-          router.refresh();
+          if (!multipleTimeOptions) {
+            router.refresh();
+          }
           endInteraction(interaction);
           return;
         }
-        if (result.error) {
-          const message = result.error;
+        if (!isAttendanceActionSuccess(result)) {
+          const message = attendanceActionErrorMessage(result);
           if (multipleTimeOptions) {
             setErrorsByCandidate((current) => ({ ...current, [targetCandidateId]: message }));
           } else {
@@ -489,8 +498,7 @@ export function EventParticipantRespondFlow({
           endInteraction(interaction);
         }
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Could not save your answer. Try again.";
+        const message = attendanceSaveCatchMessage(error);
         if (multipleTimeOptions) {
           setErrorsByCandidate((current) => ({ ...current, [targetCandidateId]: message }));
         } else {
@@ -503,7 +511,7 @@ export function EventParticipantRespondFlow({
         }));
         endInteraction(interaction);
       }
-    })();
+    });
 
     candidateSavePromisesRef.current[targetCandidateId] = savePromise;
     return savePromise.finally(() => {

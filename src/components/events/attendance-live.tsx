@@ -30,6 +30,11 @@ import { availabilityResponseOptions } from "@/domain/scheduling/consensus-displ
 import { participantAttendanceChoiceLabel } from "@/domain/scheduling/participant-labels";
 import type { MultiTimeAnswerDetailRow } from "@/domain/events/participant-flow";
 import { participantAttendanceSummaryLabel } from "@/domain/scheduling/participant-labels";
+import {
+  attendanceActionErrorMessage,
+  attendanceSaveCatchMessage,
+  isAttendanceActionSuccess,
+} from "@/domain/scheduling/availability-action-outcome";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 import { participantRespondPath } from "@/lib/events/paths";
 import {
@@ -167,6 +172,7 @@ export function ViewerResponseCard({
     markInteraction(interaction, "usable-ui");
 
     startSaving(async () => {
+      try {
       markInteraction(interaction, "request-start");
       const formData = new FormData();
       formData.set("event_id", eventId);
@@ -185,10 +191,9 @@ export function ViewerResponseCard({
         endInteraction(interaction);
         return;
       }
-      if (result.error) {
-        // Roll back to what the server still has.
+      if (!isAttendanceActionSuccess(result)) {
         setOverride(null);
-        setError(result.error);
+        setError(attendanceActionErrorMessage(result));
         endInteraction(interaction);
         return;
       }
@@ -200,6 +205,12 @@ export function ViewerResponseCard({
       router.refresh();
       markInteraction(interaction, "navigation-end");
       endInteraction(interaction);
+      } catch (error) {
+        setPendingChoice(null);
+        setOverride(null);
+        setError(attendanceSaveCatchMessage(error));
+        endInteraction(interaction);
+      }
     });
   }
 
