@@ -66,9 +66,9 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
       cycle,
       isFirstGroupEvent: false,
     });
-    expect(draft.eventKind).toBe("one_off");
-    expect(draft.recurrence).toBeNull();
-    expect(initialCandidateDateFromDraft(draft, cycle)).toBe("");
+    expect(draft.eventKind).toBe("recurring");
+    expect(draft.recurrence?.planningTargetDate).toBe("2026-10-26");
+    expect(initialCandidateDateFromDraft(draft, cycle)).toBe("2026-10-26");
   });
 
   it("mirrors anchor date into planning target when the user chooses recurring", () => {
@@ -103,13 +103,15 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
     expect(draft.recurrence?.intervalCount).toBe(1);
   });
 
-  it("defaults later hui proposals to one-off when allowed", () => {
+  it("defaults later hui proposals to recurring when allowed", () => {
     const draft = buildInitialProposalDraft(baseSettings, {
       groupName: "Family",
       cycle: null,
       isFirstGroupEvent: false,
     });
-    expect(draft.eventKind).toBe("one_off");
+    expect(draft.eventKind).toBe("recurring");
+    expect(draft.recurrence?.intervalUnit).toBe("week");
+    expect(draft.recurrence?.planningTargetDate).toBe("2026-09-28");
   });
 
   it("first group event leaves planning target unset until a time is proposed", () => {
@@ -126,9 +128,12 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
       isFirstGroupEvent: true,
       todayDateOnly: "2026-10-13",
     });
-    expect(draft.eventKind).toBe("one_off");
+    expect(draft.eventKind).toBe("recurring");
     expect(draft.gatheringType).toBeNull();
-    expect(draft.recurrence).toBeNull();
+    expect(draft.recurrence?.intervalUnit).toBe("week");
+    expect(draft.recurrence?.intervalCount).toBe(1);
+    expect(draft.recurrence?.startsOn).toBe("");
+    expect(draft.recurrence?.planningTargetDate).toBeNull();
     expect(initialCandidateDateFromDraft(draft, null)).toBe("");
   });
 });

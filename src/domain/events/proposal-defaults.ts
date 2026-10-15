@@ -35,11 +35,11 @@ export function groupHasEstablishedRecurrence(
 export function defaultProposalEventKind(
   settings: GroupSettingsRow,
 ): EventProposalDraft["eventKind"] {
-  if (settings.oneOffEventsAllowed) {
-    return "one_off";
-  }
   if (settings.recurringEventsEnabled) {
     return "recurring";
+  }
+  if (settings.oneOffEventsAllowed) {
+    return "one_off";
   }
   return "one_off";
 }
@@ -93,7 +93,7 @@ export function buildInitialProposalDraft(
     (anchorFromCadence.length > 0 ? anchorFromCadence : null) ??
     cycleTarget ??
     "";
-  const intervalUnit = cadence?.intervalUnit ?? "month";
+  const intervalUnit = cadence?.intervalUnit ?? "week";
   const intervalCount = cadence?.intervalCount ?? 1;
 
   let planningTargetDate = prefill?.planningTargetDate ?? cycleTarget;
@@ -127,7 +127,7 @@ export function buildInitialProposalDraft(
         }
       : null;
 
-  return fillRecurringPlanningDates({
+  const draft: EventProposalDraft = {
     title: "",
     gatheringType: null,
     gatheringTypeCustom: "",
@@ -142,7 +142,8 @@ export function buildInitialProposalDraft(
     organiserWillHost: false,
     requestedContributions: [],
     confirmRule: DEFAULT_EVENT_CONFIRM_RULE,
-  });
+  };
+  return eventKind === "recurring" ? fillRecurringPlanningDates(draft) : draft;
 }
 
 /** Ensure recurring drafts always carry a planning target when the cadence anchor or cycle provides one. */

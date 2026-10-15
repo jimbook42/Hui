@@ -28,7 +28,7 @@ const establishedSettings: GroupSettingsRow = {
 };
 
 describe("second propose on established groups", () => {
-  it("defaults to one-off until the creator chooses recurring", () => {
+  it("defaults to recurring with group cadence and planning date prefilled", () => {
     const resolved = resolveProposalFlowStateFromClient({
       groupId: "group-2",
       settings: establishedSettings,
@@ -37,11 +37,14 @@ describe("second propose on established groups", () => {
       isFirstGroupEvent: false,
       todayDateOnly: "2026-10-15",
     });
-    expect(resolved.draft.eventKind).toBe("one_off");
-    expect(resolved.draft.recurrence).toBeNull();
+    expect(resolved.draft.eventKind).toBe("recurring");
+    expect(resolved.draft.recurrence?.intervalUnit).toBe("week");
+    expect(resolved.draft.recurrence?.intervalCount).toBe(2);
+    expect(resolved.draft.recurrence?.planningTargetDate).toBe("2026-10-01");
+    expect(resolved.meetFrequency).toBe("fortnightly");
   });
 
-  it("submits with the group cadence when recurring is chosen", () => {
+  it("submits with the default recurring draft and group cadence", () => {
     const resolved = resolveProposalFlowStateFromClient({
       groupId: "group-2",
       settings: establishedSettings,
@@ -52,14 +55,6 @@ describe("second propose on established groups", () => {
     });
     const recurringDraft = {
       ...resolved.draft,
-      eventKind: "recurring" as const,
-      recurrence: {
-        seriesTitle: "Fortnightly dinner",
-        intervalUnit: "week" as const,
-        intervalCount: 2,
-        startsOn: "2026-10-01",
-        planningTargetDate: "2026-10-01",
-      },
       gatheringType: "dinner_meal" as const,
       foodInvolvement: "unsure" as const,
       candidates: [

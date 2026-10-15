@@ -1,5 +1,9 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX4 fix4 recurring default (PR #50)
+
+- New hui defaults to **Recurring** (weekly cadence on first hui when unset); **Just this once** stays explicit. Established groups keep prefilled planning date + submit path. Delete-group warning copy updated.
+
 ## 2026-10-16 — HUI-UX4 fix3 copy (PR #50)
 
 - Invite fallback sheet: join-the-group wording; manage-hui entry and remaining UI **contributions** → **what to bring**.
