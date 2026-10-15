@@ -40,8 +40,8 @@ test("sign-in and sign-up pages render", async ({ page }) => {
   await page.goto("/sign-in");
   await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign in with Microsoft" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Sign in with Facebook" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Sign in with/i })).toHaveCount(3);
+  await expect(page.getByRole("button", { name: "Sign in with Facebook" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Sign in with/i })).toHaveCount(2);
   await expect(page.getByRole("button", { name: "Continue with Apple" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Sign up with email" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in with email" })).toBeVisible();
@@ -52,6 +52,9 @@ test("sign-in and sign-up pages render", async ({ page }) => {
 
   await page.goto("/sign-up");
   await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in with Microsoft" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in with Facebook" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Sign in with/i })).toHaveCount(2);
   await expect(page.getByLabel("Display name")).toBeVisible();
   await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Confirm email")).toBeVisible();

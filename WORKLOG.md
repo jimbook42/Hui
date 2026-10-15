@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-15 — HUI-0182 Facebook login feature flag (v0.18.2)
+
+- Gate Facebook OAuth UI and server start on `NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN === "true"` via `getEnabledOAuthProviderIds`; Google/Microsoft unchanged.
+- Document env in `.env.example` and architecture; e2e expects two OAuth buttons when flag unset.
+
 ## 2026-10-15 — HUI-0181 invite sign-up next preservation (v0.18.1)
 
 - Carry safe `next` through sign-in/sign-up cross-links, email auth, OAuth on sign-up, and join invite CTAs; hardened `sanitizeNextPath` (decode, backslash, scheme rejection).
