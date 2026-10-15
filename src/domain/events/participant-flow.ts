@@ -57,6 +57,21 @@ export function respondAttendanceCandidates(
   return candidates.filter((candidate) => candidate.status === "proposed");
 }
 
+/** Proposed times only — used to pin the multi-time respond list for the whole visit. */
+export function proposedAttendanceCandidates(
+  candidates: ParticipantTimeCandidate[],
+): ParticipantTimeCandidate[] {
+  return candidates.filter((candidate) => candidate.status === "proposed");
+}
+
+/** True when the member should see one row per proposed time (not the post-confirm single-time UI). */
+export function multiTimeRespondSessionActive(
+  candidates: ParticipantTimeCandidate[],
+  eventStatus: EventStatus,
+): boolean {
+  return eventStatus !== "confirmed" && proposedAttendanceCandidates(candidates).length > 1;
+}
+
 /** Viewer answer for hero/summary: confirmed events use the selected time only. */
 /** Private No note for the YOUR ANSWER card (viewer-only). */
 export function viewerPrivateNoteForDisplay(

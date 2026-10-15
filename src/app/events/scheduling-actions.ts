@@ -36,30 +36,9 @@ import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { EventActionState } from "./actions";
+import { upsertMemberAvailability } from "@/lib/scheduling/upsert-member-availability";
 
-async function upsertMemberAvailability(
-  supabase: SupabaseClient,
-  input: {
-    candidateId: string;
-    userId: string;
-    dbResponse: string;
-    hasNoteField: boolean;
-    privateNote: string | null;
-  },
-): Promise<{ error: string | null }> {
-  const { error } = await supabase.from("event_responses").upsert(
-    {
-      candidate_id: input.candidateId,
-      user_id: input.userId,
-      response: input.dbResponse,
-      visibility: "group",
-      ...(input.hasNoteField ? { note: input.privateNote } : {}),
-    },
-    { onConflict: "candidate_id,user_id" },
-  );
-  return { error: error?.message ?? null };
-}
+import type { EventActionState } from "./actions";
 
 async function recoverAvailabilityAfterConfirmRace(
   supabase: SupabaseClient,
@@ -379,8 +358,6 @@ export async function setAvailabilityResponseAction(
           timeZone,
         });
         if (recovered) {
-          revalidatePath(`/events/${eventId}`);
-          revalidatePath(`/events/${eventId}/respond`);
           schedulePushDelivery();
           return recovered;
         }
@@ -388,8 +365,6 @@ export async function setAvailabilityResponseAction(
       return { error: upsertError };
     }
 
-    revalidatePath(`/events/${eventId}`);
-    revalidatePath(`/events/${eventId}/respond`);
     schedulePushDelivery();
     return { message: "Response saved." };
   });

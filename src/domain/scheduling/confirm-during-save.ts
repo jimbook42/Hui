@@ -24,6 +24,16 @@ export function confirmedDuringSaveCheckAnswerToast(
   return `This hui was just confirmed for ${range}. Check your answer for that time.`;
 }
 
+/** Shown when the hui confirmed while the member answered a different proposed time. */
+export function confirmedDuringSaveOtherAnswersLockedMessage(
+  startsAt: string,
+  endsAt: string | null,
+  timeZone: string,
+): string {
+  const range = formatCompactEventTimeRange(startsAt, endsAt, timeZone);
+  return `This hui was just confirmed for ${range} — your other answers can't change.`;
+}
+
 /** Only retry a failed save when the answer was for the candidate that became selected. */
 export function shouldRetryAvailabilitySaveAfterConfirmRace(
   originalCandidateId: string,
@@ -57,8 +67,18 @@ export function resolveConfirmRaceAfterFailedSave(input: {
     };
   }
 
+  if (originalCandidateId !== selected.id) {
+    return {
+      error: confirmedDuringSaveOtherAnswersLockedMessage(
+        selected.startsAt,
+        selected.endsAt,
+        timeZone,
+      ),
+    };
+  }
+
   return {
-    notice: confirmedDuringSaveCheckAnswerToast(
+    error: confirmedDuringSaveCheckAnswerToast(
       selected.startsAt,
       selected.endsAt,
       timeZone,
