@@ -8,7 +8,7 @@ export function HuiSerwistProvider({ children }: { children: ReactNode }) {
     <SerwistProvider
       swUrl="/serwist/sw.js"
       cacheOnNavigation={false}
-      reloadOnOnline={true}
+      reloadOnOnline={false}
     >
       {children}
     </SerwistProvider>

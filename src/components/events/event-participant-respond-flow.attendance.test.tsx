@@ -261,6 +261,55 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     expect(yesC).toHaveAttribute("aria-pressed", "false");
   });
 
+  it("keeps error and Retry after rerender and a browser online event", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockRejectedValueOnce(
+      new Error("Failed to fetch"),
+    );
+
+    const user = userEvent.setup();
+    const { rerender } = renderMultiTimeFlow();
+
+    const yesB = yesButtonForTime("Sat 24 Oct, 6:30pm");
+    await user.click(yesB);
+
+    await screen.findByRole("alert");
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+
+    rerender(
+      <EventParticipantRespondFlow
+        eventId="event-1"
+        groupId="group-1"
+        eventTitle="Board-game night"
+        groupName="Fortnightly Board-Game Night"
+        timeZone="Pacific/Auckland"
+        maybeResponsesEnabled={true}
+        canRespond={true}
+        canCoordinateContributions={false}
+        canSuggestTime={false}
+        candidate={candidateA}
+        proposedCandidates={[candidateA, candidateB, candidateC]}
+        placeView={{ kind: "pending", line: "Place still being worked out" }}
+        coordinates={null}
+        hostingEnabled={true}
+        viewerUserId="user-i2"
+        initialViewerResponse={null}
+        standingAvailabilityHint={null}
+        focusTimeLabel="Thursday 22 October, 7:00pm"
+        candidateTimeLabels={candidateTimeLabels}
+        replyByLabel="Reply by Sat 17 Oct 5:28pm"
+        eventStatus="proposing"
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(screen.getByText(ATTENDANCE_SAVE_CONNECTION_MESSAGE)).toBeInTheDocument();
+
+    window.dispatchEvent(new Event("online"));
+
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(yesB).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("shows an inline error with Retry when a save is rejected", async () => {
     vi.mocked(setAvailabilityResponseAction)
       .mockResolvedValueOnce({ error: "Network blip." })

@@ -137,14 +137,11 @@ test.describe("multi-time respond reliability (HUI-0186)", () => {
     await expect(firstRow.getByRole("alert")).toContainText(/check your connection/i);
 
     await context.setOffline(false);
-    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
     const rowAfterReconnect = timeRow(page, 0);
     const retryAfterReconnect = rowAfterReconnect.getByRole("button", { name: "Retry" });
-    if (await retryAfterReconnect.isVisible()) {
-      await retryAfterReconnect.click();
-    } else {
-      await tapYesAndWaitForSave(yesButtonIn(rowAfterReconnect));
-    }
+    await expect(retryAfterReconnect).toBeVisible();
+    await retryAfterReconnect.click();
     await expect
       .poll(async () => yesButtonIn(rowAfterReconnect).getAttribute("aria-pressed"))
       .toBe("true");

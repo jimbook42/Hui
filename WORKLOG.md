@@ -7,9 +7,14 @@
 - **Fix:** Serialize attendance saves on the client (`serialize-attendance-saves.ts` + `event-participant-respond-flow.tsx` ~439); require explicit `{ message | notice }` success (`availability-action-outcome.ts`); friendly connection copy + Retry re-send; skip `router.refresh` on multi-time saves (~455, ~488). PGlite proves concurrent DB upserts all persist (`concurrent-member-availability-save.test.ts`).
 - **Tests:** serialized multi-time saves, aborted/empty action + `Failed to fetch` + Retry, PGlite concurrent upserts, serializer unit test.
 
+## 2026-10-15 — HUI-0186-fix4 offline Retry survives reconnect (v0.18.6)
+
+- **Root cause (PM review 89836d0):** `SerwistProvider` in `serwist-provider.tsx` (~line 11) set `reloadOnOnline={true}`; `@serwist/turbopack` registers `window.addEventListener("online", () => location.reload())`, so Playwright `setOffline(false)` / real `online` wiped React state (`errorsByCandidate` in `event-participant-respond-flow.tsx` ~188) before the user could tap Retry.
+- **Fix:** `reloadOnOnline={false}` (navigation caching already off); E2E requires Retry visible ~3s after reconnect then explicit Retry click; component test covers rerender + `online` event without clearing error.
+
 ## 2026-10-15 — HUI-0186-fix3 respond E2E + save revalidate (v0.18.6)
 
-- **E2E:** Parse group id from `/welcome` URLs; open group settings via `/settings` + Advanced; match Yes buttons by accessible name (`/^Yes/`); wait per-save; offline Retry after reconnect with row re-locate fallback.
+- **E2E:** Parse group id from `/welcome` URLs; open group settings via `/settings` + Advanced; match Yes buttons by accessible name (`/^Yes/`); wait per-save; offline Retry after reconnect (fix4 tightens assertion).
 - **App:** Drop `revalidatePath` on successful `setAvailabilityResponseAction` so serialized multi-time saves are not aborted by RSC refresh (extends fix1).
 
 ## 2026-10-15 — HUI-0186-fix2 respond UI stability (v0.18.6)
