@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX3-fix8 respond page crash
+
+- **Root cause:** fix6 added `EventLifecycleLiveRefresh` as a second client sibling on `/events/[id]/respond` while the page streams `loadRespondSecondary()` into `EventParticipantRespondFlow`; Next aborted the RSC payload (500 “This page couldn’t load”, server log `The destination stream closed early`).
+- **Fix:** Mount lifecycle refresh inside `EventParticipantRespondFlow` so only one client boundary receives the promise; move `beforeunload` hook with the other effects; `respond-page-streaming-boundary.test.ts` guards the page layout.
+
 ## 2026-10-16 — HUI-UX3-fix7 lint
 
 - `EventLifecycleLiveRefresh`: drop ref sync during render; poll callback reads `status` from deps (fixes `react-hooks/refs` CI error).

@@ -19,6 +19,7 @@ import {
   WallClockDateField,
   WallClockTimeField,
 } from "@/components/events/wall-clock-picker-field";
+import { EventLifecycleLiveRefresh } from "@/components/events/event-lifecycle-live-refresh";
 import { AttendanceChoice } from "@/components/hui/attendance-choice";
 import { EventPlaceMap } from "@/components/hui/event-location-panel";
 import { HuiLinkButton } from "@/components/hui/hui-button";
@@ -463,6 +464,22 @@ export function EventParticipantRespondFlow({
     };
   }, []);
 
+  const hasPendingAttendanceSave = Object.values(pendingByCandidate).some(
+    (value) => value !== null && value !== undefined,
+  );
+
+  useEffect(() => {
+    if (!hasPendingAttendanceSave) {
+      return;
+    }
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasPendingAttendanceSave]);
+
   function readNoteForCandidate(targetCandidateId: string): string {
     return privateAttendanceNoteForCandidate({
       multipleTimeOptions,
@@ -701,21 +718,6 @@ export function EventParticipantRespondFlow({
   const multiAnsweredCount = attendanceCandidates.filter(
     (row) => persistedResponsesByCandidate[row.id] != null,
   ).length;
-  const hasPendingAttendanceSave = Object.values(pendingByCandidate).some(
-    (value) => value !== null && value !== undefined,
-  );
-
-  useEffect(() => {
-    if (!hasPendingAttendanceSave) {
-      return;
-    }
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [hasPendingAttendanceSave]);
 
   const allMultiTimesAnswered =
     multipleTimeOptions &&
@@ -783,6 +785,7 @@ export function EventParticipantRespondFlow({
 
   return (
     <div className="mx-auto w-full max-w-md pb-8">
+      <EventLifecycleLiveRefresh eventId={eventId} status={eventStatus} />
       <header className="hui-rise flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className="hui-type-label text-accent">{groupName}</p>
