@@ -30,7 +30,7 @@ test.describe("live event contributions", () => {
     const groupUrl = page.url();
     const groupId = groupUrl.split("/groups/")[1]?.replace(/\/$/, "") ?? "";
 
-    await page.getByRole("heading", { level: 2, name: "Contribution categories" }).scrollIntoViewIfNeeded();
+    await page.getByRole("heading", { level: 2, name: "What to bring" }).scrollIntoViewIfNeeded();
     await page.getByLabel("New category").fill(categoryName);
     await page.getByRole("button", { name: "Add category" }).click();
     await expect(page.getByText("Category added.")).toBeVisible({ timeout: 15_000 });
@@ -40,10 +40,10 @@ test.describe("live event contributions", () => {
     await page.getByRole("button", { name: "Create event" }).click();
     await expect(page).toHaveURL(/\/events\//);
 
-    await expect(page.getByRole("heading", { level: 2, name: "Contributions" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "Who's bringing what" })).toBeVisible();
     await page.getByLabel("What you're bringing (optional)").fill("Chocolate cake");
     await page.getByRole("button", { name: `Claim ${categoryName}` }).click();
-    await expect(page.getByText("Contribution claimed.")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Saved — you're bringing that.")).toBeVisible({ timeout: 15_000 });
 
     await page.reload();
     await expect(page.getByText(new RegExp(`${categoryName} —`))).toBeVisible();

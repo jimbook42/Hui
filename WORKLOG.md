@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX4 fix1 global copy (v0.18.8)
+
+- Dashboard greeting **Hi** (not Kia ora); no-groups copy uses **family**; remaining user-facing **Contribution(s)** strings aligned with **What to bring** / **Who's bringing what**; legacy notification title mapping for DB **Contribution updated**.
+- Tests: `dashboardGreetingHeading`, `displayNotificationTitle`.
+
 ## 2026-10-16 — HUI-UX4 blind test 4 friction (v0.18.8)
 
 - **Invite:** Single group-page invite card (Share invite / Copy link / Reset link with confirm); sheet safe-area above tab bar; join-the-group copy.

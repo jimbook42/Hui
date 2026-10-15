@@ -17,7 +17,7 @@ export function ProposalContributionRequestFields({
   if (categories.length === 0) {
     return (
       <p className="text-sm font-semibold text-muted-foreground">
-        Add contribution categories in group settings if you want people to bring something
+        Add categories in group settings if you want people to bring something
         specific for this gathering.
       </p>
     );

@@ -57,7 +57,7 @@ export function NotificationPreferencesSection({
             />
             <PushPreference
               name="push_contribution_changes_enabled"
-              label="Contribution changes"
+              label="What to bring changes"
               defaultChecked={pushPreferences.contributionChangesEnabled}
             />
           </div>

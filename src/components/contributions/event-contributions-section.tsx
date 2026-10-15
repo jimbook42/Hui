@@ -81,13 +81,13 @@ export function EventContributionsSection({
       <section id="contributions" className="hui-card-section">
         <h2 className="hui-type-section text-foreground">Who&apos;s bringing what</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          This event was cancelled. Contribution coordination is closed.
+          This event was cancelled. Who&apos;s bringing what is closed.
         </p>
         {board.claimed.length > 0 ? (
           <ul className="mt-4 space-y-2">
             {board.claimed.map((c) => (
               <li key={c.id} className="text-sm text-foreground">
-                {c.categoryName ?? "Contribution"} — {c.displayName ?? "Member"}
+                {c.categoryName ?? "Item"} — {c.displayName ?? "Member"}
               </li>
             ))}
           </ul>
@@ -106,7 +106,7 @@ export function EventContributionsSection({
       ) : null}
       {!hasActiveCategories ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          This group has no contribution categories yet. Group admins can add categories from the group
+          This group has not set up what to bring yet. Group admins can add categories from the group
           page.
         </p>
       ) : null}
@@ -129,7 +129,7 @@ export function EventContributionsSection({
 
       {viewerHistoryCount !== null && viewerHistoryCount > 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          You&apos;ve contributed {viewerHistoryCount} time{viewerHistoryCount === 1 ? "" : "s"} across
+          You&apos;ve brought something {viewerHistoryCount} time{viewerHistoryCount === 1 ? "" : "s"} across
           recent confirmed events in this group.
         </p>
       ) : null}
@@ -156,7 +156,7 @@ export function EventContributionsSection({
 
       {!canCoordinate && board.claimed.length > 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          This event is complete. Contribution claims are read-only.
+          This event is complete. What people agreed to bring is read-only.
         </p>
       ) : null}
     </section>
@@ -358,7 +358,7 @@ function ManageContributionForm({
       </AuthForm>
       <AuthForm
         action={releaseContributionAction}
-        submitLabel="Release contribution"
+        submitLabel="Release item"
         hiddenFields={{
           event_id: eventId,
           contribution_id: contribution.id,

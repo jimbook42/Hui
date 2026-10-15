@@ -6,7 +6,10 @@ import { PersonalSetupPrompt } from "@/components/dashboard/personal-setup-promp
 import { InstallHuiCard } from "@/components/pwa/install-hui";
 import { PushNotificationsOnboardCard } from "@/components/pwa/push-notifications-onboard";
 import { DashboardEvents, DashboardEventsSkeleton } from "@/components/home/home-sections";
-import { dashboardHuiGreetingLine } from "@/domain/events/dashboard-greeting";
+import {
+  dashboardGreetingHeading,
+  dashboardHuiGreetingLine,
+} from "@/domain/events/dashboard-greeting";
 import { todayDateOnlyInTimeZone } from "@/lib/groups/planning-cycle";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { loadHomeData, splitHomeEvents } from "@/lib/events/home-data";
@@ -47,9 +50,7 @@ function GreetingText({
 }) {
   return (
     <header className="hui-rise pb-6 pt-2">
-      <h1 className="hui-type-hero text-foreground">
-        Kia ora{name ? `, ${name}` : ""}
-      </h1>
+      <h1 className="hui-type-hero text-foreground">{dashboardGreetingHeading(name)}</h1>
       <p className="mt-1.5 text-lg font-bold hui-type-clay">{greetingLine}</p>
     </header>
   );

@@ -19,11 +19,11 @@ export function normalizeProposalContributionRequests(
     }
     const categoryName = categoryNames.get(categoryId);
     if (!categoryName) {
-      return { ok: false, error: "Choose valid contribution categories." };
+      return { ok: false, error: "Choose valid categories for what to bring." };
     }
     const label = normalizeContributionDescription(item.label ?? "", categoryName);
     if (!label) {
-      return { ok: false, error: "Enter a valid contribution description." };
+      return { ok: false, error: "Enter a valid description for what you are bringing." };
     }
     seen.add(categoryId);
     requests.push({ categoryId, label });

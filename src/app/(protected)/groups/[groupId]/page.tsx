@@ -330,7 +330,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
 
           {viewerCanManageCategories ? (
             <DisclosureCard
-              title="Contribution categories"
+              title="What to bring"
               summary="What people can bring"
               icon={<BowlIcon size={20} />}
             >

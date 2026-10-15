@@ -20,7 +20,7 @@ export function NoGroupsStart() {
       </section>
       <EmptyState
         title="Start with your people"
-        description="Create a group for your whānau or friends, or ask an admin to add you. Then you can propose your first hui."
+        description="Create a group for your family or friends, or ask an admin to add you. Then you can propose your first hui."
       >
         <HuiLinkButton href="/groups/new" shape="melt">
           Create a group

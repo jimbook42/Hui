@@ -43,7 +43,7 @@ export function ContributionCategoriesAdmin({
 
       {active.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No contribution categories yet. Add categories your group can claim on events.
+          Nothing to bring yet. Add categories your group can claim on events.
         </p>
       ) : (
         <ul className="space-y-4">

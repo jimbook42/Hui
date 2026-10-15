@@ -1,6 +1,12 @@
 import { formatDateOnlyDisplay } from "@/domain/recurrence/date-only";
 
-/** Subheading under "Kia ora" on the home dashboard. */
+/** Main heading on the home dashboard (e.g. "Hi" or "Hi, Alex"). */
+export function dashboardGreetingHeading(name?: string): string {
+  const trimmed = name?.trim();
+  return trimmed ? `Hi, ${trimmed}` : "Hi";
+}
+
+/** Subheading under the dashboard greeting heading. */
 export function dashboardHuiGreetingLine(
   nextHuiStartsAtIso: string | null | undefined,
   timeZone: string,

@@ -11,7 +11,7 @@ export function GroupContributionHistorySection({ history }: GroupContributionHi
 
   return (
     <section className="hui-card-section">
-      <h2 className="hui-type-section text-foreground">Contribution history</h2>
+      <h2 className="hui-type-section text-foreground">Bring history</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Counts from confirmed and completed events in this group. No scores or rankings beyond what the
         group can see here.
@@ -19,7 +19,7 @@ export function GroupContributionHistorySection({ history }: GroupContributionHi
       <ul className="mt-4 space-y-1 text-sm text-foreground">
         {history.entries.map((entry) => (
           <li key={entry.userId}>
-            {entry.displayName} — {entry.count} contribution{entry.count === 1 ? "" : "s"}
+            {entry.displayName} — {entry.count} item{entry.count === 1 ? "" : "s"} brought
           </li>
         ))}
       </ul>

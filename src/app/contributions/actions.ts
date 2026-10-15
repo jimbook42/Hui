@@ -47,7 +47,7 @@ export async function createContributionCategoryAction(
   const { supabase, user } = await requireUser();
   const group = await getGroupDetail(supabase, groupId, user.id);
   if (!group || !canManageContributionCategories(group.viewerRole)) {
-    return { error: "You cannot manage contribution categories for this group." };
+    return { error: "You cannot manage what-to-bring categories for this group." };
   }
 
   const { error } = await supabase.from("contribution_categories").insert({
@@ -77,7 +77,7 @@ export async function updateContributionCategoryRulesAction(
   const { supabase, user } = await requireUser();
   const group = await getGroupDetail(supabase, groupId, user.id);
   if (!group || !canManageContributionCategories(group.viewerRole)) {
-    return { error: "You cannot manage contribution categories for this group." };
+    return { error: "You cannot manage what-to-bring categories for this group." };
   }
 
   const { error } = await supabase
@@ -109,7 +109,7 @@ export async function renameContributionCategoryAction(
   const { supabase, user } = await requireUser();
   const group = await getGroupDetail(supabase, groupId, user.id);
   if (!group || !canManageContributionCategories(group.viewerRole)) {
-    return { error: "You cannot manage contribution categories for this group." };
+    return { error: "You cannot manage what-to-bring categories for this group." };
   }
 
   const { error } = await supabase
@@ -140,7 +140,7 @@ export async function deactivateContributionCategoryAction(
   const { supabase, user } = await requireUser();
   const group = await getGroupDetail(supabase, groupId, user.id);
   if (!group || !canManageContributionCategories(group.viewerRole)) {
-    return { error: "You cannot manage contribution categories for this group." };
+    return { error: "You cannot manage what-to-bring categories for this group." };
   }
 
   const { error } = await supabase
@@ -184,7 +184,7 @@ export async function claimContributionAction(
     return { error: "Event not found." };
   }
   if (!canCoordinateContributions(detail.status)) {
-    return { error: "Contributions are closed for this event." };
+    return { error: "What to bring is closed for this event." };
   }
 
   const { error } = await supabase.rpc("claim_event_contribution", {
@@ -201,7 +201,7 @@ export async function claimContributionAction(
   revalidatePath(`/events/${eventId}/respond`);
   revalidatePath(`/events/${eventId}/manage`);
   schedulePushDelivery();
-  return { message: "Contribution claimed." };
+  return { message: "Saved — you're bringing that." };
 }
 
 export async function updateContributionAction(
@@ -221,7 +221,7 @@ export async function updateContributionAction(
     return { error: "Event not found." };
   }
   if (!canCoordinateContributions(detail.status)) {
-    return { error: "Contributions are closed for this event." };
+    return { error: "What to bring is closed for this event." };
   }
 
   const { error } = await supabase.rpc("update_my_event_contribution", {
@@ -237,7 +237,7 @@ export async function updateContributionAction(
   revalidatePath(`/events/${eventId}/respond`);
   revalidatePath(`/events/${eventId}/manage`);
   schedulePushDelivery();
-  return { message: "Contribution updated." };
+  return { message: "Updated." };
 }
 
 export async function releaseContributionAction(
@@ -247,7 +247,7 @@ export async function releaseContributionAction(
   const eventId = String(formData.get("event_id") ?? "");
   const contributionId = String(formData.get("contribution_id") ?? "");
   if (!eventId || !contributionId) {
-    return { error: "Contribution not found." };
+    return { error: "That item was not found." };
   }
 
   const { supabase, user } = await requireUser();
@@ -256,7 +256,7 @@ export async function releaseContributionAction(
     return { error: "Event not found." };
   }
   if (!canCoordinateContributions(detail.status)) {
-    return { error: "Contributions are closed for this event." };
+    return { error: "What to bring is closed for this event." };
   }
 
   const { error } = await supabase.rpc("release_event_contribution", {
@@ -271,7 +271,7 @@ export async function releaseContributionAction(
   revalidatePath(`/events/${eventId}/respond`);
   revalidatePath(`/events/${eventId}/manage`);
   schedulePushDelivery();
-  return { message: "Contribution released." };
+  return { message: "Released." };
 }
 
 export async function setContributionCategoryDefaultAssigneeAction(
@@ -291,7 +291,7 @@ export async function setContributionCategoryDefaultAssigneeAction(
   const { supabase, user } = await requireUser();
   const group = await getGroupDetail(supabase, groupId, user.id);
   if (!group || !canManageContributionCategories(group.viewerRole)) {
-    return { error: "You cannot manage contribution categories for this group." };
+    return { error: "You cannot manage what-to-bring categories for this group." };
   }
 
   if (defaultAssigneeUserId !== null) {
@@ -326,10 +326,10 @@ async function assertCanAssignContributions(
     return { error: "Event not found." as const, detail: null };
   }
   if (!canAssignEventContributions(detail.viewerRole, userId, detail.createdBy, detail.status)) {
-    return { error: "You cannot assign contributions for this event." as const, detail: null };
+    return { error: "You cannot assign what to bring for this event." as const, detail: null };
   }
   if (!canCoordinateContributions(detail.status)) {
-    return { error: "Contributions are closed for this event." as const, detail: null };
+    return { error: "What to bring is closed for this event." as const, detail: null };
   }
   return { error: null, detail };
 }
@@ -369,7 +369,7 @@ export async function assignContributionAsManagerAction(
   revalidatePath(`/events/${eventId}/respond`);
   revalidatePath(`/events/${eventId}/manage`);
   schedulePushDelivery();
-  return { message: "Contribution assigned." };
+  return { message: "Assigned." };
 }
 
 export async function reassignContributionAsManagerAction(
@@ -405,7 +405,7 @@ export async function reassignContributionAsManagerAction(
   revalidatePath(`/events/${eventId}/respond`);
   revalidatePath(`/events/${eventId}/manage`);
   schedulePushDelivery();
-  return { message: "Contribution reassigned." };
+  return { message: "Reassigned." };
 }
 
 export async function releaseContributionAsManagerAction(
@@ -416,7 +416,7 @@ export async function releaseContributionAsManagerAction(
   const contributionId = String(formData.get("contribution_id") ?? "");
 
   if (!eventId || !contributionId) {
-    return { error: "Contribution not found." };
+    return { error: "That item was not found." };
   }
 
   const { supabase, user } = await requireUser();
