@@ -462,7 +462,7 @@ export async function EventManageEntryCard({ detail, userId }: SectionProps) {
             Manage this hui
           </h2>
           <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
-            Update planning, people, hosting, place, and contributions.
+            Update planning, people, hosting, place, and what to bring.
           </p>
         </div>
         <HuiLinkButton

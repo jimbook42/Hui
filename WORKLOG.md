@@ -1,5 +1,9 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX4 fix3 copy (PR #50)
+
+- Invite fallback sheet: join-the-group wording; manage-hui entry and remaining UI **contributions** → **what to bring**.
+
 ## 2026-10-16 — HUI-UX4 fix2 lint (PR #50)
 
 - React Compiler: derive `establishedCadence` without `useMemo` in propose flow.

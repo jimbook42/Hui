@@ -126,7 +126,7 @@ function CategoryRow({
           </select>
         </label>
         <p className="text-sm text-muted-foreground">
-          Applies when new events seed contributions. Changing this does not rewrite past events.
+          Applies when new events seed what to bring. Changing this does not rewrite past events.
         </p>
       </AuthForm>
       <AuthForm
