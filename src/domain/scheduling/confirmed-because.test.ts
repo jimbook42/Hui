@@ -50,4 +50,23 @@ describe("formatConfirmedHeroStatusLine", () => {
       }),
     ).toBe("Confirmed by majority · Awaiting answers");
   });
+
+  it("shows re-asking copy after reschedule until consensus passes again", () => {
+    expect(
+      formatConfirmedHeroStatusLine({
+        consensusRule: "majority_active_members",
+        counts: { yes: 0, maybe: 0, pending: 4, no: 0, total: 4 },
+        maybeResponsesEnabled: true,
+        consensusCurrentlyPasses: false,
+      }),
+    ).toBe("New time proposed · everyone is being asked again · Awaiting answers");
+    expect(
+      formatConfirmedHeroStatusLine({
+        consensusRule: "majority_active_members",
+        counts: { yes: 2, maybe: 0, pending: 1, no: 0, total: 3 },
+        maybeResponsesEnabled: true,
+        consensusCurrentlyPasses: true,
+      }),
+    ).toBe("Confirmed by majority · 2 coming · 1 yet to answer");
+  });
 });

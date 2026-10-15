@@ -44,7 +44,10 @@ export default function PrivacyPage() {
             </p>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-muted-foreground">
               <li>Your display name and email address</li>
-              <li>Your sign-in provider identifier when you use Google, Microsoft, or Facebook</li>
+              <li>
+                Your sign-in provider identifier when you use Google, Microsoft, or email (other
+                sign-in providers may be added in future)
+              </li>
               <li>Your membership in Hui groups and your role in each group</li>
               <li>Your availability answers for planning (including standing preferences you save)</li>
               <li>Dietary information you choose to share with a group</li>
@@ -84,8 +87,8 @@ export default function PrivacyPage() {
                 address search when you look up a location
               </li>
               <li>
-                <strong className="font-bold text-foreground">Google, Microsoft, and Facebook</strong> —
-                sign-in only, when you choose that option
+                <strong className="font-bold text-foreground">Google and Microsoft</strong> — sign-in
+                only, when you choose that option
               </li>
             </ul>
             <p className="mt-3 text-muted-foreground">

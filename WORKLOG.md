@@ -1,5 +1,9 @@
 # Worklog
 
+## 2026-10-15 — HUI-0183 friction tier 1 (v0.18.3)
+
+- In-app browser OAuth banner on `/`, sign-in, sign-up; reschedule re-asking hero; cancelled hero/copy; privacy sign-in list; host self-notify migration (not applied).
+
 ## 2026-10-15 — HUI-0183 batched roster RPC (v0.18.3)
 
 - `candidate_attendance_rosters(uuid[])` security-definer batch wrapper; home dashboard uses one RPC instead of `event_responses` (RLS self-only).
