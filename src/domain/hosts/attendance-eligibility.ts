@@ -2,7 +2,7 @@ import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 
 import type { HostEligibleMember } from "./rotation";
 
-/** Members who may be suggested as host: attending (yes/maybe) and not hard-excluded. */
+/** Members who may be assigned as host: said Yes to this time (not maybe) and not hard-excluded. */
 export function filterHostAssignableMembers(
   members: HostEligibleMember[],
   roster: AttendanceRoster | null,
@@ -18,6 +18,6 @@ export function filterHostAssignableMembers(
       return false;
     }
     const response = responseByUser.get(member.userId);
-    return response === "yes" || response === "maybe";
+    return response === "yes";
   });
 }

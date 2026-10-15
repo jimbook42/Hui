@@ -1,3 +1,4 @@
+import type { EventConfirmRule } from "@/domain/events/confirm-rule";
 import type { ConsensusFailureReason, ConsensusRule } from "@/domain/scheduling/consensus";
 import type { AvailabilityChoice, CandidateStatus } from "@/domain/scheduling/types";
 
@@ -45,6 +46,7 @@ export type EventConsensusSummary = {
   eligibleMemberCount: number;
   minimumAttendees: number;
   consensusRule: ConsensusRule;
+  confirmRule: EventConfirmRule;
   maybeResponsesEnabled: boolean;
   candidates: CandidateConsensusView[];
 };

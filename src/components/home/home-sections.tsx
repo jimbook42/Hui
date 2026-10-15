@@ -35,7 +35,7 @@ export function CreateHuiButton({
   return (
     <HuiLinkButton href={href} size={size} shape="melt" className={cn("gap-2", className)}>
       <PlusIcon size={20} strokeWidth={2.4} />
-      Create Hui
+      Propose a hui
     </HuiLinkButton>
   );
 }
@@ -73,29 +73,7 @@ export async function DashboardEvents() {
     : sections.planning.slice(0, 4);
 
   if (groups.length === 0) {
-    return (
-      <div className="mt-8 space-y-5">
-        <section
-          aria-labelledby="how-hui-works"
-          className="hui-rise rounded-hui-lg bg-muted px-5 py-4"
-        >
-          <h2 id="how-hui-works" className="text-sm font-extrabold text-foreground">
-            How Hui works
-          </h2>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            Groups are your people. A hui is one gathering within that group.
-          </p>
-        </section>
-        <EmptyState
-          title="Start with your people"
-          description="Create a group for your whānau or friends, or ask an admin to add you. Then you can propose your first hui."
-        >
-          <HuiLinkButton href="/groups/new" shape="melt">
-            Create a group
-          </HuiLinkButton>
-        </EmptyState>
-      </div>
-    );
+    return null;
   }
 
   const nothingPlanned =

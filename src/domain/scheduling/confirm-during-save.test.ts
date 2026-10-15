@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   confirmedDuringSaveOtherAnswersLockedMessage,
   confirmedDuringSaveToast,
+  isConfirmRaceNoRetryError,
   isSchedulingClosedDbError,
   resolveConfirmRaceAfterFailedSave,
   shouldRetryAvailabilitySaveAfterConfirmRace,
@@ -81,5 +82,16 @@ describe("confirm-during-save recovery copy", () => {
         "Pacific/Auckland",
       ),
     );
+    expect(state.confirmedCandidate?.id).toBe("tue");
+  });
+
+  it("flags confirm-race locked copy as non-retryable", () => {
+    const message = confirmedDuringSaveOtherAnswersLockedMessage(
+      "2026-11-10T18:00:00.000Z",
+      null,
+      "Pacific/Auckland",
+    );
+    expect(isConfirmRaceNoRetryError(message)).toBe(true);
+    expect(isConfirmRaceNoRetryError("Network blip.")).toBe(false);
   });
 });

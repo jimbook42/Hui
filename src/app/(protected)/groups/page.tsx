@@ -9,7 +9,7 @@ export default function GroupsPage() {
   return (
     <AppShell
       title="Your groups"
-      subtitle="The circles you gather with. Open one to see who is in it and what is coming up."
+      subtitle="Your groups. Open one to see who is in it and what hui are coming up."
     >
       <div className="mb-4 flex">
         <HuiLinkButton href="/groups/new" variant="soft" size="sm" shape="melt">

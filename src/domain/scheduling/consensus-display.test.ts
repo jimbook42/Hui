@@ -8,8 +8,11 @@ import {
   eventSchedulingSectionMessage,
   hasNoResponsesYet,
   isCandidateOpenForResponses,
+  organiserPicksCanConfirmNow,
+  organiserPicksHostHasSaidYesOnCandidate,
   proposalDeadlineGroupNotice,
   shouldOfferOrganiserConfirm,
+  isWaitingOnHostFailure,
   shouldShowFinaliseControl,
 } from "./consensus-display";
 
@@ -112,6 +115,99 @@ describe("consensus display (HUI-017)", () => {
     expect(
       shouldShowFinaliseControl(true, "confirmed", "selected", true),
     ).toBe(false);
+  });
+
+  it("detects organiser-picks confirm when the host has said Yes", () => {
+    const rosterWithHostYes = {
+      maybeResponsesEnabled: true,
+      members: [
+        { userId: "host-1", displayName: "Host", response: "yes" as const, submittedLate: false },
+      ],
+    };
+    expect(
+      organiserPicksCanConfirmNow(
+        true,
+        "proposing",
+        "organiser_picks",
+        [
+          {
+            candidateId: "c1",
+            yesCount: 1,
+            failureReason: "organiser_picks",
+          },
+        ],
+        new Set(["c1"]),
+        {
+          acceptedHostUserId: "host-1",
+          rosterByCandidateId: new Map([["c1", rosterWithHostYes]]),
+        },
+      ),
+    ).toEqual({ candidateId: "c1" });
+    expect(
+      organiserPicksCanConfirmNow(
+        true,
+        "proposing",
+        "organiser_picks",
+        [
+          {
+            candidateId: "c1",
+            yesCount: 1,
+            failureReason: "organiser_picks",
+          },
+        ],
+        new Set(["c1"]),
+        {
+          acceptedHostUserId: "host-1",
+          rosterByCandidateId: new Map([
+            [
+              "c1",
+              {
+                maybeResponsesEnabled: true,
+                members: [
+                  {
+                    userId: "host-1",
+                    displayName: "Host",
+                    response: null,
+                    submittedLate: false,
+                  },
+                ],
+              },
+            ],
+          ]),
+        },
+      ),
+    ).toBeNull();
+    expect(
+      organiserPicksCanConfirmNow(true, "proposing", "organiser_picks", [
+        {
+          candidateId: "c1",
+          yesCount: 1,
+          failureReason: "waiting_on_host",
+        },
+      ], new Set(["c1"])),
+    ).toBeNull();
+    expect(
+      organiserPicksHostHasSaidYesOnCandidate("c1", "host-1", new Map([["c1", rosterWithHostYes]])),
+    ).toBe(true);
+    expect(organiserPicksHostHasSaidYesOnCandidate("c1", null, new Map())).toBe(false);
+  });
+
+  it("supports organiser_picks manual confirm and host waiting", () => {
+    expect(
+      shouldShowFinaliseControl(true, "proposing", "proposed", false, {
+        confirmRule: "organiser_picks",
+        yesCount: 1,
+        failureReason: "organiser_picks",
+      }),
+    ).toBe(true);
+    expect(
+      shouldShowFinaliseControl(true, "proposing", "proposed", false, {
+        confirmRule: "when_most_can_come",
+        yesCount: 3,
+        failureReason: "waiting_on_host",
+      }),
+    ).toBe(false);
+    expect(isWaitingOnHostFailure("waiting_on_host")).toBe(true);
   });
 
   it("labels candidate and event states", () => {

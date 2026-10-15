@@ -31,7 +31,8 @@ import {
   parseStartsOnDate,
 } from "@/domain/events/validation";
 import { getGroupDetail } from "@/lib/groups/queries";
-import { getEventDetail } from "@/lib/events/queries";
+import { getEventDetail, getEventStatus } from "@/lib/events/queries";
+import type { EventStatus } from "@/domain/events/types";
 import { syncGroupPlanningAfterChange } from "@/lib/groups/sync-planning-after-change";
 import { pickAcceptedHost } from "@/domain/hosts/display";
 import { getEventHostContext } from "@/lib/hosts/queries";
@@ -43,6 +44,12 @@ export type EventActionState = {
   message?: string;
   /** Non-error notice for the client (refresh + toast). */
   notice?: string;
+  /** Set when a successful availability save left the hui confirmed (auto-confirm). */
+  confirmedCandidate?: {
+    id: string;
+    startsAt: string;
+    endsAt: string | null;
+  };
 };
 
 async function requireUser() {
@@ -439,4 +446,16 @@ export async function deleteEventAction(
   revalidatePath("/events");
   revalidatePath(`/groups/${detail.groupId}/events`);
   redirect(`/groups/${detail.groupId}/events`);
+}
+
+/** Lightweight status poll for open hui pages when Supabase realtime is unavailable. */
+export async function fetchEventLifecycleStatusAction(
+  eventId: string,
+): Promise<{ status: EventStatus } | { error: string }> {
+  const { supabase, user } = await requireUser();
+  const status = await getEventStatus(supabase, eventId);
+  if (!status) {
+    return { error: "Event not found." };
+  }
+  return { status };
 }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { buildInitialProposalDraft, initialCandidateDateFromDraft } from "./proposal-defaults";
+import {
+  buildInitialProposalDraft,
+  fillRecurringPlanningDates,
+  groupHasEstablishedRecurrence,
+  initialCandidateDateFromDraft,
+} from "./proposal-defaults";
 import type { GroupSettingsRow } from "@/lib/groups/types";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
 
@@ -28,6 +33,18 @@ const baseSettings: GroupSettingsRow = {
 };
 
 describe("proposal defaults (HUI-031 tier-2)", () => {
+  it("treats recurring groups with prior huis as established for propose UX", () => {
+    const freshSettings: GroupSettingsRow = {
+      ...baseSettings,
+      canonicalRecurrenceSeriesId: null,
+      recurrenceIntervalUnit: null,
+      recurrenceIntervalCount: null,
+      recurrenceAnchorDate: null,
+    };
+    expect(groupHasEstablishedRecurrence(freshSettings, { isFirstGroupEvent: true })).toBe(false);
+    expect(groupHasEstablishedRecurrence(freshSettings, { isFirstGroupEvent: false })).toBe(true);
+  });
+
   it("6: prefill uses next open nominal, not a past completed cycle", () => {
     const cycle: GroupPlanningCycle = {
       cadence: {
@@ -52,6 +69,18 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
     expect(initialCandidateDateFromDraft(draft, cycle)).toBe("2026-10-26");
   });
 
+  it("mirrors anchor date into planning target for established groups", () => {
+    const draft = fillRecurringPlanningDates(
+      buildInitialProposalDraft(baseSettings, {
+        groupName: "Family",
+        cycle: null,
+        isFirstGroupEvent: false,
+      }),
+    );
+    expect(draft.recurrence?.startsOn).toBe("2026-09-28");
+    expect(draft.recurrence?.planningTargetDate).toBe("2026-09-28");
+  });
+
   it("first group event leaves planning target unset until a time is proposed", () => {
     const freshSettings: GroupSettingsRow = {
       ...baseSettings,
@@ -67,6 +96,7 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
       todayDateOnly: "2026-10-13",
     });
     expect(draft.eventKind).toBe("one_off");
+    expect(draft.gatheringType).toBeNull();
     expect(draft.recurrence?.planningTargetDate).toBeNull();
     expect(initialCandidateDateFromDraft(draft, null)).toBe("");
   });

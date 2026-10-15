@@ -34,7 +34,7 @@ export function DisclosureCard({
   return (
     <details
       id={id}
-      open={defaultOpen}
+      {...(defaultOpen ? { open: true } : {})}
       className={cn("hui-details scroll-mt-24 rounded-hui-xl bg-surface hui-shadow-sm", className)}
     >
       <summary className="hui-focus-ring flex min-h-16 items-center gap-3 rounded-hui-xl px-5 py-3.5">

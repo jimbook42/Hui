@@ -15,6 +15,11 @@ import {
   defaultGatheringEventTitle,
   type GatheringType,
 } from "@/domain/gathering/type";
+import {
+  DEFAULT_EVENT_CONFIRM_RULE,
+  isEventConfirmRule,
+  type EventConfirmRule,
+} from "@/domain/events/confirm-rule";
 import { validateCandidateWindow } from "@/domain/scheduling/validation";
 import { normalizeProposalContributionRequests } from "@/domain/events/proposal-contributions";
 
@@ -55,6 +60,7 @@ export type EventProposalDraft = {
   hostPlaceRequired: boolean;
   organiserWillHost: boolean;
   requestedContributions: ProposalContributionRequest[];
+  confirmRule: EventConfirmRule;
 };
 
 export type ProposalValidationResult =
@@ -87,6 +93,7 @@ export type ProposeGroupEventPayload = {
   gatheringTypeCustom: string | null;
   requestedContributions: ProposalContributionRequest[];
   organiserCommitsHost: boolean;
+  confirmRule: EventConfirmRule;
 };
 
 export function candidatesForRpc(
@@ -290,6 +297,9 @@ export function validateEventProposalDraft(
       gatheringTypeCustom,
       requestedContributions: contributionResult.requests,
       organiserCommitsHost,
+      confirmRule: isEventConfirmRule(draft.confirmRule)
+        ? draft.confirmRule
+        : DEFAULT_EVENT_CONFIRM_RULE,
     },
   };
 }

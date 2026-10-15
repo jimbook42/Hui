@@ -50,9 +50,9 @@ export function buildHostHistory(
 
 export function hostSuggestionReason(displayName: string, hostedCount: number): string {
   if (hostedCount === 0) {
-    return `Hui has suggested ${displayName} to host this gathering.`;
+    return `Hui has suggested ${displayName} to host this hui.`;
   }
-  return `Hui has suggested ${displayName} to host this gathering.`;
+  return `Hui has suggested ${displayName} to host this hui.`;
 }
 
 export function suggestHost(

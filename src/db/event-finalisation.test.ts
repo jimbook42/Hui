@@ -227,16 +227,16 @@ describe("event consensus finalisation (HUI-010)", () => {
        values ($1, $2, 'yes', 'private')`,
       [candidateId, ids.owner],
     );
-    await asUser(db, ids.member);
+    await asUser(db, ids.admin);
     await db.query(
       `insert into public.event_responses (candidate_id, user_id, response, visibility)
-       values ($1, $2, 'maybe', 'private')`,
-      [candidateId, ids.member],
+       values ($1, $2, 'yes', 'private')`,
+      [candidateId, ids.admin],
     );
 
     const summary = await loadSummary(db, ids.admin, eventId);
     const domain = evaluateCandidateConsensus({
-      consensusRule: "minimum_attendees",
+      consensusRule: "majority_active_members",
       minimumAttendees: 2,
       maybeResponsesEnabled: true,
       members: [
@@ -246,7 +246,7 @@ describe("event consensus finalisation (HUI-010)", () => {
       ],
       responses: [
         { userId: ids.owner, response: "yes" },
-        { userId: ids.member, response: "maybe" },
+        { userId: ids.admin, response: "yes" },
       ],
     });
 
@@ -286,21 +286,14 @@ describe("event consensus finalisation (HUI-010)", () => {
     await db.query(
       `update public.group_settings
        set minimum_attendees = 1,
-           consensus_rule = 'all_active_members',
            maybe_responses_enabled = false
        where group_id = $1`,
       [groupId],
     );
-    await db.query(
-      `update public.group_memberships
-       set consensus_required = true
-       where group_id = $1 and user_id = $2`,
-      [groupId, ids.member],
-    );
     await asUser(db, ids.member);
     const event = await db.query<{ id: string }>(
-      `insert into public.events (group_id, title, status, created_by)
-       values ($1, 'Lunch', 'proposing', $2)
+      `insert into public.events (group_id, title, status, created_by, confirm_rule)
+       values ($1, 'Lunch', 'proposing', $2, 'when_everyone_can_come'::public.event_confirm_rule)
        returning id`,
       [groupId, ids.member],
     );
@@ -326,7 +319,7 @@ describe("event consensus finalisation (HUI-010)", () => {
     );
 
     const blocked = await loadSummary(db, ids.member, eventId);
-    expect(blocked.candidates[0].failure_reason).toBe("all_active_members");
+    expect(blocked.candidates[0].failure_reason).toBe("when_everyone_can_come");
     expect(blocked.candidates[0].passes).toBe(false);
 
     await asUser(db, ids.member);
@@ -338,19 +331,7 @@ describe("event consensus finalisation (HUI-010)", () => {
     await asUser(db, ids.owner);
     await db.query(
       `update public.group_settings
-       set consensus_rule = 'required_participants', minimum_attendees = 1
-       where group_id = $1`,
-      [groupId],
-    );
-    const missingRequired = await loadSummary(db, ids.owner, eventId);
-    expect(missingRequired.candidates[0].failure_reason).toBe("required_participants");
-    expect(missingRequired.candidates[0].required_participant_count).toBe(1);
-    expect(missingRequired.candidates[0].required_accepted_count).toBe(0);
-
-    await asUser(db, ids.owner);
-    await db.query(
-      `update public.group_settings
-       set consensus_rule = 'minimum_attendees', minimum_attendees = 3
+       set minimum_attendees = 3
        where group_id = $1`,
       [groupId],
     );
@@ -395,6 +376,12 @@ describe("event consensus finalisation (HUI-010)", () => {
         `insert into public.event_responses (candidate_id, user_id, response, visibility)
          values ($1, $2, 'yes', 'private')`,
         [candidateId, ids.owner],
+      );
+      await asUser(db, ids.admin);
+      await db.query(
+        `insert into public.event_responses (candidate_id, user_id, response, visibility)
+         values ($1, $2, 'yes', 'private')`,
+        [candidateId, ids.admin],
       );
     }
 

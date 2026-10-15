@@ -52,7 +52,7 @@ export default async function GroupWelcomePage({ params }: PageProps) {
           href={`/groups/${groupId}/events/new`}
           className="hui-focus-ring block min-h-12 rounded-full border-2 border-border bg-surface px-6 py-3 text-center text-sm font-extrabold text-foreground"
         >
-          Plan your first gathering
+          Propose your first hui
         </Link>
       </HuiSurface>
     </AppShell>

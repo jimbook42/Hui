@@ -47,6 +47,7 @@ describe("proposal draft cadence storage", () => {
       foodInvolvement: null,
       hostPlaceRequired: true,
       organiserWillHost: false,
+      confirmRule: "when_most_can_come",
       requestedContributions: [],
     } satisfies EventProposalDraft;
 

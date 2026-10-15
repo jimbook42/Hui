@@ -110,6 +110,7 @@ export function InstallHuiCard() {
       platform: state.platform,
       dismissedAt: state.dismissedAt,
       now: state.now,
+      visitCount: state.visitCount,
     })
   ) {
     return null;

@@ -4,6 +4,39 @@ import type { EventStatus } from "@/domain/events/types";
 
 export const DEFAULT_PROPOSAL_DEADLINE_HOURS = 48;
 
+export function effectiveProposalDeadlineHours(groupHours: number | null): number {
+  if (groupHours === null || !Number.isFinite(groupHours) || groupHours <= 0) {
+    return DEFAULT_PROPOSAL_DEADLINE_HOURS;
+  }
+  return groupHours;
+}
+
+export function computeDefaultResponseDeadlineAt(
+  from: Date,
+  groupHours: number | null,
+): Date {
+  const hours = effectiveProposalDeadlineHours(groupHours);
+  return new Date(from.getTime() + hours * 60 * 60 * 1000);
+}
+
+export function formatProposalDeadlineDefaultNote(groupHours: number | null): string {
+  const hours = effectiveProposalDeadlineHours(groupHours);
+  if (hours % 24 === 0) {
+    const days = hours / 24;
+    return `default: ${days} ${days === 1 ? "day" : "days"}`;
+  }
+  return `default: ${hours} hours`;
+}
+
+export function proposalReplyByPreviewLabel(
+  deadlineAt: string,
+  timeZone: string,
+  groupHours: number | null,
+): string {
+  const defaultNote = formatProposalDeadlineDefaultNote(groupHours);
+  return `${replyByDeadlineLabel(deadlineAt, timeZone)} (${defaultNote})`;
+}
+
 export function replyByLabelForEvent(
   status: EventStatus,
   responseDeadlineAt: string | null,

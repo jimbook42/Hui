@@ -25,13 +25,33 @@ type CancelledEventRow = {
   starts_at: string | null;
   timezone: string | null;
   cancelled_at: string | null;
+  planning_target_date: string | null;
 };
+
+/** Display time for cancelled hui that never reached `events.starts_at`. */
+export function resolveCancelledEventStartsAt(
+  row: Pick<CancelledEventRow, "starts_at" | "planning_target_date">,
+  earliestCandidateStart: string | null | undefined,
+): string | null {
+  if (row.starts_at) {
+    return row.starts_at;
+  }
+  if (earliestCandidateStart) {
+    return earliestCandidateStart;
+  }
+  const nominal = row.planning_target_date?.trim();
+  if (nominal) {
+    return `${nominal}T12:00:00.000Z`;
+  }
+  return null;
+}
 
 /** Group recent cancelled rows by group, capped per group (most recent cancellation first). */
 export function indexRecentCancelledByGroup(
   rows: CancelledEventRow[],
   now: Date,
   perGroupCap = RECENT_CANCELLED_PER_GROUP_CARD_CAP,
+  earliestCandidateByEventId: ReadonlyMap<string, string> = new Map(),
 ): Map<string, RecentCancelledGroupEvent[]> {
   const cutoffMs = new Date(recentCancelledCutoffIso(now)).getTime();
   const sorted = rows
@@ -60,7 +80,10 @@ export function indexRecentCancelledByGroup(
       id: row.id,
       title: row.title,
       groupId: row.group_id,
-      startsAt: row.starts_at,
+      startsAt: resolveCancelledEventStartsAt(
+        row,
+        earliestCandidateByEventId.get(row.id),
+      ),
       timeZone:
         row.timezone && row.timezone.length > 0 ? row.timezone : DEFAULT_TIME_ZONE,
       cancelledAt: row.cancelled_at,
@@ -68,6 +91,34 @@ export function indexRecentCancelledByGroup(
     byGroup.set(row.group_id, list);
   }
   return byGroup;
+}
+
+async function loadEarliestCandidateStartsByEvent(
+  supabase: SupabaseClient,
+  eventIds: string[],
+): Promise<Map<string, string>> {
+  const byEvent = new Map<string, string>();
+  if (eventIds.length === 0) {
+    return byEvent;
+  }
+
+  const { data, error } = await supabase
+    .from("event_candidates")
+    .select("event_id, starts_at")
+    .in("event_id", eventIds)
+    .order("starts_at", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  for (const row of data ?? []) {
+    const eventId = String(row.event_id);
+    if (!byEvent.has(eventId) && row.starts_at) {
+      byEvent.set(eventId, String(row.starts_at));
+    }
+  }
+  return byEvent;
 }
 
 /**
@@ -93,7 +144,7 @@ export async function loadRecentCancelledEventsForGroups(
 
   const { data, error } = await supabase
     .from("events")
-    .select("id, title, group_id, starts_at, timezone, cancelled_at")
+    .select("id, title, group_id, starts_at, timezone, cancelled_at, planning_target_date")
     .in("group_id", groupIds)
     .eq("status", "cancelled")
     .gte("cancelled_at", cutoff)
@@ -104,5 +155,12 @@ export async function loadRecentCancelledEventsForGroups(
     throw new Error(error.message);
   }
 
-  return indexRecentCancelledByGroup((data ?? []) as CancelledEventRow[], now, perGroupCap);
+  const rows = (data ?? []) as CancelledEventRow[];
+  const needsCandidate = rows.filter((row) => !row.starts_at).map((row) => row.id);
+  const earliestCandidateByEventId = await loadEarliestCandidateStartsByEvent(
+    supabase,
+    needsCandidate,
+  );
+
+  return indexRecentCancelledByGroup(rows, now, perGroupCap, earliestCandidateByEventId);
 }

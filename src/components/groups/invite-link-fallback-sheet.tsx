@@ -56,7 +56,7 @@ export function InviteLinkFallbackSheet({
           Share this invite link
         </h2>
         <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          Copy the link and send it to anyone you want in the group.
+          Copy and send the link — they can join from any device.
         </p>
         <p className="mt-4 break-all rounded-hui-lg bg-muted px-3 py-3 text-sm font-semibold text-foreground">
           {inviteUrl}

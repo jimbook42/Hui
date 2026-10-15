@@ -14,7 +14,15 @@ import { HuiSwitchField } from "@/components/hui/hui-switch";
 import { PendingButton } from "@/components/ui/pending-button";
 import type { EventFoodInvolvement } from "@/domain/events/food";
 import { HUI_ONE_LINE_EXPLAINER } from "@/domain/events/hui-explainer";
-import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
+import {
+  formatCompactEventTimeRange,
+  formatDateTimeLocalInTimeZone,
+  wallClockToUtcIso,
+} from "@/domain/datetime/timezone";
+import {
+  computeDefaultResponseDeadlineAt,
+  proposalReplyByPreviewLabel,
+} from "@/domain/scheduling/response-deadline";
 import type { EventProposalDraft } from "@/domain/events/proposal";
 import { mergeWallClockIntoCandidates, parseWallClockCandidate } from "@/domain/events/proposal";
 import {
@@ -32,6 +40,7 @@ import {
   writeStoredProposalCadence,
   writeStoredProposalDraft,
 } from "@/domain/events/proposal-draft-storage";
+import { EventConfirmRuleField } from "@/components/events/event-confirm-rule-field";
 import { ProposalPastDateWarning } from "@/components/events/proposal-past-date-warning";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
 import { FIRST_GROUP_CADENCE_PRESETS } from "@/domain/recurrence/cadence-presets";
@@ -79,7 +88,7 @@ function hostSummary(draft: EventProposalDraft, hostingEnabled: boolean): string
     return "Hosting is off for this group.";
   }
   if (draft.organiserWillHost) {
-    return "You — confirmed host for this gathering.";
+    return "You — confirmed host for this hui.";
   }
   return "No host yet — someone can accept a host proposal later.";
 }
@@ -119,7 +128,7 @@ export function CreateEventProposalFlow({
   useEffect(() => {
     if (
       !isFirstGroupEvent ||
-      groupHasEstablishedRecurrence(settings) ||
+      groupHasEstablishedRecurrence(settings, { isFirstGroupEvent }) ||
       draft.eventKind !== "recurring" ||
       !draft.recurrence
     ) {
@@ -154,8 +163,16 @@ export function CreateEventProposalFlow({
   const [timeStart, setTimeStart] = useState("12:00");
   // The end time is optional: an empty value means "start only".
   const [timeEnd, setTimeEnd] = useState("");
+  const [timeAddedMessage, setTimeAddedMessage] = useState<string | null>(null);
+  const defaultReplyDeadlineIso = useMemo(
+    () => computeDefaultResponseDeadlineAt(new Date(), settings.proposalDeadlineHours).toISOString(),
+    [settings.proposalDeadlineHours],
+  );
+  const [replyDeadlineLocal, setReplyDeadlineLocal] = useState(() =>
+    formatDateTimeLocalInTimeZone(defaultReplyDeadlineIso, settings.timezone),
+  );
 
-  const establishedRecurrence = groupHasEstablishedRecurrence(settings);
+  const establishedRecurrence = groupHasEstablishedRecurrence(settings, { isFirstGroupEvent });
   const [meetFrequency, setMeetFrequency] = useState<StoredMeetFrequency>(null);
 
   useEffect(() => {
@@ -319,9 +336,8 @@ export function CreateEventProposalFlow({
         let next = { ...current, candidates: merged.candidates };
         if (
           next.eventKind === "recurring" &&
-          isFirstGroupEvent &&
-          !establishedRecurrence &&
-          merged.candidates[0]
+          merged.candidates[0] &&
+          !next.recurrence?.planningTargetDate?.trim()
         ) {
           const nominal = dateOnlyFromIso(merged.candidates[0].startsAt, settings.timezone);
           next = {
@@ -378,6 +394,12 @@ export function CreateEventProposalFlow({
       ...current,
       candidates: merged.candidates,
     }));
+    setTimeAddedMessage(
+      `Added ${formatCompactEventTimeRange(parsed.startsAt, parsed.endsAt, settings.timezone)}.`,
+    );
+    setTimeDate("");
+    setTimeStart("12:00");
+    setTimeEnd("");
   }
 
   function removeCandidate(index: number) {
@@ -409,7 +431,7 @@ export function CreateEventProposalFlow({
 
   const reviewMissing: string[] = [];
   if (!draft.gatheringType) {
-    reviewMissing.push("Type of gathering");
+    reviewMissing.push("Type of hui");
   }
   if (draft.candidates.length < 1) {
     reviewMissing.push("At least one proposed time");
@@ -462,7 +484,7 @@ export function CreateEventProposalFlow({
         <section className="hui-rise space-y-5">
           <h2 className="hui-type-page-title text-foreground">What are you planning?</h2>
           <label className="hui-label">
-            <span>Type of gathering</span>
+            <span>Type of hui</span>
             <select
               className="hui-input"
               value={draft.gatheringType ?? ""}
@@ -506,7 +528,7 @@ export function CreateEventProposalFlow({
             </label>
           ) : null}
           <label className="hui-label">
-            <span>Name this gathering (optional)</span>
+            <span>Name this hui (optional)</span>
             <input
               className="hui-input text-lg font-bold"
               value={draft.title}
@@ -556,6 +578,7 @@ export function CreateEventProposalFlow({
             </div>
           </details>
           {canOneOff || canRecurring ? (
+            isFirstGroupEvent && !establishedRecurrence ? (
             <fieldset className="space-y-3">
               <legend className="hui-label">
                 <span>How often does this group meet?</span>
@@ -604,6 +627,7 @@ export function CreateEventProposalFlow({
                   : null}
               </div>
             </fieldset>
+            ) : null
           ) : null}
           {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (
             <p className="rounded-hui-lg bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
@@ -611,6 +635,27 @@ export function CreateEventProposalFlow({
               {establishedCadence ? ` (${formatCadenceLabel(establishedCadence)})` : ""}. Proposed
               times are options — not confirmed dates yet.
             </p>
+          ) : null}
+          {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (
+            <WallClockDateField
+              label="Planning date for this cycle"
+              value={draft.recurrence?.planningTargetDate ?? ""}
+              onChange={(value) =>
+                setDraft((current) => {
+                  if (current.eventKind !== "recurring" || !current.recurrence) {
+                    return current;
+                  }
+                  return {
+                    ...current,
+                    recurrence: {
+                      ...current.recurrence,
+                      planningTargetDate: value,
+                      startsOn: value,
+                    },
+                  };
+                })
+              }
+            />
           ) : null}
         </section>
       ) : null}
@@ -644,7 +689,14 @@ export function CreateEventProposalFlow({
             onSelect={applySuggestion}
             hideEmptyState={draft.candidates.length > 0}
           />
+          {timeAddedMessage ? (
+            <p className="hui-message-success" role="status">{timeAddedMessage}</p>
+          ) : null}
           {draft.candidates.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-extrabold text-foreground">
+                Times you&apos;re proposing ({draft.candidates.length})
+              </p>
             <ul className="space-y-2">
               {draft.candidates.map((candidate, index) => (
                 <li
@@ -668,6 +720,7 @@ export function CreateEventProposalFlow({
                 </li>
               ))}
             </ul>
+            </div>
           ) : null}
           <div className="space-y-4 rounded-hui-xl bg-surface p-5 hui-shadow-md">
             <p className="font-extrabold text-foreground">Add a time</p>
@@ -758,7 +811,9 @@ export function CreateEventProposalFlow({
       ) : null}
 
       {step === "review" ? (
-        <section className="hui-rise space-y-5">
+        <section
+          className="hui-rise space-y-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+        >
           <h2 className="hui-type-page-title text-foreground">Ready to propose?</h2>
           {pastDateWarning ? (
             <ProposalPastDateWarning
@@ -771,6 +826,12 @@ export function CreateEventProposalFlow({
               Still needed: {reviewMissing.join(", ")}
             </p>
           ) : null}
+          <EventConfirmRuleField
+            value={draft.confirmRule}
+            onChange={(confirmRule) =>
+              setDraft((current) => ({ ...current, confirmRule }))
+            }
+          />
           {settings.hostingEnabled ? (
             <>
               <HuiSwitchField
@@ -785,8 +846,8 @@ export function CreateEventProposalFlow({
                 }
               />
               <HuiSwitchField
-              label="Host confirms the venue"
-              description="When on, whoever accepts hosting sets or confirms the place as part of accepting. Turn off when the venue does not matter yet."
+              label="Host sets the place"
+              description="When on, whoever accepts hosting also confirms where it happens. Turn off if the place is not decided yet."
               checked={draft.hostPlaceRequired}
               onCheckedChange={(checked) =>
                 setDraft((current) => ({
@@ -853,6 +914,17 @@ export function CreateEventProposalFlow({
                   : "None requested"}
               </dd>
             </div>
+            <div>
+              <dt>Reply by</dt>
+              <dd>
+                {proposalReplyByPreviewLabel(
+                  wallClockToUtcIso(replyDeadlineLocal, settings.timezone) ??
+                    defaultReplyDeadlineIso,
+                  settings.timezone,
+                  settings.proposalDeadlineHours,
+                )}
+              </dd>
+            </div>
           </dl>
           <form
             action={formAction}
@@ -863,6 +935,17 @@ export function CreateEventProposalFlow({
           >
             <input type="hidden" name="group_id" value={groupId} />
             <input type="hidden" name="proposal_draft" value={JSON.stringify(draft)} />
+            <label className="hui-label block">
+              <span>When should people reply by?</span>
+              <input
+                type="datetime-local"
+                name="response_deadline_at"
+                value={replyDeadlineLocal}
+                onChange={(event) => setReplyDeadlineLocal(event.target.value)}
+                className="hui-input max-w-full"
+                required
+              />
+            </label>
             {actionState.error ? (
               <p className="hui-message-error" role="alert">
                 {actionState.error}

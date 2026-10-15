@@ -32,6 +32,7 @@ type GroupInviteShareBlockProps = {
   appOrigin?: string;
   /** When set, invite link opens this hui after join. */
   focusEventId?: string;
+  focusHuiTitle?: string | null;
   buttonLabel?: string;
   /** Primary hero card on the group tab (green surface). */
   variant?: "onPrimary" | "page" | "welcome" | "card";
@@ -44,6 +45,7 @@ export function GroupInviteShareBlock({
   groupId,
   appOrigin: appOriginProp,
   focusEventId,
+  focusHuiTitle,
   buttonLabel = "Invite",
   variant = "page",
   className,
@@ -144,6 +146,7 @@ export function GroupInviteShareBlock({
       <GroupInviteIntroSheet
         open={introOpen}
         groupName={groupName}
+        focusHuiTitle={focusHuiTitle}
         onClose={closeIntro}
         onGetLink={() => void getLink()}
         getLinkPending={getLinkPending}

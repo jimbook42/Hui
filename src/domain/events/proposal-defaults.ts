@@ -1,6 +1,8 @@
 import type { GroupSettingsRow } from "@/lib/groups/types";
 import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
 
+import { DEFAULT_EVENT_CONFIRM_RULE } from "@/domain/events/confirm-rule";
+
 import type { EventProposalDraft } from "./proposal";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
 import {
@@ -8,12 +10,25 @@ import {
   proposalPrefillFromCycle,
 } from "@/domain/recurrence/planning-cycle";
 
-/** Group has configured cadence or an active recurrence series — not a brand-new casual group. */
-export function groupHasEstablishedRecurrence(settings: GroupSettingsRow): boolean {
+type EstablishedRecurrenceContext = {
+  isFirstGroupEvent?: boolean;
+};
+
+/** Group has configured cadence, an active series, or prior huis on a recurring-enabled group. */
+export function groupHasEstablishedRecurrence(
+  settings: GroupSettingsRow,
+  context?: EstablishedRecurrenceContext,
+): boolean {
   if (settings.canonicalRecurrenceSeriesId) {
     return true;
   }
-  return cadenceFromGroupSettings(settings) !== null;
+  if (cadenceFromGroupSettings(settings) !== null) {
+    return true;
+  }
+  if (context?.isFirstGroupEvent === false && settings.recurringEventsEnabled) {
+    return true;
+  }
+  return false;
 }
 
 /** Default event kind when proposing from a group. */
@@ -21,7 +36,7 @@ export function defaultProposalEventKind(
   settings: GroupSettingsRow,
   context?: { isFirstGroupEvent?: boolean },
 ): EventProposalDraft["eventKind"] {
-  if (context?.isFirstGroupEvent && !groupHasEstablishedRecurrence(settings)) {
+  if (context?.isFirstGroupEvent && !groupHasEstablishedRecurrence(settings, context)) {
     return settings.oneOffEventsAllowed ? "one_off" : "recurring";
   }
   if (settings.recurringEventsEnabled) {
@@ -68,21 +83,29 @@ export function buildInitialProposalDraft(
   if (
     eventKind === "recurring" &&
     options.isFirstGroupEvent &&
-    !groupHasEstablishedRecurrence(settings)
+    !groupHasEstablishedRecurrence(settings, {
+      isFirstGroupEvent: options.isFirstGroupEvent,
+    })
   ) {
     resolvedStartsOn = "";
     planningTargetDate = null;
   }
 
-  return {
+  return fillRecurringPlanningDates({
     title: "",
-    gatheringType: "dinner_meal",
+    gatheringType: null,
     gatheringTypeCustom: "",
     location: "",
     notes: "",
     eventKind,
     recurrence: {
-      seriesTitle: prefill?.seriesTitle ?? (groupHasEstablishedRecurrence(settings) ? options.groupName : ""),
+      seriesTitle:
+        prefill?.seriesTitle ??
+        (groupHasEstablishedRecurrence(settings, {
+          isFirstGroupEvent: options.isFirstGroupEvent,
+        })
+          ? options.groupName
+          : ""),
       intervalUnit,
       intervalCount,
       startsOn: resolvedStartsOn,
@@ -94,6 +117,29 @@ export function buildInitialProposalDraft(
     hostPlaceRequired: true,
     organiserWillHost: false,
     requestedContributions: [],
+    confirmRule: DEFAULT_EVENT_CONFIRM_RULE,
+  });
+}
+
+/** Ensure recurring drafts always carry a planning target when the cadence anchor or cycle provides one. */
+export function fillRecurringPlanningDates(draft: EventProposalDraft): EventProposalDraft {
+  if (draft.eventKind !== "recurring" || !draft.recurrence) {
+    return draft;
+  }
+  const fallback =
+    draft.recurrence.planningTargetDate?.trim() ||
+    draft.recurrence.startsOn?.trim() ||
+    "";
+  if (!fallback) {
+    return draft;
+  }
+  return {
+    ...draft,
+    recurrence: {
+      ...draft.recurrence,
+      planningTargetDate: draft.recurrence.planningTargetDate?.trim() || fallback,
+      startsOn: draft.recurrence.startsOn?.trim() || fallback,
+    },
   };
 }
 

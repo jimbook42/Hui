@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  confirmedEventConsensusPassesForDisplay,
   formatConfirmedHeroStatusLine,
   formatConfirmedReasonLine,
   formatEventStatusPillLabel,
@@ -14,7 +15,15 @@ describe("formatConfirmedReasonLine", () => {
   });
 
   it("covers other consensus rules briefly", () => {
-    expect(formatConfirmedReasonLine("all_active_members")).toBe("Confirmed by everyone");
+    expect(formatConfirmedReasonLine("all_active_members")).toBe(
+      "Confirmed · everyone can come",
+    );
+    expect(
+      formatConfirmedReasonLine("majority_active_members", null, "when_everyone_can_come"),
+    ).toBe("Confirmed · everyone can come");
+    expect(
+      formatConfirmedReasonLine("majority_active_members", null, "when_most_can_come"),
+    ).toBe("Confirmed by majority");
     expect(formatConfirmedReasonLine("required_participants")).toBe(
       "Confirmed by required members",
     );
@@ -71,6 +80,21 @@ describe("formatConfirmedHeroStatusLine", () => {
         consensusCurrentlyPasses: true,
       }),
     ).toBe("Confirmed by majority · 2 coming · 1 yet to answer");
+  });
+});
+
+describe("confirmedEventConsensusPassesForDisplay", () => {
+  it("treats organiser-confirmed hui as not re-asking when consensus still fails", () => {
+    expect(confirmedEventConsensusPassesForDisplay(false, "organiser")).toBe(true);
+    expect(
+      formatConfirmedHeroStatusLine({
+        consensusRule: "majority_active_members",
+        counts: { yes: 1, maybe: 0, pending: 3, no: 0, total: 4 },
+        maybeResponsesEnabled: true,
+        confirmationMethod: "organiser",
+        consensusCurrentlyPasses: confirmedEventConsensusPassesForDisplay(false, "organiser"),
+      }),
+    ).toContain("Confirmed by organiser");
   });
 });
 

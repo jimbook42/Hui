@@ -11,3 +11,20 @@ export function createAttendanceSaveSerializer() {
     return run;
   };
 }
+
+/** One serializer per candidate so saves on different times can run in parallel. */
+export function createPerCandidateAttendanceSaveSerializers() {
+  const byCandidate = new Map<string, ReturnType<typeof createAttendanceSaveSerializer>>();
+
+  return function runSerializedAttendanceSaveForCandidate<T>(
+    candidateId: string,
+    task: () => Promise<T>,
+  ): Promise<T> {
+    let serializer = byCandidate.get(candidateId);
+    if (!serializer) {
+      serializer = createAttendanceSaveSerializer();
+      byCandidate.set(candidateId, serializer);
+    }
+    return serializer(task);
+  };
+}

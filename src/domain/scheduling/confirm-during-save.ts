@@ -24,6 +24,11 @@ export function confirmedDuringSaveCheckAnswerToast(
   return `This hui was just confirmed for ${range}. Check your answer for that time.`;
 }
 
+/** Confirm-race copy where Retry cannot succeed (answered a non-selected time). */
+export function isConfirmRaceNoRetryError(message: string): boolean {
+  return /just confirmed for/i.test(message) && /can't change/i.test(message);
+}
+
 /** Shown when the hui confirmed while the member answered a different proposed time. */
 export function confirmedDuringSaveOtherAnswersLockedMessage(
   startsAt: string,
@@ -64,6 +69,11 @@ export function resolveConfirmRaceAfterFailedSave(input: {
     return {
       message: "Response saved.",
       notice: confirmedDuringSaveToast(selected.startsAt, selected.endsAt, timeZone),
+      confirmedCandidate: {
+        id: selected.id,
+        startsAt: selected.startsAt,
+        endsAt: selected.endsAt,
+      },
     };
   }
 

@@ -1,3 +1,4 @@
+import type { EventConfirmRule } from "@/domain/events/confirm-rule";
 import type { EventStatus } from "@/domain/events/types";
 import type { ConsensusRule } from "@/domain/scheduling/consensus";
 import type { AttendanceCountSummary } from "@/domain/events/who-is-coming";
@@ -9,15 +10,22 @@ export type EventConfirmationMethod = "consensus" | "organiser";
 export function formatConfirmedReasonLine(
   consensusRule: ConsensusRule,
   confirmationMethod?: EventConfirmationMethod | null,
+  confirmRule?: EventConfirmRule | null,
 ): string {
-  if (confirmationMethod === "organiser") {
+  if (confirmationMethod === "organiser" || confirmRule === "organiser_picks") {
     return "Confirmed by organiser";
+  }
+  if (confirmRule === "when_everyone_can_come") {
+    return "Confirmed · everyone can come";
+  }
+  if (confirmRule === "when_most_can_come") {
+    return "Confirmed by majority";
   }
   switch (consensusRule) {
     case "majority_active_members":
       return "Confirmed by majority";
     case "all_active_members":
-      return "Confirmed by everyone";
+      return "Confirmed · everyone can come";
     case "required_participants":
       return "Confirmed by required members";
     case "minimum_attendees":
@@ -28,6 +36,20 @@ export function formatConfirmedReasonLine(
 const REASKING_BASE = "New time proposed · everyone is being asked again";
 
 export const REASKING_STATUS_PILL_LABEL = "Re-asking";
+
+/**
+ * After organiser confirmation, consensus evaluation may still report "not passing" on
+ * organiser-picks rules — the hui is confirmed and should not show the re-asking state.
+ */
+export function confirmedEventConsensusPassesForDisplay(
+  anyCandidatePasses: boolean,
+  confirmationMethod?: EventConfirmationMethod | null,
+): boolean {
+  if (confirmationMethod === "organiser") {
+    return true;
+  }
+  return anyCandidatePasses;
+}
 
 /** Same gate as `formatConfirmedHeroStatusLine` when `consensusCurrentlyPasses` is false. */
 export function isConfirmedEventReasking(
@@ -91,6 +113,7 @@ export function formatConfirmedHeroStatusLine(input: {
   counts: AttendanceCountSummary | null;
   maybeResponsesEnabled: boolean;
   confirmationMethod?: EventConfirmationMethod | null;
+  confirmRule?: EventConfirmRule | null;
   /** When false, the time is set but consensus is not met again (e.g. after reschedule). */
   consensusCurrentlyPasses?: boolean;
 }): string | null {
@@ -100,7 +123,11 @@ export function formatConfirmedHeroStatusLine(input: {
       maybeResponsesEnabled: input.maybeResponsesEnabled,
     });
   }
-  const reason = formatConfirmedReasonLine(input.consensusRule, input.confirmationMethod);
+  const reason = formatConfirmedReasonLine(
+    input.consensusRule,
+    input.confirmationMethod,
+    input.confirmRule,
+  );
   if (!input.counts) {
     return reason;
   }

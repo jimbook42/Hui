@@ -29,7 +29,7 @@ export function GroupMemberCoordination({
   return (
     <section className="hui-card-section">
       <h2 className="hui-type-section text-foreground">
-        Hosting and consensus
+        Hosting and group rules
       </h2>
 
       {viewer ? (

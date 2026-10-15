@@ -14,11 +14,13 @@ const PUBLIC_ENV_NAMES = {
  */
 type EnvSource = Record<string, string | undefined>;
 
-export function getPublicSupabaseConfig(
-  env: EnvSource = process.env,
-): PublicSupabaseConfig {
-  const url = env[PUBLIC_ENV_NAMES.url]?.trim();
-  const publishableKey = env[PUBLIC_ENV_NAMES.publishableKey]?.trim();
+export function getPublicSupabaseConfig(env?: EnvSource): PublicSupabaseConfig {
+  // Use literal `process.env.NEXT_PUBLIC_*` when no override is passed so Next.js can
+  // inline public env at build time in client bundles (dynamic `env[key]` is not replaced).
+  const url = (env ? env[PUBLIC_ENV_NAMES.url] : process.env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
+  const publishableKey = (
+    env ? env[PUBLIC_ENV_NAMES.publishableKey] : process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  )?.trim();
 
   if (!url || !publishableKey) {
     const missing: string[] = [];
@@ -38,9 +40,10 @@ export function getPublicSupabaseConfig(
   return { url, publishableKey };
 }
 
-export function hasPublicSupabaseConfig(env: EnvSource = process.env): boolean {
-  return Boolean(
-    env[PUBLIC_ENV_NAMES.url]?.trim() &&
-      env[PUBLIC_ENV_NAMES.publishableKey]?.trim(),
-  );
+export function hasPublicSupabaseConfig(env?: EnvSource): boolean {
+  const url = (env ? env[PUBLIC_ENV_NAMES.url] : process.env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
+  const publishableKey = (
+    env ? env[PUBLIC_ENV_NAMES.publishableKey] : process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  )?.trim();
+  return Boolean(url && publishableKey);
 }

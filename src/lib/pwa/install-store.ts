@@ -8,6 +8,7 @@ import {
   type InstallAvailability,
   type InstallPlatform,
 } from "@/domain/pwa/install";
+import { applySessionVisitIncrement } from "@/domain/pwa/install-visits";
 
 /**
  * Browser-side install state. `beforeinstallprompt` fires once, early, and cannot be replayed, so
@@ -26,17 +27,21 @@ export type InstallSnapshot = {
   platform: InstallPlatform;
   availability: InstallAvailability;
   dismissedAt: number | null;
+  visitCount: number;
   /** When this snapshot was taken (components must not read the clock while rendering). */
   now: number;
 };
 
 const DISMISSED_KEY = "hui:install-dismissed-at";
+const VISIT_COUNT_KEY = "hui:visit-count";
+const VISIT_SESSION_KEY = "hui:visit-count-session";
 
 const SERVER_SNAPSHOT: InstallSnapshot = {
   ready: false,
   platform: "other",
   availability: "unsupported",
   dismissedAt: null,
+  visitCount: 0,
   now: 0,
 };
 
@@ -67,6 +72,52 @@ function writeDismissedAt(value: number) {
   }
 }
 
+function readVisitCount(): number {
+  try {
+    const raw = window.localStorage.getItem(VISIT_COUNT_KEY);
+    if (!raw) {
+      return 0;
+    }
+    const value = Number(raw);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function readSessionVisitRecorded(): boolean {
+  try {
+    return window.sessionStorage.getItem(VISIT_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeSessionVisitRecorded() {
+  try {
+    window.sessionStorage.setItem(VISIT_SESSION_KEY, "1");
+  } catch {
+    // Ignore private mode.
+  }
+}
+
+function recordVisit() {
+  try {
+    const sessionAlreadyCounted = readSessionVisitRecorded();
+    if (sessionAlreadyCounted) {
+      return;
+    }
+    const applied = applySessionVisitIncrement({
+      visitCount: readVisitCount(),
+      sessionAlreadyCounted: false,
+    });
+    window.localStorage.setItem(VISIT_COUNT_KEY, String(applied.visitCount));
+    writeSessionVisitRecorded();
+  } catch {
+    // Ignore private mode.
+  }
+}
+
 function isStandalone(): boolean {
   const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean };
   return (
@@ -87,6 +138,7 @@ function recompute() {
       platform,
     }),
     dismissedAt: readDismissedAt(),
+    visitCount: readVisitCount(),
     now: Date.now(),
   };
   for (const listener of listeners) {
@@ -101,6 +153,7 @@ export function startInstallTracking() {
   }
   started = true;
   installed = isStandalone();
+  recordVisit();
 
   window.addEventListener("beforeinstallprompt", (event) => {
     // Keep the event for our own button instead of letting the browser show its mini-infobar.

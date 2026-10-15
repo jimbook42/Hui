@@ -1,6 +1,8 @@
+import type { EventConfirmRule } from "@/domain/events/confirm-rule";
 import type { EventStatus } from "@/domain/events/types";
 import { isSchedulingOpen } from "@/domain/events/lifecycle";
 
+import type { AttendanceRoster } from "./attendance-roster";
 import type { ConsensusRule } from "./consensus";
 import type { AvailabilityChoice, CandidateStatus } from "./types";
 
@@ -25,6 +27,23 @@ export function buildAttendanceSummaryLines(counts: AttendanceCounts): string[] 
 
 export function minimumAttendeesRequirementLabel(minimumAttendees: number): string {
   return `Minimum required: ${minimumAttendees}`;
+}
+
+export function eventConfirmRuleRequirementSummary(
+  rule: EventConfirmRule,
+  input: {
+    minimumAttendees: number;
+    eligibleMemberCount: number;
+  },
+): string {
+  switch (rule) {
+    case "when_most_can_come":
+      return `More than half of active members must say Yes (${input.eligibleMemberCount} members), with ${minimumAttendeesRequirementLabel(input.minimumAttendees).toLowerCase()}.`;
+    case "when_everyone_can_come":
+      return `Every active member must say Yes (${input.eligibleMemberCount} members), with ${minimumAttendeesRequirementLabel(input.minimumAttendees).toLowerCase()}.`;
+    case "organiser_picks":
+      return "You confirm the time manually when you are ready (at least one Yes on that time).";
+  }
 }
 
 export function consensusRuleRequirementSummary(
@@ -80,19 +99,45 @@ export function isCandidateOpenForResponses(
   return isSchedulingOpen(eventStatus) && candidateStatus === "proposed";
 }
 
+export function isWaitingOnHostFailure(
+  failureReason: string | null | undefined,
+): boolean {
+  return failureReason === "waiting_on_host";
+}
+
 export function shouldShowFinaliseControl(
   canFinalise: boolean,
   eventStatus: EventStatus,
   candidateStatus: CandidateStatus,
   passes: boolean,
+  options?: {
+    confirmRule?: EventConfirmRule;
+    yesCount?: number;
+    failureReason?: string | null;
+  },
 ): boolean {
-  return (
-    canFinalise &&
-    eventStatus === "proposing" &&
-    candidateStatus === "proposed" &&
-    passes
-  );
+  if (
+    !canFinalise ||
+    eventStatus !== "proposing" ||
+    candidateStatus !== "proposed" ||
+    isWaitingOnHostFailure(options?.failureReason)
+  ) {
+    return false;
+  }
+  if (options?.confirmRule === "organiser_picks") {
+    return (options.yesCount ?? 0) >= 1;
+  }
+  return passes;
 }
+
+export function eventShowsWaitingOnHost(
+  candidates: readonly { failureReason: string | null }[],
+): boolean {
+  return candidates.some((row) => isWaitingOnHostFailure(row.failureReason));
+}
+
+export const WAITING_ON_HOST_STATUS_MESSAGE =
+  "Waiting on the host — they need to say Yes to this time before it can be confirmed.";
 
 /** Organiser may attempt manual confirm when at least one Yes is on the table (maybe does not count). */
 export function shouldOfferOrganiserConfirm(
@@ -109,6 +154,73 @@ export function shouldOfferOrganiserConfirm(
     yesCount >= 1 &&
     !passes
   );
+}
+
+function acceptedHostBlocksOrganiserConfirm(
+  acceptedHostUserId: string | null | undefined,
+  roster: AttendanceRoster | undefined,
+): boolean {
+  if (!acceptedHostUserId) {
+    return false;
+  }
+  const host = roster?.members.find((member) => member.userId === acceptedHostUserId);
+  return host?.response !== "yes";
+}
+
+/** True when an accepted host has said Yes on this candidate (matches server finalise gate). */
+export function organiserPicksHostHasSaidYesOnCandidate(
+  candidateId: string,
+  acceptedHostUserId: string | null | undefined,
+  rosterByCandidateId: ReadonlyMap<string, AttendanceRoster> | Readonly<Record<string, AttendanceRoster>>,
+): boolean {
+  if (!acceptedHostUserId) {
+    return false;
+  }
+  const roster: AttendanceRoster | undefined =
+    rosterByCandidateId instanceof Map
+      ? rosterByCandidateId.get(candidateId)
+      : rosterByCandidateId[candidateId as keyof typeof rosterByCandidateId];
+  const host = roster?.members.find(
+    (member: AttendanceRoster["members"][number]) => member.userId === acceptedHostUserId,
+  );
+  return host?.response === "yes";
+}
+
+/** Organiser-picks hui: manual confirm once the host has said Yes to a proposed time. */
+export function organiserPicksCanConfirmNow(
+  canFinalise: boolean,
+  eventStatus: EventStatus,
+  confirmRule: EventConfirmRule | undefined,
+  candidates: readonly {
+    candidateId: string;
+    yesCount: number;
+    failureReason: string | null;
+  }[],
+  proposedCandidateIds: ReadonlySet<string>,
+  options?: {
+    acceptedHostUserId?: string | null;
+    rosterByCandidateId?: ReadonlyMap<string, AttendanceRoster>;
+  },
+): { candidateId: string } | null {
+  if (!canFinalise || eventStatus !== "proposing" || confirmRule !== "organiser_picks") {
+    return null;
+  }
+  const row = candidates.find((candidate) => {
+    if (!proposedCandidateIds.has(candidate.candidateId)) {
+      return false;
+    }
+    if (candidate.yesCount < 1 || isWaitingOnHostFailure(candidate.failureReason)) {
+      return false;
+    }
+    const roster = options?.rosterByCandidateId?.get(candidate.candidateId);
+    if (
+      acceptedHostBlocksOrganiserConfirm(options?.acceptedHostUserId, roster)
+    ) {
+      return false;
+    }
+    return true;
+  });
+  return row ? { candidateId: row.candidateId } : null;
 }
 
 export function candidateStatusBadge(

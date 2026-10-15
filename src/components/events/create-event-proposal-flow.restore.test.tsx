@@ -117,9 +117,9 @@ describe("CreateEventProposalFlow draft restore", () => {
     renderFlow(groupId);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/Type of gathering/i)).toHaveValue("meeting");
+      expect(screen.getByLabelText(/Type of hui/i)).toHaveValue("meeting");
     });
-    expect(screen.getByLabelText(/Name this gathering/i)).toHaveValue("Saved title");
+    expect(screen.getByLabelText(/Name this hui/i)).toHaveValue("Saved title");
     expect(screen.getByRole("radio", { name: /Just this once/i })).toBeChecked();
   });
 
@@ -164,7 +164,7 @@ describe("CreateEventProposalFlow draft restore", () => {
     renderFlow(groupId);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/Type of gathering/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Type of hui/i)).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("radio", { name: /Monthly/i }));

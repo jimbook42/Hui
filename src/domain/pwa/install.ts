@@ -146,7 +146,12 @@ export function shouldShowInstallCard(input: {
   platform: InstallPlatform;
   dismissedAt: number | null;
   now: number;
+  /** Number of times the member has opened Hui in this browser (see install-store). */
+  visitCount: number;
 }): boolean {
+  if (input.visitCount < 2) {
+    return false;
+  }
   if (isInstallDismissed(input.dismissedAt, input.now)) {
     return false;
   }

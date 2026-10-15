@@ -105,7 +105,59 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     vi.clearAllMocks();
   });
 
-  it("serializes three quick saves (one server action in flight) and keeps Yes on each time", async () => {
+  it("does not shift sibling time rows when one answer saves", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockResolvedValue({ message: "Response saved." });
+
+    const user = userEvent.setup();
+    renderMultiTimeFlow();
+
+    const rowB = screen.getByText("Sat 24 Oct, 6:30pm").closest("li");
+    const rowC = screen.getByText("Thu 29 Oct, 7:00pm").closest("li");
+    if (!rowB || !rowC) {
+      throw new Error("Expected multi-time rows");
+    }
+    const topBBefore = rowB.getBoundingClientRect().top;
+    const topCBefore = rowC.getBoundingClientRect().top;
+
+    await user.click(yesButtonForTime("Thu 22 Oct, 7:00pm"));
+
+    await waitFor(() =>
+      expect(yesButtonForTime("Thu 22 Oct, 7:00pm")).toHaveAttribute("aria-pressed", "true"),
+    );
+
+    expect(Math.abs(rowB.getBoundingClientRect().top - topBBefore)).toBeLessThan(1);
+    expect(Math.abs(rowC.getBoundingClientRect().top - topCBefore)).toBeLessThan(1);
+  });
+
+  it("keeps three Yes buttons in the DOM while the first save is in flight", async () => {
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+
+    vi.mocked(setAvailabilityResponseAction).mockImplementation(async (_prev, formData) => {
+      const candidateId = String(formData.get("candidate_id"));
+      if (candidateId === "cand-a") {
+        await firstGate;
+      }
+      return { message: "Response saved." };
+    });
+
+    const user = userEvent.setup();
+    renderMultiTimeFlow();
+
+    const yesA = yesButtonForTime("Thu 22 Oct, 7:00pm");
+    await user.click(yesA);
+
+    expect(screen.getAllByRole("button", { name: /Yes/ })).toHaveLength(3);
+    expect(yesA).toHaveAttribute("aria-busy", "true");
+
+    releaseFirst();
+    await waitFor(() => expect(yesA).toHaveAttribute("aria-pressed", "true"));
+    expect(screen.getAllByRole("button", { name: /Yes/ })).toHaveLength(3);
+  });
+
+  it("runs independent saves per time (multiple server actions in flight) and keeps Yes on each time", async () => {
     const saveOrder: string[] = [];
     let inFlight = 0;
     let maxInFlight = 0;
@@ -142,14 +194,12 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     await user.click(yesB);
     await user.click(yesC);
 
-    expect(saveOrder).toEqual(["cand-a"]);
-    expect(maxInFlight).toBe(1);
+    await waitFor(() => expect(saveOrder.sort()).toEqual(["cand-a", "cand-b", "cand-c"]));
+    expect(maxInFlight).toBeGreaterThan(1);
 
     release["cand-a"]();
-    await waitFor(() => expect(saveOrder).toEqual(["cand-a", "cand-b"]));
-
     release["cand-b"]();
-    await waitFor(() => expect(saveOrder).toEqual(["cand-a", "cand-b", "cand-c"]));
+    release["cand-c"]();
 
     release["cand-c"]();
     await waitFor(() => {
@@ -194,7 +244,7 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     expect(setAvailabilityResponseAction).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps all three time rows mounted after answers when the hui confirms mid-session", async () => {
+  it("shows Continue on the confirmed time when the hui confirms mid-session", async () => {
     vi.mocked(setAvailabilityResponseAction).mockResolvedValue({ message: "Response saved." });
 
     const user = userEvent.setup();
@@ -236,10 +286,10 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
       />,
     );
 
-    expect(screen.getByText("Thu 22 Oct, 7:00pm")).toBeInTheDocument();
-    expect(screen.getByText("Sat 24 Oct, 6:30pm")).toBeInTheDocument();
-    expect(screen.getByText("Thu 29 Oct, 7:00pm")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /Yes/ })).toHaveLength(3);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Sat 24 Oct, 6:30pm")).not.toBeInTheDocument();
   });
 
   it("shows confirm-race copy and un-presses when another time was confirmed", async () => {
@@ -259,6 +309,30 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
       screen.getByText(/just confirmed for .* can't change/i),
     ).toBeInTheDocument();
     expect(yesC).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+  });
+
+  it("switches to confirmed single-time view when the save returns confirmedCandidate", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockResolvedValueOnce({
+      message: "Response saved.",
+      notice: "This hui was just confirmed for Thu 22 Oct, 7:00pm — your answer for that time is saved.",
+      confirmedCandidate: {
+        id: "cand-a",
+        startsAt: candidateA.startsAt,
+        endsAt: null,
+      },
+    });
+
+    const user = userEvent.setup();
+    renderMultiTimeFlow();
+
+    await user.click(yesButtonForTime("Thu 22 Oct, 7:00pm"));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Sat 24 Oct, 6:30pm")).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
+    });
+    expect(screen.getAllByRole("button", { name: /Yes/ })).toHaveLength(1);
   });
 
   it("keeps error and Retry after rerender and a browser online event", async () => {

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { isEventConfirmRule } from "@/domain/events/confirm-rule";
 import { assertCanFinalise } from "@/domain/events/lifecycle";
 import { availabilityToDbResponse } from "@/domain/scheduling/mapping";
 import {
@@ -28,6 +29,7 @@ import { getEventSchedulingContext } from "@/lib/scheduling/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 import {
+  confirmedDuringSaveToast,
   isSchedulingClosedDbError,
   resolveConfirmRaceAfterFailedSave,
   shouldRetryAvailabilitySaveAfterConfirmRace,
@@ -366,7 +368,33 @@ export async function setAvailabilityResponseAction(
     }
 
     schedulePushDelivery();
-    return { message: "Response saved." };
+
+    const detailAfter = await getEventDetail(supabase, eventId, user.id);
+    if (!detailAfter || detailAfter.status !== "confirmed") {
+      return { message: "Response saved." };
+    }
+
+    const { data: selected } = await supabase
+      .from("event_candidates")
+      .select("id, starts_at, ends_at")
+      .eq("event_id", eventId)
+      .eq("group_id", detail.groupId)
+      .eq("status", "selected")
+      .maybeSingle();
+
+    if (!selected?.id || !selected.starts_at) {
+      return { message: "Response saved." };
+    }
+
+    return {
+      message: "Response saved.",
+      notice: confirmedDuringSaveToast(selected.starts_at, selected.ends_at, timeZone),
+      confirmedCandidate: {
+        id: selected.id,
+        startsAt: selected.starts_at,
+        endsAt: selected.ends_at,
+      },
+    };
   });
 }
 
@@ -463,4 +491,49 @@ export async function updateEventResponseDeadlineAction(
   revalidatePath(`/events/${eventId}/manage`);
   revalidatePath(`/events/${eventId}/respond`);
   return { message: "Reply deadline updated." };
+}
+
+export async function updateEventConfirmRuleAction(
+  _prev: EventActionState,
+  formData: FormData,
+): Promise<EventActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  const ruleRaw = String(formData.get("confirm_rule") ?? "");
+
+  if (!eventId || !ruleRaw) {
+    return { error: "Choose how this hui should confirm." };
+  }
+
+  if (!isEventConfirmRule(ruleRaw)) {
+    return { error: "Choose a valid confirmation rule." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getEventDetail(supabase, eventId, user.id);
+  if (!detail) {
+    return { error: "Event not found." };
+  }
+
+  if (detail.status !== "proposing") {
+    return { error: "Confirmation rules can only be changed while planning." };
+  }
+
+  if (
+    !canFinaliseEvent(detail.viewerRole, user.id, detail.createdBy, detail.status)
+  ) {
+    return { error: "You cannot change the confirmation rule for this hui." };
+  }
+
+  const { error } = await supabase.rpc("update_event_confirm_rule", {
+    p_event_id: eventId,
+    p_confirm_rule: ruleRaw,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/manage`);
+  return { message: "Confirmation rule updated." };
 }

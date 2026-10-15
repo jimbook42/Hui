@@ -28,6 +28,7 @@ import { GroupHostHistorySection } from "@/components/hosts/group-host-history";
 import { GroupInviteShareBlock } from "@/components/groups/group-invite-share-block";
 import { GroupMembersRosterSheet } from "@/components/groups/group-members-roster-sheet";
 import { DisclosureCard } from "@/components/hui/disclosure-card";
+import { HashDisclosureOpener } from "@/components/hui/hash-disclosure-opener";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import {
@@ -136,6 +137,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
 
   return (
     <AppShell title={detail.name} hideTitle back={{ href: "/groups", label: "Groups" }}>
+      <HashDisclosureOpener />
       <div className="space-y-6">
         <HuiSurface
           tone="primary"

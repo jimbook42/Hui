@@ -6,7 +6,7 @@ export default async function NewGroupPage() {
   return (
     <AppShell
       title="Create a group"
-      subtitle="Name the group, invite friends, then plan your first gathering."
+      subtitle="Name the group, invite friends, then propose your first hui."
       back={{ href: "/groups", label: "Groups" }}
       narrow
     >

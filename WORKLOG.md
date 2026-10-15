@@ -1,5 +1,63 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX3-fix12 second propose + settings hash (PR #49)
+
+- **Second propose:** `groupHasEstablishedRecurrence` treats prior huis (`isFirstGroupEvent: false` + recurring enabled) as established when group cadence columns are still empty; restore path merges cadence draft; candidate merge backfills `planningTargetDate`. E2E: first then second recurring propose.
+- **Settings redirect:** `HashDisclosureOpener` on group page + retry; `DisclosureCard` omits controlled `open` when closed so hash deep links can open `<details>`; legacy settings redirect e2e.
+- **Respond e2e:** dashboard wait after sign-in; settings helper waits for hash-open.
+
+## 2026-10-16 — HUI-UX3-fix11 review gaps (PR #49)
+
+- Respond: reserve check-icon width on attendance choices; Playwright `boundingBox()` row stability across Saving/Saved.
+- Organiser confirm: assert `confirmation_method = organiser` in PGlite; `finaliseEventAction` unit test; host-Yes banner copy gated on roster.
+
+## 2026-10-16 — HUI-UX3-fix10 QA (v0.18.7)
+
+- Second propose: hide first-hui cadence picker on established groups; planning-date field + `fillRecurringPlanningDates`; submit test.
+- Organiser confirm: no “Re-asking” after organiser confirmation; host-ready gate for organiser-picks banner.
+- Respond: reserved “Your answer” row height + bottom safe-area padding; cancelled group cards show candidate dates.
+- Local prod build stamp: `git rev-parse --short HEAD` via `next.config.ts`.
+
+## 2026-10-16 — HUI-UX3-fix9 respond crash (production)
+
+- **Root cause:** fix6 `EventLifecycleLiveRefresh` calls browser `createClient()` on respond/event pages. `getPublicSupabaseConfig()` read `process.env` via dynamic `env[key]`, so Next did not inline `NEXT_PUBLIC_*` into client chunks; production `next start` then threw “Missing Supabase configuration” on hydration (error boundary “This page couldn’t load”). fix8’s sibling-stream theory was a red herring.
+- **Fix:** Literal `process.env.NEXT_PUBLIC_*` on the default path in `env.ts`; skip Realtime subscribe when public config is absent (polling-only); `env.client-bundle.test.ts` + lifecycle test guard.
+
+## 2026-10-16 — HUI-UX3-fix8 respond page crash
+
+- **Root cause:** fix6 added `EventLifecycleLiveRefresh` as a second client sibling on `/events/[id]/respond` while the page streams `loadRespondSecondary()` into `EventParticipantRespondFlow`; Next aborted the RSC payload (500 “This page couldn’t load”, server log `The destination stream closed early`).
+- **Fix:** Mount lifecycle refresh inside `EventParticipantRespondFlow` so only one client boundary receives the promise; move `beforeunload` hook with the other effects; `respond-page-streaming-boundary.test.ts` guards the page layout.
+
+## 2026-10-16 — HUI-UX3-fix7 lint
+
+- `EventLifecycleLiveRefresh`: drop ref sync during render; poll callback reads `status` from deps (fixes `react-hooks/refs` CI error).
+
+## 2026-10-16 — HUI-UX3-fix6 gaps (fix5 review)
+
+- Event/respond pages: poll `fetchEventLifecycleStatusAction` every 10s and on focus/visibility when hui is still open; refresh on confirm (realtime kept).
+- Install card: count one browser session per visit so sign-up → onboarding → dashboard does not show the card on first dashboard load.
+- Attendance rows: layout test that sibling rows do not shift when one row saves.
+
+## 2026-10-16 — HUI-UX3-fix5 QA (v0.18.7)
+
+- Respond: fixed-height answer rows, per-candidate parallel saves, persisted-only progress count, `beforeunload` while saving; Supabase realtime refresh on confirm for event/respond pages.
+- Confirmed hero copy from per-hui `confirm_rule`; organiser-picks confirm CTA on event hero when host has said Yes.
+- Propose restore keeps established group cadence; review step bottom safe-area padding for bottom nav.
+
+## 2026-10-15 — HUI-UX3 confirm rules (v0.18.7)
+
+- Per-hui `confirm_rule` on propose + manage; host must say Yes before auto/manual confirm; migration `20261015200000_hui_ux3_confirm_rules.sql` (not applied in prod).
+- PM: confirm whether `p_force` may ever bypass accepted-host Yes (implemented: **no**).
+- **fix2-ci (91faeb7):** PGlite CI — `DROP` 14-arg `propose_group_event` before 15-arg + default `p_confirm_rule`; restore `when_most_can_come` → group `consensus_rule` mapping; `assign_event_host` inserts `proposed` again; prod-shaped RPC tests in `hui-ux3-confirm-rules.test.ts`.
+- **fix3:** `pick_host_candidate` restored from prod (avoid-consecutive `always` ordering + `prefer_not` fallback); `proposed_host_remains_eligible` stays SECURITY INVOKER; PGlite host-pick tests.
+- **fix4-grants:** migration `20261015210000_hui_ux3_helper_grants.sql` — revoke direct EXECUTE on UX3 helpers from `public`/`anon`; drop `authenticated` on `host_yes_required_for_candidate` + `event_accepted_host_user_id`; re-grant `authenticated` on `member_has_yes_for_hosting` after `PUBLIC` revoke (INVOKER `proposed_host_remains_eligible`); PGlite `hui-ux3-helper-grants.test.ts`.
+
+## 2026-10-15 — HUI-UX3 blind fixes (v0.18.7)
+
+- Blind-3 QA: invite/sign-up CTA order, hui-scoped invite sheet copy, propose add-time feedback, respond progress/saved/continue copy, vocabulary (group/hui), explicit hui type on propose, editable reply-by on review, dashboard onboarding order, install card after second visit, change-response gating, email field sizing.
+- Tests: join CTA, invite copy, dashboard greeting, proposal defaults, response-deadline preview, install visit gate, restore-flow label updates.
+- UX3 sync2 addendum: in-place Saving on attendance buttons (stable Yes count), no Retry on confirm-race lock, client transition to confirmed view from `confirmedCandidate` action payload.
+
 ## 2026-10-15 — HUI-0186 answer reliability (v0.18.6)
 
 - **Root cause (fix1):** `event-participant-respond-flow.tsx` wrapped every `setAvailabilityResponseAction` call in a single shared `useTransition` (`startSaveAttendance`, ~line 436). Rapid Yes taps on different proposed times started overlapping transitions; React kept only the latest transition callback, so the middle candidate’s in-flight save never ran.

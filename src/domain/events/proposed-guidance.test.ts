@@ -17,7 +17,7 @@ describe("buildProposedHuiGuidance", () => {
     const guidance = buildProposedHuiGuidance(base, { justProposed: true });
     expect(guidance.show).toBe(true);
     expect(guidance.headline).toBe("Hui proposed");
-    expect(guidance.nextStepTitle).toBe("Invite people to this gathering");
+    expect(guidance.nextStepTitle).toBe("Invite people to this hui");
   });
 
   it("does not tell the proposer to respond again when they already have", () => {

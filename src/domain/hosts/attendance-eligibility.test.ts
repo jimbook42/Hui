@@ -9,7 +9,7 @@ describe("host attendance eligibility (HUI-022A.2)", () => {
     { userId: "c", displayName: "Cara", hostingStanding: "never" as const },
   ];
 
-  it("includes only members who responded yes or maybe", () => {
+  it("includes only members who responded yes (not maybe)", () => {
     const roster = {
       maybeResponsesEnabled: true,
       members: [
@@ -24,7 +24,7 @@ describe("host attendance eligibility (HUI-022A.2)", () => {
       [...members, { userId: "d", displayName: "Dan", hostingStanding: "default" }],
       roster,
     );
-    expect(result.map((m) => m.userId).sort()).toEqual(["a", "b"]);
+    expect(result.map((m) => m.userId).sort()).toEqual(["a"]);
   });
 
   it("excludes never-host members even when attending", () => {

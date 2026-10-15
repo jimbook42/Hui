@@ -1,11 +1,16 @@
 "use client";
 
-import { GROUP_INVITE_ACCESS_NOTE } from "@/domain/invites/copy";
+import {
+  GROUP_INVITE_GROUP_ACCESS_NOTE,
+  GROUP_INVITE_HUI_ACCESS_NOTE,
+} from "@/domain/invites/copy";
 import { cn } from "@/lib/ui/cn";
 
 type GroupInviteIntroSheetProps = {
   open: boolean;
   groupName?: string;
+  /** When sharing from a hui page, name the hui in the title and note. */
+  focusHuiTitle?: string | null;
   onClose: () => void;
   onGetLink: () => void;
   getLinkPending?: boolean;
@@ -15,6 +20,7 @@ type GroupInviteIntroSheetProps = {
 export function GroupInviteIntroSheet({
   open,
   groupName,
+  focusHuiTitle,
   onClose,
   onGetLink,
   getLinkPending = false,
@@ -24,7 +30,14 @@ export function GroupInviteIntroSheet({
     return null;
   }
 
-  const title = groupName?.trim() ? `Invite to ${groupName.trim()}` : "Invite to group";
+  const trimmedHui = focusHuiTitle?.trim();
+  const trimmedGroup = groupName?.trim();
+  const title = trimmedHui
+    ? `Invite to ${trimmedHui}`
+    : trimmedGroup
+      ? `Invite to ${trimmedGroup}`
+      : "Invite to group";
+  const accessNote = trimmedHui ? GROUP_INVITE_HUI_ACCESS_NOTE : GROUP_INVITE_GROUP_ACCESS_NOTE;
 
   return (
     <div
@@ -43,8 +56,11 @@ export function GroupInviteIntroSheet({
         <h2 id="group-invite-intro-title" className="text-lg font-extrabold text-foreground">
           {title}
         </h2>
+        {trimmedHui && trimmedGroup ? (
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">Group: {trimmedGroup}</p>
+        ) : null}
         <p className="mt-3 text-sm font-semibold leading-snug text-muted-foreground">
-          {GROUP_INVITE_ACCESS_NOTE}
+          {accessNote}
         </p>
         <div className="mt-6 flex flex-col gap-2">
           <button

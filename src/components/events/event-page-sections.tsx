@@ -3,6 +3,7 @@ import { EventDecisionsSection } from "@/components/decisions/event-decisions-se
 import { HostEventPlaceHeroAction } from "@/components/events/host-event-place-hero-action";
 import { EventDietarySection } from "@/components/dietary/event-dietary-section";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
+import { ConfirmThisTimeButton } from "@/components/events/event-confirm-this-time-button";
 import { EventScheduling } from "@/components/events/event-scheduling";
 import { LiveGatheringVisual, ViewerResponseCard } from "@/components/events/attendance-live";
 import { DisclosureCard } from "@/components/hui/disclosure-card";
@@ -27,7 +28,16 @@ import {
 import { SectionHeader } from "@/components/hui/section-header";
 import { AddToCalendarButton } from "@/components/events/add-to-calendar-button";
 import { EventHostGentlePrompt } from "@/components/events/event-host-gentle-prompt";
-import { formatConfirmedHeroStatusLine } from "@/domain/scheduling/confirmed-because";
+import { eventConfirmRuleDisplayLine } from "@/domain/events/confirm-rule";
+import {
+  eventShowsWaitingOnHost,
+  organiserPicksHostHasSaidYesOnCandidate,
+  WAITING_ON_HOST_STATUS_MESSAGE,
+} from "@/domain/scheduling/consensus-display";
+import {
+  confirmedEventConsensusPassesForDisplay,
+  formatConfirmedHeroStatusLine,
+} from "@/domain/scheduling/confirmed-because";
 import { formatEventTimeDisclosureSummary } from "@/domain/scheduling/event-time-disclosure-summary";
 import {
   multiTimeAnswerDetailRows,
@@ -105,9 +115,18 @@ export function EventHeroMeta({
           counts: data.counts,
           maybeResponsesEnabled: data.scheduling.maybeResponsesEnabled,
           confirmationMethod: detail.confirmationMethod,
-          consensusCurrentlyPasses: data.anyCandidatePasses,
+          confirmRule: detail.confirmRule,
+          consensusCurrentlyPasses: confirmedEventConsensusPassesForDisplay(
+            data.anyCandidatePasses,
+            detail.confirmationMethod,
+          ),
         })
       : null;
+  const confirmRuleLine =
+    detail.status === "proposing" ? eventConfirmRuleDisplayLine(detail.confirmRule) : null;
+  const waitingOnHost =
+    detail.status === "proposing" &&
+    eventShowsWaitingOnHost(data.consensus.candidates);
 
   const viewerReleasableContributions = data.eventContributions.filter(
     (row) =>
@@ -118,12 +137,33 @@ export function EventHeroMeta({
 
   return (
     <div className="mt-5 space-y-5">
+      {data.organiserPicksConfirm ? (
+        <HuiSurface tone="sage" shape="soft" padding="md" className="hui-rise-2" role="status">
+          <p className="text-lg font-extrabold text-foreground">Ready to confirm a time?</p>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
+            {organiserPicksHostHasSaidYesOnCandidate(
+              data.organiserPicksConfirm.candidateId,
+              data.acceptedHostUserId,
+              data.attendanceRosters,
+            )
+              ? "The host has said Yes. Pick the time you want to lock in for the group."
+              : "Pick the time you want to lock in for the group."}
+          </p>
+          <div className="mt-4">
+            <ConfirmThisTimeButton
+              eventId={detail.id}
+              candidateId={data.organiserPicksConfirm.candidateId}
+            />
+          </div>
+        </HuiSurface>
+      ) : null}
       {inviteToken ? (
         <GroupInviteShareBlock
           groupName={detail.groupName}
           inviteToken={inviteToken}
           appOrigin={appOrigin}
           focusEventId={detail.id}
+          focusHuiTitle={detail.title}
           variant="page"
         />
       ) : null}
@@ -145,6 +185,14 @@ export function EventHeroMeta({
             {confirmedStatusLine ? (
               <p className="mt-3 text-sm font-semibold text-muted-foreground" role="status">
                 {confirmedStatusLine}
+              </p>
+            ) : null}
+            {confirmRuleLine ? (
+              <p className="mt-2 text-sm font-semibold text-muted-foreground">{confirmRuleLine}</p>
+            ) : null}
+            {waitingOnHost ? (
+              <p className="mt-2 text-sm font-extrabold text-foreground" role="status">
+                {WAITING_ON_HOST_STATUS_MESSAGE}
               </p>
             ) : null}
           </div>
@@ -367,7 +415,8 @@ export async function EventPeopleCard({ detail, userId }: SectionProps) {
             </li>
           ))}
           <p className="hui-type-supporting text-center">
-            Shapes show how people answered. Private notes are never shown.
+            Icons around the table show how people answered (full = yes, dashed = maybe). Private
+            notes are never shown.
           </p>
         </ul>
       ) : presentation.mode === "single" && presentation.roster && presentation.roster.members.length > 0 ? (
@@ -379,7 +428,8 @@ export async function EventPeopleCard({ detail, userId }: SectionProps) {
             className="mt-4"
           />
           <p className="hui-type-supporting mt-4 text-center">
-            Shapes show how people answered. Private notes are never shown.
+            Icons around the table show how people answered (full = yes, dashed = maybe). Private
+            notes are never shown.
           </p>
         </>
       ) : (
@@ -585,7 +635,13 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
     status: detail.status,
     startsAt: detail.startsAt,
     timeZone: data.displayTimeZone,
-    consensusCurrentlyPasses: detail.status === "confirmed" ? data.anyCandidatePasses : undefined,
+    consensusCurrentlyPasses:
+      detail.status === "confirmed"
+        ? confirmedEventConsensusPassesForDisplay(
+            data.anyCandidatePasses,
+            detail.confirmationMethod,
+          )
+        : undefined,
     candidateCount: data.scheduling.candidates.length,
     passingCandidateCount: data.consensus.candidates.filter((candidate) => candidate.passes).length,
   });

@@ -34,6 +34,7 @@ function makeUpcoming(overrides: Partial<HomeEvent> = {}): HomeEvent {
     proposalDatePassed: false,
     relativeDayChip: null,
     consensusCurrentlyPasses: null,
+    confirmationMethod: null,
     ...overrides,
   };
 }
@@ -63,5 +64,22 @@ describe("GroupCardGatherings", () => {
     expect(screen.getByText("Cancelled:")).toBeInTheDocument();
     expect(screen.getByText("QA 0183 Cancelled picnic")).toBeInTheDocument();
     expect(screen.getAllByText("Cancelled").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("shows a cancelled hui date from proposed times when starts_at is unset", () => {
+    render(
+      <GroupCardGatherings
+        upcoming={null}
+        cancelled={[
+          makeCancelled({
+            startsAt: "2026-11-12T06:00:00.000Z",
+            title: "R7 OrgPicksHost",
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText(/12 Nov/i)).toBeInTheDocument();
+    expect(screen.queryByText("Date not set")).not.toBeInTheDocument();
   });
 });

@@ -4,9 +4,9 @@
 
 The app version lives in **`package.json`** (`version` field). The UI footer and support copy read it from there — do not hard-code versions elsewhere.
 
-**Current line:** `0.18.6` — pre-beta: respond-flow reliability (concurrent multi-time saves, inline errors, loading skeleton).
+**Current line:** `0.18.7` — pre-beta: blind UX fixes (invite CTAs, propose/respond clarity, vocabulary, onboarding order).
 
-**Previous release:** `0.18.5` — pre-beta: polish for re-asking time copy, cancelled list visibility, and dietary sharing with no entries.
+**Previous release:** `0.18.6` — pre-beta: respond-flow reliability (concurrent multi-time saves, inline errors, loading skeleton).
 
 **Earlier:** `0.18.2` — pre-beta: the core coordination loop is largely in place (propose → respond → confirm → recurring cycle, notifications, profile), but we have not declared a public beta yet. `0.9.x` signals “almost beta” without implying production GA.
 
