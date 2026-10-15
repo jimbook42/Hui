@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { fetchEventLifecycleStatusAction } from "@/app/events/actions";
@@ -23,18 +23,16 @@ export function EventLifecycleLiveRefresh({
   status: EventStatus;
 }) {
   const router = useRouter();
-  const statusRef = useRef(status);
-  statusRef.current = status;
 
   const pollLifecycleStatus = useCallback(async () => {
     const result = await fetchEventLifecycleStatusAction(eventId);
     if ("error" in result) {
       return;
     }
-    if (result.status === "confirmed" && statusRef.current !== "confirmed") {
+    if (result.status === "confirmed" && status !== "confirmed") {
       router.refresh();
     }
-  }, [eventId, router]);
+  }, [eventId, router, status]);
 
   useEffect(() => {
     if (!LIVE_STATUSES.includes(status)) {

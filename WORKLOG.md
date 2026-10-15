@@ -1,5 +1,9 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX3-fix7 lint
+
+- `EventLifecycleLiveRefresh`: drop ref sync during render; poll callback reads `status` from deps (fixes `react-hooks/refs` CI error).
+
 ## 2026-10-16 — HUI-UX3-fix6 gaps (fix5 review)
 
 - Event/respond pages: poll `fetchEventLifecycleStatusAction` every 10s and on focus/visibility when hui is still open; refresh on confirm (realtime kept).
