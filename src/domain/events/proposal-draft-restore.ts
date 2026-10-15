@@ -53,11 +53,13 @@ export function resolveProposalFlowStateFromClient(input: {
     todayDateOnly: input.todayDateOnly,
   });
   const initialDate = initialCandidateDateFromDraft(initialDraft, input.planningCycle);
-  const establishedRecurrence = groupHasEstablishedRecurrence(input.settings);
+  const establishedRecurrence = groupHasEstablishedRecurrence(input.settings, {
+    isFirstGroupEvent: input.isFirstGroupEvent,
+  });
 
   const storedDraft = readStoredProposalDraft(input.groupId);
   if (storedDraft?.draft) {
-    if (establishedRecurrence) {
+    if (establishedRecurrence || !input.isFirstGroupEvent) {
       const cadenceDraft = buildInitialProposalDraft(input.settings, {
         groupName: input.groupName,
         cycle: input.planningCycle,

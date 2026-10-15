@@ -1,7 +1,11 @@
 import { test, expect } from "@playwright/test";
 
 import { signInWithEmail } from "./helpers/email-auth";
-import { createGroup } from "./helpers/propose-event";
+import {
+  createGroup,
+  proposeFirstRecurringHui,
+  proposeSecondRecurringHui,
+} from "./helpers/propose-event";
 import { hasPublicSupabaseConfig } from "../src/lib/supabase/env";
 
 const hasLiveAuth =
@@ -17,6 +21,20 @@ test("unauthenticated group settings URL redirects to sign-in", async ({ page })
 test.describe("live group smoke", () => {
   test.skip(!hasLiveAuth, "Set E2E_TEST_EMAIL and E2E_TEST_PASSWORD for group smoke E2E");
 
+  test("second recurring propose shows planning date and submits", async ({ page }) => {
+    test.setTimeout(120_000);
+    const email = process.env.E2E_TEST_EMAIL!;
+    const password = process.env.E2E_TEST_PASSWORD!;
+    const groupName = `E2E second propose ${Date.now()}`;
+
+    await signInWithEmail(page, email, password);
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    const groupId = await createGroup(page, groupName);
+    await proposeFirstRecurringHui(page, groupId, `First ${Date.now()}`, "2032-03-10");
+    await proposeSecondRecurringHui(page, groupId, `Second ${Date.now()}`, "2032-04-10");
+  });
+
   test("legacy /groups/:id/settings redirects to group settings anchor", async ({ page }) => {
     const email = process.env.E2E_TEST_EMAIL!;
     const password = process.env.E2E_TEST_PASSWORD!;
@@ -28,7 +46,10 @@ test.describe("live group smoke", () => {
     const groupId = await createGroup(page, groupName);
     await page.goto(`/groups/${groupId}/settings`);
     await expect(page).toHaveURL(new RegExp(`/groups/${groupId}#group-settings`));
-    await expect(page.getByRole("heading", { name: "Group settings" })).toBeVisible();
+    const groupSettings = page.locator("#group-settings");
+    await expect(groupSettings).toBeVisible({ timeout: 15_000 });
+    await expect(groupSettings).toHaveJSProperty("open", true);
+    await expect(groupSettings.getByText("Group settings", { exact: true })).toBeVisible();
   });
 
   test("proposing a past date shows a confirmation dialog", async ({ page }) => {

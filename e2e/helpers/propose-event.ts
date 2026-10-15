@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 const GROUP_ID_IN_URL =
   /\/groups\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
@@ -19,6 +19,67 @@ export async function createGroup(page: Page, groupName: string): Promise<string
   await page.getByRole("button", { name: "Create group" }).click();
   await page.waitForURL(GROUP_ID_IN_URL);
   return parseGroupIdFromUrl(page.url());
+}
+
+/** First recurring hui on a new group (monthly cadence). */
+export async function proposeFirstRecurringHui(
+  page: Page,
+  groupId: string,
+  title: string,
+  date: string,
+): Promise<string> {
+  await page.goto(`/groups/${groupId}/events/new`);
+  await page.getByLabel("Type of hui").selectOption({ label: "Meeting" });
+  await page.getByLabel("Name this hui (optional)").fill(title);
+  await page.locator("label").filter({ hasText: /^Monthly$/ }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("heading", { name: "When could it happen?" }).waitFor();
+  await page.getByLabel("Date").fill(date);
+  await page.getByRole("button", { name: "Add time" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("heading", { name: "Ready to propose?" }).waitFor();
+  await page.getByRole("button", { name: "Propose this hui" }).click();
+  await page.waitForURL(/\/events\/[0-9a-f-]{36}/);
+  const match = page.url().match(/events\/([0-9a-f-]{36})/);
+  if (!match) {
+    throw new Error("Could not read event id after propose");
+  }
+  return match[1];
+}
+
+/** Second+ recurring hui (established group cadence). */
+export async function proposeSecondRecurringHui(
+  page: Page,
+  groupId: string,
+  title: string,
+  date: string,
+): Promise<string> {
+  await page.goto(`/groups/${groupId}/events/new`);
+  await page.getByLabel("Type of hui").selectOption({ label: "Meeting" });
+  await page.getByLabel("Name this hui (optional)").fill(title);
+  await expectPlanningDateField(page, date);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("heading", { name: "When could it happen?" }).waitFor();
+  await page.getByLabel("Date").fill(date);
+  await page.getByRole("button", { name: "Add time" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("heading", { name: "Ready to propose?" }).waitFor();
+  await page.getByRole("button", { name: "Propose this hui" }).click();
+  await page.waitForURL(/\/events\/[0-9a-f-]{36}/, { timeout: 90_000 });
+  const match = page.url().match(/events\/([0-9a-f-]{36})/);
+  if (!match) {
+    throw new Error("Could not read event id after second propose");
+  }
+  return match[1];
+}
+
+async function expectPlanningDateField(page: Page, fallbackDate: string): Promise<void> {
+  const planningDate = page.getByLabel("Planning date for this cycle");
+  await expect(planningDate).toBeVisible();
+  const value = await planningDate.inputValue();
+  if (!value.trim()) {
+    await planningDate.fill(fallbackDate);
+  }
 }
 
 /** Create a one-off hui with multiple proposed times (planning wizard). */
@@ -67,10 +128,12 @@ export async function setGroupMinimumAttendees(
   await page.waitForURL(new RegExp(`/groups/${groupId}#group-settings`));
 
   const groupSettings = page.locator("#group-settings");
-  await groupSettings.waitFor();
-  if (!(await groupSettings.evaluate((el) => (el as HTMLDetailsElement).open))) {
-    await groupSettings.locator(":scope > summary").click();
-  }
+  await groupSettings.waitFor({ state: "attached", timeout: 15_000 });
+  await expect
+    .poll(async () => groupSettings.evaluate((el) => (el as HTMLDetailsElement).open), {
+      timeout: 15_000,
+    })
+    .toBe(true);
 
   const advanced = groupSettings.locator("details.hui-details");
   if (!(await advanced.evaluate((el) => (el as HTMLDetailsElement).open))) {

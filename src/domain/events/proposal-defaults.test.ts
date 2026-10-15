@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildInitialProposalDraft,
   fillRecurringPlanningDates,
+  groupHasEstablishedRecurrence,
   initialCandidateDateFromDraft,
 } from "./proposal-defaults";
 import type { GroupSettingsRow } from "@/lib/groups/types";
@@ -32,6 +33,18 @@ const baseSettings: GroupSettingsRow = {
 };
 
 describe("proposal defaults (HUI-031 tier-2)", () => {
+  it("treats recurring groups with prior huis as established for propose UX", () => {
+    const freshSettings: GroupSettingsRow = {
+      ...baseSettings,
+      canonicalRecurrenceSeriesId: null,
+      recurrenceIntervalUnit: null,
+      recurrenceIntervalCount: null,
+      recurrenceAnchorDate: null,
+    };
+    expect(groupHasEstablishedRecurrence(freshSettings, { isFirstGroupEvent: true })).toBe(false);
+    expect(groupHasEstablishedRecurrence(freshSettings, { isFirstGroupEvent: false })).toBe(true);
+  });
+
   it("6: prefill uses next open nominal, not a past completed cycle", () => {
     const cycle: GroupPlanningCycle = {
       cadence: {

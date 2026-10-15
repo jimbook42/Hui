@@ -128,7 +128,7 @@ export function CreateEventProposalFlow({
   useEffect(() => {
     if (
       !isFirstGroupEvent ||
-      groupHasEstablishedRecurrence(settings) ||
+      groupHasEstablishedRecurrence(settings, { isFirstGroupEvent }) ||
       draft.eventKind !== "recurring" ||
       !draft.recurrence
     ) {
@@ -172,7 +172,7 @@ export function CreateEventProposalFlow({
     formatDateTimeLocalInTimeZone(defaultReplyDeadlineIso, settings.timezone),
   );
 
-  const establishedRecurrence = groupHasEstablishedRecurrence(settings);
+  const establishedRecurrence = groupHasEstablishedRecurrence(settings, { isFirstGroupEvent });
   const [meetFrequency, setMeetFrequency] = useState<StoredMeetFrequency>(null);
 
   useEffect(() => {
@@ -336,9 +336,8 @@ export function CreateEventProposalFlow({
         let next = { ...current, candidates: merged.candidates };
         if (
           next.eventKind === "recurring" &&
-          isFirstGroupEvent &&
-          !establishedRecurrence &&
-          merged.candidates[0]
+          merged.candidates[0] &&
+          !next.recurrence?.planningTargetDate?.trim()
         ) {
           const nominal = dateOnlyFromIso(merged.candidates[0].startsAt, settings.timezone);
           next = {

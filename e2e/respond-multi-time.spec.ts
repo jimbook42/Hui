@@ -99,6 +99,7 @@ test.describe("multi-time respond reliability (HUI-0186)", () => {
     const title = `E2E row stability ${Date.now()}`;
 
     await signInWithEmail(page, email, password);
+    await expect(page).toHaveURL(/\/dashboard/);
     const groupId = await createGroup(page, groupName);
     await setGroupMinimumAttendees(page, groupId, 99);
     const eventId = await proposeOneOffHuiWithTimes(page, groupId, title, [

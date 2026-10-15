@@ -10,12 +10,25 @@ import {
   proposalPrefillFromCycle,
 } from "@/domain/recurrence/planning-cycle";
 
-/** Group has configured cadence or an active recurrence series — not a brand-new casual group. */
-export function groupHasEstablishedRecurrence(settings: GroupSettingsRow): boolean {
+type EstablishedRecurrenceContext = {
+  isFirstGroupEvent?: boolean;
+};
+
+/** Group has configured cadence, an active series, or prior huis on a recurring-enabled group. */
+export function groupHasEstablishedRecurrence(
+  settings: GroupSettingsRow,
+  context?: EstablishedRecurrenceContext,
+): boolean {
   if (settings.canonicalRecurrenceSeriesId) {
     return true;
   }
-  return cadenceFromGroupSettings(settings) !== null;
+  if (cadenceFromGroupSettings(settings) !== null) {
+    return true;
+  }
+  if (context?.isFirstGroupEvent === false && settings.recurringEventsEnabled) {
+    return true;
+  }
+  return false;
 }
 
 /** Default event kind when proposing from a group. */
@@ -23,7 +36,7 @@ export function defaultProposalEventKind(
   settings: GroupSettingsRow,
   context?: { isFirstGroupEvent?: boolean },
 ): EventProposalDraft["eventKind"] {
-  if (context?.isFirstGroupEvent && !groupHasEstablishedRecurrence(settings)) {
+  if (context?.isFirstGroupEvent && !groupHasEstablishedRecurrence(settings, context)) {
     return settings.oneOffEventsAllowed ? "one_off" : "recurring";
   }
   if (settings.recurringEventsEnabled) {
@@ -70,7 +83,9 @@ export function buildInitialProposalDraft(
   if (
     eventKind === "recurring" &&
     options.isFirstGroupEvent &&
-    !groupHasEstablishedRecurrence(settings)
+    !groupHasEstablishedRecurrence(settings, {
+      isFirstGroupEvent: options.isFirstGroupEvent,
+    })
   ) {
     resolvedStartsOn = "";
     planningTargetDate = null;
@@ -84,7 +99,13 @@ export function buildInitialProposalDraft(
     notes: "",
     eventKind,
     recurrence: {
-      seriesTitle: prefill?.seriesTitle ?? (groupHasEstablishedRecurrence(settings) ? options.groupName : ""),
+      seriesTitle:
+        prefill?.seriesTitle ??
+        (groupHasEstablishedRecurrence(settings, {
+          isFirstGroupEvent: options.isFirstGroupEvent,
+        })
+          ? options.groupName
+          : ""),
       intervalUnit,
       intervalCount,
       startsOn: resolvedStartsOn,

@@ -37,6 +37,7 @@ describe("second propose on established groups", () => {
       isFirstGroupEvent: false,
       todayDateOnly: "2026-10-15",
     });
+    expect(resolved.draft.recurrence?.planningTargetDate).toBeTruthy();
 
     const submit = validateEventProposalDraft(
       {

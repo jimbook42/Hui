@@ -1,5 +1,11 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX3-fix12 second propose + settings hash (PR #49)
+
+- **Second propose:** `groupHasEstablishedRecurrence` treats prior huis (`isFirstGroupEvent: false` + recurring enabled) as established when group cadence columns are still empty; restore path merges cadence draft; candidate merge backfills `planningTargetDate`. E2E: first then second recurring propose.
+- **Settings redirect:** `HashDisclosureOpener` on group page + retry; `DisclosureCard` omits controlled `open` when closed so hash deep links can open `<details>`; legacy settings redirect e2e.
+- **Respond e2e:** dashboard wait after sign-in; settings helper waits for hash-open.
+
 ## 2026-10-16 — HUI-UX3-fix11 review gaps (PR #49)
 
 - Respond: reserve check-icon width on attendance choices; Playwright `boundingBox()` row stability across Saving/Saved.
