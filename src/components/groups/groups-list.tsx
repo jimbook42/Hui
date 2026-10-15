@@ -10,8 +10,8 @@ import { formatClockTime, formatShortDay, relativeDayLabel } from "@/domain/date
 import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { eventDetailPath } from "@/lib/events/paths";
-import { loadHomeData, type HomeEvent } from "@/lib/events/home-data";
-import { listGroupPreviews } from "@/lib/groups/previews";
+import type { HomeEvent } from "@/lib/events/home-data";
+import { loadGroupsListSurfaceData } from "@/lib/groups/list-surfaces";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 import { cn } from "@/lib/ui/cn";
 
@@ -52,8 +52,8 @@ export async function GroupsList() {
     return null;
   }
   const supabase = await getServerSupabase();
-  const home = await devTimed("groups-page:list", () =>
-    loadHomeData(supabase, user.id, { skipRosters: true }),
+  const { home, previews } = await devTimed("groups-page:surface", () =>
+    loadGroupsListSurfaceData(supabase, user.id),
   );
   const groups = home.groups;
 
@@ -71,30 +71,7 @@ export async function GroupsList() {
     );
   }
 
-  const [previews, appOrigin, inviteTokens] = await Promise.all([
-    devTimed("groups-page:previews", () =>
-      listGroupPreviews(
-        supabase,
-        groups.map((group) => group.id),
-      ),
-    ),
-    resolveAuthRedirectOrigin(),
-    devTimed("groups-page:invite-tokens", () =>
-      Promise.all(
-        groups.map(async (group) => {
-          const { data, error } = await supabase.rpc("get_group_invite_link", {
-            p_group_id: group.id,
-          });
-          const token = !error && typeof data === "string" ? data : null;
-          return [group.id, token] as const;
-        }),
-      ),
-    ),
-  ]);
-
-  const inviteTokenByGroupId = new Map(
-    inviteTokens.filter((entry): entry is [string, string] => entry[1] != null),
-  );
+  const appOrigin = await resolveAuthRedirectOrigin();
 
   return (
     <ul className="mt-2 space-y-5">
@@ -103,8 +80,6 @@ export async function GroupsList() {
         const preview = previews.get(group.id);
         const next = nextEventFor(home.events, group.id);
         const memberCount = preview?.memberCount ?? 0;
-        const inviteToken = inviteTokenByGroupId.get(group.id);
-
         return (
           <li key={group.id} className="hui-rise" style={{ animationDelay: `${Math.min(index, 6) * 60}ms` }}>
             <article
@@ -139,16 +114,14 @@ export async function GroupsList() {
                 <ChevronRightIcon size={22} className="mt-1 shrink-0 text-muted-foreground" />
               </div>
 
-              {inviteToken ? (
-                <div className="mt-4">
-                  <GroupInviteShareBlock
-                    groupName={group.name}
-                    inviteToken={inviteToken}
-                    appOrigin={appOrigin}
-                    variant="card"
-                  />
-                </div>
-              ) : null}
+              <div className="mt-4">
+                <GroupInviteShareBlock
+                  groupId={group.id}
+                  groupName={group.name}
+                  appOrigin={appOrigin}
+                  variant="card"
+                />
+              </div>
 
               <div className="mt-5 flex items-center gap-3">
                 <AvatarStack

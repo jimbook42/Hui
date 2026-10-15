@@ -42,7 +42,7 @@ import type {
 } from "@/domain/scheduling/types";
 import { ACTIVE_CANDIDATE_STATUSES } from "@/domain/scheduling/types";
 import { listOpenDecisionsForEvents } from "@/lib/decisions/queries";
-import { getCandidateAttendanceRoster } from "@/lib/scheduling/queries";
+import { buildAttendanceRoster, type RosterMemberRow } from "@/lib/scheduling/queries";
 
 const DEFAULT_TIME_ZONE = "Pacific/Auckland";
 const OPEN_STATUSES: EventStatus[] = ["proposing", "voting", "awaiting_agreement", "reopened", "confirmed"];
@@ -237,7 +237,7 @@ export async function loadHomeData(
       groupIds.length > 0
         ? supabase
             .from("group_memberships")
-            .select("group_id, user_id, consensus_required")
+            .select("group_id, user_id, consensus_required, profiles:user_id ( display_name )")
             .in("group_id", groupIds)
             .eq("status", "active")
         : Promise.resolve({ data: [], error: null }),
@@ -288,10 +288,12 @@ export async function loadHomeData(
   }
 
   const membersByGroup = new Map<string, ConsensusMember[]>();
+  const rosterMembersByGroup = new Map<string, RosterMemberRow[]>();
   for (const row of (membersResult.data ?? []) as Array<{
     group_id: string;
     user_id: string;
     consensus_required: boolean | null;
+    profiles: { display_name: string } | { display_name: string }[] | null;
   }>) {
     const list = membersByGroup.get(row.group_id) ?? [];
     list.push({
@@ -299,6 +301,15 @@ export async function loadHomeData(
       consensusRequired: row.consensus_required === true,
     });
     membersByGroup.set(row.group_id, list);
+
+    const rawProfile = row.profiles;
+    const profile = Array.isArray(rawProfile) ? rawProfile[0] : rawProfile;
+    const rosterList = rosterMembersByGroup.get(row.group_id) ?? [];
+    rosterList.push({
+      userId: row.user_id,
+      displayName: profile?.display_name?.trim() ? profile.display_name.trim() : "Member",
+    });
+    rosterMembersByGroup.set(row.group_id, rosterList);
   }
 
   const pickedByEvent = new Map<string, CandidateRow | null>();
@@ -508,15 +519,52 @@ export async function loadHomeData(
     .sort((a, b) => rank[a.bucket] - rank[b.bucket] || compareSoonest(a, b))
     .slice(0, ROSTER_FANOUT);
 
-  const rosters = await Promise.all(
-    rosterTargets.map(async (event) => ({
-      id: event.id,
-      roster: await getCandidateAttendanceRoster(supabase, event.candidateId as string),
-    })),
-  );
-  for (const { id, roster } of rosters) {
-    const target = events.find((event) => event.id === id);
-    if (target && roster) {
+  const rosterCandidateIds = rosterTargets
+    .map((event) => event.candidateId)
+    .filter((id): id is string => id != null);
+
+  const rosterResponsesResult =
+    rosterCandidateIds.length > 0
+      ? await supabase
+          .from("event_responses")
+          .select("candidate_id, user_id, response, submitted_late")
+          .in("candidate_id", rosterCandidateIds)
+      : { data: [], error: null };
+  if (rosterResponsesResult.error) {
+    throw new Error(rosterResponsesResult.error.message);
+  }
+
+  const responsesByCandidate = new Map<string, Map<string, { response: "yes" | "no" | "maybe" | null; submittedLate: boolean }>>();
+  for (const row of (rosterResponsesResult.data ?? []) as Array<{
+    candidate_id: string;
+    user_id: string;
+    response: DbResponseValue | null;
+    submitted_late: boolean | null;
+  }>) {
+    const byUser = responsesByCandidate.get(row.candidate_id) ?? new Map();
+    const response =
+      row.response === "yes" || row.response === "no" || row.response === "maybe"
+        ? row.response
+        : null;
+    byUser.set(row.user_id, {
+      response,
+      submittedLate: row.submitted_late === true,
+    });
+    responsesByCandidate.set(row.candidate_id, byUser);
+  }
+
+  for (const event of rosterTargets) {
+    const candidateId = event.candidateId as string;
+    const groupSettings = settingsByGroup.get(event.groupId);
+    const maybeEnabled = groupSettings?.maybe ?? true;
+    const members = rosterMembersByGroup.get(event.groupId) ?? [];
+    const roster = buildAttendanceRoster(
+      members,
+      maybeEnabled,
+      responsesByCandidate.get(candidateId) ?? new Map(),
+    );
+    const target = events.find((row) => row.id === event.id);
+    if (target) {
       target.roster = roster;
       target.counts = countAttendance(roster.members, roster.maybeResponsesEnabled);
     }

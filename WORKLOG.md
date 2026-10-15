@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-15 — HUI-LOGS-N+1 list surface query batching (v0.18.3)
+
+- Batch dashboard recurring planning (settings, events, recurrence prefs/skips) and build home attendance rosters without per-candidate RPC fan-out.
+- `/groups` loads invite links lazily on Invite click; request-budget vitest asserts <15 Supabase calls for 40-group fixtures.
+
 ## 2026-10-15 — HUI-0182 Facebook login feature flag (v0.18.2)
 
 - Gate Facebook OAuth UI and server start on `NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN === "true"` via `getEnabledOAuthProviderIds`; Google/Microsoft unchanged.

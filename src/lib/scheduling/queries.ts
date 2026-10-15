@@ -11,6 +11,46 @@ import { ACTIVE_CANDIDATE_STATUSES } from "@/domain/scheduling/types";
 
 import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 
+export type RosterMemberRow = {
+  userId: string;
+  displayName: string;
+};
+
+type RosterResponseRow = {
+  response: "yes" | "no" | "maybe" | null;
+  submittedLate: boolean;
+};
+
+/** Matches `candidate_attendance_roster` ordering (display name, then user id). */
+export function sortRosterMembers(members: RosterMemberRow[]): RosterMemberRow[] {
+  return [...members].sort((a, b) => {
+    const byName = a.displayName.localeCompare(b.displayName);
+    if (byName !== 0) {
+      return byName;
+    }
+    return a.userId.localeCompare(b.userId);
+  });
+}
+
+export function buildAttendanceRoster(
+  members: RosterMemberRow[],
+  maybeResponsesEnabled: boolean,
+  responsesByUserId: Map<string, RosterResponseRow>,
+): AttendanceRoster {
+  return {
+    maybeResponsesEnabled,
+    members: sortRosterMembers(members).map((member) => {
+      const response = responsesByUserId.get(member.userId);
+      return {
+        userId: member.userId,
+        displayName: member.displayName,
+        response: response?.response ?? null,
+        submittedLate: response?.submittedLate ?? false,
+      };
+    }),
+  };
+}
+
 import type {
   CandidateConsensusView,
   EventCandidateRow,

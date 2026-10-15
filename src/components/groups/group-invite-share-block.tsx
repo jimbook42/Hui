@@ -1,5 +1,8 @@
 "use client";
 
+import { useCallback, useState } from "react";
+
+import { fetchMemberGroupInviteLinkAction } from "@/app/groups/invite-actions";
 import { GroupInviteIntroSheet } from "@/components/groups/group-invite-intro-sheet";
 import { InviteLinkFallbackSheet } from "@/components/groups/invite-link-fallback-sheet";
 import { useGroupInviteFlow } from "@/components/groups/use-group-invite-flow";
@@ -7,10 +10,26 @@ import { PeopleIcon } from "@/components/hui/icons";
 import { buildGroupInviteUrl } from "@/domain/invites/urls";
 import { cn } from "@/lib/ui/cn";
 
+function clientAppOrigin(fallback?: string): string {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+  if (fallback) {
+    return fallback;
+  }
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return "";
+}
+
 type GroupInviteShareBlockProps = {
   groupName: string;
-  inviteToken: string;
-  appOrigin: string;
+  /** When omitted, the link is fetched when the member opens invite UI (`groupId` required). */
+  inviteToken?: string;
+  groupId?: string;
+  appOrigin?: string;
   /** When set, invite link opens this hui after join. */
   focusEventId?: string;
   buttonLabel?: string;
@@ -21,16 +40,22 @@ type GroupInviteShareBlockProps = {
 
 export function GroupInviteShareBlock({
   groupName,
-  inviteToken,
-  appOrigin,
+  inviteToken: inviteTokenProp,
+  groupId,
+  appOrigin: appOriginProp,
   focusEventId,
   buttonLabel = "Invite",
   variant = "page",
   className,
 }: GroupInviteShareBlockProps) {
-  const inviteUrl = buildGroupInviteUrl(appOrigin, inviteToken, {
-    focusEventId,
-  });
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [resolvePending, setResolvePending] = useState(false);
+
+  const staticInviteUrl =
+    inviteTokenProp && appOriginProp
+      ? buildGroupInviteUrl(appOriginProp, inviteTokenProp, { focusEventId })
+      : "";
+
   const {
     introOpen,
     fallbackOpen,
@@ -39,7 +64,56 @@ export function GroupInviteShareBlock({
     closeIntro,
     closeFallback,
     getLink,
-  } = useGroupInviteFlow(inviteUrl, groupName);
+  } = useGroupInviteFlow(staticInviteUrl, groupName);
+
+  const [fallbackInviteUrl, setFallbackInviteUrl] = useState(staticInviteUrl);
+  const inviteUrl = staticInviteUrl || fallbackInviteUrl;
+
+  const resolveInviteUrl = useCallback(async (): Promise<string | null> => {
+    if (staticInviteUrl) {
+      return staticInviteUrl;
+    }
+    if (!groupId) {
+      setResolveError("Invite link is not available.");
+      return null;
+    }
+
+    setResolvePending(true);
+    setResolveError(null);
+    try {
+      const linkResult = await fetchMemberGroupInviteLinkAction(groupId);
+      if (linkResult.error) {
+        setResolveError(linkResult.error);
+        return null;
+      }
+      const token = linkResult.token;
+      if (!token) {
+        setResolveError("Could not load invite link.");
+        return null;
+      }
+
+      const origin = clientAppOrigin(appOriginProp);
+      if (!origin) {
+        setResolveError("Could not determine app URL for invite link.");
+        return null;
+      }
+
+      const url = buildGroupInviteUrl(origin, token, { focusEventId });
+      setFallbackInviteUrl(url);
+      return url;
+    } finally {
+      setResolvePending(false);
+    }
+  }, [appOriginProp, focusEventId, groupId, staticInviteUrl]);
+
+  const handleOpenIntro = useCallback(() => {
+    void (async () => {
+      const url = await resolveInviteUrl();
+      if (url) {
+        openIntro(url);
+      }
+    })();
+  }, [openIntro, resolveInviteUrl]);
 
   const buttonClassName =
     variant === "onPrimary"
@@ -51,13 +125,22 @@ export function GroupInviteShareBlock({
           : "hui-focus-ring inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-extrabold text-primary-foreground hui-shadow-sm";
 
   const iconSize = variant === "welcome" ? 20 : 18;
+  const pending = resolvePending || getLinkPending;
 
   return (
     <>
-      <button type="button" onClick={openIntro} className={cn(buttonClassName, className)}>
+      <button
+        type="button"
+        onClick={handleOpenIntro}
+        disabled={pending}
+        className={cn(buttonClassName, className)}
+      >
         <PeopleIcon size={iconSize} />
-        {buttonLabel}
+        {pending ? "Loading…" : buttonLabel}
       </button>
+      {resolveError ? (
+        <p className="mt-1 text-xs font-semibold text-destructive" role="alert">{resolveError}</p>
+      ) : null}
       <GroupInviteIntroSheet
         open={introOpen}
         groupName={groupName}
