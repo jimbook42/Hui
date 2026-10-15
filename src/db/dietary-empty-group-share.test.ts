@@ -97,6 +97,8 @@ describe("dietary: empty group share (HUI-0185)", () => {
 
   afterEach(async () => {
     await asUser(db, null);
+    await db.query(`delete from public.dietary_entry_shares`);
+    await db.query(`delete from public.dietary_entries`);
     await db.query(`delete from public.dietary_empty_group_shares`);
     await db.query(
       `insert into public.group_memberships (group_id, user_id, role)
@@ -143,5 +145,52 @@ describe("dietary: empty group share (HUI-0185)", () => {
     ]);
 
     expect(await listFor(ownerId)).toEqual([]);
+  });
+
+  it("does not auto-share new entries when empty share is enabled; explicit share lists the entry", async () => {
+    await asUser(db, memberId);
+    await db.query(
+      `insert into public.dietary_empty_group_shares (user_id, group_id) values ($1, $2)`,
+      [memberId, groupId],
+    );
+
+    const entryId = (
+      await db.query<{ id: string }>(
+        `insert into public.dietary_entries (user_id, category, label)
+         values ($1, 'requirement', $2)
+         returning id`,
+        [memberId, "Vegetarian"],
+      )
+    ).rows[0].id;
+
+    const shareCount = await db.query<{ count: string }>(
+      `select count(*)::text as count
+       from public.dietary_entry_shares
+       where group_id = $1 and dietary_entry_id = $2`,
+      [groupId, entryId],
+    );
+    expect(Number(shareCount.rows[0].count)).toBe(0);
+
+    expect(await listFor(ownerId)).toEqual([
+      {
+        label: "No dietary requirements",
+        scope: "empty",
+        user_id: memberId,
+      },
+    ]);
+
+    await asUser(db, memberId);
+    await db.query(
+      `insert into public.dietary_entry_shares (dietary_entry_id, group_id) values ($1, $2)`,
+      [entryId, groupId],
+    );
+
+    const rows = await listFor(ownerId);
+    expect(rows).toContainEqual({
+      label: "Vegetarian",
+      scope: "group",
+      user_id: memberId,
+    });
+    expect(rows.some((row) => row.label === "No dietary requirements")).toBe(false);
   });
 });

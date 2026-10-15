@@ -98,9 +98,11 @@ function DietarySharingScopeSection({
                     ? scope.entryCount === 0
                       ? "This group can see that you have no dietary requirements to share."
                       : "All your entries are shared with this group."
-                    : group.partial
-                      ? "Only some entries are shared — use the button below to share all of them with this group."
-                      : "Not shared with this group yet."}
+                    : group.emptyShareWithUnsharedEntries
+                      ? "This group still sees that you have no dietary requirements until you share an entry with them."
+                      : group.partial
+                        ? "Only some entries are shared — use the button below to share all of them with this group."
+                        : "Not shared with this group yet."}
                 </p>
                 <div className="mt-2">
                   <AuthForm
@@ -128,7 +130,34 @@ function DietarySharingScopeSection({
   );
 }
 
-function DietaryEntryCard({ entry }: { entry: UserDietaryEntry }) {
+function entryUnsharedEmptyGroupHints(
+  entry: UserDietaryEntry,
+  groups: UserGroupOption[],
+  emptyGroupShareIds: string[],
+): string[] {
+  const emptySet = new Set(emptyGroupShareIds);
+  if (entry.shareWithAllGroups) {
+    return [];
+  }
+  return groups
+    .filter(
+      (group) =>
+        emptySet.has(group.groupId) && !entry.shares.some((s) => s.groupId === group.groupId),
+    )
+    .map((group) => group.groupName);
+}
+
+function DietaryEntryCard({
+  entry,
+  groups,
+  emptyGroupShareIds,
+}: {
+  entry: UserDietaryEntry;
+  groups: UserGroupOption[];
+  emptyGroupShareIds: string[];
+}) {
+  const emptyShareHints = entryUnsharedEmptyGroupHints(entry, groups, emptyGroupShareIds);
+
   return (
     <li className="rounded-hui-md p-4 bg-muted">
       <div>
@@ -137,6 +166,15 @@ function DietaryEntryCard({ entry }: { entry: UserDietaryEntry }) {
           <p className="mt-1 text-sm text-muted-foreground">{entry.notes}</p>
         ) : null}
         <p className="mt-1 text-xs text-muted-foreground">{dietaryCategoryLabel(entry.category)}</p>
+        {emptyShareHints.length > 0 ? (
+          <ul className="mt-2 space-y-1">
+            {emptyShareHints.map((groupName) => (
+              <li key={groupName} className="text-xs text-amber-800 dark:text-amber-200">
+                Not shared with {groupName} yet — tap Share with group below.
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
       <div className="mt-6 pt-4">
@@ -194,7 +232,12 @@ export function DietarySettingsSection({
       ) : (
         <ul className="space-y-4">
           {entries.map((entry) => (
-            <DietaryEntryCard key={entry.id} entry={entry} />
+            <DietaryEntryCard
+              key={entry.id}
+              entry={entry}
+              groups={groups}
+              emptyGroupShareIds={emptyGroupShareIds}
+            />
           ))}
         </ul>
       )}

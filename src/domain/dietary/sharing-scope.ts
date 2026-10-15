@@ -7,6 +7,8 @@ export type DietaryGroupShareState = {
   enabled: boolean;
   /** Some but not all entries are shared — owner should pick a clear scope. */
   partial: boolean;
+  /** Empty-profile share is on but one or more entries are not shared with this group yet. */
+  emptyShareWithUnsharedEntries: boolean;
 };
 
 export type DietarySharingScopeState = {
@@ -36,12 +38,16 @@ export function deriveDietarySharingScope(
 
   const groupStates = groups.map((group) => {
     const sharedCount = entries.filter((entry) => entrySharedWithGroup(entry, group.groupId)).length;
-    const emptyShared = entries.length === 0 && emptyGroupSet.has(group.groupId);
+    const hasEmptyShare = emptyGroupSet.has(group.groupId);
+    const emptyShared = entries.length === 0 && hasEmptyShare;
+    const emptyShareWithUnsharedEntries =
+      hasEmptyShare && entries.length > 0 && sharedCount < entries.length;
     return {
       groupId: group.groupId,
       groupName: group.groupName,
       enabled: emptyShared || (entries.length > 0 && sharedCount === entries.length),
       partial: sharedCount > 0 && sharedCount < entries.length,
+      emptyShareWithUnsharedEntries,
     };
   });
 

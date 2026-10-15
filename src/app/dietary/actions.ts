@@ -53,42 +53,15 @@ export async function createDietaryEntryAction(
   }
 
   const { supabase, user } = await requireUser();
-  const { data: inserted, error } = await supabase
-    .from("dietary_entries")
-    .insert({
-      user_id: user.id,
-      category,
-      label,
-      notes,
-    })
-    .select("id")
-    .single();
+  const { error } = await supabase.from("dietary_entries").insert({
+    user_id: user.id,
+    category,
+    label,
+    notes,
+  });
 
   if (error) {
     return { error: error.message };
-  }
-
-  const { data: emptyShares, error: emptyError } = await supabase
-    .from("dietary_empty_group_shares")
-    .select("group_id")
-    .eq("user_id", user.id);
-  if (emptyError) {
-    return { error: emptyError.message };
-  }
-  for (const row of emptyShares ?? []) {
-    const groupId = row.group_id as string;
-    const { error: shareError } = await supabase.from("dietary_entry_shares").insert({
-      dietary_entry_id: inserted.id,
-      group_id: groupId,
-    });
-    if (shareError && shareError.code !== "23505") {
-      return { error: shareError.message };
-    }
-    await supabase
-      .from("dietary_empty_group_shares")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("group_id", groupId);
   }
 
   revalidateDietaryPaths();
@@ -191,6 +164,12 @@ export async function shareDietaryEntryAction(
   if (error) {
     return { error: error.message };
   }
+
+  await supabase
+    .from("dietary_empty_group_shares")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("group_id", groupId);
 
   revalidateDietaryPaths(groupId);
   return { message: "Shared with group." };
