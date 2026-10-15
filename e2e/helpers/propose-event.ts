@@ -29,19 +29,24 @@ export async function proposeOneOffHuiWithTimes(
   dates: string[],
 ): Promise<string> {
   await page.goto(`/groups/${groupId}/events/new`);
-  await page.locator("select").first().selectOption({ label: "Meeting" });
-  await page.getByLabel("Name this gathering (optional)").fill(title);
-  await page.locator("label").filter({ hasText: "Just this once" }).click();
+  await page.getByLabel("Type of hui").selectOption({ label: "Meeting" });
+  await page.getByLabel("Name this hui (optional)").fill(title);
+  const justOnce = page.getByRole("radio", { name: "Just this once" });
+  if (await justOnce.isVisible()) {
+    if (!(await justOnce.isChecked())) {
+      await page.locator("label").filter({ hasText: /^Just this once$/ }).click();
+    }
+  }
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("heading", { name: "When could it happen?" }).waitFor();
 
   for (const date of dates) {
-    await page.locator('input[type="date"]').fill(date);
+    await page.getByLabel("Date").fill(date);
     await page.getByRole("button", { name: "Add time" }).click();
   }
 
-  await page.locator("label").filter({ hasText: /^Skip$/ }).click().catch(() => undefined);
   await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("heading", { name: "Ready to propose?" }).waitFor();
   await page.getByRole("button", { name: "Propose this hui" }).click();
   await page.waitForURL(/\/events\/[0-9a-f-]{36}/);
 
