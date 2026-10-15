@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EventParticipantRespondFlow } from "@/components/events/event-participant-respond-flow";
 import { setAvailabilityResponseAction } from "@/app/events/scheduling-actions";
+import { ATTENDANCE_SAVE_CONNECTION_MESSAGE } from "@/domain/scheduling/availability-action-outcome";
 import type { EventCandidateRow } from "@/lib/scheduling/types";
 
 vi.mock("@/app/events/scheduling-actions", () => ({
@@ -104,8 +105,10 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     vi.clearAllMocks();
   });
 
-  it("fires three overlapping saves and keeps Yes selected on each time", async () => {
+  it("serializes three quick saves (one server action in flight) and keeps Yes on each time", async () => {
     const saveOrder: string[] = [];
+    let inFlight = 0;
+    let maxInFlight = 0;
     const release: Record<string, () => void> = {};
     const gates = new Map<string, Promise<void>>();
 
@@ -121,7 +124,10 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     vi.mocked(setAvailabilityResponseAction).mockImplementation(async (_prev, formData) => {
       const candidateId = String(formData.get("candidate_id"));
       saveOrder.push(candidateId);
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
       await gates.get(candidateId);
+      inFlight -= 1;
       return { message: "Response saved." };
     });
 
@@ -136,15 +142,16 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     await user.click(yesB);
     await user.click(yesC);
 
-    expect(saveOrder).toEqual(["cand-a", "cand-b", "cand-c"]);
-
-    release["cand-c"]();
-    await waitFor(() => expect(yesC).toHaveAttribute("aria-pressed", "true"));
+    expect(saveOrder).toEqual(["cand-a"]);
+    expect(maxInFlight).toBe(1);
 
     release["cand-a"]();
-    await waitFor(() => expect(yesA).toHaveAttribute("aria-pressed", "true"));
+    await waitFor(() => expect(saveOrder).toEqual(["cand-a", "cand-b"]));
 
     release["cand-b"]();
+    await waitFor(() => expect(saveOrder).toEqual(["cand-a", "cand-b", "cand-c"]));
+
+    release["cand-c"]();
     await waitFor(() => {
       expect(yesA).toHaveAttribute("aria-pressed", "true");
       expect(yesB).toHaveAttribute("aria-pressed", "true");
@@ -152,6 +159,39 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     });
 
     expect(setAvailabilityResponseAction).toHaveBeenCalledTimes(3);
+    expect(mockRefresh).not.toHaveBeenCalled();
+  });
+
+  it("shows friendly Retry copy when the action returns no payload (aborted)", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockResolvedValueOnce({} as never);
+
+    const user = userEvent.setup();
+    renderMultiTimeFlow();
+
+    await user.click(yesButtonForTime("Sat 24 Oct, 6:30pm"));
+
+    await screen.findByRole("alert");
+    expect(screen.getByText(ATTENDANCE_SAVE_CONNECTION_MESSAGE)).toBeInTheDocument();
+    expect(yesButtonForTime("Sat 24 Oct, 6:30pm")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("maps Failed to fetch to friendly copy and Retry re-sends the save", async () => {
+    vi.mocked(setAvailabilityResponseAction)
+      .mockRejectedValueOnce(new Error("Failed to fetch"))
+      .mockResolvedValueOnce({ message: "Response saved." });
+
+    const user = userEvent.setup();
+    renderMultiTimeFlow();
+
+    const yesB = yesButtonForTime("Sat 24 Oct, 6:30pm");
+    await user.click(yesB);
+
+    await screen.findByRole("alert");
+    expect(screen.getByText(ATTENDANCE_SAVE_CONNECTION_MESSAGE)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(yesB).toHaveAttribute("aria-pressed", "true"));
+    expect(setAvailabilityResponseAction).toHaveBeenCalledTimes(2);
   });
 
   it("shows an inline error with Retry when a save is rejected", async () => {
