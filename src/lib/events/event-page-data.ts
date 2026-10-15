@@ -40,6 +40,7 @@ import {
 } from "@/domain/hosts/permissions";
 import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 import { countAttendance } from "@/domain/scheduling/attendance-visual";
+import { organiserPicksCanConfirmNow } from "@/domain/scheduling/consensus-display";
 import {
   canAddCandidates,
   canFinaliseEvent,
@@ -270,6 +271,14 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
   const canCreateDecisions = canCreateEventDecisions(detail.status);
 
   const anyCandidatePasses = consensus.candidates.some((candidate) => candidate.passes);
+  const proposedIds = new Set(scheduling.candidates.map((row) => row.id));
+  const organiserPicksConfirm = organiserPicksCanConfirmNow(
+    canFinalise,
+    detail.status,
+    consensus.confirmRule,
+    consensus.candidates,
+    proposedIds,
+  );
 
   const attention = buildEventAttention({
     status: detail.status,
@@ -277,7 +286,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     canRespond,
     viewerResponse,
     canAcceptHostProposal: canAcceptHost,
-    canConfirmTime: canFinalise && anyCandidatePasses,
+    canConfirmTime: canFinalise && (anyCandidatePasses || organiserPicksConfirm !== null),
     unclaimedContributionCount,
     canCoordinateContributions: coordinateContributions,
     viewerHasContribution,
@@ -333,6 +342,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     hostSwapReplacementAvailable,
     showHostSection,
     anyCandidatePasses,
+    organiserPicksConfirm,
     viewerHomeLocation,
     decisionBundles,
     decisionPolls,

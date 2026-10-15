@@ -56,6 +56,45 @@ export function resolveProposalFlowStateFromClient(input: {
 
   const storedDraft = readStoredProposalDraft(input.groupId);
   if (storedDraft?.draft) {
+    if (establishedRecurrence) {
+      const cadenceDraft = buildInitialProposalDraft(input.settings, {
+        groupName: input.groupName,
+        cycle: input.planningCycle,
+        isFirstGroupEvent: input.isFirstGroupEvent,
+        todayDateOnly: input.todayDateOnly,
+      });
+      const draft: EventProposalDraft = {
+        ...cadenceDraft,
+        title: storedDraft.draft.title,
+        gatheringType: storedDraft.draft.gatheringType,
+        gatheringTypeCustom: storedDraft.draft.gatheringTypeCustom,
+        location: storedDraft.draft.location,
+        locationCoordinates: storedDraft.draft.locationCoordinates,
+        notes: storedDraft.draft.notes,
+        candidates: storedDraft.draft.candidates,
+        foodInvolvement: storedDraft.draft.foodInvolvement,
+        hostPlaceRequired: storedDraft.draft.hostPlaceRequired,
+        organiserWillHost: storedDraft.draft.organiserWillHost,
+        requestedContributions: storedDraft.draft.requestedContributions,
+        confirmRule: storedDraft.draft.confirmRule,
+      };
+      const meetFrequency = deriveMeetFrequencyFromDraft(draft, {
+        establishedRecurrence,
+        isFirstGroupEvent: input.isFirstGroupEvent,
+      });
+      return {
+        step: storedDraft.step,
+        draft,
+        timeDate:
+          storedDraft.timeDate ??
+          initialCandidateDateFromDraft(draft, input.planningCycle) ??
+          initialDate,
+        timeStart: storedDraft.timeStart ?? "12:00",
+        timeEnd: storedDraft.timeEnd ?? "",
+        meetFrequency,
+      };
+    }
+
     const meetFrequency =
       storedDraft.meetFrequency !== undefined
         ? storedDraft.meetFrequency

@@ -3,6 +3,7 @@ import { EventDecisionsSection } from "@/components/decisions/event-decisions-se
 import { HostEventPlaceHeroAction } from "@/components/events/host-event-place-hero-action";
 import { EventDietarySection } from "@/components/dietary/event-dietary-section";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
+import { ConfirmThisTimeButton } from "@/components/events/event-confirm-this-time-button";
 import { EventScheduling } from "@/components/events/event-scheduling";
 import { LiveGatheringVisual, ViewerResponseCard } from "@/components/events/attendance-live";
 import { DisclosureCard } from "@/components/hui/disclosure-card";
@@ -110,6 +111,7 @@ export function EventHeroMeta({
           counts: data.counts,
           maybeResponsesEnabled: data.scheduling.maybeResponsesEnabled,
           confirmationMethod: detail.confirmationMethod,
+          confirmRule: detail.confirmRule,
           consensusCurrentlyPasses: data.anyCandidatePasses,
         })
       : null;
@@ -128,6 +130,20 @@ export function EventHeroMeta({
 
   return (
     <div className="mt-5 space-y-5">
+      {data.organiserPicksConfirm ? (
+        <HuiSurface tone="sage" shape="soft" padding="md" className="hui-rise-2" role="status">
+          <p className="text-lg font-extrabold text-foreground">Ready to confirm a time?</p>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
+            The host has said Yes. Pick the time you want to lock in for the group.
+          </p>
+          <div className="mt-4">
+            <ConfirmThisTimeButton
+              eventId={detail.id}
+              candidateId={data.organiserPicksConfirm.candidateId}
+            />
+          </div>
+        </HuiSurface>
+      ) : null}
       {inviteToken ? (
         <GroupInviteShareBlock
           groupName={detail.groupName}

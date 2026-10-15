@@ -67,7 +67,7 @@ import {
   participantDoneToastMessage,
   participantSaveToastMessage,
 } from "@/domain/scheduling/participant-save-feedback";
-import { createAttendanceSaveSerializer } from "@/lib/scheduling/serialize-attendance-saves";
+import { createPerCandidateAttendanceSaveSerializers } from "@/lib/scheduling/serialize-attendance-saves";
 import { markHostPromptDeferred } from "@/lib/events/defer-host-prompt";
 import type { StandingAvailabilityHint } from "@/domain/scheduling/standing-availability";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
@@ -178,7 +178,22 @@ export function EventParticipantRespondFlow({
     endsAt: string | null;
     notice?: string;
   } | null>(null);
-  const multipleTimeOptions = pinnedMultiTimeSession.active && confirmedDuringVisit === null;
+  const confirmedFromServer = useMemo(() => {
+    if (eventStatus !== "confirmed") {
+      return null;
+    }
+    const selected = proposedCandidates.find((row) => row.status === "selected");
+    if (!selected) {
+      return null;
+    }
+    return {
+      id: selected.id,
+      startsAt: selected.startsAt,
+      endsAt: selected.endsAt,
+    };
+  }, [eventStatus, proposedCandidates]);
+  const effectiveConfirmedVisit = confirmedDuringVisit ?? confirmedFromServer;
+  const multipleTimeOptions = pinnedMultiTimeSession.active && effectiveConfirmedVisit === null;
   const [responsesByCandidate, setResponsesByCandidate] = useState<Record<string, AvailabilityChoice | null>>(
     () => {
       const initial: Record<string, AvailabilityChoice | null> = {};
@@ -188,23 +203,32 @@ export function EventParticipantRespondFlow({
       return initial;
     },
   );
+  const [persistedResponsesByCandidate, setPersistedResponsesByCandidate] = useState<
+    Record<string, AvailabilityChoice | null>
+  >(() => {
+    const initial: Record<string, AvailabilityChoice | null> = {};
+    for (const row of attendanceCandidates) {
+      initial[row.id] = row.viewerResponse;
+    }
+    return initial;
+  });
   const activeTimeCandidate = useMemo((): EventCandidateRow => {
-    if (!confirmedDuringVisit) {
+    if (!effectiveConfirmedVisit) {
       return candidate;
     }
-    const fromResponses = responsesByCandidate[confirmedDuringVisit.id];
+    const fromResponses = responsesByCandidate[effectiveConfirmedVisit.id];
     const fromProps =
-      proposedCandidates.find((row) => row.id === confirmedDuringVisit.id)?.viewerResponse ??
+      proposedCandidates.find((row) => row.id === effectiveConfirmedVisit.id)?.viewerResponse ??
       null;
     return {
       ...candidate,
-      id: confirmedDuringVisit.id,
-      startsAt: confirmedDuringVisit.startsAt,
-      endsAt: confirmedDuringVisit.endsAt,
+      id: effectiveConfirmedVisit.id,
+      startsAt: effectiveConfirmedVisit.startsAt,
+      endsAt: effectiveConfirmedVisit.endsAt,
       status: "selected",
       viewerResponse: fromResponses ?? fromProps,
     };
-  }, [candidate, confirmedDuringVisit, proposedCandidates, responsesByCandidate]);
+  }, [candidate, effectiveConfirmedVisit, proposedCandidates, responsesByCandidate]);
   const [pendingByCandidate, setPendingByCandidate] = useState<
     Record<string, AvailabilityChoice | null>
   >({});
@@ -226,7 +250,7 @@ export function EventParticipantRespondFlow({
     useState<Record<string, string>>(initialNotesByCandidate);
   const noteSaveTimersRef = useRef<Record<string, number>>({});
   const candidateSavePromisesRef = useRef<Record<string, Promise<void>>>({});
-  const runSerializedAttendanceSaveRef = useRef(createAttendanceSaveSerializer());
+  const runSerializedAttendanceSaveRef = useRef(createPerCandidateAttendanceSaveSerializers());
   const lastAttemptedChoiceByCandidateRef = useRef<Record<string, AvailabilityChoice>>({});
   const responsesByCandidateRef = useRef(responsesByCandidate);
   const noNoteRef = useRef(candidate.viewerPrivateNote ?? "");
@@ -502,7 +526,7 @@ export function EventParticipantRespondFlow({
       candidateTimeLabels[targetCandidateId] ??
       (targetCandidateId === candidate.id ? focusTimeLabel : "");
 
-    const savePromise = runSerializedAttendanceSaveRef.current(async () => {
+    const savePromise = runSerializedAttendanceSaveRef.current(targetCandidateId, async () => {
       try {
         markInteraction(interaction, "request-start");
         const noteForSave = readNoteForCandidate(targetCandidateId);
@@ -551,6 +575,10 @@ export function EventParticipantRespondFlow({
           return;
         }
         setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
+        setPersistedResponsesByCandidate((current) => ({
+          ...current,
+          [targetCandidateId]: choice,
+        }));
         if (multipleTimeOptions) {
           setSavedCandidateFlash((current) => ({ ...current, [targetCandidateId]: true }));
           window.setTimeout(() => {
@@ -671,8 +699,24 @@ export function EventParticipantRespondFlow({
   }
 
   const multiAnsweredCount = attendanceCandidates.filter(
-    (row) => responsesByCandidate[row.id] !== null,
+    (row) => persistedResponsesByCandidate[row.id] != null,
   ).length;
+  const hasPendingAttendanceSave = Object.values(pendingByCandidate).some(
+    (value) => value !== null && value !== undefined,
+  );
+
+  useEffect(() => {
+    if (!hasPendingAttendanceSave) {
+      return;
+    }
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasPendingAttendanceSave]);
+
   const allMultiTimesAnswered =
     multipleTimeOptions &&
     attendanceCandidates.every((row) => responsesByCandidate[row.id] !== null);

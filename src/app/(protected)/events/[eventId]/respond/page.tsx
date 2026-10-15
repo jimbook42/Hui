@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app/app-shell";
+import { EventLifecycleLiveRefresh } from "@/components/events/event-lifecycle-live-refresh";
 import { EventParticipantRespondFlow } from "@/components/events/event-participant-respond-flow";
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
 import { formatEventTimeRange } from "@/domain/datetime/timezone";
@@ -75,6 +76,7 @@ export default async function EventParticipantRespondPage({ params }: PageProps)
 
   return (
     <AppShell title="Your response">
+      <EventLifecycleLiveRefresh eventId={primary.detail.id} status={primary.detail.status} />
       <EventParticipantRespondFlow
         eventId={primary.detail.id}
         groupId={primary.detail.groupId}

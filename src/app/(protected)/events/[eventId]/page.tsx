@@ -20,6 +20,7 @@ import { StaleProposalSection } from "@/components/events/stale-proposal-section
 import { EventProposeInviteSection } from "@/components/events/event-propose-invite-section";
 import { EventRespondSavedToast } from "@/components/events/event-respond-saved-toast";
 import { AttendanceLiveProvider } from "@/components/events/attendance-live";
+import { EventLifecycleLiveRefresh } from "@/components/events/event-lifecycle-live-refresh";
 import { EventHero } from "@/components/hui/event-hero";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { loadEventPage } from "@/lib/events/event-page-data";
@@ -61,6 +62,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   return (
     <AppShell title={detail.title} hideTitle back={{ href: "/events", label: "Hui" }}>
       <AttendanceLiveProvider>
+        <EventLifecycleLiveRefresh eventId={detail.id} status={detail.status} />
         <Suspense fallback={null}>
           <EventRespondSavedToast />
         </Suspense>

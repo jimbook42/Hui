@@ -789,7 +789,9 @@ export function CreateEventProposalFlow({
       ) : null}
 
       {step === "review" ? (
-        <section className="hui-rise space-y-5">
+        <section
+          className="hui-rise space-y-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+        >
           <h2 className="hui-type-page-title text-foreground">Ready to propose?</h2>
           {pastDateWarning ? (
             <ProposalPastDateWarning

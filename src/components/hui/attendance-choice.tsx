@@ -65,17 +65,20 @@ export function AttendanceChoice({
         />
       )}
       <span className="min-w-0 flex-1 leading-tight">
-        <span className={pending ? "block text-[0.9375rem]" : undefined}>{label}</span>
-        {pending ? (
-          <span
-            className={cn(
-              "block text-sm font-semibold",
-              showPressed ? "text-primary-foreground/85" : "text-muted-foreground",
-            )}
-          >
-            Saving…
-          </span>
-        ) : null}
+        <span className="block">{label}</span>
+        <span
+          className={cn(
+            "block min-h-[1.25rem] text-sm font-semibold",
+            pending
+              ? showPressed
+                ? "text-primary-foreground/85"
+                : "text-muted-foreground"
+              : "invisible",
+          )}
+          aria-hidden={!pending}
+        >
+          Saving…
+        </span>
       </span>
       {showPressed && !pending ? (
         <CheckIcon size={20} strokeWidth={3} className="shrink-0" />

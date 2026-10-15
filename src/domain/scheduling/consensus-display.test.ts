@@ -8,6 +8,7 @@ import {
   eventSchedulingSectionMessage,
   hasNoResponsesYet,
   isCandidateOpenForResponses,
+  organiserPicksCanConfirmNow,
   proposalDeadlineGroupNotice,
   shouldOfferOrganiserConfirm,
   isWaitingOnHostFailure,
@@ -113,6 +114,27 @@ describe("consensus display (HUI-017)", () => {
     expect(
       shouldShowFinaliseControl(true, "confirmed", "selected", true),
     ).toBe(false);
+  });
+
+  it("detects organiser-picks confirm when the host has said Yes", () => {
+    expect(
+      organiserPicksCanConfirmNow(true, "proposing", "organiser_picks", [
+        {
+          candidateId: "c1",
+          yesCount: 1,
+          failureReason: "organiser_picks",
+        },
+      ], new Set(["c1"])),
+    ).toEqual({ candidateId: "c1" });
+    expect(
+      organiserPicksCanConfirmNow(true, "proposing", "organiser_picks", [
+        {
+          candidateId: "c1",
+          yesCount: 1,
+          failureReason: "waiting_on_host",
+        },
+      ], new Set(["c1"])),
+    ).toBeNull();
   });
 
   it("supports organiser_picks manual confirm and host waiting", () => {

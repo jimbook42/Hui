@@ -155,6 +155,30 @@ export function shouldOfferOrganiserConfirm(
   );
 }
 
+/** Organiser-picks hui: manual confirm once the host has said Yes to a proposed time. */
+export function organiserPicksCanConfirmNow(
+  canFinalise: boolean,
+  eventStatus: EventStatus,
+  confirmRule: EventConfirmRule | undefined,
+  candidates: readonly {
+    candidateId: string;
+    yesCount: number;
+    failureReason: string | null;
+  }[],
+  proposedCandidateIds: ReadonlySet<string>,
+): { candidateId: string } | null {
+  if (!canFinalise || eventStatus !== "proposing" || confirmRule !== "organiser_picks") {
+    return null;
+  }
+  const row = candidates.find(
+    (candidate) =>
+      proposedCandidateIds.has(candidate.candidateId) &&
+      candidate.yesCount >= 1 &&
+      !isWaitingOnHostFailure(candidate.failureReason),
+  );
+  return row ? { candidateId: row.candidateId } : null;
+}
+
 export function candidateStatusBadge(
   eventStatus: EventStatus,
   candidateStatus: CandidateStatus,

@@ -14,7 +14,15 @@ describe("formatConfirmedReasonLine", () => {
   });
 
   it("covers other consensus rules briefly", () => {
-    expect(formatConfirmedReasonLine("all_active_members")).toBe("Confirmed by everyone");
+    expect(formatConfirmedReasonLine("all_active_members")).toBe(
+      "Confirmed · everyone can come",
+    );
+    expect(
+      formatConfirmedReasonLine("majority_active_members", null, "when_everyone_can_come"),
+    ).toBe("Confirmed · everyone can come");
+    expect(
+      formatConfirmedReasonLine("majority_active_members", null, "when_most_can_come"),
+    ).toBe("Confirmed by majority");
     expect(formatConfirmedReasonLine("required_participants")).toBe(
       "Confirmed by required members",
     );

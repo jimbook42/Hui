@@ -1,5 +1,11 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX3-fix5 QA (v0.18.7)
+
+- Respond: fixed-height answer rows, per-candidate parallel saves, persisted-only progress count, `beforeunload` while saving; Supabase realtime refresh on confirm for event/respond pages.
+- Confirmed hero copy from per-hui `confirm_rule`; organiser-picks confirm CTA on event hero when host has said Yes.
+- Propose restore keeps established group cadence; review step bottom safe-area padding for bottom nav.
+
 ## 2026-10-15 — HUI-UX3 confirm rules (v0.18.7)
 
 - Per-hui `confirm_rule` on propose + manage; host must say Yes before auto/manual confirm; migration `20261015200000_hui_ux3_confirm_rules.sql` (not applied in prod).
