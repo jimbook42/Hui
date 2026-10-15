@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CANONICAL_USER_ID_FIELD } from "./identity";
 import {
@@ -9,26 +9,35 @@ import {
 } from "./oauth";
 import {
   AUTH_OAUTH_PROVIDER_IDS,
-  AUTH_PROVIDERS,
   getAuthProvider,
+  getAuthProviders,
   getEnabledOAuthProviders,
   isEmailAuthEnabled,
+  isFacebookLoginEnabled,
 } from "./providers";
 
 describe("auth providers", () => {
-  it("keeps email/password enabled alongside Google, Microsoft, and Facebook OAuth", () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    delete process.env.NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN;
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("keeps email/password enabled alongside Google and Microsoft OAuth by default", () => {
     expect(isEmailAuthEnabled()).toBe(true);
     expect(getEnabledOAuthProviders().map((provider) => provider.id)).toEqual([
       "google",
       "azure",
-      "facebook",
     ]);
   });
 
-  it("enables Google, Microsoft, and Facebook among OAuth providers", () => {
+  it("enables Google and Microsoft among OAuth providers by default", () => {
     for (const id of AUTH_OAUTH_PROVIDER_IDS) {
       expect(getAuthProvider(id)?.enabled).toBe(
-        id === "google" || id === "azure" || id === "facebook",
+        id === "google" || id === "azure",
       );
     }
   });
@@ -55,25 +64,70 @@ describe("auth providers", () => {
   });
 
   it("lists email and each OAuth provider exactly once", () => {
-    const ids = AUTH_PROVIDERS.map((provider) => provider.id);
+    const ids = getAuthProviders().map((provider) => provider.id);
     expect(ids).toEqual([...AUTH_OAUTH_PROVIDER_IDS, "email"]);
   });
 
   it("keeps provider enablement independently controllable", () => {
     expect(getAuthProvider("google")?.enabled).toBe(true);
     expect(getAuthProvider("azure")?.enabled).toBe(true);
-    expect(getAuthProvider("facebook")?.enabled).toBe(true);
+    expect(getAuthProvider("facebook")?.enabled).toBe(false);
     expect(getAuthProvider("apple")?.enabled).toBe(false);
   });
 });
 
-describe("validateOAuthSignInRequest", () => {
-  it("allows Google, Microsoft, and Facebook when enabled", () => {
-    expect(validateOAuthSignInRequest("google")).toEqual({ provider: "google" });
-    expect(validateOAuthSignInRequest("azure")).toEqual({ provider: "azure" });
+describe("isFacebookLoginEnabled", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("is off when unset", () => {
+    vi.unstubAllEnvs();
+    delete process.env.NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN;
+    expect(isFacebookLoginEnabled()).toBe(false);
+    expect(getAuthProvider("facebook")?.enabled).toBe(false);
+  });
+
+  it("is off for false and other strings (including TRUE)", () => {
+    vi.stubEnv("NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN", "false");
+    expect(isFacebookLoginEnabled()).toBe(false);
+    vi.stubEnv("NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN", "TRUE");
+    expect(isFacebookLoginEnabled()).toBe(false);
+    vi.stubEnv("NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN", "1");
+    expect(isFacebookLoginEnabled()).toBe(false);
+  });
+
+  it("is on only for the exact string true", () => {
+    vi.stubEnv("NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN", "true");
+    expect(isFacebookLoginEnabled()).toBe(true);
+    expect(getEnabledOAuthProviders().map((p) => p.id)).toEqual([
+      "google",
+      "azure",
+      "facebook",
+    ]);
     expect(validateOAuthSignInRequest("facebook")).toEqual({
       provider: "facebook",
     });
+  });
+});
+
+describe("validateOAuthSignInRequest", () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    delete process.env.NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN;
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("allows Google and Microsoft when enabled", () => {
+    expect(validateOAuthSignInRequest("google")).toEqual({ provider: "google" });
+    expect(validateOAuthSignInRequest("azure")).toEqual({ provider: "azure" });
+  });
+
+  it("rejects Facebook when the feature flag is off", () => {
+    expect(() => validateOAuthSignInRequest("facebook")).toThrow(/not enabled/);
   });
 
   it("rejects disabled OAuth providers", () => {
@@ -117,6 +171,15 @@ describe("oauthCallbackFailureReason", () => {
 });
 
 describe("signInWithOAuthProvider", () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    delete process.env.NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN;
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   const callbackUrl =
     "https://hui-seven-gamma.vercel.app/auth/callback?next=%2Fdashboard";
 
@@ -155,7 +218,8 @@ describe("signInWithOAuthProvider", () => {
     });
   });
 
-  it("calls Supabase signInWithOAuth for Facebook", async () => {
+  it("calls Supabase signInWithOAuth for Facebook when enabled", async () => {
+    vi.stubEnv("NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN", "true");
     const signInWithOAuth = vi.fn().mockResolvedValue({
       data: { url: "https://www.facebook.com/v18.0/dialog/oauth" },
       error: null,
@@ -185,7 +249,8 @@ describe("signInWithOAuthProvider", () => {
     expect(options).not.toHaveProperty("scopes");
   });
 
-  it("does not add scopes to Facebook OAuth", async () => {
+  it("does not add scopes to Facebook OAuth when enabled", async () => {
+    vi.stubEnv("NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN", "true");
     const signInWithOAuth = vi.fn().mockResolvedValue({
       data: { url: "https://www.facebook.com/v18.0/dialog/oauth" },
       error: null,
@@ -207,6 +272,16 @@ describe("signInWithOAuthProvider", () => {
     ).rejects.toThrow(/not enabled/);
     expect(signInWithOAuth).not.toHaveBeenCalled();
   });
+
+  it("does not call Supabase for Facebook when the feature flag is off", async () => {
+    const signInWithOAuth = vi.fn();
+    const supabase = { auth: { signInWithOAuth } } as never;
+
+    await expect(
+      signInWithOAuthProvider(supabase, "facebook", callbackUrl),
+    ).rejects.toThrow(/not enabled/);
+    expect(signInWithOAuth).not.toHaveBeenCalled();
+  });
 });
 
 describe("canonical identity", () => {
@@ -215,7 +290,9 @@ describe("canonical identity", () => {
   });
 
   it("does not introduce email-based account merging in provider config", () => {
-    expect(AUTH_PROVIDERS.some((provider) => provider.id === "email")).toBe(true);
+    expect(getAuthProviders().some((provider) => provider.id === "email")).toBe(
+      true,
+    );
     expect(getAuthProvider("email")?.enabled).toBe(true);
   });
 });

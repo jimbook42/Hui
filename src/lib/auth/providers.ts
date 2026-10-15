@@ -53,12 +53,26 @@ const OAUTH_PROVIDER_META: Record<
   },
 };
 
-/** OAuth providers enabled in Hui UI and server actions (Supabase dashboard must match). */
-const ENABLED_OAUTH_PROVIDER_IDS: ReadonlySet<AuthOAuthProviderId> = new Set([
-  "google",
-  "azure",
-  "facebook",
-]);
+/** OAuth providers always enabled when integrated (Supabase dashboard must match). */
+const CORE_ENABLED_OAUTH_PROVIDER_IDS: ReadonlySet<AuthOAuthProviderId> =
+  new Set(["google", "azure"]);
+
+/**
+ * Facebook OAuth is gated by `NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN === "true"` (exact string).
+ * Public env must be referenced statically so Next.js can inline it into the client bundle.
+ */
+export function isFacebookLoginEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN === "true";
+}
+
+/** OAuth providers enabled in Hui UI and server actions for the current environment. */
+export function getEnabledOAuthProviderIds(): ReadonlySet<AuthOAuthProviderId> {
+  const ids = new Set(CORE_ENABLED_OAUTH_PROVIDER_IDS);
+  if (isFacebookLoginEnabled()) {
+    ids.add("facebook");
+  }
+  return ids;
+}
 
 /**
  * Authentication method enablement for Hui.
@@ -66,28 +80,31 @@ const ENABLED_OAUTH_PROVIDER_IDS: ReadonlySet<AuthOAuthProviderId> = new Set([
  * OAuth providers stay disabled until the Hui-side integration is complete and
  * Supabase Auth provider settings are configured. Do not add placeholder secrets.
  */
-export const AUTH_PROVIDERS: readonly AuthProviderDefinition[] = [
-  ...AUTH_OAUTH_PROVIDER_IDS.map((id) => ({
-    id,
-    ...OAUTH_PROVIDER_META[id],
-    enabled: ENABLED_OAUTH_PROVIDER_IDS.has(id),
-  })),
-  {
-    id: "email",
-    continueLabel: "Continue with email",
-    enabled: true,
-  },
-];
+export function getAuthProviders(): readonly AuthProviderDefinition[] {
+  const enabledOAuthIds = getEnabledOAuthProviderIds();
+  return [
+    ...AUTH_OAUTH_PROVIDER_IDS.map((id) => ({
+      id,
+      ...OAUTH_PROVIDER_META[id],
+      enabled: enabledOAuthIds.has(id),
+    })),
+    {
+      id: "email",
+      continueLabel: "Continue with email",
+      enabled: true,
+    },
+  ];
+}
 
 export function getAuthProvider(
   id: AuthProviderId,
 ): AuthProviderDefinition | undefined {
-  return AUTH_PROVIDERS.find((provider) => provider.id === id);
+  return getAuthProviders().find((provider) => provider.id === id);
 }
 
 /** OAuth providers that are enabled for UI and server sign-in. */
 export function getEnabledOAuthProviders(): AuthProviderDefinition[] {
-  return AUTH_PROVIDERS.filter(
+  return getAuthProviders().filter(
     (provider) => provider.id !== "email" && provider.enabled,
   );
 }

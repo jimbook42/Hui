@@ -4,9 +4,9 @@
 
 The app version lives in **`package.json`** (`version` field). The UI footer and support copy read it from there — do not hard-code versions elsewhere.
 
-**Current line:** `0.18.1` — pre-beta: the core coordination loop is largely in place (propose → respond → confirm → recurring cycle, notifications, profile), but we have not declared a public beta yet. `0.9.x` signals “almost beta” without implying production GA.
+**Current line:** `0.18.2` — pre-beta: the core coordination loop is largely in place (propose → respond → confirm → recurring cycle, notifications, profile), but we have not declared a public beta yet. `0.9.x` signals “almost beta” without implying production GA.
 
-**Previous release:** `0.18.0` — pre-beta: the core coordination loop is largely in place (propose → respond → confirm → recurring cycle, notifications, profile), but we have not declared a public beta yet. `0.9.x` signals “almost beta” without implying production GA.
+**Previous release:** `0.18.1` — pre-beta: the core coordination loop is largely in place (propose → respond → confirm → recurring cycle, notifications, profile), but we have not declared a public beta yet. `0.9.x` signals “almost beta” without implying production GA.
 
 ## When to bump
 
