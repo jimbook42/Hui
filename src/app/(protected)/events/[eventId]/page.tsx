@@ -68,6 +68,9 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
           <EventHero
             title={detail.title}
             status={detail.status}
+            consensusCurrentlyPasses={
+              detail.status === "confirmed" ? heroPageData.anyCandidatePasses : undefined
+            }
             groupName={detail.groupName}
             groupHref={`/groups/${detail.groupId}`}
             location={detail.location}

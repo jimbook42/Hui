@@ -1,3 +1,4 @@
+import type { EventStatus } from "@/domain/events/types";
 import type { ConsensusRule } from "@/domain/scheduling/consensus";
 import type { AttendanceCountSummary } from "@/domain/events/who-is-coming";
 import { formatWhoIsComingSummary } from "@/domain/events/who-is-coming";
@@ -25,6 +26,45 @@ export function formatConfirmedReasonLine(
 }
 
 const REASKING_BASE = "New time proposed · everyone is being asked again";
+
+export const REASKING_STATUS_PILL_LABEL = "Re-asking";
+
+/** Same gate as `formatConfirmedHeroStatusLine` when `consensusCurrentlyPasses` is false. */
+export function isConfirmedEventReasking(
+  status: EventStatus,
+  consensusCurrentlyPasses: boolean | null | undefined,
+): boolean {
+  return status === "confirmed" && consensusCurrentlyPasses === false;
+}
+
+export function formatEventStatusPillLabel(
+  status: EventStatus,
+  consensusCurrentlyPasses?: boolean | null,
+): string {
+  if (isConfirmedEventReasking(status, consensusCurrentlyPasses)) {
+    return REASKING_STATUS_PILL_LABEL;
+  }
+  switch (status) {
+    case "draft":
+      return "Draft";
+    case "proposing":
+      return "Picking a time";
+    case "voting":
+      return "Voting";
+    case "awaiting_agreement":
+      return "Awaiting agreement";
+    case "confirmed":
+      return "Confirmed";
+    case "reopened":
+      return "Reopened";
+    case "completed":
+      return "Completed";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return status;
+  }
+}
 
 /** Hero line while a confirmed hui is waiting for fresh answers after a time change (not re-confirmed yet). */
 export function formatReaskingHeroStatusLine(input: {

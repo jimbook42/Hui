@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   formatConfirmedHeroStatusLine,
   formatConfirmedReasonLine,
+  formatEventStatusPillLabel,
+  isConfirmedEventReasking,
+  REASKING_STATUS_PILL_LABEL,
 } from "./confirmed-because";
 
 describe("formatConfirmedReasonLine", () => {
@@ -68,5 +71,14 @@ describe("formatConfirmedHeroStatusLine", () => {
         consensusCurrentlyPasses: true,
       }),
     ).toBe("Confirmed by majority · 2 coming · 1 yet to answer");
+  });
+});
+
+describe("formatEventStatusPillLabel", () => {
+  it("shows re-asking on confirmed hui until consensus passes again", () => {
+    expect(isConfirmedEventReasking("confirmed", false)).toBe(true);
+    expect(formatEventStatusPillLabel("confirmed", false)).toBe(REASKING_STATUS_PILL_LABEL);
+    expect(formatEventStatusPillLabel("confirmed", true)).toBe("Confirmed");
+    expect(formatEventStatusPillLabel("proposing", false)).toBe("Picking a time");
   });
 });

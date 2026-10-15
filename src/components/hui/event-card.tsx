@@ -12,6 +12,7 @@ import {
   formatTimeSpan,
 } from "@/domain/datetime/display";
 import { viewerStatusLabel } from "@/domain/events/home";
+import { isConfirmedEventReasking, REASKING_STATUS_PILL_LABEL } from "@/domain/scheduling/confirmed-because";
 import { eventStatusLabel } from "@/lib/events/labels";
 import { AddToCalendarButton } from "@/components/events/add-to-calendar-button";
 import { canDownloadEventIcs } from "@/lib/calendar/event-ics-export";
@@ -27,6 +28,9 @@ type EventCardProps = {
 };
 
 function statusPillFor(event: HomeEvent): { label: string; tone: StatusPillTone } | null {
+  if (isConfirmedEventReasking(event.status, event.consensusCurrentlyPasses)) {
+    return { label: REASKING_STATUS_PILL_LABEL, tone: "warning" };
+  }
   if (event.proposalDatePassed && event.status === "proposing") {
     return { label: "Date passed", tone: "clay" };
   }
