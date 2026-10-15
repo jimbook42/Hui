@@ -579,6 +579,7 @@ export function CreateEventProposalFlow({
             </div>
           </details>
           {canOneOff || canRecurring ? (
+            isFirstGroupEvent && !establishedRecurrence ? (
             <fieldset className="space-y-3">
               <legend className="hui-label">
                 <span>How often does this group meet?</span>
@@ -627,6 +628,7 @@ export function CreateEventProposalFlow({
                   : null}
               </div>
             </fieldset>
+            ) : null
           ) : null}
           {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (
             <p className="rounded-hui-lg bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
@@ -634,6 +636,27 @@ export function CreateEventProposalFlow({
               {establishedCadence ? ` (${formatCadenceLabel(establishedCadence)})` : ""}. Proposed
               times are options — not confirmed dates yet.
             </p>
+          ) : null}
+          {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (
+            <WallClockDateField
+              label="Planning date for this cycle"
+              value={draft.recurrence?.planningTargetDate ?? ""}
+              onChange={(value) =>
+                setDraft((current) => {
+                  if (current.eventKind !== "recurring" || !current.recurrence) {
+                    return current;
+                  }
+                  return {
+                    ...current,
+                    recurrence: {
+                      ...current.recurrence,
+                      planningTargetDate: value,
+                      startsOn: value,
+                    },
+                  };
+                })
+              }
+            />
           ) : null}
         </section>
       ) : null}

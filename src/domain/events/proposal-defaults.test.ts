@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { buildInitialProposalDraft, initialCandidateDateFromDraft } from "./proposal-defaults";
+import {
+  buildInitialProposalDraft,
+  fillRecurringPlanningDates,
+  initialCandidateDateFromDraft,
+} from "./proposal-defaults";
 import type { GroupSettingsRow } from "@/lib/groups/types";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
 
@@ -50,6 +54,18 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
     });
     expect(draft.recurrence?.planningTargetDate).toBe("2026-10-26");
     expect(initialCandidateDateFromDraft(draft, cycle)).toBe("2026-10-26");
+  });
+
+  it("mirrors anchor date into planning target for established groups", () => {
+    const draft = fillRecurringPlanningDates(
+      buildInitialProposalDraft(baseSettings, {
+        groupName: "Family",
+        cycle: null,
+        isFirstGroupEvent: false,
+      }),
+    );
+    expect(draft.recurrence?.startsOn).toBe("2026-09-28");
+    expect(draft.recurrence?.planningTargetDate).toBe("2026-09-28");
   });
 
   it("first group event leaves planning target unset until a time is proposed", () => {

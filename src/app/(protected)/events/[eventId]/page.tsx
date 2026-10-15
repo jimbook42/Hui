@@ -26,6 +26,7 @@ import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session"
 import { loadEventPage } from "@/lib/events/event-page-data";
 import { getEventDetail } from "@/lib/events/queries";
 import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
+import { confirmedEventConsensusPassesForDisplay } from "@/domain/scheduling/confirmed-because";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 
 type PageProps = {
@@ -71,7 +72,12 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
             title={detail.title}
             status={detail.status}
             consensusCurrentlyPasses={
-              detail.status === "confirmed" ? heroPageData.anyCandidatePasses : undefined
+              detail.status === "confirmed"
+                ? confirmedEventConsensusPassesForDisplay(
+                    heroPageData.anyCandidatePasses,
+                    detail.confirmationMethod,
+                  )
+                : undefined
             }
             groupName={detail.groupName}
             groupHref={`/groups/${detail.groupId}`}

@@ -1,6 +1,7 @@
 import type { EventProposalDraft } from "@/domain/events/proposal";
 import {
   buildInitialProposalDraft,
+  fillRecurringPlanningDates,
   groupHasEstablishedRecurrence,
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
@@ -63,7 +64,7 @@ export function resolveProposalFlowStateFromClient(input: {
         isFirstGroupEvent: input.isFirstGroupEvent,
         todayDateOnly: input.todayDateOnly,
       });
-      const draft: EventProposalDraft = {
+      const draft = fillRecurringPlanningDates({
         ...cadenceDraft,
         title: storedDraft.draft.title,
         gatheringType: storedDraft.draft.gatheringType,
@@ -77,7 +78,7 @@ export function resolveProposalFlowStateFromClient(input: {
         organiserWillHost: storedDraft.draft.organiserWillHost,
         requestedContributions: storedDraft.draft.requestedContributions,
         confirmRule: storedDraft.draft.confirmRule,
-      };
+      });
       const meetFrequency = deriveMeetFrequencyFromDraft(draft, {
         establishedRecurrence,
         isFirstGroupEvent: input.isFirstGroupEvent,

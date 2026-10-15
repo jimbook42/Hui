@@ -1,5 +1,12 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX3-fix10 QA (v0.18.7)
+
+- Second propose: hide first-hui cadence picker on established groups; planning-date field + `fillRecurringPlanningDates`; submit test.
+- Organiser confirm: no “Re-asking” after organiser confirmation; host-ready gate for organiser-picks banner.
+- Respond: reserved “Your answer” row height + bottom safe-area padding; cancelled group cards show candidate dates.
+- Local prod build stamp: `git rev-parse --short HEAD` via `next.config.ts`.
+
 ## 2026-10-16 — HUI-UX3-fix9 respond crash (production)
 
 - **Root cause:** fix6 `EventLifecycleLiveRefresh` calls browser `createClient()` on respond/event pages. `getPublicSupabaseConfig()` read `process.env` via dynamic `env[key]`, so Next did not inline `NEXT_PUBLIC_*` into client chunks; production `next start` then threw “Missing Supabase configuration” on hydration (error boundary “This page couldn’t load”). fix8’s sibling-stream theory was a red herring.

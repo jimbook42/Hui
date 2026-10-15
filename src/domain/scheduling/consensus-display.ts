@@ -2,6 +2,7 @@ import type { EventConfirmRule } from "@/domain/events/confirm-rule";
 import type { EventStatus } from "@/domain/events/types";
 import { isSchedulingOpen } from "@/domain/events/lifecycle";
 
+import type { AttendanceRoster } from "./attendance-roster";
 import type { ConsensusRule } from "./consensus";
 import type { AvailabilityChoice, CandidateStatus } from "./types";
 
@@ -155,6 +156,17 @@ export function shouldOfferOrganiserConfirm(
   );
 }
 
+function acceptedHostBlocksOrganiserConfirm(
+  acceptedHostUserId: string | null | undefined,
+  roster: AttendanceRoster | undefined,
+): boolean {
+  if (!acceptedHostUserId) {
+    return false;
+  }
+  const host = roster?.members.find((member) => member.userId === acceptedHostUserId);
+  return host?.response !== "yes";
+}
+
 /** Organiser-picks hui: manual confirm once the host has said Yes to a proposed time. */
 export function organiserPicksCanConfirmNow(
   canFinalise: boolean,
@@ -166,16 +178,29 @@ export function organiserPicksCanConfirmNow(
     failureReason: string | null;
   }[],
   proposedCandidateIds: ReadonlySet<string>,
+  options?: {
+    acceptedHostUserId?: string | null;
+    rosterByCandidateId?: ReadonlyMap<string, AttendanceRoster>;
+  },
 ): { candidateId: string } | null {
   if (!canFinalise || eventStatus !== "proposing" || confirmRule !== "organiser_picks") {
     return null;
   }
-  const row = candidates.find(
-    (candidate) =>
-      proposedCandidateIds.has(candidate.candidateId) &&
-      candidate.yesCount >= 1 &&
-      !isWaitingOnHostFailure(candidate.failureReason),
-  );
+  const row = candidates.find((candidate) => {
+    if (!proposedCandidateIds.has(candidate.candidateId)) {
+      return false;
+    }
+    if (candidate.yesCount < 1 || isWaitingOnHostFailure(candidate.failureReason)) {
+      return false;
+    }
+    const roster = options?.rosterByCandidateId?.get(candidate.candidateId);
+    if (
+      acceptedHostBlocksOrganiserConfirm(options?.acceptedHostUserId, roster)
+    ) {
+      return false;
+    }
+    return true;
+  });
   return row ? { candidateId: row.candidateId } : null;
 }
 

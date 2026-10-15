@@ -33,7 +33,10 @@ import {
   eventShowsWaitingOnHost,
   WAITING_ON_HOST_STATUS_MESSAGE,
 } from "@/domain/scheduling/consensus-display";
-import { formatConfirmedHeroStatusLine } from "@/domain/scheduling/confirmed-because";
+import {
+  confirmedEventConsensusPassesForDisplay,
+  formatConfirmedHeroStatusLine,
+} from "@/domain/scheduling/confirmed-because";
 import { formatEventTimeDisclosureSummary } from "@/domain/scheduling/event-time-disclosure-summary";
 import {
   multiTimeAnswerDetailRows,
@@ -112,7 +115,10 @@ export function EventHeroMeta({
           maybeResponsesEnabled: data.scheduling.maybeResponsesEnabled,
           confirmationMethod: detail.confirmationMethod,
           confirmRule: detail.confirmRule,
-          consensusCurrentlyPasses: data.anyCandidatePasses,
+          consensusCurrentlyPasses: confirmedEventConsensusPassesForDisplay(
+            data.anyCandidatePasses,
+            detail.confirmationMethod,
+          ),
         })
       : null;
   const confirmRuleLine =
@@ -622,7 +628,13 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
     status: detail.status,
     startsAt: detail.startsAt,
     timeZone: data.displayTimeZone,
-    consensusCurrentlyPasses: detail.status === "confirmed" ? data.anyCandidatePasses : undefined,
+    consensusCurrentlyPasses:
+      detail.status === "confirmed"
+        ? confirmedEventConsensusPassesForDisplay(
+            data.anyCandidatePasses,
+            detail.confirmationMethod,
+          )
+        : undefined,
     candidateCount: data.scheduling.candidates.length,
     passingCandidateCount: data.consensus.candidates.filter((candidate) => candidate.passes).length,
   });

@@ -19,6 +19,7 @@ import {
   RECENT_CANCELLED_LIST_CAP,
   recentCancelledCutoffIso,
 } from "@/domain/events/recent-cancelled";
+import { confirmedEventConsensusPassesForDisplay } from "@/domain/scheduling/confirmed-because";
 import { todayDateOnlyInTimeZone } from "@/lib/groups/planning-cycle";
 import type { EventStatus } from "@/domain/events/types";
 import type { MembershipRole } from "@/domain/groups/permissions";
@@ -84,6 +85,7 @@ export type HomeEvent = {
    * Null when unknown (no roster loaded) or not applicable.
    */
   consensusCurrentlyPasses: boolean | null;
+  confirmationMethod: "consensus" | "organiser" | null;
 };
 
 export type ProposableGroup = { id: string; name: string };
@@ -106,6 +108,7 @@ type EventRow = {
   timezone: string | null;
   planning_target_date: string | null;
   cancelled_at: string | null;
+  confirmation_method: string | null;
   groups: { name: string } | { name: string }[] | null;
 };
 
@@ -211,7 +214,7 @@ export async function loadHomeData(
   const now = new Date();
   const statuses = options.includePast ? [...OPEN_STATUSES, ...PAST_STATUSES] : OPEN_STATUSES;
   const eventSelect =
-    "id, title, status, group_id, created_by, location, starts_at, ends_at, timezone, planning_target_date, cancelled_at, groups:group_id ( name )";
+    "id, title, status, group_id, created_by, location, starts_at, ends_at, timezone, planning_target_date, cancelled_at, confirmation_method, groups:group_id ( name )";
 
   const cancelledCutoff = recentCancelledCutoffIso(now);
   const statusFilter = `status.in.(${statuses.join(",")}),and(status.eq.cancelled,cancelled_at.gte.${cancelledCutoff})`;
@@ -553,6 +556,10 @@ export async function loadHomeData(
           ? relativeDayLabel(startsAt, timeZone, now)
           : null,
       consensusCurrentlyPasses: null,
+      confirmationMethod:
+        row.confirmation_method === "organiser" || row.confirmation_method === "consensus"
+          ? row.confirmation_method
+          : null,
     };
   });
 
@@ -597,11 +604,15 @@ export async function loadHomeData(
         const groupSettings = settingsByGroup.get(target.groupId);
         const members = membersByGroup.get(target.groupId) ?? [];
         const eventCandidates = candidatesByEvent.get(target.id) ?? [];
-        target.consensusCurrentlyPasses = anyCandidatePassesConsensusForEvent(
+        const anyPasses = anyCandidatePassesConsensusForEvent(
           eventCandidates,
           rostersByCandidate,
           groupSettings,
           members,
+        );
+        target.consensusCurrentlyPasses = confirmedEventConsensusPassesForDisplay(
+          anyPasses,
+          target.confirmationMethod,
         );
       }
     }

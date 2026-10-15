@@ -76,7 +76,7 @@ export function buildInitialProposalDraft(
     planningTargetDate = null;
   }
 
-  return {
+  return fillRecurringPlanningDates({
     title: "",
     gatheringType: null,
     gatheringTypeCustom: "",
@@ -97,6 +97,28 @@ export function buildInitialProposalDraft(
     organiserWillHost: false,
     requestedContributions: [],
     confirmRule: DEFAULT_EVENT_CONFIRM_RULE,
+  });
+}
+
+/** Ensure recurring drafts always carry a planning target when the cadence anchor or cycle provides one. */
+export function fillRecurringPlanningDates(draft: EventProposalDraft): EventProposalDraft {
+  if (draft.eventKind !== "recurring" || !draft.recurrence) {
+    return draft;
+  }
+  const fallback =
+    draft.recurrence.planningTargetDate?.trim() ||
+    draft.recurrence.startsOn?.trim() ||
+    "";
+  if (!fallback) {
+    return draft;
+  }
+  return {
+    ...draft,
+    recurrence: {
+      ...draft.recurrence,
+      planningTargetDate: draft.recurrence.planningTargetDate?.trim() || fallback,
+      startsOn: draft.recurrence.startsOn?.trim() || fallback,
+    },
   };
 }
 

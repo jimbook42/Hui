@@ -37,6 +37,20 @@ const REASKING_BASE = "New time proposed · everyone is being asked again";
 
 export const REASKING_STATUS_PILL_LABEL = "Re-asking";
 
+/**
+ * After organiser confirmation, consensus evaluation may still report "not passing" on
+ * organiser-picks rules — the hui is confirmed and should not show the re-asking state.
+ */
+export function confirmedEventConsensusPassesForDisplay(
+  anyCandidatePasses: boolean,
+  confirmationMethod?: EventConfirmationMethod | null,
+): boolean {
+  if (confirmationMethod === "organiser") {
+    return true;
+  }
+  return anyCandidatePasses;
+}
+
 /** Same gate as `formatConfirmedHeroStatusLine` when `consensusCurrentlyPasses` is false. */
 export function isConfirmedEventReasking(
   status: EventStatus,

@@ -272,12 +272,19 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
 
   const anyCandidatePasses = consensus.candidates.some((candidate) => candidate.passes);
   const proposedIds = new Set(scheduling.candidates.map((row) => row.id));
+  const rosterByCandidateId = new Map(
+    Object.entries(attendanceRosters).map(([candidateId, roster]) => [candidateId, roster]),
+  );
   const organiserPicksConfirm = organiserPicksCanConfirmNow(
     canFinalise,
     detail.status,
     consensus.confirmRule,
     consensus.candidates,
     proposedIds,
+    {
+      acceptedHostUserId,
+      rosterByCandidateId,
+    },
   );
 
   const attention = buildEventAttention({

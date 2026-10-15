@@ -117,15 +117,65 @@ describe("consensus display (HUI-017)", () => {
   });
 
   it("detects organiser-picks confirm when the host has said Yes", () => {
+    const rosterWithHostYes = {
+      maybeResponsesEnabled: true,
+      members: [
+        { userId: "host-1", displayName: "Host", response: "yes" as const, submittedLate: false },
+      ],
+    };
     expect(
-      organiserPicksCanConfirmNow(true, "proposing", "organiser_picks", [
+      organiserPicksCanConfirmNow(
+        true,
+        "proposing",
+        "organiser_picks",
+        [
+          {
+            candidateId: "c1",
+            yesCount: 1,
+            failureReason: "organiser_picks",
+          },
+        ],
+        new Set(["c1"]),
         {
-          candidateId: "c1",
-          yesCount: 1,
-          failureReason: "organiser_picks",
+          acceptedHostUserId: "host-1",
+          rosterByCandidateId: new Map([["c1", rosterWithHostYes]]),
         },
-      ], new Set(["c1"])),
+      ),
     ).toEqual({ candidateId: "c1" });
+    expect(
+      organiserPicksCanConfirmNow(
+        true,
+        "proposing",
+        "organiser_picks",
+        [
+          {
+            candidateId: "c1",
+            yesCount: 1,
+            failureReason: "organiser_picks",
+          },
+        ],
+        new Set(["c1"]),
+        {
+          acceptedHostUserId: "host-1",
+          rosterByCandidateId: new Map([
+            [
+              "c1",
+              {
+                maybeResponsesEnabled: true,
+                members: [
+                  {
+                    userId: "host-1",
+                    displayName: "Host",
+                    response: null,
+                    submittedLate: false,
+                  },
+                ],
+              },
+            ],
+          ]),
+        },
+      ),
+    ).toBeNull();
     expect(
       organiserPicksCanConfirmNow(true, "proposing", "organiser_picks", [
         {

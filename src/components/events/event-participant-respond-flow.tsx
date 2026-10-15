@@ -784,7 +784,7 @@ export function EventParticipantRespondFlow({
   const chosenState = attendanceStateFromChoice(viewerResponse, maybeResponsesEnabled);
 
   return (
-    <div className="mx-auto w-full max-w-md pb-8">
+    <div className="mx-auto w-full max-w-md pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
       <EventLifecycleLiveRefresh eventId={eventId} status={eventStatus} />
       <header className="hui-rise flex items-start gap-3">
         <div className="min-w-0 flex-1">
@@ -888,14 +888,20 @@ export function EventParticipantRespondFlow({
                       <p className="text-sm font-extrabold text-foreground">
                         {candidateTimeLabels[row.id] ?? ""}
                       </p>
-                      {rowResponse ? (
-                        <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                          Your answer: {participantAttendanceSummaryLabel(rowResponse)}
-                          {savedCandidateFlash[row.id] ? (
-                            <span className="ml-2 text-accent">Saved</span>
-                          ) : null}
-                        </p>
-                      ) : null}
+                      <p className="mt-1 min-h-[1.25rem] text-xs font-semibold text-muted-foreground">
+                        {rowResponse ? (
+                          <>
+                            Your answer: {participantAttendanceSummaryLabel(rowResponse)}
+                            {savedCandidateFlash[row.id] ? (
+                              <span className="ml-2 text-accent">Saved</span>
+                            ) : (
+                              <span className="ml-2 invisible" aria-hidden="true">Saved</span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="invisible" aria-hidden="true">Your answer: —</span>
+                        )}
+                      </p>
                       <div className="mt-3 space-y-2">
                         {attendanceOptions.map((option) => (
                           <AttendanceChoice

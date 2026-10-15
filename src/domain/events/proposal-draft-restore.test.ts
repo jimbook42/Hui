@@ -78,6 +78,7 @@ describe("resolveProposalFlowStateFromClient", () => {
     expect(resolved.draft.recurrence?.intervalUnit).toBe("week");
     expect(resolved.draft.recurrence?.intervalCount).toBe(2);
     expect(resolved.draft.recurrence?.startsOn).toBe("2026-10-01");
+    expect(resolved.draft.recurrence?.planningTargetDate).toBe("2026-10-01");
     expect(resolved.meetFrequency).toBe("fortnightly");
 
     vi.unstubAllGlobals();

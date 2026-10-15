@@ -105,6 +105,30 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     vi.clearAllMocks();
   });
 
+  it("does not shift sibling time rows when one answer saves", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockResolvedValue({ message: "Response saved." });
+
+    const user = userEvent.setup();
+    renderMultiTimeFlow();
+
+    const rowB = screen.getByText("Sat 24 Oct, 6:30pm").closest("li");
+    const rowC = screen.getByText("Thu 29 Oct, 7:00pm").closest("li");
+    if (!rowB || !rowC) {
+      throw new Error("Expected multi-time rows");
+    }
+    const topBBefore = rowB.getBoundingClientRect().top;
+    const topCBefore = rowC.getBoundingClientRect().top;
+
+    await user.click(yesButtonForTime("Thu 22 Oct, 7:00pm"));
+
+    await waitFor(() =>
+      expect(yesButtonForTime("Thu 22 Oct, 7:00pm")).toHaveAttribute("aria-pressed", "true"),
+    );
+
+    expect(Math.abs(rowB.getBoundingClientRect().top - topBBefore)).toBeLessThan(1);
+    expect(Math.abs(rowC.getBoundingClientRect().top - topCBefore)).toBeLessThan(1);
+  });
+
   it("keeps three Yes buttons in the DOM while the first save is in flight", async () => {
     let releaseFirst!: () => void;
     const firstGate = new Promise<void>((resolve) => {

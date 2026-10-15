@@ -23,6 +23,7 @@ import {
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
 import { formatLongDay, formatShortDay, formatTimeSpan } from "@/domain/datetime/display";
 import { eventAcceptsResponseDeadline } from "@/domain/events/response-deadline-status";
+import { confirmedEventConsensusPassesForDisplay } from "@/domain/scheduling/confirmed-because";
 import { formatEventTimeDisclosureSummary } from "@/domain/scheduling/event-time-disclosure-summary";
 import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
 import { formatDateTimeLocalInTimeZone } from "@/domain/datetime/timezone";
@@ -105,7 +106,13 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
     status: detail.status,
     startsAt: detail.startsAt,
     timeZone: tz,
-    consensusCurrentlyPasses: detail.status === "confirmed" ? data.anyCandidatePasses : undefined,
+    consensusCurrentlyPasses:
+      detail.status === "confirmed"
+        ? confirmedEventConsensusPassesForDisplay(
+            data.anyCandidatePasses,
+            detail.confirmationMethod,
+          )
+        : undefined,
     candidateCount: data.scheduling.candidates.length,
     passingCandidateCount: data.consensus.candidates.filter((candidate) => candidate.passes).length,
   });
@@ -137,7 +144,12 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
           <EventStatusPill
             status={detail.status}
             consensusCurrentlyPasses={
-              detail.status === "confirmed" ? data.anyCandidatePasses : undefined
+              detail.status === "confirmed"
+                ? confirmedEventConsensusPassesForDisplay(
+                    data.anyCandidatePasses,
+                    detail.confirmationMethod,
+                  )
+                : undefined
             }
           />
           {overviewWhen ? (
@@ -162,7 +174,12 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
               <EventStatusPill
                 status={detail.status}
                 consensusCurrentlyPasses={
-                  detail.status === "confirmed" ? data.anyCandidatePasses : undefined
+                  detail.status === "confirmed"
+                    ? confirmedEventConsensusPassesForDisplay(
+                        data.anyCandidatePasses,
+                        detail.confirmationMethod,
+                      )
+                    : undefined
                 }
               />
             </div>
