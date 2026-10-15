@@ -2,6 +2,7 @@ import { HuiBotanical } from "@/components/hui/botanical";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiLogo } from "@/components/hui/hui-logo";
 import { HuiWordmark } from "@/components/hui/hui-wordmark";
+import { InAppBrowserAuthBanner } from "@/components/pwa/in-app-browser-auth-banner";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -29,6 +30,7 @@ export default async function Home() {
           A calm place for the people you gather with. Hui proposes, coordinates and remembers
           &mdash; the group decides.
         </p>
+        <InAppBrowserAuthBanner className="hui-rise-2 mx-auto mt-8 max-w-sm text-left" />
         <div className="hui-rise-3 mx-auto mt-10 flex max-w-xs flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:justify-center">
           <HuiLinkButton href="/sign-in" size="lg" shape="melt">
             Sign in

@@ -80,17 +80,25 @@ export function EventCard({ event, variant = "standard", tone = "primary", class
   const planning = event.bucket === "planning" || event.attention === "respond";
   const proposedPrefix =
     planning && event.startsAt && event.status !== "confirmed" ? "Proposed · " : "";
-  const timeLine = event.proposalDatePassed && event.status === "proposing"
-    ? "This proposal's date has passed"
-    : event.startsAt
-    ? `${proposedPrefix}${formatShortDay(event.startsAt, event.timeZone)} · ${
-        featured
-          ? formatTimeSpan(event.startsAt, event.endsAt, event.timeZone)
-          : formatClockTime(event.startsAt, event.timeZone)
-      }`
-    : planning
-      ? "Time proposed — not confirmed yet"
-      : "Time still to be agreed";
+  const timeLine =
+    event.status === "cancelled"
+      ? event.startsAt
+        ? `Cancelled · ${formatShortDay(event.startsAt, event.timeZone)} · ${formatClockTime(
+            event.startsAt,
+            event.timeZone,
+          )}`
+        : "Cancelled"
+      : event.proposalDatePassed && event.status === "proposing"
+        ? "This proposal's date has passed"
+        : event.startsAt
+          ? `${proposedPrefix}${formatShortDay(event.startsAt, event.timeZone)} · ${
+              featured
+                ? formatTimeSpan(event.startsAt, event.endsAt, event.timeZone)
+                : formatClockTime(event.startsAt, event.timeZone)
+            }`
+          : planning
+            ? "Time proposed — not confirmed yet"
+            : "Time still to be agreed";
   const when = event.relativeDayChip;
   const showAddToCalendar = canDownloadEventIcs(event.status, event.startsAt);
   const hasAttentionAction = event.attention !== null;

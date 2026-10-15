@@ -3,11 +3,21 @@
 import { useState } from "react";
 
 import { huiButtonClass } from "@/components/hui/hui-button";
-import { inAppBrowserInstallBanner, type InstallPlatform } from "@/domain/pwa/install";
+import {
+  inAppBrowserInstallBanner,
+  type InAppBrowserInstallBanner as InAppBrowserBannerCopy,
+  type InstallPlatform,
+} from "@/domain/pwa/install";
 
-export function InAppBrowserInstallBanner({ platform }: { platform: InstallPlatform }) {
+export function InAppBrowserInstallBanner({
+  platform,
+  banner: bannerOverride,
+}: {
+  platform: InstallPlatform;
+  banner?: InAppBrowserBannerCopy;
+}) {
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
-  const banner = inAppBrowserInstallBanner(platform);
+  const banner = bannerOverride ?? inAppBrowserInstallBanner(platform);
 
   async function copyPageLink() {
     const url = window.location.href;

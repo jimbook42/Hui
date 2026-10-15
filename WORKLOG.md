@@ -1,5 +1,19 @@
 # Worklog
 
+## 2026-10-15 — HUI-0183 friction tier 1 (v0.18.3)
+
+- In-app browser OAuth banner on `/`, sign-in, sign-up; reschedule re-asking hero; cancelled hero/copy; privacy sign-in list; host self-notify migration (not applied).
+
+## 2026-10-15 — HUI-0183 batched roster RPC (v0.18.3)
+
+- `candidate_attendance_rosters(uuid[])` security-definer batch wrapper; home dashboard uses one RPC instead of `event_responses` (RLS self-only).
+- Vitest: roster under mocked RLS + request-budget mock counts batched RPC.
+
+## 2026-10-15 — HUI-LOGS-N+1 list surface query batching (v0.18.3)
+
+- Batch dashboard recurring planning (settings, events, recurrence prefs/skips) and build home attendance rosters without per-candidate RPC fan-out.
+- `/groups` loads invite links lazily on Invite click; request-budget vitest asserts <15 Supabase calls for 40-group fixtures.
+
 ## 2026-10-15 — HUI-0182 Facebook login feature flag (v0.18.2)
 
 - Gate Facebook OAuth UI and server start on `NEXT_PUBLIC_ENABLE_FACEBOOK_LOGIN === "true"` via `getEnabledOAuthProviderIds`; Google/Microsoft unchanged.

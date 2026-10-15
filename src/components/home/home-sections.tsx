@@ -13,7 +13,7 @@ import {
   splitHomeEvents,
   type HomeEvent,
 } from "@/lib/events/home-data";
-import { loadDashboardRecurringPlanning } from "@/lib/groups/planning-cycle-queries";
+import { loadDashboardEventsSurfaceData } from "@/lib/groups/list-surfaces";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 import { cn } from "@/lib/ui/cn";
 
@@ -59,12 +59,10 @@ export async function DashboardEvents() {
     return null;
   }
   const supabase = await getServerSupabase();
-  const [{ events, groups, proposableGroups }, recurringPlanning] = await Promise.all([
-    devTimed("dashboard:home-data", () => loadHomeData(supabase, user.id)),
-    devTimed("dashboard:recurring-planning", () =>
-      loadDashboardRecurringPlanning(supabase, user.id),
-    ),
-  ]);
+  const { events, groups, proposableGroups, recurringPlanning } = await devTimed(
+    "dashboard:events-surface",
+    () => loadDashboardEventsSurfaceData(supabase, user.id),
+  );
   const sections = splitHomeEvents(events);
   const createHref = createHuiHref(proposableGroups);
 

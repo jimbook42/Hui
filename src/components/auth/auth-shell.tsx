@@ -5,6 +5,7 @@ import { HuiBotanical } from "@/components/hui/botanical";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { HuiLogo } from "@/components/hui/hui-logo";
 import { HuiWordmark } from "@/components/hui/hui-wordmark";
+import { InAppBrowserAuthBanner } from "@/components/pwa/in-app-browser-auth-banner";
 
 type AuthShellProps = {
   title: string;
@@ -31,6 +32,7 @@ export function AuthShell({ title, description, children, footer }: AuthShellPro
           <p className="hui-type-supporting mt-2 text-center">{description}</p>
         ) : null}
         <HuiSurface shape="organic" padding="lg" elevated className="hui-rise-2 mt-7">
+          <InAppBrowserAuthBanner className="mb-6" />
           {children}
         </HuiSurface>
         {footer ? (

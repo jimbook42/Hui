@@ -5,6 +5,7 @@ import {
   detectInAppBrowser,
   detectInstallPlatform,
   inAppBrowserInstallBanner,
+  inAppBrowserOAuthSignInBanner,
   installInstructionsFor,
   isInstallDismissed,
   resolveInstallAvailability,
@@ -38,6 +39,13 @@ describe("detectInAppBrowser", () => {
   it("uses Safari or Chrome wording in the banner", () => {
     expect(inAppBrowserInstallBanner("ios").title).toContain("Safari");
     expect(inAppBrowserInstallBanner("android").title).toContain("Chrome");
+  });
+
+  it("explains Google sign-in for OAuth in-app banner", () => {
+    const ios = inAppBrowserOAuthSignInBanner("ios");
+    expect(ios.title).toContain("Safari");
+    expect(ios.steps.join(" ")).toMatch(/Google sign-in/i);
+    expect(ios.steps.join(" ")).toMatch(/Facebook|Instagram/i);
   });
 });
 

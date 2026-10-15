@@ -42,7 +42,7 @@ import type {
 } from "@/domain/scheduling/types";
 import { ACTIVE_CANDIDATE_STATUSES } from "@/domain/scheduling/types";
 import { listOpenDecisionsForEvents } from "@/lib/decisions/queries";
-import { getCandidateAttendanceRoster } from "@/lib/scheduling/queries";
+import { parseCandidateAttendanceRostersMap } from "@/lib/scheduling/queries";
 
 const DEFAULT_TIME_ZONE = "Pacific/Auckland";
 const OPEN_STATUSES: EventStatus[] = ["proposing", "voting", "awaiting_agreement", "reopened", "confirmed"];
@@ -237,7 +237,7 @@ export async function loadHomeData(
       groupIds.length > 0
         ? supabase
             .from("group_memberships")
-            .select("group_id, user_id, consensus_required")
+            .select("group_id, user_id, consensus_required, profiles:user_id ( display_name )")
             .in("group_id", groupIds)
             .eq("status", "active")
         : Promise.resolve({ data: [], error: null }),
@@ -292,6 +292,7 @@ export async function loadHomeData(
     group_id: string;
     user_id: string;
     consensus_required: boolean | null;
+    profiles: { display_name: string } | { display_name: string }[] | null;
   }>) {
     const list = membersByGroup.get(row.group_id) ?? [];
     list.push({
@@ -508,14 +509,27 @@ export async function loadHomeData(
     .sort((a, b) => rank[a.bucket] - rank[b.bucket] || compareSoonest(a, b))
     .slice(0, ROSTER_FANOUT);
 
-  const rosters = await Promise.all(
-    rosterTargets.map(async (event) => ({
-      id: event.id,
-      roster: await getCandidateAttendanceRoster(supabase, event.candidateId as string),
-    })),
-  );
-  for (const { id, roster } of rosters) {
-    const target = events.find((event) => event.id === id);
+  const rosterCandidateIds = rosterTargets
+    .map((event) => event.candidateId)
+    .filter((id): id is string => id != null);
+
+  const rostersByCandidate = new Map<string, AttendanceRoster>();
+  if (rosterCandidateIds.length > 0) {
+    const rosterRpcResult = await supabase.rpc("candidate_attendance_rosters", {
+      p_candidate_ids: rosterCandidateIds,
+    });
+    if (rosterRpcResult.error) {
+      throw new Error(rosterRpcResult.error.message);
+    }
+    for (const [candidateId, roster] of parseCandidateAttendanceRostersMap(rosterRpcResult.data)) {
+      rostersByCandidate.set(candidateId, roster);
+    }
+  }
+
+  for (const event of rosterTargets) {
+    const candidateId = event.candidateId as string;
+    const roster = rostersByCandidate.get(candidateId);
+    const target = events.find((row) => row.id === event.id);
     if (target && roster) {
       target.roster = roster;
       target.counts = countAttendance(roster.members, roster.maybeResponsesEnabled);

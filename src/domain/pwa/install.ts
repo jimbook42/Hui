@@ -42,6 +42,23 @@ export type InAppBrowserInstallBanner = {
   steps: string[];
 };
 
+/** Sign-in from social in-app browsers (Facebook, Instagram, etc.) — Google OAuth needs a real browser. */
+export function inAppBrowserOAuthSignInBanner(platform: InstallPlatform): InAppBrowserInstallBanner {
+  const openSteps = inAppBrowserInstallBanner(platform);
+  return {
+    title:
+      platform === "ios"
+        ? "Open in Safari to sign in"
+        : platform === "android"
+          ? "Open in Chrome to sign in"
+          : "Open in your browser to sign in",
+    steps: [
+      "Google sign-in does not work inside Facebook, Instagram, and similar in-app browsers.",
+      ...openSteps.steps,
+    ],
+  };
+}
+
 export function inAppBrowserInstallBanner(platform: InstallPlatform): InAppBrowserInstallBanner {
   if (platform === "ios") {
     return {

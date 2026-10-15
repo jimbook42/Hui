@@ -8,8 +8,12 @@ describe("event hero time visibility", () => {
     expect(shouldShowEventHeroTime("completed", "2026-10-19T12:00:00.000Z")).toBe(true);
   });
 
-  it("hides time for cancelled or missing startsAt", () => {
-    expect(shouldShowEventHeroTime("cancelled", "2026-10-19T12:00:00.000Z")).toBe(false);
+  it("shows cancelled hui times as context when startsAt is set", () => {
+    expect(shouldShowEventHeroTime("cancelled", "2026-10-19T12:00:00.000Z")).toBe(true);
+  });
+
+  it("hides time when startsAt is missing", () => {
     expect(shouldShowEventHeroTime("proposing", null)).toBe(false);
+    expect(shouldShowEventHeroTime("cancelled", null)).toBe(false);
   });
 });

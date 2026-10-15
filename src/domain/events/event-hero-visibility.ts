@@ -1,9 +1,9 @@
 import type { EventStatus } from "./types";
 
-/** Show a fixed event time in the hero for confirmed and completed hui (not cancelled). */
+/** Show a fixed event time in the hero when we have a start instant (including cancelled, for context). */
 export function shouldShowEventHeroTime(
-  status: EventStatus,
+  _status: EventStatus,
   startsAt: string | null,
 ): boolean {
-  return Boolean(startsAt) && status !== "cancelled";
+  return Boolean(startsAt);
 }

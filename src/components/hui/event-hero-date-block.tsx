@@ -4,7 +4,7 @@ import { EventDateBadge } from "@/components/hui/event-date-badge";
 
 type EventHeroDateBlockProps = {
   copy: EventHeroDateCopy;
-  badgeTone: "primary" | "sage";
+  badgeTone: "primary" | "secondary" | "sage";
   showProposedHint: boolean;
 };
 

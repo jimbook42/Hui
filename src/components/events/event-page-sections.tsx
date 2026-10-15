@@ -40,6 +40,7 @@ import {
   formatClockTime,
   formatShortDay,
 } from "@/domain/datetime/display";
+import { eventHeroTimeFallbackCopy } from "@/domain/events/event-hero-time-fallback";
 import { shouldShowEventHeroTime } from "@/domain/events/event-hero-visibility";
 import { buildProposedHuiGuidance } from "@/domain/events/proposed-guidance";
 import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
@@ -99,6 +100,7 @@ export function EventHeroMeta({
   const followsHostCategoryIds = new Set(
     data.contributionCategories.filter((category) => category.followsHost).map((category) => category.id),
   );
+  const timeFallback = eventHeroTimeFallbackCopy(detail.status);
   const confirmedStatusLine =
     confirmed && data.settings
       ? formatConfirmedHeroStatusLine({
@@ -106,6 +108,7 @@ export function EventHeroMeta({
           counts: data.counts,
           maybeResponsesEnabled: data.scheduling.maybeResponsesEnabled,
           confirmationMethod: detail.confirmationMethod,
+          consensusCurrentlyPasses: data.anyCandidatePasses,
         })
       : null;
 
@@ -130,9 +133,16 @@ export function EventHeroMeta({
       {heroDateCopy ? (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <div className="min-w-0 flex-1">
+            {detail.status === "cancelled" ? (
+              <p className="mb-2 text-sm font-extrabold uppercase tracking-wide text-muted-foreground" role="status">
+                Cancelled
+              </p>
+            ) : null}
             <EventHeroDateBlock
               copy={heroDateCopy}
-              badgeTone={confirmed || completed ? "sage" : "primary"}
+              badgeTone={
+                detail.status === "cancelled" ? "secondary" : confirmed || completed ? "sage" : "primary"
+              }
               showProposedHint={!confirmed && !completed && !closed}
             />
             {confirmedStatusLine ? (
@@ -145,16 +155,14 @@ export function EventHeroMeta({
             <AddToCalendarButton eventId={detail.id} variant="page" className="shrink-0" />
           ) : null}
         </div>
-      ) : (
+      ) : timeFallback ? (
         <div className="flex items-center gap-4">
           <div className="min-w-0 flex-1">
-            <p className="text-xl font-extrabold leading-tight text-foreground">Time still to be agreed</p>
-            <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
-              Nobody has put a time on the table yet.
-            </p>
+            <p className="text-xl font-extrabold leading-tight text-foreground">{timeFallback.title}</p>
+            <p className="mt-0.5 text-sm font-semibold text-muted-foreground">{timeFallback.subtitle}</p>
           </div>
         </div>
-      )}
+      ) : null}
 
       <ul className="space-y-2 text-base font-bold text-foreground">
         <li className="flex items-start gap-3">

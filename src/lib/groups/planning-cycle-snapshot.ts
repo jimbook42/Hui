@@ -20,20 +20,55 @@ export type RecurrenceCycleModifiers = BuildGroupPlanningCycleOptions & {
   recentSkips: PlanningCycleSkipRecord[];
 };
 
+function mapRecurrenceCycleModifiers(
+  prefsRow: { recurrence_paused_at?: string | null } | null | undefined,
+  skipRows: Array<{ nominal_date: string; reason: string | null }>,
+): RecurrenceCycleModifiers {
+  const recentSkips = skipRows.map((row) => ({
+    nominalDate: row.nominal_date,
+    reason: row.reason ?? null,
+  }));
+
+  return {
+    recurrencePaused: Boolean(prefsRow?.recurrence_paused_at),
+    skippedNominalDates: recentSkips.map((row) => row.nominalDate),
+    recentSkips,
+  };
+}
+
 export async function loadRecurrenceCycleModifiers(
   supabase: SupabaseClient,
   groupId: string,
 ): Promise<RecurrenceCycleModifiers> {
+  const batch = await loadRecurrenceCycleModifiersByGroupIds(supabase, [groupId]);
+  return (
+    batch.get(groupId) ?? {
+      recurrencePaused: false,
+      skippedNominalDates: [],
+      recentSkips: [],
+    }
+  );
+}
+
+/** Batched recurrence pause + skip rows for list/dashboard surfaces. */
+export async function loadRecurrenceCycleModifiersByGroupIds(
+  supabase: SupabaseClient,
+  groupIds: string[],
+): Promise<Map<string, RecurrenceCycleModifiers>> {
+  const modifiersByGroup = new Map<string, RecurrenceCycleModifiers>();
+  if (groupIds.length === 0) {
+    return modifiersByGroup;
+  }
+
   const [prefsResult, skipsResult] = await Promise.all([
     supabase
       .from("group_recurrence_preferences")
-      .select("recurrence_paused_at")
-      .eq("group_id", groupId)
-      .maybeSingle(),
+      .select("group_id, recurrence_paused_at")
+      .in("group_id", groupIds),
     supabase
       .from("group_planning_cycle_skips")
-      .select("nominal_date, reason")
-      .eq("group_id", groupId)
+      .select("group_id, nominal_date, reason")
+      .in("group_id", groupIds)
       .order("nominal_date", { ascending: false }),
   ]);
 
@@ -44,16 +79,30 @@ export async function loadRecurrenceCycleModifiers(
     throw new Error(skipsResult.error.message);
   }
 
-  const recentSkips = (skipsResult.data ?? []).map((row) => ({
-    nominalDate: row.nominal_date as string,
-    reason: (row.reason as string | null) ?? null,
-  }));
+  const prefsByGroup = new Map<string, { recurrence_paused_at?: string | null }>();
+  for (const row of prefsResult.data ?? []) {
+    prefsByGroup.set(row.group_id as string, row);
+  }
 
-  return {
-    recurrencePaused: Boolean(prefsResult.data?.recurrence_paused_at),
-    skippedNominalDates: recentSkips.map((row) => row.nominalDate),
-    recentSkips,
-  };
+  const skipsByGroup = new Map<string, Array<{ nominal_date: string; reason: string | null }>>();
+  for (const row of skipsResult.data ?? []) {
+    const groupId = row.group_id as string;
+    const list = skipsByGroup.get(groupId) ?? [];
+    list.push({
+      nominal_date: row.nominal_date as string,
+      reason: (row.reason as string | null) ?? null,
+    });
+    skipsByGroup.set(groupId, list);
+  }
+
+  for (const groupId of groupIds) {
+    modifiersByGroup.set(
+      groupId,
+      mapRecurrenceCycleModifiers(prefsByGroup.get(groupId), skipsByGroup.get(groupId) ?? []),
+    );
+  }
+
+  return modifiersByGroup;
 }
 
 export async function persistGroupPlanningSnapshot(

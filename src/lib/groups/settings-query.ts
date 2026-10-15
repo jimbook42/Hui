@@ -12,18 +12,30 @@ export async function getGroupSettingsByGroupId(
   supabase: SupabaseClient,
   groupId: string,
 ): Promise<GroupSettingsRow | null> {
-  const { data, error } = await supabase
-    .from("group_settings")
-    .select("*")
-    .eq("group_id", groupId)
-    .maybeSingle();
+  const map = await listGroupSettingsByGroupIds(supabase, [groupId]);
+  return map.get(groupId) ?? null;
+}
+
+/** One round-trip for many groups (dashboard / list surfaces). */
+export async function listGroupSettingsByGroupIds(
+  supabase: SupabaseClient,
+  groupIds: string[],
+): Promise<Map<string, GroupSettingsRow>> {
+  const settings = new Map<string, GroupSettingsRow>();
+  if (groupIds.length === 0) {
+    return settings;
+  }
+
+  const { data, error } = await supabase.from("group_settings").select("*").in("group_id", groupIds);
 
   if (error) {
     throw new Error(error.message);
   }
-  if (!data) {
-    return null;
+
+  for (const row of data ?? []) {
+    const groupId = row.group_id as string;
+    settings.set(groupId, mapSettings(row as Record<string, unknown>));
   }
 
-  return mapSettings(data);
+  return settings;
 }

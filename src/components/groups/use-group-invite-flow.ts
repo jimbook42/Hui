@@ -5,11 +5,15 @@ import { useCallback, useState } from "react";
 import { shareInviteLink } from "@/domain/invites/share";
 
 export function useGroupInviteFlow(inviteUrl: string, groupName?: string) {
+  const [activeInviteUrl, setActiveInviteUrl] = useState(inviteUrl);
   const [introOpen, setIntroOpen] = useState(false);
   const [fallbackOpen, setFallbackOpen] = useState(false);
   const [getLinkPending, setGetLinkPending] = useState(false);
 
-  const openIntro = useCallback(() => {
+  const openIntro = useCallback((url?: string) => {
+    if (url) {
+      setActiveInviteUrl(url);
+    }
     setIntroOpen(true);
   }, []);
 
@@ -24,7 +28,7 @@ export function useGroupInviteFlow(inviteUrl: string, groupName?: string) {
   const getLink = useCallback(async () => {
     setGetLinkPending(true);
     try {
-      const result = await shareInviteLink(inviteUrl, groupName);
+      const result = await shareInviteLink(activeInviteUrl, groupName);
       if (result.outcome === "shared") {
         setIntroOpen(false);
       } else if (result.outcome === "fallback") {
@@ -36,7 +40,7 @@ export function useGroupInviteFlow(inviteUrl: string, groupName?: string) {
     } finally {
       setGetLinkPending(false);
     }
-  }, [inviteUrl, groupName]);
+  }, [activeInviteUrl, groupName]);
 
   return {
     introOpen,

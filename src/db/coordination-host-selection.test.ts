@@ -433,6 +433,29 @@ describe("coordination host selection (HUI-022A.1)", () => {
       expect(host.rows[0]?.user_id).not.toBe(ids.sam);
     });
 
+    it("does not send host_proposed to the organiser when they are the suggested host", async () => {
+      const { eventId, candidateId } = await insertProposingEventWithCandidate(
+        db,
+        ids.owner,
+        "Organiser hosts",
+      );
+      await respondYes(db, ids.owner, candidateId);
+      await coordinateHost(db, ids.owner, eventId);
+
+      const proposed = await db.query<{ user_id: string }>(
+        `select user_id::text from public.host_assignments where event_id = $1 and status = 'proposed'`,
+        [eventId],
+      );
+      if (proposed.rows[0]?.user_id === ids.owner) {
+        const notes = await db.query(
+          `select 1 from public.member_notifications
+           where event_id = $1 and user_id = $2 and kind = 'host_proposed'`,
+          [eventId, ids.owner],
+        );
+        expect(notes.rows).toHaveLength(0);
+      }
+    });
+
     it("does not propose anyone when hosting is disabled", async () => {
       await asUser(db, ids.isaac);
       await db.query(`select public.set_my_hosting_standing($1, 'always')`, [groupId]);
