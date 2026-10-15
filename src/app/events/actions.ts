@@ -43,6 +43,12 @@ export type EventActionState = {
   message?: string;
   /** Non-error notice for the client (refresh + toast). */
   notice?: string;
+  /** Set when a successful availability save left the hui confirmed (auto-confirm). */
+  confirmedCandidate?: {
+    id: string;
+    startsAt: string;
+    endsAt: string | null;
+  };
 };
 
 async function requireUser() {

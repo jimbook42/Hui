@@ -4,6 +4,7 @@
 
 - Blind-3 QA: invite/sign-up CTA order, hui-scoped invite sheet copy, propose add-time feedback, respond progress/saved/continue copy, vocabulary (group/hui), explicit hui type on propose, editable reply-by on review, dashboard onboarding order, install card after second visit, change-response gating, email field sizing.
 - Tests: join CTA, invite copy, dashboard greeting, proposal defaults, response-deadline preview, install visit gate, restore-flow label updates.
+- UX3 sync2 addendum: in-place Saving on attendance buttons (stable Yes count), no Retry on confirm-race lock, client transition to confirmed view from `confirmedCandidate` action payload.
 
 ## 2026-10-15 — HUI-0186 answer reliability (v0.18.6)
 
@@ -11,6 +12,22 @@
 - **Root cause (fix1 QA fail, 53850ff):** After removing the shared transition, three overlapping `setAvailabilityResponseAction` calls still ran in parallel. The first completion’s `revalidatePath` in `scheduling-actions.ts` (~391–392) aborted the other in-flight Next server-action streams (`The destination stream closed early` in `/tmp/s0186.log`); the client treated an empty/aborted action result as success (`event-participant-respond-flow.tsx` ~450–474, no explicit success check), so the middle candidate never reached `event_responses` (PM read-only: rows for 4 Nov + 11 Nov, none for 6 Nov). Offline Retry showed raw `Failed to fetch` (~491–493).
 - **Fix:** Serialize attendance saves on the client (`serialize-attendance-saves.ts` + `event-participant-respond-flow.tsx` ~439); require explicit `{ message | notice }` success (`availability-action-outcome.ts`); friendly connection copy + Retry re-send; skip `router.refresh` on multi-time saves (~455, ~488). PGlite proves concurrent DB upserts all persist (`concurrent-member-availability-save.test.ts`).
 - **Tests:** serialized multi-time saves, aborted/empty action + `Failed to fetch` + Retry, PGlite concurrent upserts, serializer unit test.
+
+## 2026-10-15 — HUI-0186-fix4 offline Retry survives reconnect (v0.18.6)
+
+- **Root cause (PM review 89836d0):** `SerwistProvider` in `serwist-provider.tsx` (~line 11) set `reloadOnOnline={true}`; `@serwist/turbopack` registers `window.addEventListener("online", () => location.reload())`, so Playwright `setOffline(false)` / real `online` wiped React state (`errorsByCandidate` in `event-participant-respond-flow.tsx` ~188) before the user could tap Retry.
+- **Fix:** `reloadOnOnline={false}` (navigation caching already off); E2E requires Retry visible ~3s after reconnect then explicit Retry click; component test covers rerender + `online` event without clearing error.
+
+## 2026-10-15 — HUI-0186-fix3 respond E2E + save revalidate (v0.18.6)
+
+- **E2E:** Parse group id from `/welcome` URLs; open group settings via `/settings` + Advanced; match Yes buttons by accessible name (`/^Yes/`); wait per-save; offline Retry after reconnect (fix4 tightens assertion).
+- **App:** Drop `revalidatePath` on successful `setAvailabilityResponseAction` so serialized multi-time saves are not aborted by RSC refresh (extends fix1).
+
+## 2026-10-15 — HUI-0186-fix2 respond UI stability (v0.18.6)
+
+- **Root cause A (PM repro, b1820be):** After the first Yes, majority auto-confirm revalidated the respond RSC payload; `respondAttendanceCandidates` (`participant-flow.ts` ~47–57) collapsed to the selected time and `multipleTimeOptions` flipped false (`event-participant-respond-flow.tsx` ~158–159), remounting the single-time UI so global `nth()` Yes taps hit shifted rows (3→2→1 buttons).
+- **Root cause B:** Confirm-race recovery returned `notice` without `message` for non-selected times (`confirm-during-save.ts` ~60–65); `isAttendanceActionSuccess` treated `notice` alone as success (`availability-action-outcome.ts` ~13) and the multi-time `result.notice` branch cleared pending without reverting (`event-participant-respond-flow.tsx` ~459–466).
+- **Fix:** Pin multi-time rows for the visit (`pinnedMultiTimeSession`); keep Yes pressed while saving; `notice`-only confirm race → inline error + un-press; wrong-candidate confirm race returns `error`; stop `revalidatePath` on `/respond` for availability saves; Playwright `e2e/respond-multi-time.spec.ts` (fails on b1820be layout shift / false success).
 
 ## 2026-10-15 — HUI-0185 polish (v0.18.5)
 

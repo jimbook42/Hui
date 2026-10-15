@@ -28,6 +28,7 @@ import { getEventSchedulingContext } from "@/lib/scheduling/queries";
 import { schedulePushDelivery } from "@/lib/push/schedule";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 import {
+  confirmedDuringSaveToast,
   isSchedulingClosedDbError,
   resolveConfirmRaceAfterFailedSave,
   shouldRetryAvailabilitySaveAfterConfirmRace,
@@ -358,8 +359,6 @@ export async function setAvailabilityResponseAction(
           timeZone,
         });
         if (recovered) {
-          revalidatePath(`/events/${eventId}`);
-          revalidatePath(`/events/${eventId}/respond`);
           schedulePushDelivery();
           return recovered;
         }
@@ -367,10 +366,34 @@ export async function setAvailabilityResponseAction(
       return { error: upsertError };
     }
 
-    revalidatePath(`/events/${eventId}`);
-    revalidatePath(`/events/${eventId}/respond`);
     schedulePushDelivery();
-    return { message: "Response saved." };
+
+    const detailAfter = await getEventDetail(supabase, eventId, user.id);
+    if (!detailAfter || detailAfter.status !== "confirmed") {
+      return { message: "Response saved." };
+    }
+
+    const { data: selected } = await supabase
+      .from("event_candidates")
+      .select("id, starts_at, ends_at")
+      .eq("event_id", eventId)
+      .eq("group_id", detail.groupId)
+      .eq("status", "selected")
+      .maybeSingle();
+
+    if (!selected?.id || !selected.starts_at) {
+      return { message: "Response saved." };
+    }
+
+    return {
+      message: "Response saved.",
+      notice: confirmedDuringSaveToast(selected.starts_at, selected.ends_at, timeZone),
+      confirmedCandidate: {
+        id: selected.id,
+        startsAt: selected.starts_at,
+        endsAt: selected.ends_at,
+      },
+    };
   });
 }
 

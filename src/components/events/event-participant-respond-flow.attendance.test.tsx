@@ -105,6 +105,34 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     vi.clearAllMocks();
   });
 
+  it("keeps three Yes buttons in the DOM while the first save is in flight", async () => {
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+
+    vi.mocked(setAvailabilityResponseAction).mockImplementation(async (_prev, formData) => {
+      const candidateId = String(formData.get("candidate_id"));
+      if (candidateId === "cand-a") {
+        await firstGate;
+      }
+      return { message: "Response saved." };
+    });
+
+    const user = userEvent.setup();
+    renderMultiTimeFlow();
+
+    const yesA = yesButtonForTime("Thu 22 Oct, 7:00pm");
+    await user.click(yesA);
+
+    expect(screen.getAllByRole("button", { name: /Yes/ })).toHaveLength(3);
+    expect(yesA).toHaveAttribute("aria-busy", "true");
+
+    releaseFirst();
+    await waitFor(() => expect(yesA).toHaveAttribute("aria-pressed", "true"));
+    expect(screen.getAllByRole("button", { name: /Yes/ })).toHaveLength(3);
+  });
+
   it("serializes three quick saves (one server action in flight) and keeps Yes on each time", async () => {
     const saveOrder: string[] = [];
     let inFlight = 0;
@@ -192,6 +220,146 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     await user.click(screen.getByRole("button", { name: "Retry" }));
     await waitFor(() => expect(yesB).toHaveAttribute("aria-pressed", "true"));
     expect(setAvailabilityResponseAction).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps all three time rows mounted after answers when the hui confirms mid-session", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockResolvedValue({ message: "Response saved." });
+
+    const user = userEvent.setup();
+    const { rerender } = renderMultiTimeFlow();
+
+    await user.click(yesButtonForTime("Thu 22 Oct, 7:00pm"));
+
+    const confirmedCandidates: EventCandidateRow[] = [candidateA, candidateB, candidateC].map(
+      (row, index) => ({
+        ...row,
+        status: index === 0 ? "selected" : "proposed",
+        viewerResponse: index === 0 ? ("available" as const) : row.viewerResponse,
+      }),
+    );
+
+    rerender(
+      <EventParticipantRespondFlow
+        eventId="event-1"
+        groupId="group-1"
+        eventTitle="Board-game night"
+        groupName="Fortnightly Board-Game Night"
+        timeZone="Pacific/Auckland"
+        maybeResponsesEnabled={true}
+        canRespond={true}
+        canCoordinateContributions={false}
+        canSuggestTime={false}
+        candidate={{ ...candidateA, status: "selected", viewerResponse: "available" }}
+        proposedCandidates={confirmedCandidates}
+        placeView={{ kind: "pending", line: "Place still being worked out" }}
+        coordinates={null}
+        hostingEnabled={true}
+        viewerUserId="user-i2"
+        initialViewerResponse="available"
+        standingAvailabilityHint={null}
+        focusTimeLabel="Thursday 22 October, 7:00pm"
+        candidateTimeLabels={candidateTimeLabels}
+        replyByLabel="Reply by Sat 17 Oct 5:28pm"
+        eventStatus="confirmed"
+      />,
+    );
+
+    expect(screen.getByText("Thu 22 Oct, 7:00pm")).toBeInTheDocument();
+    expect(screen.getByText("Sat 24 Oct, 6:30pm")).toBeInTheDocument();
+    expect(screen.getByText("Thu 29 Oct, 7:00pm")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Yes/ })).toHaveLength(3);
+  });
+
+  it("shows confirm-race copy and un-presses when another time was confirmed", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockResolvedValueOnce({
+      error:
+        "This hui was just confirmed for Sat 24 Oct, 6:30pm — your other answers can't change.",
+    });
+
+    const user = userEvent.setup();
+    renderMultiTimeFlow();
+
+    const yesC = yesButtonForTime("Thu 29 Oct, 7:00pm");
+    await user.click(yesC);
+
+    await screen.findByRole("alert");
+    expect(
+      screen.getByText(/just confirmed for .* can't change/i),
+    ).toBeInTheDocument();
+    expect(yesC).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+  });
+
+  it("switches to confirmed single-time view when the save returns confirmedCandidate", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockResolvedValueOnce({
+      message: "Response saved.",
+      notice: "This hui was just confirmed for Thu 22 Oct, 7:00pm — your answer for that time is saved.",
+      confirmedCandidate: {
+        id: "cand-a",
+        startsAt: candidateA.startsAt,
+        endsAt: null,
+      },
+    });
+
+    const user = userEvent.setup();
+    renderMultiTimeFlow();
+
+    await user.click(yesButtonForTime("Thu 22 Oct, 7:00pm"));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Sat 24 Oct, 6:30pm")).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
+    });
+    expect(screen.getAllByRole("button", { name: /Yes/ })).toHaveLength(1);
+  });
+
+  it("keeps error and Retry after rerender and a browser online event", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockRejectedValueOnce(
+      new Error("Failed to fetch"),
+    );
+
+    const user = userEvent.setup();
+    const { rerender } = renderMultiTimeFlow();
+
+    const yesB = yesButtonForTime("Sat 24 Oct, 6:30pm");
+    await user.click(yesB);
+
+    await screen.findByRole("alert");
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+
+    rerender(
+      <EventParticipantRespondFlow
+        eventId="event-1"
+        groupId="group-1"
+        eventTitle="Board-game night"
+        groupName="Fortnightly Board-Game Night"
+        timeZone="Pacific/Auckland"
+        maybeResponsesEnabled={true}
+        canRespond={true}
+        canCoordinateContributions={false}
+        canSuggestTime={false}
+        candidate={candidateA}
+        proposedCandidates={[candidateA, candidateB, candidateC]}
+        placeView={{ kind: "pending", line: "Place still being worked out" }}
+        coordinates={null}
+        hostingEnabled={true}
+        viewerUserId="user-i2"
+        initialViewerResponse={null}
+        standingAvailabilityHint={null}
+        focusTimeLabel="Thursday 22 October, 7:00pm"
+        candidateTimeLabels={candidateTimeLabels}
+        replyByLabel="Reply by Sat 17 Oct 5:28pm"
+        eventStatus="proposing"
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(screen.getByText(ATTENDANCE_SAVE_CONNECTION_MESSAGE)).toBeInTheDocument();
+
+    window.dispatchEvent(new Event("online"));
+
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(yesB).toHaveAttribute("aria-pressed", "false");
   });
 
   it("shows an inline error with Retry when a save is rejected", async () => {

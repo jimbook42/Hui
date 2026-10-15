@@ -30,16 +30,19 @@ export function AttendanceChoice({
   icon,
   onClick,
 }: AttendanceChoiceProps) {
+  const showPressed = state !== "action" && (selected || pending);
+
   return (
     <button
       type="button"
       disabled={disabled}
-      aria-pressed={state === "action" ? undefined : selected}
+      aria-pressed={state === "action" ? undefined : showPressed}
       aria-busy={pending || undefined}
+      aria-label={state === "action" ? undefined : label}
       onClick={onClick}
       className={cn(
         "hui-focus-ring flex min-h-[4.5rem] w-full items-center gap-4 rounded-hui-xl px-4 py-3 text-left text-[1.0625rem] font-extrabold transition duration-200 active:scale-[0.985] disabled:opacity-60",
-        selected
+        showPressed
           ? "bg-primary text-primary-foreground hui-shadow-md"
           : "bg-surface text-foreground hui-shadow-sm hover:-translate-y-0.5",
         state === "action" && "bg-muted shadow-none",
@@ -57,12 +60,24 @@ export function AttendanceChoice({
           state={state}
           label={label}
           size="md"
-          hideBadge={!selected}
-          subdued={!selected}
+          hideBadge={!showPressed}
+          subdued={!showPressed}
         />
       )}
-      <span className="min-w-0 flex-1 leading-tight">{pending ? "Saving…" : label}</span>
-      {selected && !pending ? (
+      <span className="min-w-0 flex-1 leading-tight">
+        <span className={pending ? "block text-[0.9375rem]" : undefined}>{label}</span>
+        {pending ? (
+          <span
+            className={cn(
+              "block text-sm font-semibold",
+              showPressed ? "text-primary-foreground/85" : "text-muted-foreground",
+            )}
+          >
+            Saving…
+          </span>
+        ) : null}
+      </span>
+      {showPressed && !pending ? (
         <CheckIcon size={20} strokeWidth={3} className="shrink-0" />
       ) : null}
     </button>
