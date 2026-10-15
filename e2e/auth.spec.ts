@@ -69,7 +69,7 @@ test("invite next survives sign-in ↔ sign-up and OAuth forms", async ({ page }
   );
 
   await page.goto(`/sign-up?next=${encoded}`);
-  await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute(
     "href",
     `/sign-in?next=${encoded}`,
   );
