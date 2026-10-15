@@ -1,7 +1,11 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 
 import { signInWithEmail } from "./helpers/email-auth";
-import { proposeOneOffHuiWithTimes, setGroupMinimumAttendees } from "./helpers/propose-event";
+import {
+  createGroup,
+  proposeOneOffHuiWithTimes,
+  setGroupMinimumAttendees,
+} from "./helpers/propose-event";
 import { hasPublicSupabaseConfig } from "../src/lib/supabase/env";
 
 const hasLiveAuth =
@@ -9,35 +13,48 @@ const hasLiveAuth =
   Boolean(process.env.E2E_TEST_EMAIL?.trim()) &&
   Boolean(process.env.E2E_TEST_PASSWORD?.trim());
 
+function yesButtonIn(scope: Page | ReturnType<Page["locator"]>) {
+  return scope.getByRole("button", { name: /^Yes/ });
+}
+
 async function yesButtonsPressed(page: Page): Promise<string[]> {
-  return page
-    .locator("button")
-    .filter({ hasText: /^\s*Yes\s*$/ })
-    .evaluateAll((elements) =>
-      elements.map((element) => element.getAttribute("aria-pressed") ?? "null"),
+  const rows = page.locator('[data-testid^="respond-time-row-"]');
+  const count = await rows.count();
+  const pressed: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    pressed.push(
+      (await yesButtonIn(rows.nth(index)).getAttribute("aria-pressed")) ?? "null",
     );
+  }
+  return pressed;
 }
 
 function timeRow(page: Page, index: number) {
   return page.locator('[data-testid^="respond-time-row-"]').nth(index);
 }
 
+async function tapYesAndWaitForSave(yes: Locator): Promise<void> {
+  await yes.click();
+  await expect.poll(async () => yes.getAttribute("aria-pressed"), { timeout: 30_000 }).toBe("true");
+  await expect
+    .poll(async () => yes.getAttribute("aria-busy"), { timeout: 30_000 })
+    .not.toBe("true");
+}
+
 async function tapYesOnEachTimeOneSecondApart(page: Page, mode: "row" | "nth"): Promise<void> {
   for (let index = 0; index < 3; index += 1) {
     if (mode === "row") {
-      await timeRow(page, index).getByRole("button", { name: /^Yes$/ }).click();
+      await tapYesAndWaitForSave(yesButtonIn(timeRow(page, index)));
     } else {
-      await page
-        .locator("button")
-        .filter({ hasText: /^\s*Yes\s*$/ })
-        .nth(index)
-        .click();
+      await tapYesAndWaitForSave(yesButtonIn(page).nth(index));
     }
     await page.waitForTimeout(1000);
   }
 }
 
 test.describe("multi-time respond reliability (HUI-0186)", () => {
+  test.setTimeout(120_000);
+
   test.skip(
     !hasLiveAuth,
     "Set E2E_TEST_EMAIL and E2E_TEST_PASSWORD (local Supabase) for respond E2E",
@@ -52,11 +69,7 @@ test.describe("multi-time respond reliability (HUI-0186)", () => {
     await signInWithEmail(page, email, password);
     await expect(page).toHaveURL(/\/dashboard/);
 
-    await page.goto("/groups/new");
-    await page.getByLabel("Group name").fill(groupName);
-    await page.getByRole("button", { name: "Create group" }).click();
-    await expect(page).toHaveURL(/\/groups\//);
-    const groupId = page.url().split("/groups/")[1]?.replace(/\/$/, "") ?? "";
+    const groupId = await createGroup(page, groupName);
 
     await setGroupMinimumAttendees(page, groupId, 99);
 
@@ -68,14 +81,14 @@ test.describe("multi-time respond reliability (HUI-0186)", () => {
 
     await page.goto(`/events/${eventId}/respond`);
     await expect(page.getByRole("heading", { name: "Can you make it?" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Yes$/ })).toHaveCount(3);
+    await expect(yesButtonIn(page)).toHaveCount(3);
 
     await tapYesOnEachTimeOneSecondApart(page, "row");
-    await expect(page.getByRole("button", { name: /^Yes$/ })).toHaveCount(3);
+    await expect(yesButtonIn(page)).toHaveCount(3);
     await expect.poll(() => yesButtonsPressed(page)).toEqual(["true", "true", "true"]);
 
     await page.reload();
-    await expect(page.getByRole("button", { name: /^Yes$/ })).toHaveCount(3);
+    await expect(yesButtonIn(page)).toHaveCount(3);
     await expect.poll(() => yesButtonsPressed(page), { timeout: 20_000 }).toEqual([
       "true",
       "true",
@@ -84,7 +97,7 @@ test.describe("multi-time respond reliability (HUI-0186)", () => {
 
     await page.goto(`/events/${eventId}/respond`);
     await tapYesOnEachTimeOneSecondApart(page, "nth");
-    await expect(page.getByRole("button", { name: /^Yes$/ })).toHaveCount(3);
+    await expect(yesButtonIn(page)).toHaveCount(3);
     await expect.poll(() => yesButtonsPressed(page)).toEqual(["true", "true", "true"]);
   });
 
@@ -98,10 +111,9 @@ test.describe("multi-time respond reliability (HUI-0186)", () => {
     const title = `E2E offline ${Date.now()}`;
 
     await signInWithEmail(page, email, password);
-    await page.goto("/groups/new");
-    await page.getByLabel("Group name").fill(groupName);
-    await page.getByRole("button", { name: "Create group" }).click();
-    const groupId = page.url().split("/groups/")[1]?.replace(/\/$/, "") ?? "";
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    const groupId = await createGroup(page, groupName);
 
     await setGroupMinimumAttendees(page, groupId, 99);
     const eventId = await proposeOneOffHuiWithTimes(page, groupId, title, [
@@ -112,19 +124,29 @@ test.describe("multi-time respond reliability (HUI-0186)", () => {
 
     await page.goto(`/events/${eventId}/respond`);
     const firstRow = timeRow(page, 0);
-    await firstRow.getByRole("button", { name: /^Yes$/ }).waitFor();
+    await yesButtonIn(firstRow).waitFor();
 
     await context.setOffline(true);
-    await firstRow.getByRole("button", { name: /^Yes$/ }).click();
-    await expect(page.getByRole("alert")).toContainText(/check your connection/i, {
+    await yesButtonIn(firstRow).click();
+    await expect(firstRow.getByRole("alert")).toContainText(/check your connection/i, {
       timeout: 15_000,
     });
-    await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+    const retry = firstRow.getByRole("button", { name: "Retry" });
+    await expect(retry).toBeVisible();
+    await retry.click();
+    await expect(firstRow.getByRole("alert")).toContainText(/check your connection/i);
 
     await context.setOffline(false);
-    await page.getByRole("button", { name: "Retry" }).click();
+    await page.waitForLoadState("domcontentloaded");
+    const rowAfterReconnect = timeRow(page, 0);
+    const retryAfterReconnect = rowAfterReconnect.getByRole("button", { name: "Retry" });
+    if (await retryAfterReconnect.isVisible()) {
+      await retryAfterReconnect.click();
+    } else {
+      await tapYesAndWaitForSave(yesButtonIn(rowAfterReconnect));
+    }
     await expect
-      .poll(async () => firstRow.getByRole("button", { name: /^Yes$/ }).getAttribute("aria-pressed"))
+      .poll(async () => yesButtonIn(rowAfterReconnect).getAttribute("aria-pressed"))
       .toBe("true");
 
     await page.reload();

@@ -7,6 +7,11 @@
 - **Fix:** Serialize attendance saves on the client (`serialize-attendance-saves.ts` + `event-participant-respond-flow.tsx` ~439); require explicit `{ message | notice }` success (`availability-action-outcome.ts`); friendly connection copy + Retry re-send; skip `router.refresh` on multi-time saves (~455, ~488). PGlite proves concurrent DB upserts all persist (`concurrent-member-availability-save.test.ts`).
 - **Tests:** serialized multi-time saves, aborted/empty action + `Failed to fetch` + Retry, PGlite concurrent upserts, serializer unit test.
 
+## 2026-10-15 — HUI-0186-fix3 respond E2E + save revalidate (v0.18.6)
+
+- **E2E:** Parse group id from `/welcome` URLs; open group settings via `/settings` + Advanced; match Yes buttons by accessible name (`/^Yes/`); wait per-save; offline Retry after reconnect with row re-locate fallback.
+- **App:** Drop `revalidatePath` on successful `setAvailabilityResponseAction` so serialized multi-time saves are not aborted by RSC refresh (extends fix1).
+
 ## 2026-10-15 — HUI-0186-fix2 respond UI stability (v0.18.6)
 
 - **Root cause A (PM repro, b1820be):** After the first Yes, majority auto-confirm revalidated the respond RSC payload; `respondAttendanceCandidates` (`participant-flow.ts` ~47–57) collapsed to the selected time and `multipleTimeOptions` flipped false (`event-participant-respond-flow.tsx` ~158–159), remounting the single-time UI so global `nth()` Yes taps hit shifted rows (3→2→1 buttons).

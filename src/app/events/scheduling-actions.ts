@@ -358,7 +358,6 @@ export async function setAvailabilityResponseAction(
           timeZone,
         });
         if (recovered) {
-          revalidatePath(`/events/${eventId}`);
           schedulePushDelivery();
           return recovered;
         }
@@ -366,7 +365,6 @@ export async function setAvailabilityResponseAction(
       return { error: upsertError };
     }
 
-    revalidatePath(`/events/${eventId}`);
     schedulePushDelivery();
     return { message: "Response saved." };
   });
