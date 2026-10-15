@@ -7,7 +7,7 @@ import { canRespondToCandidates } from "@/domain/scheduling/permissions";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 
 /** Where a gathering belongs on the Home / Hui surfaces. */
-export type HomeBucket = "attention" | "upcoming" | "planning" | "past";
+export type HomeBucket = "attention" | "upcoming" | "planning" | "cancelled" | "past";
 
 /** The one thing the viewer should do next, when there is something. */
 export type HomeAttention = EventAttentionKind;
@@ -52,7 +52,10 @@ export function hasEventEnded(
 }
 
 export function classifyHomeEvent(facts: HomeEventFacts, now: Date = new Date()): HomeClassification {
-  if (facts.status === "cancelled" || facts.status === "completed" || facts.status === "draft") {
+  if (facts.status === "cancelled") {
+    return { bucket: "cancelled", attention: null };
+  }
+  if (facts.status === "completed" || facts.status === "draft") {
     return { bucket: "past", attention: null };
   }
 

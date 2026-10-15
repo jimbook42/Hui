@@ -26,7 +26,9 @@ function entrySharedWithGroup(entry: UserDietaryEntry, groupId: string): boolean
 export function deriveDietarySharingScope(
   entries: UserDietaryEntry[],
   groups: UserGroupOption[],
+  emptyGroupShareIds: string[] = [],
 ): DietarySharingScopeState {
+  const emptyGroupSet = new Set(emptyGroupShareIds);
   const shareAllGroups =
     entries.length > 0 && entries.every((entry) => entry.shareWithAllGroups);
   const shareAllPartial =
@@ -34,10 +36,11 @@ export function deriveDietarySharingScope(
 
   const groupStates = groups.map((group) => {
     const sharedCount = entries.filter((entry) => entrySharedWithGroup(entry, group.groupId)).length;
+    const emptyShared = entries.length === 0 && emptyGroupSet.has(group.groupId);
     return {
       groupId: group.groupId,
       groupName: group.groupName,
-      enabled: entries.length > 0 && sharedCount === entries.length,
+      enabled: emptyShared || (entries.length > 0 && sharedCount === entries.length),
       partial: sharedCount > 0 && sharedCount < entries.length,
     };
   });

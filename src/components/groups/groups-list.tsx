@@ -34,13 +34,25 @@ const CARD_STYLES = [
 ] as const;
 
 function nextEventFor(events: HomeEvent[], groupId: string): HomeEvent | null {
-  return (
-    events
-      .filter((event) => event.groupId === groupId && event.bucket !== "past")
-      .sort((a, b) => {
+  const active = events.filter(
+    (event) =>
+      event.groupId === groupId && event.bucket !== "past" && event.bucket !== "cancelled",
+  );
+  if (active.length > 0) {
+    return active.sort((a, b) => {
         if (a.startsAt && b.startsAt) return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
         if (a.startsAt) return -1;
         if (b.startsAt) return 1;
+        return 0;
+      })[0];
+  }
+  return (
+    events
+      .filter((event) => event.groupId === groupId && event.bucket === "cancelled")
+      .sort((a, b) => {
+        if (a.startsAt && b.startsAt) {
+          return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
+        }
         return 0;
       })[0] ?? null
   );
@@ -146,9 +158,13 @@ export async function GroupsList() {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-extrabold text-foreground">{next.title}</span>
                       <span className="block truncate text-sm font-semibold text-muted-foreground">
-                        {next.startsAt
-                          ? `${relativeDayLabel(next.startsAt, next.timeZone)} · ${formatShortDay(next.startsAt, next.timeZone)} ${formatClockTime(next.startsAt, next.timeZone)}`
-                          : "Time still to be agreed"}
+                        {next.status === "cancelled"
+                          ? next.startsAt
+                            ? `Cancelled · ${formatShortDay(next.startsAt, next.timeZone)} ${formatClockTime(next.startsAt, next.timeZone)}`
+                            : "Cancelled"
+                          : next.startsAt
+                            ? `${relativeDayLabel(next.startsAt, next.timeZone)} · ${formatShortDay(next.startsAt, next.timeZone)} ${formatClockTime(next.startsAt, next.timeZone)}`
+                            : "Time still to be agreed"}
                       </span>
                     </span>
                   </Link>

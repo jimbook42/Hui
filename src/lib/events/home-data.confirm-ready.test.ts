@@ -107,6 +107,8 @@ function createProposerReadyToConfirmSupabase(): SupabaseClient {
         );
         return chain;
       },
+      or: () => chain,
+      gte: () => chain,
       neq: () => chain,
       not: () => chain,
       is: () => chain,

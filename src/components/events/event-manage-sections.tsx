@@ -21,13 +21,9 @@ import {
   type ManageSectionId,
 } from "@/domain/events/manage-navigation";
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
-import {
-  formatClockTime,
-  formatLongDay,
-  formatShortDay,
-  formatTimeSpan,
-} from "@/domain/datetime/display";
+import { formatLongDay, formatShortDay, formatTimeSpan } from "@/domain/datetime/display";
 import { eventAcceptsResponseDeadline } from "@/domain/events/response-deadline-status";
+import { formatEventTimeDisclosureSummary } from "@/domain/scheduling/event-time-disclosure-summary";
 import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
 import { formatDateTimeLocalInTimeZone } from "@/domain/datetime/timezone";
 import { ResponseDeadlineManageForm } from "@/components/events/response-deadline-manage-form";
@@ -36,23 +32,6 @@ import { loadEventPage } from "@/lib/events/event-page-data";
 import type { EventDetail } from "@/lib/events/types";
 
 type SectionProps = { detail: EventDetail; userId: string };
-
-function schedulingSummary(
-  detail: EventDetail,
-  data: Awaited<ReturnType<typeof loadEventPage>>,
-): string {
-  const tz = data.displayTimeZone;
-  if (detail.status === "confirmed" && detail.startsAt) {
-    return `Confirmed · ${formatShortDay(detail.startsAt, tz)} ${formatClockTime(detail.startsAt, tz)}`;
-  }
-  const n = data.scheduling.candidates.length;
-  if (n === 0) {
-    return "No times proposed yet";
-  }
-  const passing = data.consensus.candidates.filter((candidate) => candidate.passes).length;
-  const times = `${n} ${n === 1 ? "time" : "times"} on the table`;
-  return passing > 0 ? `${times} · ${passing} meet${passing === 1 ? "s" : ""} the rules` : times;
-}
 
 export async function EventManageSections({ detail, userId }: SectionProps) {
   const data = await loadEventPage(detail, userId);
@@ -117,6 +96,14 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
     [...data.scheduling.candidates, ...data.scheduling.withdrawnCandidates],
     tz,
   );
+  const timeDisclosureSummary = formatEventTimeDisclosureSummary({
+    status: detail.status,
+    startsAt: detail.startsAt,
+    timeZone: tz,
+    consensusCurrentlyPasses: detail.status === "confirmed" ? data.anyCandidatePasses : undefined,
+    candidateCount: data.scheduling.candidates.length,
+    passingCandidateCount: data.consensus.candidates.filter((candidate) => candidate.passes).length,
+  });
   const replyByLabel = replyByLabelForEvent(
     detail.status,
     detail.responseDeadlineAt,
@@ -257,7 +244,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
         <DisclosureCard
           id="time"
           title="Time"
-          summary={schedulingSummary(detail, data)}
+          summary={timeDisclosureSummary}
           defaultOpen={sectionOpen("time")}
         >
           <EventScheduling

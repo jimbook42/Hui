@@ -118,6 +118,8 @@ function createCountingSupabase(groupIds: string[]): CountingSupabase {
         }
         return chain;
       },
+      or: () => chain,
+      gte: () => chain,
       neq: () => chain,
       not: () => chain,
       is: () => chain,

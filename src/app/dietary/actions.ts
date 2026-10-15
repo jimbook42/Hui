@@ -53,15 +53,42 @@ export async function createDietaryEntryAction(
   }
 
   const { supabase, user } = await requireUser();
-  const { error } = await supabase.from("dietary_entries").insert({
-    user_id: user.id,
-    category,
-    label,
-    notes,
-  });
+  const { data: inserted, error } = await supabase
+    .from("dietary_entries")
+    .insert({
+      user_id: user.id,
+      category,
+      label,
+      notes,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     return { error: error.message };
+  }
+
+  const { data: emptyShares, error: emptyError } = await supabase
+    .from("dietary_empty_group_shares")
+    .select("group_id")
+    .eq("user_id", user.id);
+  if (emptyError) {
+    return { error: emptyError.message };
+  }
+  for (const row of emptyShares ?? []) {
+    const groupId = row.group_id as string;
+    const { error: shareError } = await supabase.from("dietary_entry_shares").insert({
+      dietary_entry_id: inserted.id,
+      group_id: groupId,
+    });
+    if (shareError && shareError.code !== "23505") {
+      return { error: shareError.message };
+    }
+    await supabase
+      .from("dietary_empty_group_shares")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("group_id", groupId);
   }
 
   revalidateDietaryPaths();
@@ -298,10 +325,40 @@ export async function setDietaryGroupShareAction(
     return { error: entries.error };
   }
   if (entries.ids.length === 0) {
-    return { error: "Add dietary information before changing sharing." };
+    if (enabled) {
+      const { error } = await supabase.from("dietary_empty_group_shares").insert({
+        user_id: user.id,
+        group_id: groupId,
+      });
+      if (error && error.code !== "23505") {
+        return { error: error.message };
+      }
+    } else {
+      const { error } = await supabase
+        .from("dietary_empty_group_shares")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("group_id", groupId);
+      if (error) {
+        return { error: error.message };
+      }
+    }
+    revalidateDietaryPaths(groupId);
+    revalidatePath("/groups/[groupId]", "page");
+    revalidatePath("/events/[eventId]", "page");
+    return {
+      message: enabled
+        ? "Shared with that group — no dietary requirements on your profile."
+        : "Stopped sharing dietary information with that group.",
+    };
   }
 
   if (enabled) {
+    await supabase
+      .from("dietary_empty_group_shares")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("group_id", groupId);
     for (const entryId of entries.ids) {
       const { error } = await supabase.from("dietary_entry_shares").insert({
         dietary_entry_id: entryId,
@@ -312,6 +369,14 @@ export async function setDietaryGroupShareAction(
       }
     }
   } else {
+    const { error: emptyError } = await supabase
+      .from("dietary_empty_group_shares")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("group_id", groupId);
+    if (emptyError) {
+      return { error: emptyError.message };
+    }
     const { error } = await supabase
       .from("dietary_entry_shares")
       .delete()

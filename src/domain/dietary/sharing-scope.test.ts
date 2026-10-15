@@ -43,4 +43,10 @@ describe("deriveDietarySharingScope", () => {
     expect(scope.groups[0]?.partial).toBe(true);
     expect(scope.groups[0]?.enabled).toBe(false);
   });
+
+  it("treats empty group shares as enabled when there are no entries", () => {
+    const scope = deriveDietarySharingScope([], groups, ["g1"]);
+    expect(scope.groups[0]?.enabled).toBe(true);
+    expect(scope.entryCount).toBe(0);
+  });
 });

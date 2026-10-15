@@ -1,6 +1,6 @@
 import type { DietaryCategory } from "@/domain/dietary/validation";
 
-export type DietaryScope = "group" | "all_groups";
+export type DietaryScope = "group" | "all_groups" | "empty";
 
 export type DietaryShareRef = {
   groupId: string;

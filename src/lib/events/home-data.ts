@@ -15,6 +15,10 @@ import {
   isProposingEventStale,
   resolveProposalNominalDate,
 } from "@/domain/events/stale-proposal";
+import {
+  RECENT_CANCELLED_LIST_CAP,
+  recentCancelledCutoffIso,
+} from "@/domain/events/recent-cancelled";
 import { todayDateOnlyInTimeZone } from "@/lib/groups/planning-cycle";
 import type { EventStatus } from "@/domain/events/types";
 import type { MembershipRole } from "@/domain/groups/permissions";
@@ -46,7 +50,7 @@ import { parseCandidateAttendanceRostersMap } from "@/lib/scheduling/queries";
 
 const DEFAULT_TIME_ZONE = "Pacific/Auckland";
 const OPEN_STATUSES: EventStatus[] = ["proposing", "voting", "awaiting_agreement", "reopened", "confirmed"];
-const PAST_STATUSES: EventStatus[] = ["completed", "cancelled"];
+const PAST_STATUSES: EventStatus[] = ["completed"];
 /** Roster RPCs are per candidate; cap how many we fan out on list surfaces. */
 const ROSTER_FANOUT = 8;
 
@@ -101,8 +105,31 @@ type EventRow = {
   ends_at: string | null;
   timezone: string | null;
   planning_target_date: string | null;
+  cancelled_at: string | null;
   groups: { name: string } | { name: string }[] | null;
 };
+
+function capRecentCancelledRows(rows: EventRow[], now: Date): EventRow[] {
+  const cutoffMs = new Date(recentCancelledCutoffIso(now)).getTime();
+  const open: EventRow[] = [];
+  const cancelled: EventRow[] = [];
+  for (const row of rows) {
+    if (row.status === "cancelled") {
+      const at = row.cancelled_at ? new Date(row.cancelled_at).getTime() : 0;
+      if (at >= cutoffMs) {
+        cancelled.push(row);
+      }
+      continue;
+    }
+    open.push(row);
+  }
+  cancelled.sort((a, b) => {
+    const aAt = a.cancelled_at ? new Date(a.cancelled_at).getTime() : 0;
+    const bAt = b.cancelled_at ? new Date(b.cancelled_at).getTime() : 0;
+    return bAt - aAt;
+  });
+  return [...open, ...cancelled.slice(0, RECENT_CANCELLED_LIST_CAP)];
+}
 
 function consensusResponsesFromRoster(roster: AttendanceRoster): ConsensusResponseInput[] {
   const responses: ConsensusResponseInput[] = [];
@@ -181,16 +208,20 @@ export async function loadHomeData(
     skipRosters?: boolean;
   } = {},
 ): Promise<HomeData> {
+  const now = new Date();
   const statuses = options.includePast ? [...OPEN_STATUSES, ...PAST_STATUSES] : OPEN_STATUSES;
+  const eventSelect =
+    "id, title, status, group_id, created_by, location, starts_at, ends_at, timezone, planning_target_date, cancelled_at, groups:group_id ( name )";
+
+  const cancelledCutoff = recentCancelledCutoffIso(now);
+  const statusFilter = `status.in.(${statuses.join(",")}),and(status.eq.cancelled,cancelled_at.gte.${cancelledCutoff})`;
 
   let eventsQuery = supabase
     .from("events")
-    .select(
-      "id, title, status, group_id, created_by, location, starts_at, ends_at, timezone, planning_target_date, groups:group_id ( name )",
-    )
-    .in("status", statuses)
+    .select(eventSelect)
+    .or(statusFilter)
     .order("starts_at", { ascending: true, nullsFirst: false })
-    .limit(80);
+    .limit(80 + RECENT_CANCELLED_LIST_CAP);
   if (options.groupId) {
     eventsQuery = eventsQuery.eq("group_id", options.groupId);
   }
@@ -222,7 +253,10 @@ export async function loadHomeData(
   }
   groups.sort((a, b) => a.name.localeCompare(b.name));
 
-  const eventRows = (eventsResult.data ?? []) as unknown as EventRow[];
+  const eventRows = capRecentCancelledRows(
+    (eventsResult.data ?? []) as unknown as EventRow[],
+    now,
+  );
   const eventIds = eventRows.map((row) => row.id);
   const groupIds = [...new Set([...eventRows.map((row) => row.group_id), ...groups.map((g) => g.id)])];
 
@@ -447,7 +481,6 @@ export async function loadHomeData(
     }
   }
 
-  const now = new Date();
   const events: HomeEvent[] = eventRows.map((row) => {
     const picked = pickedByEvent.get(row.id) ?? null;
     const groupSettings = settingsByGroup.get(row.group_id);
@@ -524,9 +557,15 @@ export async function loadHomeData(
   });
 
   // Rosters (people around the table) for the gatherings people actually look at first.
-  const rank: Record<HomeBucket, number> = { attention: 0, upcoming: 1, planning: 2, past: 3 };
+  const rank: Record<HomeBucket, number> = {
+    attention: 0,
+    upcoming: 1,
+    planning: 2,
+    cancelled: 3,
+    past: 4,
+  };
   const rosterTargets = (options.skipRosters ? [] : events)
-    .filter((event) => event.candidateId && event.bucket !== "past")
+    .filter((event) => event.candidateId && event.bucket !== "past" && event.bucket !== "cancelled")
     .sort((a, b) => rank[a.bucket] - rank[b.bucket] || compareSoonest(a, b))
     .slice(0, ROSTER_FANOUT);
 
@@ -594,17 +633,25 @@ export type HomeSections = {
   attention: HomeEvent[];
   upcoming: HomeEvent[];
   planning: HomeEvent[];
+  cancelled: HomeEvent[];
   past: HomeEvent[];
 };
 
 export function splitHomeEvents(events: HomeEvent[]): HomeSections {
-  const sections: HomeSections = { attention: [], upcoming: [], planning: [], past: [] };
+  const sections: HomeSections = {
+    attention: [],
+    upcoming: [],
+    planning: [],
+    cancelled: [],
+    past: [],
+  };
   for (const event of events) {
     sections[event.bucket].push(event);
   }
   sections.attention.sort(compareSoonest);
   sections.upcoming.sort(compareSoonest);
   sections.planning.sort(compareSoonest);
+  sections.cancelled.sort(compareMostRecent);
   sections.past.sort(compareMostRecent);
   return sections;
 }

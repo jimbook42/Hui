@@ -12,6 +12,7 @@ export async function GroupUpcoming({ groupId }: { groupId: string }) {
   const { events } = await loadHomeData(supabase, user!.id, { groupId });
   const sections = splitHomeEvents(events);
   const live = [...sections.attention, ...sections.upcoming, ...sections.planning].slice(0, 3);
+  const cancelled = sections.cancelled.slice(0, 3);
 
   return (
     <section aria-labelledby="group-upcoming" className="hui-rise-2 space-y-4">
@@ -40,6 +41,18 @@ export async function GroupUpcoming({ groupId }: { groupId: string }) {
           ))}
         </ul>
       )}
+      {cancelled.length > 0 ? (
+        <div className="space-y-3 pt-2">
+          <h3 className="hui-type-label text-muted-foreground">Recently cancelled</h3>
+          <ul className="space-y-4">
+            {cancelled.map((event) => (
+              <li key={event.id}>
+                <EventCard event={event} variant="standard" tone="secondary" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }
