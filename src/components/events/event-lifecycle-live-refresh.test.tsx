@@ -17,21 +17,30 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: mockRefresh }),
 }));
 
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({
-    channel: () => ({
-      on: () => ({
-        subscribe: () => ({}),
-      }),
+const mockCreateClient = vi.fn(() => ({
+  channel: () => ({
+    on: () => ({
+      subscribe: () => ({}),
     }),
-    removeChannel: vi.fn(),
   }),
+  removeChannel: vi.fn(),
+}));
+
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => mockCreateClient(),
+}));
+
+const mockHasPublicSupabaseConfig = vi.fn(() => true);
+vi.mock("@/lib/supabase/env", () => ({
+  hasPublicSupabaseConfig: () => mockHasPublicSupabaseConfig(),
 }));
 
 describe("EventLifecycleLiveRefresh", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockRefresh.mockReset();
+    mockCreateClient.mockClear();
+    mockHasPublicSupabaseConfig.mockReturnValue(true);
     vi.mocked(fetchEventLifecycleStatusAction).mockReset();
   });
 
@@ -59,5 +68,18 @@ describe("EventLifecycleLiveRefresh", () => {
     await vi.advanceTimersByTimeAsync(EVENT_LIFECYCLE_POLL_MS);
 
     expect(mockRefresh).not.toHaveBeenCalled();
+  });
+
+  it("polls without opening a browser Supabase client when public config is absent", async () => {
+    mockHasPublicSupabaseConfig.mockReturnValue(false);
+    vi.mocked(fetchEventLifecycleStatusAction).mockResolvedValue({ status: "confirmed" });
+
+    render(<EventLifecycleLiveRefresh eventId="event-1" status="proposing" />);
+
+    await vi.advanceTimersByTimeAsync(EVENT_LIFECYCLE_POLL_MS);
+
+    expect(mockCreateClient).not.toHaveBeenCalled();
+    expect(fetchEventLifecycleStatusAction).toHaveBeenCalledWith("event-1");
+    expect(mockRefresh).toHaveBeenCalledTimes(1);
   });
 });

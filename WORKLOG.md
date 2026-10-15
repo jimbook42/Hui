@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX3-fix9 respond crash (production)
+
+- **Root cause:** fix6 `EventLifecycleLiveRefresh` calls browser `createClient()` on respond/event pages. `getPublicSupabaseConfig()` read `process.env` via dynamic `env[key]`, so Next did not inline `NEXT_PUBLIC_*` into client chunks; production `next start` then threw “Missing Supabase configuration” on hydration (error boundary “This page couldn’t load”). fix8’s sibling-stream theory was a red herring.
+- **Fix:** Literal `process.env.NEXT_PUBLIC_*` on the default path in `env.ts`; skip Realtime subscribe when public config is absent (polling-only); `env.client-bundle.test.ts` + lifecycle test guard.
+
 ## 2026-10-16 — HUI-UX3-fix8 respond page crash
 
 - **Root cause:** fix6 added `EventLifecycleLiveRefresh` as a second client sibling on `/events/[id]/respond` while the page streams `loadRespondSecondary()` into `EventParticipantRespondFlow`; Next aborted the RSC payload (500 “This page couldn’t load”, server log `The destination stream closed early`).

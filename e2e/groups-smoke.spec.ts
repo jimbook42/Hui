@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { signInWithEmail } from "./helpers/email-auth";
+import { createGroup } from "./helpers/propose-event";
 import { hasPublicSupabaseConfig } from "../src/lib/supabase/env";
 
 const hasLiveAuth =
@@ -24,12 +25,7 @@ test.describe("live group smoke", () => {
     await signInWithEmail(page, email, password);
     await expect(page).toHaveURL(/\/dashboard/);
 
-    await page.goto("/groups/new");
-    await page.getByLabel("Group name").fill(groupName);
-    await page.getByRole("button", { name: "Create group" }).click();
-    await expect(page).toHaveURL(/\/groups\//);
-
-    const groupId = page.url().split("/groups/")[1]?.replace(/\/$/, "") ?? "";
+    const groupId = await createGroup(page, groupName);
     await page.goto(`/groups/${groupId}/settings`);
     await expect(page).toHaveURL(new RegExp(`/groups/${groupId}#group-settings`));
     await expect(page.getByRole("heading", { name: "Group settings" })).toBeVisible();
@@ -43,16 +39,16 @@ test.describe("live group smoke", () => {
     await signInWithEmail(page, email, password);
     await expect(page).toHaveURL(/\/dashboard/);
 
-    await page.goto("/groups/new");
-    await page.getByLabel("Group name").fill(groupName);
-    await page.getByRole("button", { name: "Create group" }).click();
-    await expect(page).toHaveURL(/\/groups\//);
-
-    const groupId = page.url().split("/groups/")[1]?.replace(/\/$/, "") ?? "";
+    const groupId = await createGroup(page, groupName);
     await page.goto(`/groups/${groupId}/events/new`);
 
-    await page.locator('select').first().selectOption({ index: 1 });
-    await page.getByRole("radio", { name: "Just this once" }).click();
+    await page.getByLabel("Type of hui").selectOption({ label: "Meeting" });
+    const justOnce = page.getByRole("radio", { name: "Just this once" });
+    if (await justOnce.isVisible()) {
+      if (!(await justOnce.isChecked())) {
+        await page.locator("label").filter({ hasText: /^Just this once$/ }).click();
+      }
+    }
     await page.getByRole("button", { name: "Continue" }).click();
     await expect(page.getByRole("heading", { name: "When could it happen?" })).toBeVisible();
 
@@ -60,11 +56,13 @@ test.describe("live group smoke", () => {
     await page.getByLabel("Starts").fill("18:00");
     await expect(page.getByText(/proposed time is in the past/i)).toBeVisible();
 
-    const dialogPromise = page.waitForEvent("dialog");
-    await page.getByRole("button", { name: "Continue" }).click();
-    const dialog = await dialogPromise;
-    expect(dialog.message()).toMatch(/in the past/i);
-    await dialog.dismiss();
+    let pastConfirmMessage = "";
+    page.once("dialog", (dialog) => {
+      pastConfirmMessage = dialog.message();
+      void dialog.dismiss();
+    });
+    await page.getByRole("button", { name: "Continue" }).click({ force: true });
+    await expect.poll(() => pastConfirmMessage).toMatch(/in the past/i);
     await expect(page.getByRole("heading", { name: "When could it happen?" })).toBeVisible();
   });
 });

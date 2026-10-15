@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { fetchEventLifecycleStatusAction } from "@/app/events/actions";
 import type { EventStatus } from "@/domain/events/types";
 import { createClient } from "@/lib/supabase/client";
+import { hasPublicSupabaseConfig } from "@/lib/supabase/env";
 
 const LIVE_STATUSES: EventStatus[] = ["proposing", "awaiting_agreement", "voting"];
 
@@ -39,25 +40,30 @@ export function EventLifecycleLiveRefresh({
       return;
     }
 
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`event-status-${eventId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "events",
-          filter: `id=eq.${eventId}`,
-        },
-        (payload) => {
-          const nextStatus = (payload.new as { status?: EventStatus }).status;
-          if (nextStatus === "confirmed") {
-            router.refresh();
-          }
-        },
-      )
-      .subscribe();
+    let supabase: ReturnType<typeof createClient> | null = null;
+    let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null = null;
+
+    if (hasPublicSupabaseConfig()) {
+      supabase = createClient();
+      channel = supabase
+        .channel(`event-status-${eventId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "events",
+            filter: `id=eq.${eventId}`,
+          },
+          (payload) => {
+            const nextStatus = (payload.new as { status?: EventStatus }).status;
+            if (nextStatus === "confirmed") {
+              router.refresh();
+            }
+          },
+        )
+        .subscribe();
+    }
 
     const intervalId = window.setInterval(() => {
       void pollLifecycleStatus();
@@ -76,7 +82,9 @@ export function EventLifecycleLiveRefresh({
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibilityOrFocus);
       window.removeEventListener("focus", onVisibilityOrFocus);
-      void supabase.removeChannel(channel);
+      if (supabase && channel) {
+        void supabase.removeChannel(channel);
+      }
     };
   }, [eventId, status, router, pollLifecycleStatus]);
 
