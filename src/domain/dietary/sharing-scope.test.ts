@@ -43,4 +43,26 @@ describe("deriveDietarySharingScope", () => {
     expect(scope.groups[0]?.partial).toBe(true);
     expect(scope.groups[0]?.enabled).toBe(false);
   });
+
+  it("treats empty group shares as enabled when there are no entries", () => {
+    const scope = deriveDietarySharingScope([], groups, ["g1"]);
+    expect(scope.groups[0]?.enabled).toBe(true);
+    expect(scope.entryCount).toBe(0);
+  });
+
+  it("flags empty share with private entries so the UI can warn the owner", () => {
+    const entries: UserDietaryEntry[] = [
+      {
+        id: "e1",
+        label: "Vegetarian",
+        notes: null,
+        category: "requirement",
+        shareWithAllGroups: false,
+        shares: [],
+      },
+    ];
+    const scope = deriveDietarySharingScope(entries, groups, ["g1"]);
+    expect(scope.groups[0]?.enabled).toBe(false);
+    expect(scope.groups[0]?.emptyShareWithUnsharedEntries).toBe(true);
+  });
 });

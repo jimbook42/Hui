@@ -115,14 +115,14 @@ describe("classifyHomeEvent", () => {
     ).toEqual({ bucket: "upcoming", attention: null });
   });
 
-  it("sends finished and cancelled gatherings to the past", () => {
+  it("sends finished gatherings to the past and recent cancelled ones to the cancelled bucket", () => {
     expect(
       classifyHomeEvent(
         facts({ status: "confirmed", startsAt: "2026-10-01T05:00:00Z", endsAt: "2026-10-01T08:00:00Z" }),
         NOW,
       ).bucket,
     ).toBe("past");
-    expect(classifyHomeEvent(facts({ status: "cancelled" }), NOW).bucket).toBe("past");
+    expect(classifyHomeEvent(facts({ status: "cancelled" }), NOW).bucket).toBe("cancelled");
     expect(classifyHomeEvent(facts({ status: "completed" }), NOW).bucket).toBe("past");
   });
 });

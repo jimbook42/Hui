@@ -4,13 +4,11 @@ import { GroupInviteShareBlock } from "@/components/groups/group-invite-share-bl
 import { AvatarStack } from "@/components/hui/avatar-stack";
 import { EmptyState } from "@/components/hui/empty-state";
 import { HuiLinkButton } from "@/components/hui/hui-button";
-import { CalendarIcon, ChevronRightIcon, PeopleIcon } from "@/components/hui/icons";
+import { GroupCardGatherings, upcomingEventForGroup } from "@/components/groups/group-card-gatherings";
+import { ChevronRightIcon, PeopleIcon } from "@/components/hui/icons";
 import { StatusPill } from "@/components/hui/status-pill";
-import { formatClockTime, formatShortDay, relativeDayLabel } from "@/domain/datetime/display";
 import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
-import { eventDetailPath } from "@/lib/events/paths";
-import type { HomeEvent } from "@/lib/events/home-data";
 import { loadGroupsListSurfaceData } from "@/lib/groups/list-surfaces";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 import { cn } from "@/lib/ui/cn";
@@ -33,26 +31,13 @@ const CARD_STYLES = [
   { shape: "hui-shape-organic", blob: "hui-shape-blob-a bg-[var(--blob-clay)]" },
 ] as const;
 
-function nextEventFor(events: HomeEvent[], groupId: string): HomeEvent | null {
-  return (
-    events
-      .filter((event) => event.groupId === groupId && event.bucket !== "past")
-      .sort((a, b) => {
-        if (a.startsAt && b.startsAt) return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
-        if (a.startsAt) return -1;
-        if (b.startsAt) return 1;
-        return 0;
-      })[0] ?? null
-  );
-}
-
 export async function GroupsList() {
   const user = await getServerAuthUser();
   if (!user) {
     return null;
   }
   const supabase = await getServerSupabase();
-  const { home, previews } = await devTimed("groups-page:surface", () =>
+  const { home, previews, recentCancelledByGroup } = await devTimed("groups-page:surface", () =>
     loadGroupsListSurfaceData(supabase, user.id),
   );
   const groups = home.groups;
@@ -78,7 +63,8 @@ export async function GroupsList() {
       {groups.map((group, index) => {
         const style = CARD_STYLES[index % CARD_STYLES.length];
         const preview = previews.get(group.id);
-        const next = nextEventFor(home.events, group.id);
+        const upcoming = upcomingEventForGroup(home.events, group.id);
+        const cancelled = recentCancelledByGroup.get(group.id) ?? [];
         const memberCount = preview?.memberCount ?? 0;
         return (
           <li key={group.id} className="hui-rise" style={{ animationDelay: `${Math.min(index, 6) * 60}ms` }}>
@@ -137,26 +123,7 @@ export async function GroupsList() {
               </div>
 
               <div className="mt-4">
-                {next ? (
-                  <Link
-                    href={eventDetailPath(next.id)}
-                    className="hui-focus-ring relative z-10 flex min-h-[3.5rem] items-center gap-3 rounded-hui-lg bg-muted px-4 py-2.5 transition-colors hover:bg-[var(--blob-sage)]"
-                  >
-                    <CalendarIcon size={20} className="shrink-0 text-accent" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-extrabold text-foreground">{next.title}</span>
-                      <span className="block truncate text-sm font-semibold text-muted-foreground">
-                        {next.startsAt
-                          ? `${relativeDayLabel(next.startsAt, next.timeZone)} · ${formatShortDay(next.startsAt, next.timeZone)} ${formatClockTime(next.startsAt, next.timeZone)}`
-                          : "Time still to be agreed"}
-                      </span>
-                    </span>
-                  </Link>
-                ) : (
-                  <p className="rounded-hui-lg bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
-                    Nothing planned yet — a good moment to propose something.
-                  </p>
-                )}
+                <GroupCardGatherings upcoming={upcoming} cancelled={cancelled} />
               </div>
             </article>
           </li>

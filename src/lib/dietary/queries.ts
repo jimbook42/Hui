@@ -7,6 +7,22 @@ import {
   type UserMembershipGroup,
 } from "@/lib/groups/user-membership-groups";
 
+export async function listUserDietaryEmptyGroupShares(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("dietary_empty_group_shares")
+    .select("group_id")
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).map((row) => row.group_id as string);
+}
+
 export async function listUserGroupsForDietary(
   supabase: SupabaseClient,
   userId: string,
@@ -102,7 +118,12 @@ export async function listGroupSharedDietary(
     category: row.category as DietaryCategory,
     label: row.label as string,
     notes: (row.notes as string | null) ?? null,
-    scope: row.scope === "group" ? "group" : "all_groups",
+    scope:
+      row.scope === "group"
+        ? "group"
+        : row.scope === "empty"
+          ? "empty"
+          : "all_groups",
   }));
 
   rows.sort((a, b) => {

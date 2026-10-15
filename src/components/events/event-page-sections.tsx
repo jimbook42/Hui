@@ -28,6 +28,7 @@ import { SectionHeader } from "@/components/hui/section-header";
 import { AddToCalendarButton } from "@/components/events/add-to-calendar-button";
 import { EventHostGentlePrompt } from "@/components/events/event-host-gentle-prompt";
 import { formatConfirmedHeroStatusLine } from "@/domain/scheduling/confirmed-because";
+import { formatEventTimeDisclosureSummary } from "@/domain/scheduling/event-time-disclosure-summary";
 import {
   multiTimeAnswerDetailRows,
   multiTimeViewerVisualState,
@@ -36,10 +37,6 @@ import { whoIsComingPresentation } from "@/domain/events/who-is-coming";
 import { EventHostSection } from "@/components/hosts/event-host-section";
 import { canDownloadEventIcs } from "@/lib/calendar/event-ics-export";
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
-import {
-  formatClockTime,
-  formatShortDay,
-} from "@/domain/datetime/display";
 import { eventHeroTimeFallbackCopy } from "@/domain/events/event-hero-time-fallback";
 import { shouldShowEventHeroTime } from "@/domain/events/event-hero-visibility";
 import { buildProposedHuiGuidance } from "@/domain/events/proposed-guidance";
@@ -541,23 +538,6 @@ export async function EventAttentionCard({ detail, userId }: SectionProps) {
 
 /* ----------------------------------------------------------------- details list */
 
-function schedulingSummary(
-  detail: EventDetail,
-  data: Awaited<ReturnType<typeof loadEventPage>>,
-): string {
-  const tz = data.displayTimeZone;
-  if (detail.status === "confirmed" && detail.startsAt) {
-    return `Confirmed · ${formatShortDay(detail.startsAt, tz)} ${formatClockTime(detail.startsAt, tz)}`;
-  }
-  const n = data.scheduling.candidates.length;
-  if (n === 0) {
-    return "No times proposed yet";
-  }
-  const passing = data.consensus.candidates.filter((candidate) => candidate.passes).length;
-  const times = `${n} ${n === 1 ? "time" : "times"} on the table`;
-  return passing > 0 ? `${times} · ${passing} meet${passing === 1 ? "s" : ""} the rules` : times;
-}
-
 export async function EventDetailsList({ detail, userId }: SectionProps) {
   const data = await loadEventPage(detail, userId);
   const { settings, group } = data;
@@ -601,6 +581,14 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
     detail.responseDeadlineAt,
     data.displayTimeZone,
   );
+  const timeDisclosureSummary = formatEventTimeDisclosureSummary({
+    status: detail.status,
+    startsAt: detail.startsAt,
+    timeZone: data.displayTimeZone,
+    consensusCurrentlyPasses: detail.status === "confirmed" ? data.anyCandidatePasses : undefined,
+    candidateCount: data.scheduling.candidates.length,
+    passingCandidateCount: data.consensus.candidates.filter((candidate) => candidate.passes).length,
+  });
 
   return (
     <section aria-labelledby="event-details" className="hui-rise-3 space-y-3">
@@ -616,7 +604,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
         <DisclosureCard
           id="scheduling"
           title="Times and agreement"
-          summary={schedulingSummary(detail, data)}
+          summary={timeDisclosureSummary}
           icon={<ClockIcon size={20} />}
           attention={attentionKinds.has("confirm")}
           defaultOpen={attentionKinds.has("confirm")}

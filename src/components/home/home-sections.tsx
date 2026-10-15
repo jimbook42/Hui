@@ -148,6 +148,19 @@ export async function DashboardEvents() {
         </section>
       ) : null}
 
+      {sections.cancelled.length > 0 ? (
+        <section aria-labelledby="cancelled-hui" className="hui-rise-3">
+          <SectionHeader
+            id="cancelled-hui"
+            title="Cancelled"
+            description="Recently cancelled gatherings from the last 30 days."
+          />
+          <div className="mt-4">
+            <CardList events={sections.cancelled.slice(0, 6)} startTone={0} />
+          </div>
+        </section>
+      ) : null}
+
       {shownPlanning.length > 0 && !planningHero ? (
         <section aria-labelledby="being-planned" className="hui-rise-3">
           <SectionHeader
@@ -312,6 +325,19 @@ export async function EventsOverview({ groupId }: { groupId?: string } = {}) {
           />
           <div className="mt-4">
             <CardList events={sections.planning} startTone={2} />
+          </div>
+        </section>
+      ) : null}
+
+      {sections.cancelled.length > 0 ? (
+        <section aria-labelledby="events-cancelled">
+          <SectionHeader
+            id="events-cancelled"
+            title="Cancelled"
+            description="Recently cancelled — last 30 days."
+          />
+          <div className="mt-4">
+            <CardList events={sections.cancelled} startTone={0} />
           </div>
         </section>
       ) : null}
