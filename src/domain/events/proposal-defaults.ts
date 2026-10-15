@@ -34,15 +34,36 @@ export function groupHasEstablishedRecurrence(
 /** Default event kind when proposing from a group. */
 export function defaultProposalEventKind(
   settings: GroupSettingsRow,
-  context?: { isFirstGroupEvent?: boolean },
 ): EventProposalDraft["eventKind"] {
-  if (context?.isFirstGroupEvent && !groupHasEstablishedRecurrence(settings, context)) {
-    return settings.oneOffEventsAllowed ? "one_off" : "recurring";
+  if (settings.oneOffEventsAllowed) {
+    return "one_off";
   }
   if (settings.recurringEventsEnabled) {
     return "recurring";
   }
   return "one_off";
+}
+
+/** Recurring draft using the group cadence (for restore / explicit recurring choice). */
+export function buildGroupRecurringProposalDraft(
+  settings: GroupSettingsRow,
+  options: {
+    groupName: string;
+    cycle: GroupPlanningCycle | null;
+    isFirstGroupEvent?: boolean;
+    todayDateOnly?: string;
+  },
+): EventProposalDraft {
+  if (!settings.recurringEventsEnabled) {
+    return buildInitialProposalDraft(settings, options);
+  }
+  const forcedSettings: GroupSettingsRow = {
+    ...settings,
+    oneOffEventsAllowed: false,
+  };
+  return fillRecurringPlanningDates(
+    buildInitialProposalDraft(forcedSettings, options),
+  );
 }
 
 export function buildInitialProposalDraft(
@@ -54,9 +75,7 @@ export function buildInitialProposalDraft(
     todayDateOnly?: string;
   },
 ): EventProposalDraft {
-  const eventKind = defaultProposalEventKind(settings, {
-    isFirstGroupEvent: options.isFirstGroupEvent,
-  });
+  const eventKind = defaultProposalEventKind(settings);
   const settingsCadence = cadenceFromGroupSettings(settings);
   const cadence = options.cycle?.cadence ?? settingsCadence;
   const prefill =
@@ -91,6 +110,23 @@ export function buildInitialProposalDraft(
     planningTargetDate = null;
   }
 
+  const recurrence =
+    eventKind === "recurring"
+      ? {
+          seriesTitle:
+            prefill?.seriesTitle ??
+            (groupHasEstablishedRecurrence(settings, {
+              isFirstGroupEvent: options.isFirstGroupEvent,
+            })
+              ? options.groupName
+              : ""),
+          intervalUnit,
+          intervalCount,
+          startsOn: resolvedStartsOn,
+          planningTargetDate,
+        }
+      : null;
+
   return fillRecurringPlanningDates({
     title: "",
     gatheringType: null,
@@ -98,19 +134,7 @@ export function buildInitialProposalDraft(
     location: "",
     notes: "",
     eventKind,
-    recurrence: {
-      seriesTitle:
-        prefill?.seriesTitle ??
-        (groupHasEstablishedRecurrence(settings, {
-          isFirstGroupEvent: options.isFirstGroupEvent,
-        })
-          ? options.groupName
-          : ""),
-      intervalUnit,
-      intervalCount,
-      startsOn: resolvedStartsOn,
-      planningTargetDate,
-    },
+    recurrence,
     candidates: [],
     initialHostUserId: "suggest",
     foodInvolvement: null,

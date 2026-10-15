@@ -28,7 +28,7 @@ const establishedSettings: GroupSettingsRow = {
 };
 
 describe("second propose on established groups", () => {
-  it("submits with the group cadence planning date after restore", () => {
+  it("defaults to one-off until the creator chooses recurring", () => {
     const resolved = resolveProposalFlowStateFromClient({
       groupId: "group-2",
       settings: establishedSettings,
@@ -37,28 +37,46 @@ describe("second propose on established groups", () => {
       isFirstGroupEvent: false,
       todayDateOnly: "2026-10-15",
     });
-    expect(resolved.draft.recurrence?.planningTargetDate).toBeTruthy();
+    expect(resolved.draft.eventKind).toBe("one_off");
+    expect(resolved.draft.recurrence).toBeNull();
+  });
 
-    const submit = validateEventProposalDraft(
-      {
-        ...resolved.draft,
-        gatheringType: "dinner_meal",
-        foodInvolvement: "unsure",
-        candidates: [
-          {
-            startsAt: "2026-10-26T06:00:00.000Z",
-            endsAt: null,
-          },
-        ],
+  it("submits with the group cadence when recurring is chosen", () => {
+    const resolved = resolveProposalFlowStateFromClient({
+      groupId: "group-2",
+      settings: establishedSettings,
+      groupName: "Fortnightly dinner",
+      planningCycle: null,
+      isFirstGroupEvent: false,
+      todayDateOnly: "2026-10-15",
+    });
+    const recurringDraft = {
+      ...resolved.draft,
+      eventKind: "recurring" as const,
+      recurrence: {
+        seriesTitle: "Fortnightly dinner",
+        intervalUnit: "week" as const,
+        intervalCount: 2,
+        startsOn: "2026-10-01",
+        planningTargetDate: "2026-10-01",
       },
-      {
-        timeZone: "Pacific/Auckland",
-        isFirstGroupEvent: false,
-        hostingEnabled: true,
-        memberUserIds: ["user-a"],
-        groupName: "Fortnightly dinner",
-      },
-    );
+      gatheringType: "dinner_meal" as const,
+      foodInvolvement: "unsure" as const,
+      candidates: [
+        {
+          startsAt: "2026-10-26T06:00:00.000Z",
+          endsAt: null,
+        },
+      ],
+    };
+
+    const submit = validateEventProposalDraft(recurringDraft, {
+      timeZone: "Pacific/Auckland",
+      isFirstGroupEvent: false,
+      hostingEnabled: true,
+      memberUserIds: ["user-a"],
+      groupName: "Fortnightly dinner",
+    });
     if (!submit.ok) {
       expect(submit.error).toBeUndefined();
     }

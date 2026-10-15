@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildGroupRecurringProposalDraft,
   buildInitialProposalDraft,
   fillRecurringPlanningDates,
   groupHasEstablishedRecurrence,
@@ -65,20 +66,50 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
       cycle,
       isFirstGroupEvent: false,
     });
-    expect(draft.recurrence?.planningTargetDate).toBe("2026-10-26");
-    expect(initialCandidateDateFromDraft(draft, cycle)).toBe("2026-10-26");
+    expect(draft.eventKind).toBe("one_off");
+    expect(draft.recurrence).toBeNull();
+    expect(initialCandidateDateFromDraft(draft, cycle)).toBe("");
   });
 
-  it("mirrors anchor date into planning target for established groups", () => {
-    const draft = fillRecurringPlanningDates(
-      buildInitialProposalDraft(baseSettings, {
-        groupName: "Family",
-        cycle: null,
-        isFirstGroupEvent: false,
-      }),
-    );
+  it("mirrors anchor date into planning target when the user chooses recurring", () => {
+    const base = buildInitialProposalDraft(baseSettings, {
+      groupName: "Family",
+      cycle: null,
+      isFirstGroupEvent: false,
+    });
+    const draft = fillRecurringPlanningDates({
+      ...base,
+      eventKind: "recurring",
+      recurrence: {
+        seriesTitle: "Family",
+        intervalUnit: "week",
+        intervalCount: 1,
+        startsOn: "2026-09-28",
+        planningTargetDate: null,
+      },
+    });
     expect(draft.recurrence?.startsOn).toBe("2026-09-28");
     expect(draft.recurrence?.planningTargetDate).toBe("2026-09-28");
+  });
+
+  it("builds a recurring baseline from group cadence for established groups", () => {
+    const draft = buildGroupRecurringProposalDraft(baseSettings, {
+      groupName: "Family",
+      cycle: null,
+      isFirstGroupEvent: false,
+    });
+    expect(draft.eventKind).toBe("recurring");
+    expect(draft.recurrence?.intervalUnit).toBe("week");
+    expect(draft.recurrence?.intervalCount).toBe(1);
+  });
+
+  it("defaults later hui proposals to one-off when allowed", () => {
+    const draft = buildInitialProposalDraft(baseSettings, {
+      groupName: "Family",
+      cycle: null,
+      isFirstGroupEvent: false,
+    });
+    expect(draft.eventKind).toBe("one_off");
   });
 
   it("first group event leaves planning target unset until a time is proposed", () => {
@@ -97,7 +128,7 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
     });
     expect(draft.eventKind).toBe("one_off");
     expect(draft.gatheringType).toBeNull();
-    expect(draft.recurrence?.planningTargetDate).toBeNull();
+    expect(draft.recurrence).toBeNull();
     expect(initialCandidateDateFromDraft(draft, null)).toBe("");
   });
 });

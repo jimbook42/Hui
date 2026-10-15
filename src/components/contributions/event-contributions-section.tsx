@@ -79,7 +79,7 @@ export function EventContributionsSection({
   if (eventStatus === "cancelled") {
     return (
       <section id="contributions" className="hui-card-section">
-        <h2 className="hui-type-section text-foreground">Contributions</h2>
+        <h2 className="hui-type-section text-foreground">Who&apos;s bringing what</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           This event was cancelled. Contribution coordination is closed.
         </p>
@@ -98,7 +98,7 @@ export function EventContributionsSection({
 
   return (
     <section id="contributions" className="hui-card-section">
-      <h2 className="hui-type-section text-foreground">Contributions</h2>
+      <h2 className="hui-type-section text-foreground">Who&apos;s bringing what</h2>
       {isProposed ? (
         <p className="hui-message-note mt-2">
           This event is not confirmed yet. Claims help the group coordinate, but plans may still change.

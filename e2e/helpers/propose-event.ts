@@ -57,6 +57,10 @@ export async function proposeSecondRecurringHui(
   await page.goto(`/groups/${groupId}/events/new`);
   await page.getByLabel("Type of hui").selectOption({ label: "Meeting" });
   await page.getByLabel("Name this hui (optional)").fill(title);
+  const recurring = page.getByRole("radio", { name: /Recurring/i });
+  if (await recurring.isVisible()) {
+    await page.locator("label").filter({ hasText: /^Recurring/ }).click();
+  }
   await expectPlanningDateField(page, date);
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("heading", { name: "When could it happen?" }).waitFor();

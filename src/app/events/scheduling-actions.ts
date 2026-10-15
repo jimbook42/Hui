@@ -347,6 +347,14 @@ export async function setAvailabilityResponseAction(
       }),
     );
 
+    const revalidateAfterAvailabilitySave = () => {
+      revalidatePath(`/events/${eventId}`);
+      revalidatePath(`/events/${eventId}/respond`);
+      revalidatePath("/events");
+      revalidatePath("/dashboard");
+      revalidatePath(`/groups/${detail.groupId}/events`);
+    };
+
     if (upsertError) {
       if (isSchedulingClosedDbError(upsertError)) {
         const recovered = await recoverAvailabilityAfterConfirmRace(supabase, {
@@ -368,6 +376,7 @@ export async function setAvailabilityResponseAction(
     }
 
     schedulePushDelivery();
+    revalidateAfterAvailabilitySave();
 
     const detailAfter = await getEventDetail(supabase, eventId, user.id);
     if (!detailAfter || detailAfter.status !== "confirmed") {

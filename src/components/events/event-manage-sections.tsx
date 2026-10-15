@@ -76,7 +76,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
 
   const huiLifecycle =
     data.canEdit || data.canCancel || data.canComplete || data.canDelete
-      ? "Status, details, and lifecycle"
+      ? "Status and details"
       : "Status and details";
 
   const openDecisionCount = data.decisionPolls.filter((poll) => poll.status === "open").length;
@@ -369,7 +369,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
       {!closed && showContributionCoordination ? (
         <DisclosureCard
           id="contributions"
-          title="Contributions"
+          title="Who's bringing what"
           summary={bringSummary}
           defaultOpen={sectionOpen("contributions")}
         >

@@ -27,6 +27,7 @@ import type { EventProposalDraft } from "@/domain/events/proposal";
 import { mergeWallClockIntoCandidates, parseWallClockCandidate } from "@/domain/events/proposal";
 import {
   buildInitialProposalDraft,
+  fillRecurringPlanningDates,
   groupHasEstablishedRecurrence,
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
@@ -43,9 +44,13 @@ import {
 import { EventConfirmRuleField } from "@/components/events/event-confirm-rule-field";
 import { ProposalPastDateWarning } from "@/components/events/proposal-past-date-warning";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
-import { FIRST_GROUP_CADENCE_PRESETS } from "@/domain/recurrence/cadence-presets";
+import {
+  cadencePresetFromParts,
+  FIRST_GROUP_CADENCE_PRESETS,
+} from "@/domain/recurrence/cadence-presets";
 import {
   formatCadenceLabel,
+  pickOpenCycleNominalDate,
   type GroupPlanningCycle,
   type RecurrenceCadence,
 } from "@/domain/recurrence/planning-cycle";
@@ -230,6 +235,41 @@ export function CreateEventProposalFlow({
   function selectMeetFrequency(next: StoredMeetFrequency) {
     setMeetFrequency(next);
     setDraft((current) => applyMeetFrequencyToDraft(current, next, { groupName }));
+  }
+
+  function selectEstablishedPlanningKind(kind: "one_off" | "recurring") {
+    if (kind === "one_off") {
+      selectMeetFrequency("once");
+      return;
+    }
+    const presetId =
+      establishedCadence
+        ? cadencePresetFromParts(
+            establishedCadence.intervalUnit,
+            establishedCadence.intervalCount,
+          )
+        : "monthly";
+    selectMeetFrequency(presetId ?? "monthly");
+    setDraft((current) => {
+      const next = fillRecurringPlanningDates(
+        applyMeetFrequencyToDraft(current, presetId ?? "monthly", { groupName }),
+      );
+      if (next.eventKind !== "recurring" || !next.recurrence) {
+        return next;
+      }
+      const cycleTarget = planningCycle ? pickOpenCycleNominalDate(planningCycle) : null;
+      if (!cycleTarget) {
+        return next;
+      }
+      return fillRecurringPlanningDates({
+        ...next,
+        recurrence: {
+          ...next.recurrence,
+          planningTargetDate: next.recurrence.planningTargetDate ?? cycleTarget,
+          startsOn: next.recurrence.startsOn?.trim() ? next.recurrence.startsOn : cycleTarget,
+        },
+      });
+    });
   }
 
   const [actionState, formAction] = useActionState(
@@ -629,9 +669,53 @@ export function CreateEventProposalFlow({
             </fieldset>
             ) : null
           ) : null}
+          {establishedRecurrence && canOneOff && canRecurring ? (
+            <fieldset className="space-y-3">
+              <legend className="hui-label">
+                <span>Is this part of how often you meet?</span>
+              </legend>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <label
+                  className={cn(
+                    "hui-focus-ring flex min-h-12 cursor-pointer items-center justify-center rounded-hui-lg px-3 py-2 text-center text-sm font-extrabold",
+                    draft.eventKind === "one_off"
+                      ? "border-2 border-primary bg-sage-soft text-foreground"
+                      : "border border-transparent bg-muted text-foreground",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="established_planning_kind"
+                    className="sr-only"
+                    checked={draft.eventKind === "one_off"}
+                    onChange={() => selectEstablishedPlanningKind("one_off")}
+                  />
+                  Just this once
+                </label>
+                <label
+                  className={cn(
+                    "hui-focus-ring flex min-h-12 cursor-pointer items-center justify-center rounded-hui-lg px-3 py-2 text-center text-sm font-extrabold",
+                    draft.eventKind === "recurring"
+                      ? "border-2 border-primary bg-sage-soft text-foreground"
+                      : "border border-transparent bg-muted text-foreground",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="established_planning_kind"
+                    className="sr-only"
+                    checked={draft.eventKind === "recurring"}
+                    onChange={() => selectEstablishedPlanningKind("recurring")}
+                  />
+                  Recurring
+                  {establishedCadence ? ` (${formatCadenceLabel(establishedCadence)})` : ""}
+                </label>
+              </div>
+            </fieldset>
+          ) : null}
           {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (
             <p className="rounded-hui-lg bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
-              This hui continues {groupName}&apos;s usual rhythm
+              This hui follows how often you meet
               {establishedCadence ? ` (${formatCadenceLabel(establishedCadence)})` : ""}. Proposed
               times are options — not confirmed dates yet.
             </p>
@@ -907,7 +991,7 @@ export function CreateEventProposalFlow({
               <dd>{hostSummary(draft, settings.hostingEnabled)}</dd>
             </div>
             <div>
-              <dt>Contributions</dt>
+              <dt>Who&apos;s bringing what</dt>
               <dd>
                 {draft.requestedContributions.length > 0
                   ? draft.requestedContributions.map((row) => row.label).join(", ")

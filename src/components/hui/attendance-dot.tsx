@@ -59,13 +59,9 @@ export function AttendanceDot({
   const styles = stateStyles[state];
   const dims = sizes[size];
   const subduedDot =
-    subdued && state === "yes"
-      ? "border-2 border-attendance-yes bg-surface"
-      : subdued && state === "maybe"
-        ? "border-2 border-dashed border-attendance-maybe bg-surface"
-        : subdued && state === "no"
-          ? "border-2 border-muted-foreground/40 bg-surface opacity-80"
-          : null;
+    subdued && state !== "pending"
+      ? stateStyles.pending.dot
+      : null;
 
   return (
     <span

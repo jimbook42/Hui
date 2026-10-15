@@ -1,5 +1,12 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX4 blind test 4 friction (v0.18.8)
+
+- **Invite:** Single group-page invite card (Share invite / Copy link / Reset link with confirm); sheet safe-area above tab bar; join-the-group copy.
+- **Propose:** Later huis default to “Just this once”; established groups choose one-off vs recurring explicitly.
+- **Respond / home:** Neutral unselected Yes/Maybe/No; multi-time answers drive Your hui list status; availability save revalidates `/events` and `/dashboard`.
+- **Copy:** Plain-language confirm rules and “Who’s bringing what” headings.
+
 ## 2026-10-16 — HUI-UX3-fix12 second propose + settings hash (PR #49)
 
 - **Second propose:** `groupHasEstablishedRecurrence` treats prior huis (`isFirstGroupEvent: false` + recurring enabled) as established when group cadence columns are still empty; restore path merges cadence draft; candidate merge backfills `planningTargetDate`. E2E: first then second recurring propose.
