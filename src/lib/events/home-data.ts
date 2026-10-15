@@ -42,7 +42,7 @@ import type {
 } from "@/domain/scheduling/types";
 import { ACTIVE_CANDIDATE_STATUSES } from "@/domain/scheduling/types";
 import { listOpenDecisionsForEvents } from "@/lib/decisions/queries";
-import { buildAttendanceRoster, type RosterMemberRow } from "@/lib/scheduling/queries";
+import { parseCandidateAttendanceRostersMap } from "@/lib/scheduling/queries";
 
 const DEFAULT_TIME_ZONE = "Pacific/Auckland";
 const OPEN_STATUSES: EventStatus[] = ["proposing", "voting", "awaiting_agreement", "reopened", "confirmed"];
@@ -288,7 +288,6 @@ export async function loadHomeData(
   }
 
   const membersByGroup = new Map<string, ConsensusMember[]>();
-  const rosterMembersByGroup = new Map<string, RosterMemberRow[]>();
   for (const row of (membersResult.data ?? []) as Array<{
     group_id: string;
     user_id: string;
@@ -301,15 +300,6 @@ export async function loadHomeData(
       consensusRequired: row.consensus_required === true,
     });
     membersByGroup.set(row.group_id, list);
-
-    const rawProfile = row.profiles;
-    const profile = Array.isArray(rawProfile) ? rawProfile[0] : rawProfile;
-    const rosterList = rosterMembersByGroup.get(row.group_id) ?? [];
-    rosterList.push({
-      userId: row.user_id,
-      displayName: profile?.display_name?.trim() ? profile.display_name.trim() : "Member",
-    });
-    rosterMembersByGroup.set(row.group_id, rosterList);
   }
 
   const pickedByEvent = new Map<string, CandidateRow | null>();
@@ -523,48 +513,24 @@ export async function loadHomeData(
     .map((event) => event.candidateId)
     .filter((id): id is string => id != null);
 
-  const rosterResponsesResult =
-    rosterCandidateIds.length > 0
-      ? await supabase
-          .from("event_responses")
-          .select("candidate_id, user_id, response, submitted_late")
-          .in("candidate_id", rosterCandidateIds)
-      : { data: [], error: null };
-  if (rosterResponsesResult.error) {
-    throw new Error(rosterResponsesResult.error.message);
-  }
-
-  const responsesByCandidate = new Map<string, Map<string, { response: "yes" | "no" | "maybe" | null; submittedLate: boolean }>>();
-  for (const row of (rosterResponsesResult.data ?? []) as Array<{
-    candidate_id: string;
-    user_id: string;
-    response: DbResponseValue | null;
-    submitted_late: boolean | null;
-  }>) {
-    const byUser = responsesByCandidate.get(row.candidate_id) ?? new Map();
-    const response =
-      row.response === "yes" || row.response === "no" || row.response === "maybe"
-        ? row.response
-        : null;
-    byUser.set(row.user_id, {
-      response,
-      submittedLate: row.submitted_late === true,
+  const rostersByCandidate = new Map<string, AttendanceRoster>();
+  if (rosterCandidateIds.length > 0) {
+    const rosterRpcResult = await supabase.rpc("candidate_attendance_rosters", {
+      p_candidate_ids: rosterCandidateIds,
     });
-    responsesByCandidate.set(row.candidate_id, byUser);
+    if (rosterRpcResult.error) {
+      throw new Error(rosterRpcResult.error.message);
+    }
+    for (const [candidateId, roster] of parseCandidateAttendanceRostersMap(rosterRpcResult.data)) {
+      rostersByCandidate.set(candidateId, roster);
+    }
   }
 
   for (const event of rosterTargets) {
     const candidateId = event.candidateId as string;
-    const groupSettings = settingsByGroup.get(event.groupId);
-    const maybeEnabled = groupSettings?.maybe ?? true;
-    const members = rosterMembersByGroup.get(event.groupId) ?? [];
-    const roster = buildAttendanceRoster(
-      members,
-      maybeEnabled,
-      responsesByCandidate.get(candidateId) ?? new Map(),
-    );
+    const roster = rostersByCandidate.get(candidateId);
     const target = events.find((row) => row.id === event.id);
-    if (target) {
+    if (target && roster) {
       target.roster = roster;
       target.counts = countAttendance(roster.members, roster.maybeResponsesEnabled);
     }

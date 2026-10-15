@@ -58,6 +58,53 @@ import type {
   EventSchedulingContext,
 } from "./types";
 
+export function parseAttendanceRosterPayload(data: unknown): AttendanceRoster | null {
+  if (data == null) {
+    return null;
+  }
+  const summary =
+    typeof data === "string" ? (JSON.parse(data) as Record<string, unknown>) : (data as Record<string, unknown>);
+  const membersRaw = Array.isArray(summary.members) ? summary.members : [];
+  const members = membersRaw.map((row: unknown) => {
+    const record = row as Record<string, unknown>;
+    const response = record.response;
+    const normalizedResponse: RosterResponseRow["response"] =
+      response === "yes" || response === "no" || response === "maybe" ? response : null;
+    return {
+      userId: String(record.user_id ?? ""),
+      displayName: String(record.display_name ?? "Member"),
+      response: normalizedResponse,
+      submittedLate: record.submitted_late === true,
+    };
+  });
+
+  return {
+    maybeResponsesEnabled: summary.maybe_responses_enabled !== false,
+    members,
+  };
+}
+
+export function parseCandidateAttendanceRostersMap(data: unknown): Map<string, AttendanceRoster> {
+  const map = new Map<string, AttendanceRoster>();
+  if (data == null) {
+    return map;
+  }
+  const record =
+    typeof data === "string"
+      ? (JSON.parse(data) as Record<string, unknown>)
+      : (data as Record<string, unknown>);
+  if (!record || typeof record !== "object" || Array.isArray(record)) {
+    return map;
+  }
+  for (const [candidateId, payload] of Object.entries(record)) {
+    const roster = parseAttendanceRosterPayload(payload);
+    if (roster) {
+      map.set(candidateId, roster);
+    }
+  }
+  return map;
+}
+
 export async function getCandidateAttendanceRoster(
   supabase: SupabaseClient,
   candidateId: string,
@@ -70,27 +117,7 @@ export async function getCandidateAttendanceRoster(
     return null;
   }
 
-  const summary =
-    typeof data === "string" ? (JSON.parse(data) as Record<string, unknown>) : data;
-  const membersRaw = Array.isArray(summary.members) ? summary.members : [];
-  const members = membersRaw.map((row: unknown) => {
-    const record = row as Record<string, unknown>;
-    const response = record.response;
-    return {
-      userId: String(record.user_id ?? ""),
-      displayName: String(record.display_name ?? "Member"),
-      response:
-        response === "yes" || response === "no" || response === "maybe"
-          ? response
-          : null,
-      submittedLate: record.submitted_late === true,
-    };
-  });
-
-  return {
-    maybeResponsesEnabled: summary.maybe_responses_enabled !== false,
-    members,
-  };
+  return parseAttendanceRosterPayload(data);
 }
 
 export async function getEventSchedulingContext(

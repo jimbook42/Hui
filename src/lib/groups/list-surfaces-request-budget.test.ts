@@ -144,8 +144,11 @@ function createCountingSupabase(groupIds: string[]): CountingSupabase {
 
   const client = {
     from: (table: string) => buildQuery(table),
-    rpc: async () => {
+    rpc: async (fn: string) => {
       mark();
+      if (fn === "candidate_attendance_rosters") {
+        return { data: {}, error: null };
+      }
       return { data: null, error: null };
     },
     auth: {
