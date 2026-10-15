@@ -7,7 +7,7 @@ describe("applySessionVisitIncrement", () => {
     let visitCount = 0;
     let sessionAlreadyCounted = false;
 
-    for (const _page of ["sign-in", "onboarding", "dashboard"]) {
+    for (let i = 0; i < 3; i += 1) {
       const next = applySessionVisitIncrement({ visitCount, sessionAlreadyCounted });
       visitCount = next.visitCount;
       sessionAlreadyCounted = next.sessionAlreadyCounted;

@@ -178,6 +178,9 @@ export function CreateEventProposalFlow({
   );
 
   const establishedRecurrence = groupHasEstablishedRecurrence(settings, { isFirstGroupEvent });
+  const establishedCadence: RecurrenceCadence | null = !establishedRecurrence
+    ? null
+    : cadenceFromGroupSettings(settings) ?? planningCycle?.cadence ?? null;
   const [meetFrequency, setMeetFrequency] = useState<StoredMeetFrequency>(null);
 
   useEffect(() => {
@@ -282,12 +285,6 @@ export function CreateEventProposalFlow({
     () => contributionCategories.filter((row) => !row.archivedAt),
     [contributionCategories],
   );
-  const establishedCadence = useMemo((): RecurrenceCadence | null => {
-    if (!establishedRecurrence) {
-      return null;
-    }
-    return cadenceFromGroupSettings(settings) ?? planningCycle?.cadence ?? null;
-  }, [establishedRecurrence, settings, planningCycle]);
 
   function goTo(next: Step) {
     setStepError(null);

@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX4 fix2 lint (PR #50)
+
+- React Compiler: derive `establishedCadence` without `useMemo` in propose flow.
+- ESLint: drop unused import in `participant-flow.ts`, unused `user` in lifecycle poll action, loop index in `install-visits.test.ts`.
+
 ## 2026-10-16 — HUI-UX4 fix1 global copy (v0.18.8)
 
 - Dashboard greeting **Hi** (not Kia ora); no-groups copy uses **family**; remaining user-facing **Contribution(s)** strings aligned with **What to bring** / **Who's bringing what**; legacy notification title mapping for DB **Contribution updated**.
