@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-15 — HUI-0184 follow-ups (v0.18.4)
+
+- Re-asking status pill on event hero, manage, and home/group cards (`consensusCurrentlyPasses` / `anyCandidatePasses`, same gate as hero line).
+- Home `canConfirmTime` uses batched `candidate_attendance_rosters` instead of self-only `event_responses` RLS.
+
 ## 2026-10-15 — HUI-0183 friction tier 1 (v0.18.3)
 
 - In-app browser OAuth banner on `/`, sign-in, sign-up; reschedule re-asking hero; cancelled hero/copy; privacy sign-in list; host self-notify migration (not applied).

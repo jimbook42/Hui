@@ -140,7 +140,12 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
 
       <HuiSurface padding="md" shape="soft" className="hui-rise-1">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <EventStatusPill status={detail.status} />
+          <EventStatusPill
+            status={detail.status}
+            consensusCurrentlyPasses={
+              detail.status === "confirmed" ? data.anyCandidatePasses : undefined
+            }
+          />
           {overviewWhen ? (
             <p className="text-sm font-bold text-muted-foreground">{overviewWhen}</p>
           ) : null}
@@ -155,7 +160,12 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
           <div className="min-w-0">
             <p className="hui-type-label text-muted-foreground">Status</p>
             <div className="mt-2">
-              <EventStatusPill status={detail.status} />
+              <EventStatusPill
+                status={detail.status}
+                consensusCurrentlyPasses={
+                  detail.status === "confirmed" ? data.anyCandidatePasses : undefined
+                }
+              />
             </div>
           </div>
           {startsAt && !closed ? (

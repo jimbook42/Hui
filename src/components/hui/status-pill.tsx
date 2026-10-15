@@ -1,5 +1,8 @@
 import type { EventStatus } from "@/domain/events/types";
-import { eventStatusLabel } from "@/lib/events/labels";
+import {
+  formatEventStatusPillLabel,
+  isConfirmedEventReasking,
+} from "@/domain/scheduling/confirmed-because";
 import { cn } from "@/lib/ui/cn";
 
 export type StatusPillTone =
@@ -46,12 +49,19 @@ const baseClass =
 
 type StatusPillProps = {
   status: EventStatus;
+  /** When false on a confirmed hui, the pill shows re-asking (matches hero status line). */
+  consensusCurrentlyPasses?: boolean | null;
   className?: string;
 };
 
-export function EventStatusPill({ status, className }: StatusPillProps) {
-  const tone = toneForEventStatus(status);
-  return <span className={cn(baseClass, toneClass[tone], className)}>{eventStatusLabel(status)}</span>;
+export function EventStatusPill({ status, consensusCurrentlyPasses, className }: StatusPillProps) {
+  const reasking = isConfirmedEventReasking(status, consensusCurrentlyPasses);
+  const tone = reasking ? "warning" : toneForEventStatus(status);
+  return (
+    <span className={cn(baseClass, toneClass[tone], className)}>
+      {formatEventStatusPillLabel(status, consensusCurrentlyPasses)}
+    </span>
+  );
 }
 
 type StatusPillLabelProps = {

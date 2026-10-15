@@ -10,6 +10,7 @@ import { cn } from "@/lib/ui/cn";
 type EventHeroProps = {
   title: string;
   status: EventStatus;
+  consensusCurrentlyPasses?: boolean | null;
   groupName: string;
   groupHref: string;
   location: string | null;
@@ -28,6 +29,7 @@ type EventHeroProps = {
 export function EventHero({
   title,
   status,
+  consensusCurrentlyPasses,
   groupName,
   groupHref,
   location,
@@ -46,7 +48,7 @@ export function EventHero({
         className={coordinates ? "h-52 sm:h-64" : "h-24"}
       >
         <div className="absolute left-4 top-4 z-10">
-          <EventStatusPill status={status} />
+          <EventStatusPill status={status} consensusCurrentlyPasses={consensusCurrentlyPasses} />
         </div>
       </EventPlaceMap>
 

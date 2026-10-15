@@ -30,7 +30,7 @@ import {
   evaluateCandidateConsensus,
   isConsensusRule,
   type ConsensusMember,
-  type ConsensusResponse,
+  type ConsensusResponseInput,
   type ConsensusRule,
 } from "@/domain/scheduling/consensus";
 import { dbResponseToAvailability } from "@/domain/scheduling/mapping";
@@ -75,6 +75,11 @@ export type HomeEvent = {
   proposalDatePassed: boolean;
   /** Server-preformatted relative chip for list cards (null when not shown). */
   relativeDayChip: string | null;
+  /**
+   * For confirmed hui: whether consensus passes again on the current time (false after reschedule).
+   * Null when unknown (no roster loaded) or not applicable.
+   */
+  consensusCurrentlyPasses: boolean | null;
 };
 
 export type ProposableGroup = { id: string; name: string };
@@ -99,15 +104,43 @@ type EventRow = {
   groups: { name: string } | { name: string }[] | null;
 };
 
-function dbResponseToConsensus(response: DbResponseValue): ConsensusResponse {
-  switch (response) {
-    case "yes":
-      return "yes";
-    case "no":
-      return "no";
-    case "maybe":
-      return "maybe";
+function consensusResponsesFromRoster(roster: AttendanceRoster): ConsensusResponseInput[] {
+  const responses: ConsensusResponseInput[] = [];
+  for (const member of roster.members) {
+    if (member.response === "yes" || member.response === "no" || member.response === "maybe") {
+      responses.push({ userId: member.userId, response: member.response });
+    }
   }
+  return responses;
+}
+
+function anyCandidatePassesConsensusForEvent(
+  candidates: CandidateRow[],
+  rostersByCandidate: Map<string, AttendanceRoster>,
+  groupSettings: {
+    minimumAttendees: number;
+    consensusRule: ConsensusRule;
+    maybe: boolean;
+  } | undefined,
+  members: ConsensusMember[],
+): boolean {
+  for (const candidate of candidates) {
+    const roster = rostersByCandidate.get(candidate.id);
+    if (!roster) {
+      continue;
+    }
+    const evaluation = evaluateCandidateConsensus({
+      consensusRule: groupSettings?.consensusRule ?? "minimum_attendees",
+      minimumAttendees: groupSettings?.minimumAttendees ?? 1,
+      maybeResponsesEnabled: roster.maybeResponsesEnabled,
+      members,
+      responses: consensusResponsesFromRoster(roster),
+    });
+    if (evaluation.passes) {
+      return true;
+    }
+  }
+  return false;
 }
 
 type CandidateRow = {
@@ -384,45 +417,32 @@ export async function loadHomeData(
     const finalisableCandidateIds = finalisableEvents.flatMap((row) =>
       (candidatesByEvent.get(row.id) ?? []).map((candidate) => candidate.id),
     );
-    const consensusResponsesResult =
-      finalisableCandidateIds.length > 0
-        ? await supabase
-            .from("event_responses")
-            .select("candidate_id, user_id, response")
-            .in("candidate_id", finalisableCandidateIds)
-        : { data: [], error: null };
-    if (consensusResponsesResult.error) {
-      throw new Error(consensusResponsesResult.error.message);
-    }
-    const responsesByCandidate = new Map<string, { userId: string; response: ConsensusResponse }[]>();
-    for (const row of (consensusResponsesResult.data ?? []) as Array<{
-      candidate_id: string;
-      user_id: string;
-      response: DbResponseValue;
-    }>) {
-      const list = responsesByCandidate.get(row.candidate_id) ?? [];
-      list.push({ userId: row.user_id, response: dbResponseToConsensus(row.response) });
-      responsesByCandidate.set(row.candidate_id, list);
+    const finalisableRostersByCandidate = new Map<string, AttendanceRoster>();
+    if (finalisableCandidateIds.length > 0) {
+      // candidate_attendance_rosters accepts at most 50 ids per call.
+      for (let i = 0; i < finalisableCandidateIds.length; i += 50) {
+        const rosterRpcResult = await supabase.rpc("candidate_attendance_rosters", {
+          p_candidate_ids: finalisableCandidateIds.slice(i, i + 50),
+        });
+        if (rosterRpcResult.error) {
+          throw new Error(rosterRpcResult.error.message);
+        }
+        for (const [candidateId, roster] of parseCandidateAttendanceRostersMap(rosterRpcResult.data)) {
+          finalisableRostersByCandidate.set(candidateId, roster);
+        }
+      }
     }
 
     for (const row of finalisableEvents) {
       const groupSettings = settingsByGroup.get(row.group_id);
       const members = membersByGroup.get(row.group_id) ?? [];
       const candidates = candidatesByEvent.get(row.id) ?? [];
-      let ready = false;
-      for (const candidate of candidates) {
-        const evaluation = evaluateCandidateConsensus({
-          consensusRule: groupSettings?.consensusRule ?? "minimum_attendees",
-          minimumAttendees: groupSettings?.minimumAttendees ?? 1,
-          maybeResponsesEnabled: groupSettings?.maybe ?? true,
-          members,
-          responses: responsesByCandidate.get(candidate.id) ?? [],
-        });
-        if (evaluation.passes) {
-          ready = true;
-          break;
-        }
-      }
+      const ready = anyCandidatePassesConsensusForEvent(
+        candidates,
+        finalisableRostersByCandidate,
+        groupSettings,
+        members,
+      );
       decisionReadyByEvent.set(row.id, ready);
     }
   }
@@ -499,6 +519,7 @@ export async function loadHomeData(
         startsAt && bucket !== "past"
           ? relativeDayLabel(startsAt, timeZone, now)
           : null,
+      consensusCurrentlyPasses: null,
     };
   });
 
@@ -533,6 +554,17 @@ export async function loadHomeData(
     if (target && roster) {
       target.roster = roster;
       target.counts = countAttendance(roster.members, roster.maybeResponsesEnabled);
+      if (target.status === "confirmed") {
+        const groupSettings = settingsByGroup.get(target.groupId);
+        const members = membersByGroup.get(target.groupId) ?? [];
+        const eventCandidates = candidatesByEvent.get(target.id) ?? [];
+        target.consensusCurrentlyPasses = anyCandidatePassesConsensusForEvent(
+          eventCandidates,
+          rostersByCandidate,
+          groupSettings,
+          members,
+        );
+      }
     }
   }
 
