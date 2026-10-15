@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  DEFAULT_EVENT_CONFIRM_RULE,
+  isEventConfirmRule,
+} from "@/domain/events/confirm-rule";
 import { coordinatesFromRow } from "@/domain/events/location";
 import type { EventFoodInvolvement } from "@/domain/events/food";
 import type { EventStatus } from "@/domain/events/types";
@@ -94,6 +98,7 @@ export async function getEventDetail(
       cancelled_at,
       response_deadline_at,
       confirmation_method,
+      confirm_rule,
       groups:group_id (
         name
       ),
@@ -192,6 +197,9 @@ export async function getEventDetail(
       event.confirmation_method === "organiser" || event.confirmation_method === "consensus"
         ? event.confirmation_method
         : null,
+    confirmRule: isEventConfirmRule(String(event.confirm_rule ?? ""))
+      ? (event.confirm_rule as typeof DEFAULT_EVENT_CONFIRM_RULE)
+      : DEFAULT_EVENT_CONFIRM_RULE,
     viewerRole: membership.role as MembershipRole,
   };
 }

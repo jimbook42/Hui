@@ -27,6 +27,11 @@ import {
 import { SectionHeader } from "@/components/hui/section-header";
 import { AddToCalendarButton } from "@/components/events/add-to-calendar-button";
 import { EventHostGentlePrompt } from "@/components/events/event-host-gentle-prompt";
+import { eventConfirmRuleDisplayLine } from "@/domain/events/confirm-rule";
+import {
+  eventShowsWaitingOnHost,
+  WAITING_ON_HOST_STATUS_MESSAGE,
+} from "@/domain/scheduling/consensus-display";
 import { formatConfirmedHeroStatusLine } from "@/domain/scheduling/confirmed-because";
 import { formatEventTimeDisclosureSummary } from "@/domain/scheduling/event-time-disclosure-summary";
 import {
@@ -108,6 +113,11 @@ export function EventHeroMeta({
           consensusCurrentlyPasses: data.anyCandidatePasses,
         })
       : null;
+  const confirmRuleLine =
+    detail.status === "proposing" ? eventConfirmRuleDisplayLine(detail.confirmRule) : null;
+  const waitingOnHost =
+    detail.status === "proposing" &&
+    eventShowsWaitingOnHost(data.consensus.candidates);
 
   const viewerReleasableContributions = data.eventContributions.filter(
     (row) =>
@@ -146,6 +156,14 @@ export function EventHeroMeta({
             {confirmedStatusLine ? (
               <p className="mt-3 text-sm font-semibold text-muted-foreground" role="status">
                 {confirmedStatusLine}
+              </p>
+            ) : null}
+            {confirmRuleLine ? (
+              <p className="mt-2 text-sm font-semibold text-muted-foreground">{confirmRuleLine}</p>
+            ) : null}
+            {waitingOnHost ? (
+              <p className="mt-2 text-sm font-extrabold text-foreground" role="status">
+                {WAITING_ON_HOST_STATUS_MESSAGE}
               </p>
             ) : null}
           </div>

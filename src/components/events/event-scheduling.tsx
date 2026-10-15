@@ -15,20 +15,19 @@ import {
   availabilityResponseOptions,
   buildAttendanceSummaryLines,
   candidateStatusBadge,
-  consensusMaybeAvailabilityLine,
-  consensusRuleRequirementSummary,
+  eventConfirmRuleRequirementSummary,
   eventSchedulingSectionMessage,
   hasNoResponsesYet,
   isCandidateOpenForResponses,
+  isWaitingOnHostFailure,
   proposalDeadlineGroupNotice,
   shouldOfferOrganiserConfirm,
   shouldShowFinaliseControl,
+  WAITING_ON_HOST_STATUS_MESSAGE,
 } from "@/domain/scheduling/consensus-display";
-import {
-  availabilityLabel,
-  consensusFailureLabel,
-  consensusRuleLabel,
-} from "@/lib/scheduling/labels";
+import type { EventConfirmRule } from "@/domain/events/confirm-rule";
+import { eventConfirmRuleLabel } from "@/domain/events/confirm-rule";
+import { availabilityLabel, consensusFailureLabel } from "@/lib/scheduling/labels";
 import {
   groupAttendanceByResponse,
   type AttendanceRoster,
@@ -68,11 +67,13 @@ const initialState: EventActionState = {};
 
 function AttendanceSummary({
   evaluation,
+  confirmRule,
   maybeResponsesEnabled,
   roster,
   showLateTags,
 }: {
   evaluation: CandidateConsensusView;
+  confirmRule: EventConfirmRule;
   maybeResponsesEnabled: boolean;
   roster?: AttendanceRoster | null;
   showLateTags?: boolean;
@@ -133,12 +134,16 @@ function AttendanceSummary({
         </ul>
       )}
       <p className="mt-2 text-muted-foreground">
-        {consensusRuleRequirementSummary(evaluation.consensusRule, {
+        {eventConfirmRuleRequirementSummary(confirmRule, {
           minimumAttendees: evaluation.minimumAttendees,
           eligibleMemberCount: evaluation.eligibleMemberCount,
-          requiredParticipantCount: evaluation.requiredParticipantCount,
         })}
       </p>
+      {isWaitingOnHostFailure(evaluation.failureReason) ? (
+        <p className="mt-2 text-sm font-semibold text-foreground" role="status">
+          {WAITING_ON_HOST_STATUS_MESSAGE}
+        </p>
+      ) : null}
       {evaluation.consensusRule === "required_participants" &&
       evaluation.requiredParticipantCount > 0 ? (
         <p className="mt-1 text-muted-foreground">
@@ -309,6 +314,7 @@ function CandidateConsensusNote({
   eventStatus,
   candidate,
   evaluation,
+  confirmRule,
   maybeResponsesEnabled,
   roster,
   showLateTags,
@@ -316,6 +322,7 @@ function CandidateConsensusNote({
   eventStatus: EventStatus;
   candidate: EventCandidateRow;
   evaluation: CandidateConsensusView | undefined;
+  confirmRule: EventConfirmRule;
   maybeResponsesEnabled: boolean;
   roster?: AttendanceRoster | null;
   showLateTags?: boolean;
@@ -358,6 +365,7 @@ function CandidateConsensusNote({
         </p>
         <AttendanceSummary
           evaluation={evaluation}
+          confirmRule={confirmRule}
           maybeResponsesEnabled={maybeResponsesEnabled}
           roster={roster}
           showLateTags={showLateTags}
@@ -385,6 +393,7 @@ function CandidateConsensusNote({
       </p>
       <AttendanceSummary
         evaluation={evaluation}
+        confirmRule={confirmRule}
         maybeResponsesEnabled={maybeResponsesEnabled}
         roster={roster}
         showLateTags={showLateTags}
@@ -430,6 +439,7 @@ function CandidateCard({
   eventStatus,
   candidate,
   evaluation,
+  confirmRule,
   maybeResponsesEnabled,
   canRespond,
   canRemoveCandidates,
@@ -442,6 +452,7 @@ function CandidateCard({
   eventStatus: EventStatus;
   candidate: EventCandidateRow;
   evaluation: CandidateConsensusView | undefined;
+  confirmRule: EventConfirmRule;
   maybeResponsesEnabled: boolean;
   canRespond: boolean;
   canRemoveCandidates: boolean;
@@ -484,6 +495,7 @@ function CandidateCard({
         eventStatus={eventStatus}
         candidate={candidate}
         evaluation={evaluation}
+        confirmRule={confirmRule}
         maybeResponsesEnabled={maybeResponsesEnabled}
         roster={roster}
         showLateTags={showLateTags}
@@ -502,6 +514,11 @@ function CandidateCard({
         eventStatus,
         candidate.status,
         evaluation?.passes ?? false,
+        {
+          confirmRule,
+          yesCount: evaluation?.yesCount ?? 0,
+          failureReason: evaluation?.failureReason,
+        },
       ) ? (
         <FinaliseCandidateButton eventId={eventId} candidateId={candidate.id} />
       ) : shouldOfferOrganiserConfirm(
@@ -510,7 +527,7 @@ function CandidateCard({
           candidate.status,
           evaluation?.yesCount ?? 0,
           evaluation?.passes ?? false,
-        ) ? (
+        ) && confirmRule !== "organiser_picks" ? (
         <FinaliseCandidateButton
           eventId={eventId}
           candidateId={candidate.id}
@@ -547,8 +564,7 @@ export function EventScheduling({
     consensus.candidates.map((candidate) => [candidate.candidateId, candidate]),
   );
   const passingCount = consensus.candidates.filter((candidate) => candidate.passes).length;
-  const requiredCount = consensus.candidates[0]?.requiredParticipantCount ?? 0;
-  const ruleLabel = consensusRuleLabel(consensus.consensusRule);
+  const confirmRuleLabel = eventConfirmRuleLabel(consensus.confirmRule);
   const deadlineNotice = proposalDeadlineGroupNotice(proposalDeadlineHours);
   void timeZone;
   const sectionMessage = eventSchedulingSectionMessage(
@@ -569,16 +585,16 @@ export function EventScheduling({
           Advanced — how confirmation works
         </summary>
         <p className="mt-2 text-sm text-muted-foreground">
-          Group rule: <span className="font-medium text-foreground">{ruleLabel}</span>.{" "}
-          {consensusRuleRequirementSummary(consensus.consensusRule, {
+          This hui: <span className="font-medium text-foreground">{confirmRuleLabel}</span>.{" "}
+          {eventConfirmRuleRequirementSummary(consensus.confirmRule, {
             minimumAttendees,
             eligibleMemberCount: consensus.eligibleMemberCount,
-            requiredParticipantCount: requiredCount,
           })}{" "}
-          {consensusMaybeAvailabilityLine(
-            consensus.consensusRule,
-            consensus.maybeResponsesEnabled,
-          )}
+          {consensus.maybeResponsesEnabled
+            ? consensus.confirmRule === "when_most_can_come"
+              ? "Maybe can help reach the minimum number needed, but only Yes counts toward the majority."
+              : "Maybe can help reach the minimum number needed."
+            : "Only Yes counts toward confirmation."}
         </p>
       </details>
       {replyByLabel ? (
@@ -628,6 +644,7 @@ export function EventScheduling({
               eventStatus={eventStatus}
               candidate={candidate}
               evaluation={evaluations.get(candidate.id)}
+              confirmRule={consensus.confirmRule}
               maybeResponsesEnabled={maybeResponsesEnabled}
               canRespond={canRespond}
               canRemoveCandidates={canRemoveCandidates}
@@ -653,6 +670,7 @@ export function EventScheduling({
                 eventStatus={eventStatus}
                 candidate={candidate}
                 evaluation={undefined}
+                confirmRule={consensus.confirmRule}
                 maybeResponsesEnabled={maybeResponsesEnabled}
                 canRespond={false}
                 canRemoveCandidates={false}

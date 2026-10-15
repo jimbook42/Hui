@@ -1,3 +1,4 @@
+import type { EventConfirmRule } from "@/domain/events/confirm-rule";
 import type { EventCoordinates } from "@/domain/events/location";
 import type { EventFoodInvolvement } from "@/domain/events/food";
 import type { CadenceUnit, EventStatus } from "@/domain/events/types";
@@ -49,5 +50,6 @@ export type EventDetail = {
   cancelledAt: string | null;
   responseDeadlineAt: string | null;
   confirmationMethod: "consensus" | "organiser" | null;
+  confirmRule: EventConfirmRule;
   viewerRole: "owner" | "admin" | "member";
 };

@@ -40,6 +40,7 @@ import {
   writeStoredProposalCadence,
   writeStoredProposalDraft,
 } from "@/domain/events/proposal-draft-storage";
+import { EventConfirmRuleField } from "@/components/events/event-confirm-rule-field";
 import { ProposalPastDateWarning } from "@/components/events/proposal-past-date-warning";
 import { GATHERING_TYPES, gatheringTypeLabel, type GatheringType } from "@/domain/gathering/type";
 import { FIRST_GROUP_CADENCE_PRESETS } from "@/domain/recurrence/cadence-presets";
@@ -801,6 +802,12 @@ export function CreateEventProposalFlow({
               Still needed: {reviewMissing.join(", ")}
             </p>
           ) : null}
+          <EventConfirmRuleField
+            value={draft.confirmRule}
+            onChange={(confirmRule) =>
+              setDraft((current) => ({ ...current, confirmRule }))
+            }
+          />
           {settings.hostingEnabled ? (
             <>
               <HuiSwitchField

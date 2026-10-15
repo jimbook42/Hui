@@ -10,7 +10,7 @@ export {
   writeStoredProposalCadence,
 } from "@/domain/events/proposal-draft-cadence";
 
-const DRAFT_VERSION = 2;
+const DRAFT_VERSION = 3;
 
 type StoredProposalDraft = {
   version: number;

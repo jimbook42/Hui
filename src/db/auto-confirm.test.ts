@@ -196,6 +196,12 @@ describe("auto-confirm on consensus", () => {
        values ($1, $2, 'yes', 'private')`,
       [candidateId, ids.owner],
     );
+    await asUser(db, ids.member);
+    await db.query(
+      `insert into public.event_responses (candidate_id, user_id, response, visibility)
+       values ($1, $2, 'yes', 'private')`,
+      [candidateId, ids.member],
+    );
 
     await db.exec("set role service_role");
     const first = await db.query<{ try_auto_confirm_event: boolean }>(
@@ -243,12 +249,18 @@ describe("auto-confirm on consensus", () => {
       )
     ).rows[0].id;
 
-    await asUser(db, ids.owner);
     for (const candidateId of [firstCandidate, laterId, earlierId]) {
+      await asUser(db, ids.owner);
       await db.query(
         `insert into public.event_responses (candidate_id, user_id, response, visibility)
          values ($1, $2, 'yes', 'private')`,
         [candidateId, ids.owner],
+      );
+      await asUser(db, ids.member);
+      await db.query(
+        `insert into public.event_responses (candidate_id, user_id, response, visibility)
+         values ($1, $2, 'yes', 'private')`,
+        [candidateId, ids.member],
       );
     }
 

@@ -42,6 +42,12 @@ export function consensusFailureLabel(
       return "Not every current member is available.";
     case "majority_active_members":
       return "Not enough members have said yes yet.";
+    case "when_everyone_can_come":
+      return "Not everyone has said yes yet.";
+    case "organiser_picks":
+      return "The organiser will confirm this time manually.";
+    case "waiting_on_host":
+      return "The host needs to say yes to this time before it can be confirmed.";
     case "candidate_not_active":
       return "This time is no longer active.";
     default:

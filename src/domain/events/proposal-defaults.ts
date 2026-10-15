@@ -1,6 +1,8 @@
 import type { GroupSettingsRow } from "@/lib/groups/types";
 import { cadenceFromGroupSettings } from "@/lib/groups/planning-cycle";
 
+import { DEFAULT_EVENT_CONFIRM_RULE } from "@/domain/events/confirm-rule";
+
 import type { EventProposalDraft } from "./proposal";
 import type { GroupPlanningCycle } from "@/domain/recurrence/planning-cycle";
 import {
@@ -94,6 +96,7 @@ export function buildInitialProposalDraft(
     hostPlaceRequired: true,
     organiserWillHost: false,
     requestedContributions: [],
+    confirmRule: DEFAULT_EVENT_CONFIRM_RULE,
   };
 }
 

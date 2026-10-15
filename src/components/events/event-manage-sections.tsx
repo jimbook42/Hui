@@ -26,7 +26,12 @@ import { eventAcceptsResponseDeadline } from "@/domain/events/response-deadline-
 import { formatEventTimeDisclosureSummary } from "@/domain/scheduling/event-time-disclosure-summary";
 import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
 import { formatDateTimeLocalInTimeZone } from "@/domain/datetime/timezone";
+import { EventConfirmRuleManageForm } from "@/components/events/event-confirm-rule-manage-form";
 import { ResponseDeadlineManageForm } from "@/components/events/response-deadline-manage-form";
+import {
+  eventShowsWaitingOnHost,
+  WAITING_ON_HOST_STATUS_MESSAGE,
+} from "@/domain/scheduling/consensus-display";
 import { eventKindLabel } from "@/lib/events/labels";
 import { loadEventPage } from "@/lib/events/event-page-data";
 import type { EventDetail } from "@/lib/events/types";
@@ -120,6 +125,8 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
     startsAt && !closed
       ? `${formatShortDay(startsAt, tz)} · ${formatTimeSpan(startsAt, endsAt, tz)}`
       : null;
+  const waitingOnHost =
+    detail.status === "proposing" && eventShowsWaitingOnHost(data.consensus.candidates);
 
   return (
     <div className="space-y-3">
@@ -140,6 +147,11 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
         <p className="mt-2 text-sm font-semibold text-muted-foreground">
           Open a section below to update planning, hosting, or place.
         </p>
+        {waitingOnHost ? (
+          <p className="mt-3 text-sm font-extrabold text-foreground" role="status">
+            {WAITING_ON_HOST_STATUS_MESSAGE}
+          </p>
+        ) : null}
       </HuiSurface>
 
       <DisclosureCard id="hui" title="Hui" summary={huiLifecycle} defaultOpen={sectionOpen("hui")}>
@@ -247,6 +259,11 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
           summary={timeDisclosureSummary}
           defaultOpen={sectionOpen("time")}
         >
+          <EventConfirmRuleManageForm
+            eventId={detail.id}
+            confirmRule={detail.confirmRule}
+            canEdit={data.canFinalise}
+          />
           <EventScheduling
             eventId={detail.id}
             groupId={detail.groupId}

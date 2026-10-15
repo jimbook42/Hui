@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-15 — HUI-UX3 confirm rules (v0.18.7)
+
+- Per-hui `confirm_rule` on propose + manage; host must say Yes before auto/manual confirm; migration `20261015200000_hui_ux3_confirm_rules.sql` (not applied in prod).
+- PM: confirm whether `p_force` may ever bypass accepted-host Yes (implemented: **no**).
+
 ## 2026-10-15 — HUI-UX3 blind fixes (v0.18.7)
 
 - Blind-3 QA: invite/sign-up CTA order, hui-scoped invite sheet copy, propose add-time feedback, respond progress/saved/continue copy, vocabulary (group/hui), explicit hui type on propose, editable reply-by on review, dashboard onboarding order, install card after second visit, change-response gating, email field sizing.

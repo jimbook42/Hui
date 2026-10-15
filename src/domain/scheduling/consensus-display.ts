@@ -1,3 +1,4 @@
+import type { EventConfirmRule } from "@/domain/events/confirm-rule";
 import type { EventStatus } from "@/domain/events/types";
 import { isSchedulingOpen } from "@/domain/events/lifecycle";
 
@@ -25,6 +26,23 @@ export function buildAttendanceSummaryLines(counts: AttendanceCounts): string[] 
 
 export function minimumAttendeesRequirementLabel(minimumAttendees: number): string {
   return `Minimum required: ${minimumAttendees}`;
+}
+
+export function eventConfirmRuleRequirementSummary(
+  rule: EventConfirmRule,
+  input: {
+    minimumAttendees: number;
+    eligibleMemberCount: number;
+  },
+): string {
+  switch (rule) {
+    case "when_most_can_come":
+      return `More than half of active members must say Yes (${input.eligibleMemberCount} members), with ${minimumAttendeesRequirementLabel(input.minimumAttendees).toLowerCase()}.`;
+    case "when_everyone_can_come":
+      return `Every active member must say Yes (${input.eligibleMemberCount} members), with ${minimumAttendeesRequirementLabel(input.minimumAttendees).toLowerCase()}.`;
+    case "organiser_picks":
+      return "You confirm the time manually when you are ready (at least one Yes on that time).";
+  }
 }
 
 export function consensusRuleRequirementSummary(
@@ -80,19 +98,45 @@ export function isCandidateOpenForResponses(
   return isSchedulingOpen(eventStatus) && candidateStatus === "proposed";
 }
 
+export function isWaitingOnHostFailure(
+  failureReason: string | null | undefined,
+): boolean {
+  return failureReason === "waiting_on_host";
+}
+
 export function shouldShowFinaliseControl(
   canFinalise: boolean,
   eventStatus: EventStatus,
   candidateStatus: CandidateStatus,
   passes: boolean,
+  options?: {
+    confirmRule?: EventConfirmRule;
+    yesCount?: number;
+    failureReason?: string | null;
+  },
 ): boolean {
-  return (
-    canFinalise &&
-    eventStatus === "proposing" &&
-    candidateStatus === "proposed" &&
-    passes
-  );
+  if (
+    !canFinalise ||
+    eventStatus !== "proposing" ||
+    candidateStatus !== "proposed" ||
+    isWaitingOnHostFailure(options?.failureReason)
+  ) {
+    return false;
+  }
+  if (options?.confirmRule === "organiser_picks") {
+    return (options.yesCount ?? 0) >= 1;
+  }
+  return passes;
 }
+
+export function eventShowsWaitingOnHost(
+  candidates: readonly { failureReason: string | null }[],
+): boolean {
+  return candidates.some((row) => isWaitingOnHostFailure(row.failureReason));
+}
+
+export const WAITING_ON_HOST_STATUS_MESSAGE =
+  "Waiting on the host — they need to say Yes to this time before it can be confirmed.";
 
 /** Organiser may attempt manual confirm when at least one Yes is on the table (maybe does not count). */
 export function shouldOfferOrganiserConfirm(

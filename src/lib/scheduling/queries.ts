@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  DEFAULT_EVENT_CONFIRM_RULE,
+  isEventConfirmRule,
+  type EventConfirmRule,
+} from "@/domain/events/confirm-rule";
+import {
   compareCandidatesBySchedule,
   isConsensusRule,
   type ConsensusRule,
@@ -243,6 +248,13 @@ function readRule(value: unknown): ConsensusRule {
   throw new Error("Consensus summary was incomplete.");
 }
 
+function readConfirmRule(value: unknown): EventConfirmRule {
+  if (typeof value === "string" && isEventConfirmRule(value)) {
+    return value;
+  }
+  return DEFAULT_EVENT_CONFIRM_RULE;
+}
+
 function readFailureReason(value: unknown): CandidateConsensusView["failureReason"] {
   if (value === null || value === undefined) {
     return null;
@@ -305,6 +317,7 @@ export async function getEventConsensusSummary(
     eligibleMemberCount: readNumber(summary.eligible_member_count),
     minimumAttendees: readNumber(summary.minimum_attendees),
     consensusRule: readRule(summary.consensus_rule),
+    confirmRule: readConfirmRule(summary.confirm_rule),
     maybeResponsesEnabled: summary.maybe_responses_enabled === true,
     candidates,
   };

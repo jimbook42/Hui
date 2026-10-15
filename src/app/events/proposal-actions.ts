@@ -126,6 +126,7 @@ export async function proposeGroupEventAction(
       label: row.label,
     })),
     p_organiser_commits_host: payload.organiserCommitsHost,
+    p_confirm_rule: payload.confirmRule,
   });
 
   if (error) {

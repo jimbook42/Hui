@@ -10,6 +10,7 @@ import {
   isCandidateOpenForResponses,
   proposalDeadlineGroupNotice,
   shouldOfferOrganiserConfirm,
+  isWaitingOnHostFailure,
   shouldShowFinaliseControl,
 } from "./consensus-display";
 
@@ -112,6 +113,24 @@ describe("consensus display (HUI-017)", () => {
     expect(
       shouldShowFinaliseControl(true, "confirmed", "selected", true),
     ).toBe(false);
+  });
+
+  it("supports organiser_picks manual confirm and host waiting", () => {
+    expect(
+      shouldShowFinaliseControl(true, "proposing", "proposed", false, {
+        confirmRule: "organiser_picks",
+        yesCount: 1,
+        failureReason: "organiser_picks",
+      }),
+    ).toBe(true);
+    expect(
+      shouldShowFinaliseControl(true, "proposing", "proposed", false, {
+        confirmRule: "when_most_can_come",
+        yesCount: 3,
+        failureReason: "waiting_on_host",
+      }),
+    ).toBe(false);
+    expect(isWaitingOnHostFailure("waiting_on_host")).toBe(true);
   });
 
   it("labels candidate and event states", () => {
