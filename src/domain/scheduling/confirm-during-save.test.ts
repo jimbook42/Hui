@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  confirmedDuringSaveCheckAnswerToast,
+  confirmedDuringSaveOtherAnswersLockedMessage,
   confirmedDuringSaveToast,
   isSchedulingClosedDbError,
   resolveConfirmRaceAfterFailedSave,
@@ -38,7 +38,7 @@ describe("confirm-during-save recovery copy", () => {
     );
   });
 
-  it("returns check-answer copy when save was for a different proposed time", () => {
+  it("returns locked copy when save was for a different proposed time", () => {
     const selected = {
       id: "tue",
       startsAt: "2026-11-10T18:00:00.000Z",
@@ -51,14 +51,14 @@ describe("confirm-during-save recovery copy", () => {
       retrySucceeded: false,
     });
     expect(state.message).toBeUndefined();
-    expect(state.notice).toBe(
-      confirmedDuringSaveCheckAnswerToast(
+    expect(state.error).toBe(
+      confirmedDuringSaveOtherAnswersLockedMessage(
         selected.startsAt,
         selected.endsAt,
         "Pacific/Auckland",
       ),
     );
-    expect(state.notice).toMatch(/check your answer/i);
+    expect(state.error).toMatch(/can't change/i);
   });
 
   it("returns saved message when retry on selected candidate succeeds", () => {

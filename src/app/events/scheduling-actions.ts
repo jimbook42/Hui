@@ -359,7 +359,6 @@ export async function setAvailabilityResponseAction(
         });
         if (recovered) {
           revalidatePath(`/events/${eventId}`);
-          revalidatePath(`/events/${eventId}/respond`);
           schedulePushDelivery();
           return recovered;
         }
@@ -368,7 +367,6 @@ export async function setAvailabilityResponseAction(
     }
 
     revalidatePath(`/events/${eventId}`);
-    revalidatePath(`/events/${eventId}/respond`);
     schedulePushDelivery();
     return { message: "Response saved." };
   });

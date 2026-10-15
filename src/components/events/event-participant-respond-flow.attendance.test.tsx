@@ -194,6 +194,73 @@ describe("EventParticipantRespondFlow multi-time attendance", () => {
     expect(setAvailabilityResponseAction).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps all three time rows mounted after answers when the hui confirms mid-session", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockResolvedValue({ message: "Response saved." });
+
+    const user = userEvent.setup();
+    const { rerender } = renderMultiTimeFlow();
+
+    await user.click(yesButtonForTime("Thu 22 Oct, 7:00pm"));
+
+    const confirmedCandidates: EventCandidateRow[] = [candidateA, candidateB, candidateC].map(
+      (row, index) => ({
+        ...row,
+        status: index === 0 ? "selected" : "proposed",
+        viewerResponse: index === 0 ? ("available" as const) : row.viewerResponse,
+      }),
+    );
+
+    rerender(
+      <EventParticipantRespondFlow
+        eventId="event-1"
+        groupId="group-1"
+        eventTitle="Board-game night"
+        groupName="Fortnightly Board-Game Night"
+        timeZone="Pacific/Auckland"
+        maybeResponsesEnabled={true}
+        canRespond={true}
+        canCoordinateContributions={false}
+        canSuggestTime={false}
+        candidate={{ ...candidateA, status: "selected", viewerResponse: "available" }}
+        proposedCandidates={confirmedCandidates}
+        placeView={{ kind: "pending", line: "Place still being worked out" }}
+        coordinates={null}
+        hostingEnabled={true}
+        viewerUserId="user-i2"
+        initialViewerResponse="available"
+        standingAvailabilityHint={null}
+        focusTimeLabel="Thursday 22 October, 7:00pm"
+        candidateTimeLabels={candidateTimeLabels}
+        replyByLabel="Reply by Sat 17 Oct 5:28pm"
+        eventStatus="confirmed"
+      />,
+    );
+
+    expect(screen.getByText("Thu 22 Oct, 7:00pm")).toBeInTheDocument();
+    expect(screen.getByText("Sat 24 Oct, 6:30pm")).toBeInTheDocument();
+    expect(screen.getByText("Thu 29 Oct, 7:00pm")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Yes/ })).toHaveLength(3);
+  });
+
+  it("shows confirm-race copy and un-presses when another time was confirmed", async () => {
+    vi.mocked(setAvailabilityResponseAction).mockResolvedValueOnce({
+      error:
+        "This hui was just confirmed for Sat 24 Oct, 6:30pm — your other answers can't change.",
+    });
+
+    const user = userEvent.setup();
+    renderMultiTimeFlow();
+
+    const yesC = yesButtonForTime("Thu 29 Oct, 7:00pm");
+    await user.click(yesC);
+
+    await screen.findByRole("alert");
+    expect(
+      screen.getByText(/just confirmed for .* can't change/i),
+    ).toBeInTheDocument();
+    expect(yesC).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("shows an inline error with Retry when a save is rejected", async () => {
     vi.mocked(setAvailabilityResponseAction)
       .mockResolvedValueOnce({ error: "Network blip." })

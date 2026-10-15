@@ -7,6 +7,12 @@
 - **Fix:** Serialize attendance saves on the client (`serialize-attendance-saves.ts` + `event-participant-respond-flow.tsx` ~439); require explicit `{ message | notice }` success (`availability-action-outcome.ts`); friendly connection copy + Retry re-send; skip `router.refresh` on multi-time saves (~455, ~488). PGlite proves concurrent DB upserts all persist (`concurrent-member-availability-save.test.ts`).
 - **Tests:** serialized multi-time saves, aborted/empty action + `Failed to fetch` + Retry, PGlite concurrent upserts, serializer unit test.
 
+## 2026-10-15 — HUI-0186-fix2 respond UI stability (v0.18.6)
+
+- **Root cause A (PM repro, b1820be):** After the first Yes, majority auto-confirm revalidated the respond RSC payload; `respondAttendanceCandidates` (`participant-flow.ts` ~47–57) collapsed to the selected time and `multipleTimeOptions` flipped false (`event-participant-respond-flow.tsx` ~158–159), remounting the single-time UI so global `nth()` Yes taps hit shifted rows (3→2→1 buttons).
+- **Root cause B:** Confirm-race recovery returned `notice` without `message` for non-selected times (`confirm-during-save.ts` ~60–65); `isAttendanceActionSuccess` treated `notice` alone as success (`availability-action-outcome.ts` ~13) and the multi-time `result.notice` branch cleared pending without reverting (`event-participant-respond-flow.tsx` ~459–466).
+- **Fix:** Pin multi-time rows for the visit (`pinnedMultiTimeSession`); keep Yes pressed while saving; `notice`-only confirm race → inline error + un-press; wrong-candidate confirm race returns `error`; stop `revalidatePath` on `/respond` for availability saves; Playwright `e2e/respond-multi-time.spec.ts` (fails on b1820be layout shift / false success).
+
 ## 2026-10-15 — HUI-0185 polish (v0.18.5)
 
 - Manage Time disclosure uses `formatEventTimeDisclosureSummary` (Re-asking when `consensusCurrentlyPasses` is false).

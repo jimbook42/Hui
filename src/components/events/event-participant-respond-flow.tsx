@@ -39,9 +39,11 @@ import { privateAttendanceNoteForCandidate } from "@/domain/events/private-atten
 import { candidateIdsNeedingNoteFlushBeforeAdvance } from "@/domain/events/participant-respond-note-flush";
 import type { EventStatus } from "@/domain/events/types";
 import {
+  multiTimeRespondSessionActive,
   nextStepAfterAttendanceSave,
   nextStepAfterPlace,
   participantFlowStepsForBack,
+  proposedAttendanceCandidates,
   respondAttendanceCandidates,
   shouldShowParticipantBringStep,
   shouldShowParticipantPlaceStep,
@@ -151,12 +153,25 @@ export function EventParticipantRespondFlow({
   const [step, setStep] = useState<ParticipantFlowStep>("time");
   const [responseOverride, setResponseOverride] = useState<AvailabilityChoice | null>(null);
   const viewerResponse = responseOverride ?? initialViewerResponse;
-  const attendanceCandidates = useMemo(
-    () => respondAttendanceCandidates(proposedCandidates, eventStatus),
-    [proposedCandidates, eventStatus],
-  );
-  const multipleTimeOptions =
-    eventStatus !== "confirmed" && attendanceCandidates.length > 1;
+  const [pinnedMultiTimeSession] = useState(() => {
+    const active = multiTimeRespondSessionActive(proposedCandidates, eventStatus);
+    const candidates = active
+      ? proposedAttendanceCandidates(proposedCandidates)
+      : respondAttendanceCandidates(proposedCandidates, eventStatus);
+    return { active, candidates };
+  });
+  const attendanceCandidates = useMemo(() => {
+    if (pinnedMultiTimeSession.active) {
+      return pinnedMultiTimeSession.candidates;
+    }
+    return respondAttendanceCandidates(proposedCandidates, eventStatus);
+  }, [
+    pinnedMultiTimeSession.active,
+    pinnedMultiTimeSession.candidates,
+    proposedCandidates,
+    eventStatus,
+  ]);
+  const multipleTimeOptions = pinnedMultiTimeSession.active;
   const [responsesByCandidate, setResponsesByCandidate] = useState<Record<string, AvailabilityChoice | null>>(
     () => {
       const initial: Record<string, AvailabilityChoice | null> = {};
@@ -457,6 +472,17 @@ export function EventParticipantRespondFlow({
         const result: EventActionState = await setAvailabilityResponseAction({}, formData);
         markInteraction(interaction, "request-end");
         if (result.notice) {
+          if (multipleTimeOptions && !result.message) {
+            const message = result.notice;
+            setErrorsByCandidate((current) => ({ ...current, [targetCandidateId]: message }));
+            setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
+            setResponsesByCandidate((current) => ({
+              ...current,
+              [targetCandidateId]: existing,
+            }));
+            endInteraction(interaction);
+            return;
+          }
           setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
           showSaveToast(result.notice);
           if (!multipleTimeOptions) {
@@ -738,7 +764,12 @@ export function EventParticipantRespondFlow({
                   const rowResponse = responsesByCandidate[row.id] ?? null;
                   const rowPendingUnavailable = pendingByCandidate[row.id] === "unavailable";
                   return (
-                    <li key={row.id} className="rounded-hui-xl bg-surface p-4 hui-shadow-sm">
+                    <li
+                      key={row.id}
+                      data-testid={`respond-time-row-${row.id}`}
+                      aria-label={candidateTimeLabels[row.id] ?? "Proposed time"}
+                      className="rounded-hui-xl bg-surface p-4 hui-shadow-sm"
+                    >
                       <p className="text-sm font-extrabold text-foreground">
                         {candidateTimeLabels[row.id] ?? ""}
                       </p>
@@ -753,11 +784,7 @@ export function EventParticipantRespondFlow({
                             key={`${row.id}-${option}`}
                             state={attendanceStateFromChoice(option, true)}
                             label={participantAttendanceChoiceLabel(option)}
-                            selected={
-                              rowResponse === option &&
-                              !pendingByCandidate[row.id] &&
-                              rowResponse !== null
-                            }
+                            selected={rowResponse === option && rowResponse !== null}
                             pending={pendingByCandidate[row.id] === option}
                             disabled={!canRespond}
                             onClick={() => saveAttendanceForCandidate(row.id, option, false)}
@@ -826,7 +853,7 @@ export function EventParticipantRespondFlow({
                     });
                   }}
                 >
-                  {flushingNotes ? "Saving…" : "Done"}
+                  {flushingNotes ? "Saving…" : "Continue"}
                 </PendingButton>
               ) : null}
             </>
