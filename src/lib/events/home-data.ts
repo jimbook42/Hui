@@ -10,6 +10,14 @@ import {
   type HomeAttention,
   type HomeBucket,
 } from "@/domain/events/home";
+import {
+  homeViewerResponseCandidateIds,
+  viewerResponseForHomeList,
+} from "@/domain/events/home-viewer-response";
+import {
+  multiTimeProposingAnswerPresentation,
+  multiTimeViewerVisualState,
+} from "@/domain/events/participant-flow";
 import { relativeDayLabel } from "@/domain/datetime/display";
 import {
   isProposingEventStale,
@@ -375,10 +383,11 @@ export async function loadHomeData(
   const pickedByEvent = new Map<string, CandidateRow | null>();
   const candidateIds: string[] = [];
   for (const row of eventRows) {
-    const picked = pickCandidate(candidatesByEvent.get(row.id) ?? []);
+    const eventCandidates = candidatesByEvent.get(row.id) ?? [];
+    const picked = pickCandidate(eventCandidates);
     pickedByEvent.set(row.id, picked);
-    if (picked) {
-      candidateIds.push(picked.id);
+    for (const id of homeViewerResponseCandidateIds(eventCandidates)) {
+      candidateIds.push(id);
     }
   }
 
@@ -487,7 +496,12 @@ export async function loadHomeData(
   const events: HomeEvent[] = eventRows.map((row) => {
     const picked = pickedByEvent.get(row.id) ?? null;
     const groupSettings = settingsByGroup.get(row.group_id);
-    const viewerResponse = picked ? (responseByCandidate.get(picked.id) ?? null) : null;
+    const eventCandidates = candidatesByEvent.get(row.id) ?? [];
+    const viewerResponse = viewerResponseForHomeList(
+      eventCandidates,
+      row.status,
+      responseByCandidate,
+    );
     const startsAt = row.starts_at ?? picked?.starts_at ?? null;
     const endsAt = row.ends_at ?? picked?.ends_at ?? null;
     const maybeEnabled = groupSettings?.maybe ?? true;
@@ -505,7 +519,6 @@ export async function loadHomeData(
         ? row.timezone
         : (groupSettings?.timezone ?? DEFAULT_TIME_ZONE);
     const today = todayDateOnlyInTimeZone(timeZone, now);
-    const eventCandidates = candidatesByEvent.get(row.id) ?? [];
     const nominal = resolveProposalNominalDate({
       planningTargetDate: row.planning_target_date,
       candidateStartInstants: eventCandidates.map((c) => c.starts_at),
@@ -542,7 +555,25 @@ export async function loadHomeData(
       timeZone,
       candidateId: picked?.id ?? null,
       viewerResponse,
-      viewerState: attendanceStateFromChoice(viewerResponse, maybeEnabled),
+      viewerState: (() => {
+        const proposed = eventCandidates.filter((candidate) => candidate.status === "proposed");
+        if (row.status === "proposing" && proposed.length > 1 && viewerResponse !== null) {
+          const presentation = multiTimeProposingAnswerPresentation(
+            proposed.map((candidate) => ({
+              id: candidate.id,
+              startsAt: candidate.starts_at,
+              endsAt: candidate.ends_at,
+              status: candidate.status,
+              viewerResponse: responseByCandidate.get(candidate.id) ?? null,
+            })),
+            row.status,
+          );
+          if (presentation) {
+            return multiTimeViewerVisualState(presentation);
+          }
+        }
+        return attendanceStateFromChoice(viewerResponse, maybeEnabled);
+      })(),
       bucket,
       attention,
       maybeResponsesEnabled: maybeEnabled,

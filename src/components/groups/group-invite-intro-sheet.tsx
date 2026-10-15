@@ -52,7 +52,7 @@ export function GroupInviteIntroSheet({
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md rounded-t-hui-2xl bg-surface px-5 pb-8 pt-5 hui-shadow-lg sm:rounded-hui-2xl sm:pb-6">
+      <div className="relative z-10 w-full max-w-md rounded-t-hui-2xl bg-surface px-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-5 hui-shadow-lg sm:rounded-hui-2xl sm:pb-6">
         <h2 id="group-invite-intro-title" className="text-lg font-extrabold text-foreground">
           {title}
         </h2>

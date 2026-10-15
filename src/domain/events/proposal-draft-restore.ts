@@ -1,5 +1,6 @@
 import type { EventProposalDraft } from "@/domain/events/proposal";
 import {
+  buildGroupRecurringProposalDraft,
   buildInitialProposalDraft,
   fillRecurringPlanningDates,
   groupHasEstablishedRecurrence,
@@ -60,14 +61,22 @@ export function resolveProposalFlowStateFromClient(input: {
   const storedDraft = readStoredProposalDraft(input.groupId);
   if (storedDraft?.draft) {
     if (establishedRecurrence || !input.isFirstGroupEvent) {
-      const cadenceDraft = buildInitialProposalDraft(input.settings, {
+      const baselineOneOff = buildInitialProposalDraft(input.settings, {
         groupName: input.groupName,
         cycle: input.planningCycle,
         isFirstGroupEvent: input.isFirstGroupEvent,
         todayDateOnly: input.todayDateOnly,
       });
+      const baselineRecurring = buildGroupRecurringProposalDraft(input.settings, {
+        groupName: input.groupName,
+        cycle: input.planningCycle,
+        isFirstGroupEvent: input.isFirstGroupEvent,
+        todayDateOnly: input.todayDateOnly,
+      });
+      const eventKind = storedDraft.draft.eventKind;
+      const cadenceBase = eventKind === "recurring" ? baselineRecurring : baselineOneOff;
       const draft = fillRecurringPlanningDates({
-        ...cadenceDraft,
+        ...cadenceBase,
         title: storedDraft.draft.title,
         gatheringType: storedDraft.draft.gatheringType,
         gatheringTypeCustom: storedDraft.draft.gatheringTypeCustom,
@@ -80,6 +89,8 @@ export function resolveProposalFlowStateFromClient(input: {
         organiserWillHost: storedDraft.draft.organiserWillHost,
         requestedContributions: storedDraft.draft.requestedContributions,
         confirmRule: storedDraft.draft.confirmRule,
+        eventKind,
+        recurrence: eventKind === "recurring" ? baselineRecurring.recurrence : null,
       });
       const meetFrequency = deriveMeetFrequencyFromDraft(draft, {
         establishedRecurrence,
@@ -87,7 +98,7 @@ export function resolveProposalFlowStateFromClient(input: {
       });
       return {
         step: storedDraft.step,
-        draft,
+        draft: alignDraftWithMeetFrequency(draft, meetFrequency, input.groupName),
         timeDate:
           storedDraft.timeDate ??
           initialCandidateDateFromDraft(draft, input.planningCycle) ??

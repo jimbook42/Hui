@@ -43,7 +43,7 @@ export function ContributionCategoriesAdmin({
 
       {active.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No contribution categories yet. Add categories your group can claim on events.
+          Nothing to bring yet. Add categories your group can claim on events.
         </p>
       ) : (
         <ul className="space-y-4">
@@ -126,7 +126,7 @@ function CategoryRow({
           </select>
         </label>
         <p className="text-sm text-muted-foreground">
-          Applies when new events seed contributions. Changing this does not rewrite past events.
+          Applies when new events seed what to bring. Changing this does not rewrite past events.
         </p>
       </AuthForm>
       <AuthForm

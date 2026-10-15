@@ -17,7 +17,8 @@ export function DeleteGroupForm({
       hiddenFields={{ group_id: groupId }}
     >
       <p className="text-sm text-muted-foreground">
-        This removes the group, all events, contributions, and invite links. This cannot be undone.
+        This deletes the group, its hui, who&apos;s bringing what, and its invite links. This
+        can&apos;t be undone.
       </p>
       <AuthField
         label={`Type “${groupName}” to confirm`}

@@ -126,3 +126,12 @@ const FALLBACK_PRESENTATION: NotificationPresentation = {
 export function notificationPresentation(kind: NotificationKind | string): NotificationPresentation {
   return PRESENTATION[kind as NotificationKind] ?? FALLBACK_PRESENTATION;
 }
+
+const LEGACY_NOTIFICATION_TITLES: Record<string, string> = {
+  "Contribution updated": "What to bring updated",
+};
+
+/** User-facing notification title (maps legacy DB copy to current product language). */
+export function displayNotificationTitle(title: string): string {
+  return LEGACY_NOTIFICATION_TITLES[title] ?? title;
+}

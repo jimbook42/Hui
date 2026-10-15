@@ -25,7 +25,6 @@ import {
   TransferOwnershipForm,
 } from "@/components/groups/member-actions";
 import { GroupHostHistorySection } from "@/components/hosts/group-host-history";
-import { GroupInviteShareBlock } from "@/components/groups/group-invite-share-block";
 import { GroupMembersRosterSheet } from "@/components/groups/group-members-roster-sheet";
 import { DisclosureCard } from "@/components/hui/disclosure-card";
 import { HashDisclosureOpener } from "@/components/hui/hash-disclosure-opener";
@@ -174,14 +173,6 @@ export default async function GroupDetailPage({ params }: PageProps) {
             />
           </div>
           <div className="mt-6 flex flex-wrap items-start gap-3">
-            {inviteToken ? (
-              <GroupInviteShareBlock
-                groupName={detail.name}
-                inviteToken={inviteToken}
-                appOrigin={appOrigin}
-                variant="onPrimary"
-              />
-            ) : null}
             {viewerCanPropose ? (
               <HuiLinkButton
                 href={`/groups/${groupId}/events/new`}
@@ -210,6 +201,17 @@ export default async function GroupDetailPage({ params }: PageProps) {
         <Suspense fallback={<GroupUpcomingSkeleton />}>
           <GroupUpcoming groupId={groupId} />
         </Suspense>
+
+        {inviteToken ? (
+          <HuiSurface padding="lg" shape="organic-alt" elevated className="hui-rise-3">
+            <GroupInviteSection
+              groupId={detail.id}
+              groupName={detail.name}
+              inviteToken={inviteToken}
+              appOrigin={appOrigin}
+            />
+          </HuiSurface>
+        ) : null}
 
         <HuiSurface padding="lg" shape="organic-alt" elevated className="hui-rise-3">
           <SectionHeader
@@ -291,25 +293,14 @@ export default async function GroupDetailPage({ params }: PageProps) {
             </div>
           </DisclosureCard>
 
-          {viewerCanManage && inviteToken ? (
+          {viewerCanManage ? (
             <DisclosureCard
-              title="Invite people"
-              summary="Share the invite link"
+              title="Add by member ID"
+              summary="Invite someone who already has a Hui account"
               icon={<PeopleIcon size={20} />}
             >
-              <div className="space-y-8">
-                <GroupInviteSection
-                  groupId={detail.id}
-                  groupName={detail.name}
-                  inviteToken={inviteToken}
-                  appOrigin={appOrigin}
-                />
-                <div className="max-w-md">
-                  <h3 className="hui-type-section text-foreground">Add by member ID</h3>
-                  <div className="mt-3">
-                    <AddMemberForm groupId={detail.id} />
-                  </div>
-                </div>
+              <div className="max-w-md">
+                <AddMemberForm groupId={detail.id} />
               </div>
             </DisclosureCard>
           ) : null}
@@ -339,7 +330,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
 
           {viewerCanManageCategories ? (
             <DisclosureCard
-              title="Contribution categories"
+              title="What to bring"
               summary="What people can bring"
               icon={<BowlIcon size={20} />}
             >

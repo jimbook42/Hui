@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { dashboardHuiGreetingLine } from "./dashboard-greeting";
+import { dashboardGreetingHeading, dashboardHuiGreetingLine } from "./dashboard-greeting";
+
+describe("dashboardGreetingHeading", () => {
+  it("greets with Hi when no name is available", () => {
+    expect(dashboardGreetingHeading()).toBe("Hi");
+    expect(dashboardGreetingHeading("   ")).toBe("Hi");
+  });
+
+  it("includes the member name when provided", () => {
+    expect(dashboardGreetingHeading("Alex")).toBe("Hi, Alex");
+  });
+});
 
 describe("dashboardHuiGreetingLine", () => {
   const tz = "Pacific/Auckland";

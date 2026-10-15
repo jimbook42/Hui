@@ -30,11 +30,13 @@ const establishedSettings: GroupSettingsRow = {
 describe("resolveProposalFlowStateFromClient", () => {
   it("keeps established group cadence when a stale session draft picked monthly", () => {
     const store = new Map<string, string>();
-    vi.stubGlobal("sessionStorage", {
+    const sessionStorage = {
       getItem: (key: string) => store.get(key) ?? null,
       setItem: (key: string, value: string) => store.set(key, value),
       removeItem: (key: string) => store.delete(key),
-    });
+    };
+    vi.stubGlobal("sessionStorage", sessionStorage);
+    vi.stubGlobal("window", { sessionStorage });
 
     writeStoredProposalDraft("group-2", {
       step: "review",

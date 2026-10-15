@@ -51,12 +51,12 @@ export function InviteLinkFallbackSheet({
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md rounded-t-hui-2xl bg-surface px-5 pb-8 pt-5 hui-shadow-lg sm:rounded-hui-2xl sm:pb-6">
+      <div className="relative z-10 w-full max-w-md rounded-t-hui-2xl bg-surface px-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-5 hui-shadow-lg sm:rounded-hui-2xl sm:pb-6">
         <h2 id="invite-link-sheet-title" className="text-lg font-extrabold text-foreground">
           Share this invite link
         </h2>
         <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          Copy and send the link — they can join from any device.
+          Send this link so people can join the group from any device.
         </p>
         <p className="mt-4 break-all rounded-hui-lg bg-muted px-3 py-3 text-sm font-semibold text-foreground">
           {inviteUrl}

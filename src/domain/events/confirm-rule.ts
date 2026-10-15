@@ -38,10 +38,10 @@ export function eventConfirmRuleDisplayLine(rule: EventConfirmRule): string {
 export function eventConfirmRuleOptionDescription(rule: EventConfirmRule): string {
   switch (rule) {
     case "when_most_can_come":
-      return "Auto-confirm when more than half of the group says Yes (at least two Yes answers).";
+      return "Confirm automatically when more than half of the group says Yes (at least two Yes answers).";
     case "when_everyone_can_come":
-      return "Auto-confirm only when every active member has said Yes to the same time.";
+      return "Confirm automatically only when every active member has said Yes to the same time.";
     case "organiser_picks":
-      return "Hui will not auto-confirm. You choose the time when you are ready.";
+      return "You confirm the time yourself when you are ready.";
   }
 }

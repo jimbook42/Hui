@@ -60,7 +60,7 @@ export type ContributionHistoryEntry = {
 
 /** One-line summary for the viewer's own contribution on respond "All set". */
 export function formatViewerContributionLine(row: EventContributionRow): string {
-  const category = row.categoryName?.trim() || "Contribution";
+  const category = row.categoryName?.trim() || "Item";
   const label = row.label.trim();
   if (label.length === 0 || label.toLowerCase() === category.toLowerCase()) {
     return category;

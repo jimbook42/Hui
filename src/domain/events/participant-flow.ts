@@ -8,7 +8,6 @@ import {
   canRespondToCandidates,
 } from "@/domain/scheduling/permissions";
 import type { AttendanceVisualState } from "@/domain/scheduling/attendance-visual";
-import { participantAttendanceSummaryLabel } from "@/domain/scheduling/participant-labels";
 import type { AvailabilityChoice } from "@/domain/scheduling/types";
 import type { ParticipantPlaceView } from "@/domain/events/participant-place";
 import type { EventStatus } from "@/domain/events/types";

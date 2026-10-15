@@ -14,6 +14,7 @@ import { SectionHeader } from "@/components/hui/section-header";
 import { OpenNotificationButton } from "@/components/notifications/open-notification-button";
 import { formatInstantInTimeZone } from "@/domain/datetime/timezone";
 import {
+  displayNotificationTitle,
   notificationPresentation,
   type NotificationIconKey,
   type NotificationTone,
@@ -75,7 +76,7 @@ function NotificationCard({ notification }: { notification: MemberNotification }
             ) : null}
           </div>
           <h3 className="mt-1 text-[1.0625rem] font-extrabold leading-snug text-foreground">
-            {notification.title}
+            {displayNotificationTitle(notification.title)}
           </h3>
           <p className="mt-1 text-sm font-semibold leading-snug text-muted-foreground">
             {notification.body}

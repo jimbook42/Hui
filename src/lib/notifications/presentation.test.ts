@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { notificationPresentation } from "@/lib/notifications/presentation";
+import {
+  displayNotificationTitle,
+  notificationPresentation,
+} from "@/lib/notifications/presentation";
 import type { NotificationKind } from "@/lib/notifications/types";
 
 const KINDS: NotificationKind[] = [
@@ -19,6 +22,13 @@ const KINDS: NotificationKind[] = [
   "stale_proposal_auto_cancelled",
   "planning_cycle_opens",
 ];
+
+describe("displayNotificationTitle", () => {
+  it("maps legacy contribution notification titles", () => {
+    expect(displayNotificationTitle("Contribution updated")).toBe("What to bring updated");
+    expect(displayNotificationTitle("Event confirmed")).toBe("Event confirmed");
+  });
+});
 
 describe("notificationPresentation", () => {
   it("describes every notification kind with a label and action", () => {

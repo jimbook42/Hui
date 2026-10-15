@@ -281,7 +281,7 @@ export function EventParticipantRespondFlow({
       },
       () => {
         if (!cancelled) {
-          setSecondaryError("Contribution details could not be loaded. Try again in a moment.");
+          setSecondaryError("Bring list details could not be loaded. Try again in a moment.");
         }
       },
     );
@@ -1223,7 +1223,9 @@ export function EventParticipantRespondFlow({
             </div>
           ) : null}
           {secondary && categories.filter((c) => !c.archivedAt).length === 0 ? (
-            <p className="hui-type-supporting">This group has no contribution categories to claim.</p>
+            <p className="hui-type-supporting">
+              This group has not set up what to bring yet.
+            </p>
           ) : null}
           {secondary &&
           categories.filter((c) => !c.archivedAt).length > 0 &&

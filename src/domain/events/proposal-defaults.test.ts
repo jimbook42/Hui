@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildGroupRecurringProposalDraft,
   buildInitialProposalDraft,
   fillRecurringPlanningDates,
   groupHasEstablishedRecurrence,
@@ -65,19 +66,51 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
       cycle,
       isFirstGroupEvent: false,
     });
+    expect(draft.eventKind).toBe("recurring");
     expect(draft.recurrence?.planningTargetDate).toBe("2026-10-26");
     expect(initialCandidateDateFromDraft(draft, cycle)).toBe("2026-10-26");
   });
 
-  it("mirrors anchor date into planning target for established groups", () => {
-    const draft = fillRecurringPlanningDates(
-      buildInitialProposalDraft(baseSettings, {
-        groupName: "Family",
-        cycle: null,
-        isFirstGroupEvent: false,
-      }),
-    );
+  it("mirrors anchor date into planning target when the user chooses recurring", () => {
+    const base = buildInitialProposalDraft(baseSettings, {
+      groupName: "Family",
+      cycle: null,
+      isFirstGroupEvent: false,
+    });
+    const draft = fillRecurringPlanningDates({
+      ...base,
+      eventKind: "recurring",
+      recurrence: {
+        seriesTitle: "Family",
+        intervalUnit: "week",
+        intervalCount: 1,
+        startsOn: "2026-09-28",
+        planningTargetDate: null,
+      },
+    });
     expect(draft.recurrence?.startsOn).toBe("2026-09-28");
+    expect(draft.recurrence?.planningTargetDate).toBe("2026-09-28");
+  });
+
+  it("builds a recurring baseline from group cadence for established groups", () => {
+    const draft = buildGroupRecurringProposalDraft(baseSettings, {
+      groupName: "Family",
+      cycle: null,
+      isFirstGroupEvent: false,
+    });
+    expect(draft.eventKind).toBe("recurring");
+    expect(draft.recurrence?.intervalUnit).toBe("week");
+    expect(draft.recurrence?.intervalCount).toBe(1);
+  });
+
+  it("defaults later hui proposals to recurring when allowed", () => {
+    const draft = buildInitialProposalDraft(baseSettings, {
+      groupName: "Family",
+      cycle: null,
+      isFirstGroupEvent: false,
+    });
+    expect(draft.eventKind).toBe("recurring");
+    expect(draft.recurrence?.intervalUnit).toBe("week");
     expect(draft.recurrence?.planningTargetDate).toBe("2026-09-28");
   });
 
@@ -95,8 +128,11 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
       isFirstGroupEvent: true,
       todayDateOnly: "2026-10-13",
     });
-    expect(draft.eventKind).toBe("one_off");
+    expect(draft.eventKind).toBe("recurring");
     expect(draft.gatheringType).toBeNull();
+    expect(draft.recurrence?.intervalUnit).toBe("week");
+    expect(draft.recurrence?.intervalCount).toBe(1);
+    expect(draft.recurrence?.startsOn).toBe("");
     expect(draft.recurrence?.planningTargetDate).toBeNull();
     expect(initialCandidateDateFromDraft(draft, null)).toBe("");
   });

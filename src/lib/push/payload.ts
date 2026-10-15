@@ -1,3 +1,5 @@
+import { displayNotificationTitle } from "@/lib/notifications/presentation";
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -209,7 +211,7 @@ export function pushEventDisplay(raw: unknown): PushDisplay {
     };
   }
   return {
-    title: payload.title,
+    title: displayNotificationTitle(payload.title),
     options: {
       body: payload.body,
       tag: payload.notificationId,

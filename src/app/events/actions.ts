@@ -452,7 +452,7 @@ export async function deleteEventAction(
 export async function fetchEventLifecycleStatusAction(
   eventId: string,
 ): Promise<{ status: EventStatus } | { error: string }> {
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
   const status = await getEventStatus(supabase, eventId);
   if (!status) {
     return { error: "Event not found." };
