@@ -112,7 +112,7 @@ export function gatheringPlanningPhrase(context: GatheringContext): string {
     if (custom) {
       return title ? `${title} (${custom})` : custom;
     }
-    return title || "a gathering";
+    return title || "this hui";
   }
 
   if (type === "dinner_meal") {
@@ -161,14 +161,8 @@ export function gatheringPlanningPhrase(context: GatheringContext): string {
     return titleWithSuffix(title, "outing");
   }
   if (type === "meeting") {
-    if (!title) {
-      return "a meeting";
-    }
-    if (titleContainsWord(title, "meeting")) {
-      return title;
-    }
-    return titleWithSuffix(title, "meeting");
+    return title || "this hui";
   }
 
-  return title || "a gathering";
+  return title || "this hui";
 }

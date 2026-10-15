@@ -7,7 +7,7 @@ export default function EventsPage() {
   return (
     <AppShell
       title="Your hui"
-      subtitle="Every gathering across your groups — what needs you, what is coming up, and what is still being planned."
+      subtitle="Every hui across your groups — what needs you, what is coming up, and what is still being planned."
     >
       <Suspense fallback={<EventsOverviewSkeleton />}>
         <EventsOverview />

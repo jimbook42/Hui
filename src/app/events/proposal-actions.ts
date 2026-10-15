@@ -12,6 +12,7 @@ import { canProposeEvents, groupAllowsEventKind } from "@/domain/events/permissi
 import { parseEventKind } from "@/domain/events/validation";
 import { listContributionCategories } from "@/lib/contributions/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
+import { wallClockToUtcIso } from "@/domain/datetime/timezone";
 import { schedulePushDelivery } from "@/lib/push/schedule";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,6 +35,7 @@ export async function proposeGroupEventAction(
 ): Promise<EventActionState> {
   const groupId = String(formData.get("group_id") ?? "");
   const draftRaw = String(formData.get("proposal_draft") ?? "");
+  const replyDeadlineLocal = String(formData.get("response_deadline_at") ?? "").trim();
 
   if (!groupId || !draftRaw) {
     return { error: "Missing proposal data." };
@@ -171,6 +173,20 @@ export async function proposeGroupEventAction(
 
   if ((candidateCount ?? 0) < 1) {
     return { error: "Proposal is missing candidate times." };
+  }
+
+  if (replyDeadlineLocal) {
+    const deadlineAt = wallClockToUtcIso(replyDeadlineLocal, detail.settings.timezone);
+    if (!deadlineAt) {
+      return { error: "Enter a valid reply-by date and time." };
+    }
+    const { error: deadlineError } = await supabase.rpc("update_event_response_deadline", {
+      p_event_id: eventId,
+      p_deadline_at: deadlineAt,
+    });
+    if (deadlineError) {
+      return { error: deadlineError.message };
+    }
   }
 
   revalidatePath(`/groups/${groupId}/events`);

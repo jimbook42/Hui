@@ -166,6 +166,7 @@ export function EventParticipantRespondFlow({
   const [actionError, setActionError] = useState<string | null>(null);
   const [errorsByCandidate, setErrorsByCandidate] = useState<Record<string, string>>({});
   const [saveToast, setSaveToast] = useState<string | null>(null);
+  const [savedCandidateFlash, setSavedCandidateFlash] = useState<Record<string, boolean>>({});
   const initialNotesByCandidate = (() => {
     const initial: Record<string, string> = {};
     for (const row of respondAttendanceCandidates(proposedCandidates, eventStatus)) {
@@ -472,6 +473,16 @@ export function EventParticipantRespondFlow({
           return;
         }
         setPendingByCandidate((current) => ({ ...current, [targetCandidateId]: null }));
+        if (multipleTimeOptions) {
+          setSavedCandidateFlash((current) => ({ ...current, [targetCandidateId]: true }));
+          window.setTimeout(() => {
+            setSavedCandidateFlash((current) => {
+              const next = { ...current };
+              delete next[targetCandidateId];
+              return next;
+            });
+          }, 3000);
+        }
         showSaveToast(participantSaveToastMessage(choice, timeLabelForToast));
         if (!multipleTimeOptions && advanceOnSave) {
           setResponseOverride(choice);
@@ -662,17 +673,24 @@ export function EventParticipantRespondFlow({
       </header>
 
       {stepIndex >= 0 ? (
-        <ol className="mt-5 flex gap-1.5" aria-label="Progress">
-          {flowProgress.map((name, index) => (
-            <li
-              key={name}
-              aria-current={index === stepIndex ? "step" : undefined}
-              className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
-                index <= stepIndex ? "bg-primary" : "bg-muted"
-              }`}
-            />
-          ))}
-        </ol>
+        <div className="mt-5">
+          <p className="text-sm font-extrabold text-foreground" id="respond-progress-label">
+            {multipleTimeOptions
+              ? `${multiAnsweredCount} of ${attendanceCandidates.length} times answered`
+              : `Step ${stepIndex + 1} of ${flowProgress.length}`}
+          </p>
+          <ol className="mt-2 flex gap-1.5" aria-labelledby="respond-progress-label">
+            {flowProgress.map((name, index) => (
+              <li
+                key={name}
+                aria-current={index === stepIndex ? "step" : undefined}
+                className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                  index <= stepIndex ? "bg-primary" : "bg-muted"
+                }`}
+              />
+            ))}
+          </ol>
+        </div>
       ) : null}
 
       {showBack ? (
@@ -737,6 +755,9 @@ export function EventParticipantRespondFlow({
                       {rowResponse ? (
                         <p className="mt-1 text-xs font-semibold text-muted-foreground">
                           Your answer: {participantAttendanceSummaryLabel(rowResponse)}
+                          {savedCandidateFlash[row.id] ? (
+                            <span className="ml-2 text-accent">Saved</span>
+                          ) : null}
                         </p>
                       ) : null}
                       <div className="mt-3 space-y-2">
@@ -894,15 +915,23 @@ export function EventParticipantRespondFlow({
             </p>
           ) : null}
           {viewerResponse === "available" || viewerResponse === "maybe" ? (
-            <PendingButton
-              type="button"
-              size="touch"
-              onClick={() =>
-                pushStep(showPlaceStep ? "place" : nextStepAfterPlace(showBringStep))
-              }
-            >
-              Continue
-            </PendingButton>
+            <>
+              {!canSuggestTime ? (
+                <p className="text-sm font-semibold text-muted-foreground">
+                  You already saved your answer — continue when you&apos;re ready to return to the
+                  hui page.
+                </p>
+              ) : null}
+              <PendingButton
+                type="button"
+                size="touch"
+                onClick={() =>
+                  pushStep(showPlaceStep ? "place" : nextStepAfterPlace(showBringStep))
+                }
+              >
+                Continue
+              </PendingButton>
+            </>
           ) : null}
           {viewerResponse === "unavailable" ? (
             <PendingButton

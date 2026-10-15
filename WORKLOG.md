@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-15 — HUI-UX3 blind fixes (v0.18.7)
+
+- Blind-3 QA: invite/sign-up CTA order, hui-scoped invite sheet copy, propose add-time feedback, respond progress/saved/continue copy, vocabulary (group/hui), explicit hui type on propose, editable reply-by on review, dashboard onboarding order, install card after second visit, change-response gating, email field sizing.
+- Tests: join CTA, invite copy, dashboard greeting, proposal defaults, response-deadline preview, install visit gate, restore-flow label updates.
+
 ## 2026-10-15 — HUI-0186 answer reliability (v0.18.6)
 
 - **Root cause:** `event-participant-respond-flow.tsx` wrapped every `setAvailabilityResponseAction` call in a single shared `useTransition` (`startSaveAttendance`, ~line 436). Rapid Yes taps on different proposed times (QA i2, prod event `fa0ac585-d8f9-4a7a-bd4a-6c2bc5f3b64b`) started overlapping transitions; React kept only the latest transition callback, so the middle candidate’s in-flight save never ran while optimistic UI for the first/third times stuck. A secondary guard (`pendingByCandidate` without a chained promise, ~line 406) could also drop a same-candidate tap between `setPending` and registering `candidateSavePromisesRef`.

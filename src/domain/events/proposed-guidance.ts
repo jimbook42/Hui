@@ -53,7 +53,7 @@ export function buildProposedHuiGuidance(
   let nextStepDetail: string | null = null;
 
   if (input.isProposer && input.canRespond && input.hasCandidate && input.viewerResponse === null) {
-    nextStepTitle = options?.justProposed ? "Invite people to this gathering" : "Your next step";
+    nextStepTitle = options?.justProposed ? "Invite people to this hui" : "Your next step";
     nextStepDetail = options?.justProposed
       ? "Share the invite link below — then answer the proposed time yourself so Hui can tally responses."
       : "Answer the proposed time yourself — then Hui can wait for the rest of the group.";

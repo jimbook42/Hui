@@ -65,16 +65,16 @@ export function JoinAuthLinks({
   return (
     <div className="mt-6 flex flex-col gap-3 text-sm">
       <Link
-        href={authPathWithNext("/sign-in", joinPath)}
+        href={authPathWithNext("/sign-up", joinPath)}
         className="hui-btn hui-btn-primary rounded-full hui-focus-ring"
       >
-        {signInLabel}
+        {signUpLabel}
       </Link>
       <Link
-        href={authPathWithNext("/sign-up", joinPath)}
+        href={authPathWithNext("/sign-in", joinPath)}
         className="hui-btn hui-btn-secondary rounded-full hui-focus-ring"
       >
-        {signUpLabel}
+        {signInLabel}
       </Link>
     </div>
   );

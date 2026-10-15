@@ -67,6 +67,7 @@ describe("proposal defaults (HUI-031 tier-2)", () => {
       todayDateOnly: "2026-10-13",
     });
     expect(draft.eventKind).toBe("one_off");
+    expect(draft.gatheringType).toBeNull();
     expect(draft.recurrence?.planningTargetDate).toBeNull();
     expect(initialCandidateDateFromDraft(draft, null)).toBe("");
   });

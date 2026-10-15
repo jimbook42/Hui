@@ -142,9 +142,13 @@ export function ViewerResponseCard({
 
   const response = effectiveViewerResponse(serverResponse, override);
   const multiTime = Boolean(answerSummaryLabel?.trim());
+  const hasMultiTimeAnswer = Boolean(
+    answerDetailRows?.some((row) => row.choice !== null && row.choice !== undefined),
+  );
   const state =
     answerIconState ?? attendanceStateFromChoice(response, maybeResponsesEnabled);
-  const pending = !multiTime && state === "pending";
+  const pending = multiTime ? !hasMultiTimeAnswer : state === "pending";
+  const canChangeAnswer = multiTime ? hasMultiTimeAnswer : !pending && response !== null;
   const answerLine =
     answerSummaryLabel?.trim() ||
     (isSaving && pendingChoice
@@ -276,7 +280,7 @@ export function ViewerResponseCard({
         >
           Reply
         </HuiLinkButton>
-      ) : multiTime ? (
+      ) : canChangeAnswer && multiTime ? (
         <HuiLinkButton
           href={participantRespondPath(eventId)}
           variant="secondary"
@@ -286,7 +290,7 @@ export function ViewerResponseCard({
         >
           Change response
         </HuiLinkButton>
-      ) : (
+      ) : canChangeAnswer ? (
         <>
           <HuiButton
             variant="secondary"
@@ -333,7 +337,7 @@ export function ViewerResponseCard({
             </div>
           </div>
         </>
-      )}
+      ) : null}
 
       {error ? (
         <p className="hui-message-error mt-3" role="alert">

@@ -1,3 +1,4 @@
+import { HUI_ONE_LINE_EXPLAINER } from "@/domain/events/hui-explainer";
 import { gatheringPlanningPhrase, type GatheringContext } from "@/domain/gathering/type";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import { formatDateOnlyDisplay } from "@/domain/recurrence/date-only";
@@ -94,10 +95,6 @@ export function inviteSupportingLines(input: InvitePreviewCopyInput): string[] {
     }
   }
 
-  lines.push(
-    "Hui helps groups find a time that works, coordinate the details and keep everyone up to date.",
-  );
-
   return lines;
 }
 
@@ -113,7 +110,6 @@ export function invitePrimaryCtaLabel(groupName: string, hasActivePlanning: bool
 }
 
 export const INVITE_WHAT_IS_HUI = {
-  title: "What is Hui?",
-  body:
-    "Hui helps groups find a time that works, coordinate the details and keep everyone up to date.",
+  title: "What is a hui?",
+  body: HUI_ONE_LINE_EXPLAINER,
 } as const;

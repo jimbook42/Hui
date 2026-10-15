@@ -26,17 +26,20 @@ export type InstallSnapshot = {
   platform: InstallPlatform;
   availability: InstallAvailability;
   dismissedAt: number | null;
+  visitCount: number;
   /** When this snapshot was taken (components must not read the clock while rendering). */
   now: number;
 };
 
 const DISMISSED_KEY = "hui:install-dismissed-at";
+const VISIT_COUNT_KEY = "hui:visit-count";
 
 const SERVER_SNAPSHOT: InstallSnapshot = {
   ready: false,
   platform: "other",
   availability: "unsupported",
   dismissedAt: null,
+  visitCount: 0,
   now: 0,
 };
 
@@ -67,6 +70,28 @@ function writeDismissedAt(value: number) {
   }
 }
 
+function readVisitCount(): number {
+  try {
+    const raw = window.localStorage.getItem(VISIT_COUNT_KEY);
+    if (!raw) {
+      return 0;
+    }
+    const value = Number(raw);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function recordVisit() {
+  try {
+    const next = readVisitCount() + 1;
+    window.localStorage.setItem(VISIT_COUNT_KEY, String(next));
+  } catch {
+    // Ignore private mode.
+  }
+}
+
 function isStandalone(): boolean {
   const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean };
   return (
@@ -87,6 +112,7 @@ function recompute() {
       platform,
     }),
     dismissedAt: readDismissedAt(),
+    visitCount: readVisitCount(),
     now: Date.now(),
   };
   for (const listener of listeners) {
@@ -101,6 +127,7 @@ export function startInstallTracking() {
   }
   started = true;
   installed = isStandalone();
+  recordVisit();
 
   window.addEventListener("beforeinstallprompt", (event) => {
     // Keep the event for our own button instead of letting the browser show its mini-infobar.

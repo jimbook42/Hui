@@ -98,13 +98,14 @@ describe("dismissal", () => {
 });
 
 describe("shouldShowInstallCard", () => {
-  it("shows for a native prompt and for phone instructions", () => {
+  it("shows for a native prompt and for phone instructions after the first visit", () => {
     expect(
       shouldShowInstallCard({
         availability: "prompt",
         platform: "desktop-chromium",
         dismissedAt: null,
         now: NOW,
+        visitCount: 2,
       }),
     ).toBe(true);
     expect(
@@ -113,8 +114,21 @@ describe("shouldShowInstallCard", () => {
         platform: "ios",
         dismissedAt: null,
         now: NOW,
+        visitCount: 2,
       }),
     ).toBe(true);
+  });
+
+  it("stays hidden on the very first visit", () => {
+    expect(
+      shouldShowInstallCard({
+        availability: "prompt",
+        platform: "android",
+        dismissedAt: null,
+        now: NOW,
+        visitCount: 1,
+      }),
+    ).toBe(false);
   });
 
   it("never nags desktop instructions, installed apps, unsupported browsers or after dismissal", () => {
@@ -124,6 +138,7 @@ describe("shouldShowInstallCard", () => {
         platform: "desktop-safari",
         dismissedAt: null,
         now: NOW,
+        visitCount: 2,
       }),
     ).toBe(false);
     expect(
@@ -132,6 +147,7 @@ describe("shouldShowInstallCard", () => {
         platform: "android",
         dismissedAt: null,
         now: NOW,
+        visitCount: 2,
       }),
     ).toBe(false);
     expect(
@@ -140,6 +156,7 @@ describe("shouldShowInstallCard", () => {
         platform: "other",
         dismissedAt: null,
         now: NOW,
+        visitCount: 2,
       }),
     ).toBe(false);
     expect(
@@ -148,6 +165,7 @@ describe("shouldShowInstallCard", () => {
         platform: "android",
         dismissedAt: NOW - DAY,
         now: NOW,
+        visitCount: 2,
       }),
     ).toBe(false);
   });

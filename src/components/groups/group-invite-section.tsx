@@ -71,7 +71,7 @@ export function GroupInviteSection({
   return (
     <section className="hui-card-section">
       <h2 className="hui-type-section text-foreground">
-        {variant === "planning" ? "Invite people to this gathering" : "Invite people"}
+        {variant === "planning" ? "Invite people to this hui" : "Invite people"}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {variant === "planning"

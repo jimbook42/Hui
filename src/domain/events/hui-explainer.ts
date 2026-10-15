@@ -1,3 +1,3 @@
-/** One-line product copy for first-time group or hui setup (HUI-UX2). */
+/** One-line product copy for first-time group or hui setup. */
 export const HUI_ONE_LINE_EXPLAINER =
-  "A hui is a gathering your group plans together — you suggest times, everyone answers, then you confirm what works.";
+  "A hui is a get-together — Hui helps your group agree a time.";

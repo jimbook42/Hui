@@ -11,6 +11,7 @@ import {
   endInteraction,
   markInteraction,
 } from "@/lib/perf/client-interaction-perf";
+import { cn } from "@/lib/ui/cn";
 
 type AuthFormProps = {
   action: (
@@ -156,7 +157,10 @@ export function AuthField({
       <span>{label}</span>
       <input
         key={remountKey}
-        className="hui-input"
+        className={cn(
+          "hui-input",
+          type === "email" && "text-[0.875rem] sm:text-base",
+        )}
         name={name}
         type={type}
         autoComplete={autoComplete}

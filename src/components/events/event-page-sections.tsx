@@ -124,6 +124,7 @@ export function EventHeroMeta({
           inviteToken={inviteToken}
           appOrigin={appOrigin}
           focusEventId={detail.id}
+          focusHuiTitle={detail.title}
           variant="page"
         />
       ) : null}
@@ -367,7 +368,8 @@ export async function EventPeopleCard({ detail, userId }: SectionProps) {
             </li>
           ))}
           <p className="hui-type-supporting text-center">
-            Shapes show how people answered. Private notes are never shown.
+            Icons around the table show how people answered (full = yes, dashed = maybe). Private
+            notes are never shown.
           </p>
         </ul>
       ) : presentation.mode === "single" && presentation.roster && presentation.roster.members.length > 0 ? (
@@ -379,7 +381,8 @@ export async function EventPeopleCard({ detail, userId }: SectionProps) {
             className="mt-4"
           />
           <p className="hui-type-supporting mt-4 text-center">
-            Shapes show how people answered. Private notes are never shown.
+            Icons around the table show how people answered (full = yes, dashed = maybe). Private
+            notes are never shown.
           </p>
         </>
       ) : (
