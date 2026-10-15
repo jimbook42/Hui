@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AuthPrimaryOAuth } from "@/components/auth/auth-primary-oauth";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { getEnabledOAuthProviders } from "@/lib/auth/providers";
-import { sanitizeNextPath } from "@/lib/auth/routes";
+import { authPathWithNext, sanitizeNextPath } from "@/lib/auth/routes";
 import { loadInviteGroupNameForAuthNext } from "@/lib/invites/auth-invite-context";
 import { createClient } from "@/lib/supabase/server";
 
@@ -47,10 +47,8 @@ export default async function SignInPage({
     }
   }
 
-  const signUpHref =
-    next === "/dashboard" ? "/sign-up" : `/sign-up?next=${encodeURIComponent(next)}`;
-  const emailSignInHref =
-    next === "/dashboard" ? "/sign-in/email" : `/sign-in/email?next=${encodeURIComponent(next)}`;
+  const signUpHref = authPathWithNext("/sign-up", next);
+  const emailSignInHref = authPathWithNext("/sign-in/email", next);
 
   return (
     <AuthShell

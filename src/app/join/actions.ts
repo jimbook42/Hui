@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { parseInviteJoinPayload } from "@/domain/invites/resolve";
+import { authPathWithNext } from "@/lib/auth/routes";
 import { resolvePostInviteJoinPath } from "@/lib/invites/post-join-redirect";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,8 +29,7 @@ export async function joinGroupViaInviteAction(
   if (!user) {
     const joinPath =
       focusEventId ? `/join/${token}?event=${encodeURIComponent(focusEventId)}` : `/join/${token}`;
-    const next = encodeURIComponent(joinPath);
-    redirect(`/sign-in?next=${next}`);
+    redirect(authPathWithNext("/sign-in", joinPath));
   }
 
   const { data, error } = await supabase.rpc("join_group_via_invite", {

@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-15 — HUI-0181 invite sign-up next preservation (v0.18.1)
+
+- Carry safe `next` through sign-in/sign-up cross-links, email auth, OAuth on sign-up, and join invite CTAs; hardened `sanitizeNextPath` (decode, backslash, scheme rejection).
+- OAuth callback preserves `next` on provider errors; tests for sanitizer, auth links, and Playwright invite flow.
+
 ## 2026-10-15 — HUI-030-fix6 propose draft restore + frequency sync (v0.18.0)
 
 - Restore propose step-1 draft from sessionStorage after client mount (SSR-safe); gate persistence until restore completes.
