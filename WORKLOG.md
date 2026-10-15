@@ -5,6 +5,7 @@
 - Manage Time disclosure uses `formatEventTimeDisclosureSummary` (Re-asking when `consensusCurrentlyPasses` is false).
 - Recent cancelled hui (30d cap) on home, group list, and events surfaces; `cancelled` home bucket, no attention.
 - Dietary group share with zero entries via `dietary_empty_group_shares` migration (not applied in prod).
+- HUI-0185-fix1: migration timestamp `20261015150000`; empty-share listing/RLS require sharer active membership; PGlite test for departed member.
 
 ## 2026-10-15 — HUI-0184 follow-ups (v0.18.4)
 

@@ -21,7 +21,19 @@ create policy dietary_empty_group_shares_select
   on public.dietary_empty_group_shares
   for select
   to authenticated
-  using (public.is_active_member(group_id));
+  using (
+    public.is_active_member(group_id)
+    and (
+      user_id = auth.uid()
+      or exists (
+        select 1
+        from public.group_memberships m
+        where m.user_id = dietary_empty_group_shares.user_id
+          and m.group_id = dietary_empty_group_shares.group_id
+          and m.status = 'active'
+      )
+    )
+  );
 
 create policy dietary_empty_group_shares_insert
   on public.dietary_empty_group_shares
@@ -100,6 +112,10 @@ as $function$
     null::text,
     'empty' as scope
   from public.dietary_empty_group_shares e
+  join public.group_memberships m
+    on m.user_id = e.user_id
+   and m.group_id = p_group_id
+   and m.status = 'active'
   join public.profiles p
     on p.id = e.user_id
   where e.group_id = p_group_id
