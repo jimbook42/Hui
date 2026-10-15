@@ -1,5 +1,11 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX3-fix6 gaps (fix5 review)
+
+- Event/respond pages: poll `fetchEventLifecycleStatusAction` every 10s and on focus/visibility when hui is still open; refresh on confirm (realtime kept).
+- Install card: count one browser session per visit so sign-up → onboarding → dashboard does not show the card on first dashboard load.
+- Attendance rows: layout test that sibling rows do not shift when one row saves.
+
 ## 2026-10-16 — HUI-UX3-fix5 QA (v0.18.7)
 
 - Respond: fixed-height answer rows, per-candidate parallel saves, persisted-only progress count, `beforeunload` while saving; Supabase realtime refresh on confirm for event/respond pages.

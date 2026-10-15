@@ -8,6 +8,7 @@ import {
   type InstallAvailability,
   type InstallPlatform,
 } from "@/domain/pwa/install";
+import { applySessionVisitIncrement } from "@/domain/pwa/install-visits";
 
 /**
  * Browser-side install state. `beforeinstallprompt` fires once, early, and cannot be replayed, so
@@ -33,6 +34,7 @@ export type InstallSnapshot = {
 
 const DISMISSED_KEY = "hui:install-dismissed-at";
 const VISIT_COUNT_KEY = "hui:visit-count";
+const VISIT_SESSION_KEY = "hui:visit-count-session";
 
 const SERVER_SNAPSHOT: InstallSnapshot = {
   ready: false,
@@ -83,10 +85,34 @@ function readVisitCount(): number {
   }
 }
 
+function readSessionVisitRecorded(): boolean {
+  try {
+    return window.sessionStorage.getItem(VISIT_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeSessionVisitRecorded() {
+  try {
+    window.sessionStorage.setItem(VISIT_SESSION_KEY, "1");
+  } catch {
+    // Ignore private mode.
+  }
+}
+
 function recordVisit() {
   try {
-    const next = readVisitCount() + 1;
-    window.localStorage.setItem(VISIT_COUNT_KEY, String(next));
+    const sessionAlreadyCounted = readSessionVisitRecorded();
+    if (sessionAlreadyCounted) {
+      return;
+    }
+    const applied = applySessionVisitIncrement({
+      visitCount: readVisitCount(),
+      sessionAlreadyCounted: false,
+    });
+    window.localStorage.setItem(VISIT_COUNT_KEY, String(applied.visitCount));
+    writeSessionVisitRecorded();
   } catch {
     // Ignore private mode.
   }

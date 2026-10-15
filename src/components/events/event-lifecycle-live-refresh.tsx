@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
+import { fetchEventLifecycleStatusAction } from "@/app/events/actions";
 import type { EventStatus } from "@/domain/events/types";
 import { createClient } from "@/lib/supabase/client";
 
 const LIVE_STATUSES: EventStatus[] = ["proposing", "awaiting_agreement", "voting"];
+
+export const EVENT_LIFECYCLE_POLL_MS = 10_000;
 
 /**
  * Refetches the event page when the hui confirms so members who already have the page open see
@@ -20,6 +23,18 @@ export function EventLifecycleLiveRefresh({
   status: EventStatus;
 }) {
   const router = useRouter();
+  const statusRef = useRef(status);
+  statusRef.current = status;
+
+  const pollLifecycleStatus = useCallback(async () => {
+    const result = await fetchEventLifecycleStatusAction(eventId);
+    if ("error" in result) {
+      return;
+    }
+    if (result.status === "confirmed" && statusRef.current !== "confirmed") {
+      router.refresh();
+    }
+  }, [eventId, router]);
 
   useEffect(() => {
     if (!LIVE_STATUSES.includes(status)) {
@@ -46,10 +61,26 @@ export function EventLifecycleLiveRefresh({
       )
       .subscribe();
 
+    const intervalId = window.setInterval(() => {
+      void pollLifecycleStatus();
+    }, EVENT_LIFECYCLE_POLL_MS);
+
+    const onVisibilityOrFocus = () => {
+      if (document.visibilityState === "visible") {
+        void pollLifecycleStatus();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityOrFocus);
+    window.addEventListener("focus", onVisibilityOrFocus);
+
     return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityOrFocus);
+      window.removeEventListener("focus", onVisibilityOrFocus);
       void supabase.removeChannel(channel);
     };
-  }, [eventId, status, router]);
+  }, [eventId, status, router, pollLifecycleStatus]);
 
   return null;
 }

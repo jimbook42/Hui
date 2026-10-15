@@ -203,3 +203,24 @@ export async function getEventDetail(
     viewerRole: membership.role as MembershipRole,
   };
 }
+
+/** RLS-scoped status read for lifecycle polling on open hui pages. */
+export async function getEventStatus(
+  supabase: SupabaseClient,
+  eventId: string,
+): Promise<EventStatus | null> {
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("status")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (eventError) {
+    throw new Error(eventError.message);
+  }
+  if (!event) {
+    return null;
+  }
+
+  return event.status as EventStatus;
+}
