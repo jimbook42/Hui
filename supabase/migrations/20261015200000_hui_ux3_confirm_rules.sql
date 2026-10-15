@@ -178,8 +178,15 @@ begin
     v_reason := 'organiser_picks';
   elsif v_confirm_rule = 'when_everyone_can_come' and v_yes < v_eligible then
     v_reason := 'when_everyone_can_come';
-  elsif v_confirm_rule = 'when_most_can_come' and (v_yes < 2 or v_yes * 2 <= v_eligible) then
-    v_reason := 'majority_active_members';
+  elsif v_confirm_rule = 'when_most_can_come' then
+    -- Default per-hui rule keeps v0.18.6 group consensus behaviour.
+    if v_rule_label = 'all_active_members' and v_accepted < v_eligible then
+      v_reason := 'all_active_members';
+    elsif v_rule_label = 'majority_active_members' and (v_yes < 2 or v_yes * 2 <= v_eligible) then
+      v_reason := 'majority_active_members';
+    elsif v_rule_label = 'required_participants' and v_required_accepted < v_required then
+      v_reason := 'required_participants';
+    end if;
   end if;
 
   if v_reason is null and public.host_yes_required_for_candidate(v_event_id, p_candidate_id) then
@@ -678,8 +685,8 @@ begin
     p_event_id,
     v_group_id,
     p_user_id,
-    'accepted',
-    v_display_name,
+    'proposed',
+    coalesce(v_display_name, 'Member'),
     v_user
   )
   returning id into v_assignment_id;
@@ -887,6 +894,24 @@ revoke all on function public.update_event_confirm_rule(uuid, public.event_confi
 grant execute on function public.update_event_confirm_rule(uuid, public.event_confirm_rule) to authenticated, service_role;
 
 -- Extend propose_group_event with optional confirm rule (default column handles null).
+-- Replace the v0.18.6 14-arg overload in place so named-param RPC calls stay unambiguous.
+drop function if exists public.propose_group_event(
+  uuid,
+  text,
+  text,
+  text,
+  jsonb,
+  jsonb,
+  boolean,
+  uuid,
+  double precision,
+  double precision,
+  public.gathering_type,
+  text,
+  jsonb,
+  boolean
+);
+
 create or replace function public.propose_group_event(
   p_group_id uuid,
   p_title text,
@@ -1194,18 +1219,8 @@ $function$;
 
 revoke all on function public.propose_group_event(
   uuid, text, text, text, jsonb, jsonb, boolean, uuid, double precision, double precision,
-  public.gathering_type, text, jsonb, boolean
-) from public, anon;
-
-revoke all on function public.propose_group_event(
-  uuid, text, text, text, jsonb, jsonb, boolean, uuid, double precision, double precision,
   public.gathering_type, text, jsonb, boolean, public.event_confirm_rule
 ) from public, anon;
-
-grant execute on function public.propose_group_event(
-  uuid, text, text, text, jsonb, jsonb, boolean, uuid, double precision, double precision,
-  public.gathering_type, text, jsonb, boolean
-) to authenticated, service_role;
 
 grant execute on function public.propose_group_event(
   uuid, text, text, text, jsonb, jsonb, boolean, uuid, double precision, double precision,

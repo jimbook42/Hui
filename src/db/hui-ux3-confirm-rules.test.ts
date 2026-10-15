@@ -270,6 +270,83 @@ describe("HUI-UX3 per-hui confirm rules and host Yes gate", () => {
     expect(assignment.rows[0]?.assign_event_host).toBeTruthy();
   });
 
+  it("keeps a single propose_group_event overload (v0.18.6 named-param RPC)", async () => {
+    const overloads = await db.query<{ proname: string; oid: string }>(
+      `select p.proname, p.oid::text
+       from pg_proc p
+       join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'propose_group_event'`,
+    );
+    expect(overloads.rows).toHaveLength(1);
+
+    const groupId = await seedGroup();
+    await asUser(db, ids.owner);
+    const candidates = JSON.stringify([{ starts_at: "2026-12-15T18:00:00Z", ends_at: null }]);
+    const eventId = (
+      await db.query<{ propose_group_event: string }>(
+        `select public.propose_group_event(
+          p_group_id := $1::uuid,
+          p_title := $2::text,
+          p_location := null::text,
+          p_notes := null::text,
+          p_recurrence := null::jsonb,
+          p_candidates := $3::jsonb,
+          p_set_initial_host := false,
+          p_initial_host_user_id := null::uuid,
+          p_location_lat := null::double precision,
+          p_location_lng := null::double precision,
+          p_gathering_type := 'dinner_meal'::public.gathering_type,
+          p_gathering_type_custom := null::text,
+          p_requested_contributions := '[]'::jsonb,
+          p_organiser_commits_host := false
+        ) as propose_group_event`,
+        [groupId, "Prod-shaped propose", candidates],
+      )
+    ).rows[0].propose_group_event;
+    expect(eventId).toBeTruthy();
+  });
+
+  it("prod finalise_event and apply_event_confirmation call shapes still work", async () => {
+    await db.query(`select set_config('hui.skip_auto_confirm', '1', false)`);
+    const groupId = await seedGroup();
+    const { eventId, candidateId } = await seedEvent(groupId, "when_most_can_come");
+    await sayYes(ids.owner, candidateId, eventId);
+    await sayYes(ids.member, candidateId, eventId);
+    await asUser(db, ids.owner);
+    await db.query(`select public.finalise_event($1::uuid, $2::uuid, false)`, [
+      eventId,
+      candidateId,
+    ]);
+    const status = await db.query<{ status: string }>(
+      `select status::text from public.events where id = $1`,
+      [eventId],
+    );
+    expect(status.rows[0]?.status).toBe("confirmed");
+
+    const groupId2 = await seedGroup();
+    const seeded = await seedEvent(groupId2, "when_most_can_come");
+    await sayYes(ids.owner, seeded.candidateId, seeded.eventId);
+    await sayYes(ids.member, seeded.candidateId, seeded.eventId);
+    await db.exec("set role service_role");
+    const applied = await db.query<{ apply_event_confirmation: boolean }>(
+      `select public.apply_event_confirmation($1::uuid, $2::uuid, $3::uuid, false) as apply_event_confirmation`,
+      [seeded.eventId, seeded.candidateId, ids.owner],
+    );
+    expect(applied.rows[0]?.apply_event_confirmation).toBe(true);
+    await db.exec("reset role");
+  });
+
+  it("prod pick_host_candidate three-arg call shape still works", async () => {
+    const groupId = await seedGroup();
+    const { eventId, candidateId } = await seedEvent(groupId, "when_most_can_come");
+    await sayYes(ids.member, candidateId, eventId);
+    const pick = await db.query<{ pick_host_candidate: string | null }>(
+      `select public.pick_host_candidate($1::uuid, $2::uuid, null::uuid) as pick_host_candidate`,
+      [groupId, eventId],
+    );
+    expect(pick.rows[0]?.pick_host_candidate).toBe(ids.member);
+  });
+
   it("pick_host_candidate only returns members who said Yes", async () => {
     const groupId = await seedGroup();
     const { eventId, candidateId } = await seedEvent(groupId, "when_most_can_come");
