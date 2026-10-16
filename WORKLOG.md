@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX6 v0.18.12 delete host place + privacy statement
+
+- Migration `20261016190000_hui_ux6_delete_host_place.sql`: `delete_my_account_data()` nulls `events.location` / lat / lng for every hui the leaver hosted (via `host_assignments`).
+- `/privacy` matches approved `hui-privacy-final.md` (Last updated 16 October 2026); PGlite + component tests.
+
 ## 2026-10-16 — v0.18.11 welcome tagline + stepper scroll-to-top
 
 - Landing tagline: “Regular catch-ups, without the group chat chaos.”
