@@ -451,7 +451,8 @@ export async function deleteEventAction(
 
   const { error } = await supabase.rpc("delete_event", { p_event_id: eventId });
   if (error) {
-    return { error: error.message };
+    console.error("delete_event failed", { eventId, message: error.message, code: error.code });
+    return { error: "Couldn't delete this hui. Please try again." };
   }
 
   revalidatePath("/events");
