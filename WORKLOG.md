@@ -1,5 +1,11 @@
 # Worklog
 
+## 2026-10-16 — v0.18.10 fix1 (profile/home #418, bring, hui 404)
+
+- **/profile/home #418:** `LocationPicker` deferred geolocation detection until after mount so SSR and hydration both omit “Use my location” on first paint.
+- **Bring regression:** Invalid `<h2>` inside `<summary>` broke disclosure content; disclosure titles use `role="heading"` `aria-level={2}` instead. Component test for empty-category organiser **Add something**.
+- **Hui 404 status:** Removed `events/[eventId]/loading.tsx` (streamed 200 before `notFound()`); `requireEventDetail` + `isEventId` guard malformed ids before data fetch.
+
 ## 2026-10-16 — v0.18.10 profile home save + hydration + bring heading
 
 - **Profile home save:** PostgREST `UPDATE` default return tried to read revoked `home_location_*` columns after migration `20261016103000`; profile actions now `.select("id")` only (same pattern as display name). PGlite test for label-only home update + `my_home_location()` readback.

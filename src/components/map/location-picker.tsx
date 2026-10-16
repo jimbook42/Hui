@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 
 import { PinIcon } from "@/components/hui/icons";
 import { MapSkeleton, MapUnavailable, useLazyMapCanvas } from "@/components/map/event-map";
@@ -20,6 +20,14 @@ type LocationPickerProps = {
 
 function normalise(value: EventCoordinates): EventCoordinates {
   return { lat: roundCoordinate(value.lat), lng: roundCoordinate(value.lng) };
+}
+
+function geolocationAvailable(): boolean {
+  return typeof navigator !== "undefined" && "geolocation" in navigator;
+}
+
+function useGeolocationAvailable(): boolean {
+  return useSyncExternalStore(() => () => {}, geolocationAvailable, () => false);
 }
 
 /**
@@ -45,7 +53,7 @@ export function LocationPicker({ value, onChange, placeLabel, defaultOpen = fals
   const [notice, setNotice] = useState<string | null>(null);
   const { containerRef, Canvas, phase, setPhase } = useLazyMapCanvas(open);
   const mapsEnabled = getMapConfig().enabled;
-  const canLocate = typeof navigator !== "undefined" && "geolocation" in navigator;
+  const canLocate = useGeolocationAvailable();
 
   const handlePick = useCallback(
     (next: EventCoordinates) => {

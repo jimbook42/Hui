@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
@@ -24,7 +23,7 @@ import { EventLifecycleLiveRefresh } from "@/components/events/event-lifecycle-l
 import { EventHero } from "@/components/hui/event-hero";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { loadEventPage } from "@/lib/events/event-page-data";
-import { getEventDetail } from "@/lib/events/queries";
+import { requireEventDetail } from "@/lib/events/require-event-detail";
 import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
 import { confirmedEventConsensusPassesForDisplay } from "@/domain/scheduling/confirmed-because";
 import { devTimed } from "@/lib/perf/dev-server-timing";
@@ -43,11 +42,8 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   const supabase = await getServerSupabase();
 
   const detail = await devTimed("event-page:event-detail", () =>
-    getEventDetail(supabase, eventId, user!.id),
+    requireEventDetail(supabase, eventId, user!.id),
   );
-  if (!detail) {
-    notFound();
-  }
 
   const userId = user!.id;
   const [heroPageData, appOrigin, inviteTokenResult] = await Promise.all([

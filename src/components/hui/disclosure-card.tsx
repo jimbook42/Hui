@@ -47,9 +47,13 @@ export function DisclosureCard({
           </span>
         ) : null}
         <span className="min-w-0 flex-1">
-          <h2 className="block text-[1.0625rem] font-extrabold leading-tight text-foreground">
+          <span
+            role="heading"
+            aria-level={2}
+            className="block text-[1.0625rem] font-extrabold leading-tight text-foreground"
+          >
             {title}
-          </h2>
+          </span>
           {summary ? (
             <span className="mt-0.5 block truncate text-sm font-semibold text-muted-foreground">
               {summary}
