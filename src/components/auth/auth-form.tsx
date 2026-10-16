@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useId } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useActionState } from "react";
 
@@ -25,6 +25,8 @@ type AuthFormProps = {
   refreshOnSuccess?: boolean;
   /** Show slow-sign-in messaging while the action is pending. */
   showSlowSignInNotice?: boolean;
+  /** Hide the inline error while the user edits a field or resubmits. */
+  clearErrorOnFieldChange?: boolean;
 };
 
 const initialState: AuthActionState = {};
@@ -32,6 +34,7 @@ const initialState: AuthActionState = {};
 type AuthFormContextValue = {
   fields: AuthActionState["fields"];
   passwordFieldKey: string;
+  onFieldEdit?: () => void;
 };
 
 const AuthFormFieldContext = createContext<AuthFormContextValue | null>(null);
@@ -43,13 +46,26 @@ export function AuthForm({
   hiddenFields,
   refreshOnSuccess = false,
   showSlowSignInNotice = false,
+  clearErrorOnFieldChange = false,
 }: AuthFormProps) {
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [errorSuppressed, setErrorSuppressed] = useState(false);
+  const wasPendingRef = useRef(false);
   const router = useRouter();
   const formInstanceId = useId();
   const passwordFieldKey = state.error
     ? `${formInstanceId}-pw-${state.error}`
     : `${formInstanceId}-pw`;
+
+  useEffect(() => {
+    if (wasPendingRef.current && !pending && clearErrorOnFieldChange) {
+      setErrorSuppressed(false);
+    }
+    wasPendingRef.current = pending;
+  }, [pending, clearErrorOnFieldChange]);
+
+  const visibleError =
+    state.error && !(clearErrorOnFieldChange && errorSuppressed) ? state.error : undefined;
 
   useEffect(() => {
     if (pending) {
@@ -63,10 +79,10 @@ export function AuthForm({
       markInteraction("form_save", "usable-ui");
       endInteraction("form_save");
     }
-    if (state.error) {
+    if (visibleError) {
       endInteraction("form_save");
     }
-  }, [state.message, state.error]);
+  }, [state.message, visibleError]);
 
   useEffect(() => {
     if (!refreshOnSuccess || !state.message) {
@@ -83,6 +99,9 @@ export function AuthForm({
       action={formAction}
       className="space-y-4"
       onSubmit={() => {
+        if (clearErrorOnFieldChange) {
+          setErrorSuppressed(true);
+        }
         beginInteraction("form_save");
         markInteraction("form_save", "handler-start");
         markInteraction("form_save", "optimistic-ui-visible");
@@ -94,13 +113,21 @@ export function AuthForm({
           ))
         : null}
       <AuthFormFieldContext.Provider
-        value={{ fields: state.fields, passwordFieldKey }}
+        value={{
+          fields: state.fields,
+          passwordFieldKey,
+          onFieldEdit: clearErrorOnFieldChange
+            ? () => {
+                setErrorSuppressed(true);
+              }
+            : undefined,
+        }}
       >
         {children}
       </AuthFormFieldContext.Provider>
-      {state.error ? (
+      {visibleError ? (
         <p className="hui-message-error" role="alert">
-          {state.error}
+          {visibleError}
         </p>
       ) : null}
       {state.message ? (
@@ -173,6 +200,9 @@ export function AuthField({
               }
             : undefined
         }
+        onChange={() => {
+          ctx?.onFieldEdit?.();
+        }}
       />
     </label>
   );

@@ -27,6 +27,7 @@ import {
   preservedFieldsOnSignUpValidationError,
   type PreservedAuthFields,
 } from "@/domain/auth/form-field-preservation";
+import { EMAIL_SIGN_IN_CREDENTIALS_ERROR } from "@/lib/auth/email-sign-in";
 import { passwordsMeetRules } from "@/domain/auth/password-rules";
 import {
   authTimeoutUserMessage,
@@ -153,8 +154,11 @@ export async function signInAction(
       }),
     );
 
-    if (error) {
-      return { error: error.message };
+    if (error || !data.session || !data.user) {
+      return {
+        error: EMAIL_SIGN_IN_CREDENTIALS_ERROR,
+        fields: email ? { email } : undefined,
+      };
     }
 
     const ensured = await ensureUserProfile(

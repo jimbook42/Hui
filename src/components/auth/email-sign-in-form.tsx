@@ -14,6 +14,7 @@ export function EmailSignInForm({ next }: EmailSignInFormProps) {
       submitLabel="Sign in"
       hiddenFields={{ next }}
       showSlowSignInNotice
+      clearErrorOnFieldChange
     >
       <AuthField label="Email" name="email" type="email" autoComplete="email" />
       <AuthField
