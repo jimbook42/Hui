@@ -29,13 +29,12 @@ export function ResponseDeadlineManageForm({
         <input
           type="datetime-local"
           name="response_deadline_at"
-          required
           defaultValue={defaultDeadlineLocal}
           className="hui-input mt-1 max-w-md"
         />
       </label>
       <p className="text-sm text-muted-foreground">
-        Members see this as the time they should reply by. Responses after the deadline are still
+        Optional. Leave blank to remove the reply-by date. Responses after the deadline are still
         accepted but marked late.
       </p>
       {state.error ? (

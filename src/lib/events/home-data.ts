@@ -93,7 +93,7 @@ export type HomeEvent = {
    * Null when unknown (no roster loaded) or not applicable.
    */
   consensusCurrentlyPasses: boolean | null;
-  confirmationMethod: "consensus" | "organiser" | null;
+  confirmationMethod: "consensus" | "organiser" | "admin" | null;
 };
 
 export type ProposableGroup = { id: string; name: string };
@@ -588,7 +588,9 @@ export async function loadHomeData(
           : null,
       consensusCurrentlyPasses: null,
       confirmationMethod:
-        row.confirmation_method === "organiser" || row.confirmation_method === "consensus"
+        row.confirmation_method === "organiser" ||
+        row.confirmation_method === "consensus" ||
+        row.confirmation_method === "admin"
           ? row.confirmation_method
           : null,
     };

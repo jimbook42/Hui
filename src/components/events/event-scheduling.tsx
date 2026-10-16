@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 
 import type { EventActionState } from "@/app/events/actions";
 import {
@@ -39,9 +39,15 @@ import type {
   EventConsensusSummary,
 } from "@/lib/scheduling/types";
 import { useActionStateRefresh } from "@/lib/ui/use-action-state-refresh";
+import { perTimeAvailabilityRowLabel } from "@/domain/scheduling/per-time-availability";
 import { GatheringVisual } from "@/components/hui/gathering-visual";
 import { AttendanceLegend } from "@/components/hui/attendance-legend";
 import { HuiSurface } from "@/components/hui/hui-surface";
+import { acceptHostProposalAction } from "@/app/hosts/actions";
+import { AcceptHostWithPlaceForm } from "@/components/hosts/accept-host-with-place-form";
+import { HostSwapRequestForm } from "@/components/hosts/host-swap-request-form";
+import type { EventCoordinates } from "@/domain/events/location";
+import type { ProfileHomeLocation } from "@/domain/profile/home-location";
 
 type EventSchedulingProps = {
   eventId: string;
@@ -62,6 +68,18 @@ type EventSchedulingProps = {
   /** Server-preformatted labels keyed by candidate id (avoids hydration mismatches). */
   candidateTimeLabels: Record<string, string>;
   attendanceRosters: Record<string, AttendanceRoster>;
+  perTimeHosting?: {
+    canAcceptHost: boolean;
+    canRequestSwap: boolean;
+    hostSwapHasReplacement: boolean;
+    suggestedHostName: string | null;
+    hostingEnabled: boolean;
+    hostPlaceRequired: boolean | null;
+    defaultLocation: string | null;
+    defaultCoordinates: EventCoordinates | null;
+    viewerHomeLocation: ProfileHomeLocation | null;
+    acceptedHostDisplayName: string | null;
+  } | null;
 };
 
 const initialState: EventActionState = {};
@@ -72,12 +90,14 @@ function AttendanceSummary({
   maybeResponsesEnabled,
   roster,
   showLateTags,
+  listLayout,
 }: {
   evaluation: CandidateConsensusView;
   confirmRule: EventConfirmRule;
   maybeResponsesEnabled: boolean;
   roster?: AttendanceRoster | null;
   showLateTags?: boolean;
+  listLayout?: boolean;
 }) {
   const namedGroups = roster
     ? groupAttendanceByResponse(roster, { showLateTags })
@@ -86,7 +106,7 @@ function AttendanceSummary({
   return (
     <HuiSurface className="mt-3" padding="sm">
       <p className="hui-type-section text-foreground">Attendance</p>
-      {roster && roster.members.length > 0 ? (
+      {roster && roster.members.length > 0 && !listLayout ? (
         <GatheringVisual
           roster={roster}
           eventTitle="This time"
@@ -319,6 +339,7 @@ function CandidateConsensusNote({
   maybeResponsesEnabled,
   roster,
   showLateTags,
+  listLayout,
 }: {
   eventStatus: EventStatus;
   candidate: EventCandidateRow;
@@ -327,6 +348,7 @@ function CandidateConsensusNote({
   maybeResponsesEnabled: boolean;
   roster?: AttendanceRoster | null;
   showLateTags?: boolean;
+  listLayout?: boolean;
 }) {
   if (candidate.status === "withdrawn") {
     return (
@@ -370,6 +392,7 @@ function CandidateConsensusNote({
           maybeResponsesEnabled={maybeResponsesEnabled}
           roster={roster}
           showLateTags={showLateTags}
+          listLayout={listLayout}
         />
       </div>
     );
@@ -398,6 +421,7 @@ function CandidateConsensusNote({
         maybeResponsesEnabled={maybeResponsesEnabled}
         roster={roster}
         showLateTags={showLateTags}
+        listLayout={listLayout}
       />
     </div>
   );
@@ -435,6 +459,54 @@ function WithdrawCandidateButton({
   );
 }
 
+function PerTimeExpandedHosting({
+  eventId,
+  hosting,
+}: {
+  eventId: string;
+  hosting: NonNullable<EventSchedulingProps["perTimeHosting"]>;
+}) {
+  if (!hosting.canAcceptHost && !hosting.canRequestSwap && !hosting.acceptedHostDisplayName) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 space-y-3 border-t border-border/60 pt-4" data-testid="per-time-host-actions">
+      {hosting.acceptedHostDisplayName ? (
+        <p className="text-sm font-semibold text-foreground">
+          Host: {hosting.acceptedHostDisplayName}
+        </p>
+      ) : hosting.suggestedHostName ? (
+        <p className="text-sm text-muted-foreground">
+          Suggested host: {hosting.suggestedHostName}
+        </p>
+      ) : null}
+      {hosting.canAcceptHost || hosting.canRequestSwap ? (
+        <div className="flex flex-wrap gap-3">
+          {hosting.canAcceptHost ? (
+            <AcceptHostWithPlaceForm
+              action={acceptHostProposalAction}
+              eventId={eventId}
+              hostingEnabled={hosting.hostingEnabled}
+              hostPlaceRequired={hosting.hostPlaceRequired}
+              defaultLocation={hosting.defaultLocation}
+              defaultCoordinates={hosting.defaultCoordinates}
+              suggestedHostName={hosting.suggestedHostName ?? "You"}
+              viewerHomeLocation={hosting.viewerHomeLocation}
+            />
+          ) : null}
+          {hosting.canRequestSwap ? (
+            <HostSwapRequestForm
+              eventId={eventId}
+              hasReplacement={hosting.hostSwapHasReplacement}
+            />
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function CandidateCard({
   eventId,
   eventStatus,
@@ -448,6 +520,10 @@ function CandidateCard({
   timeLabel,
   roster,
   showLateTags,
+  listLayout,
+  expanded,
+  onToggle,
+  perTimeHosting,
 }: {
   eventId: string;
   eventStatus: EventStatus;
@@ -461,12 +537,19 @@ function CandidateCard({
   timeLabel: string;
   roster?: AttendanceRoster | null;
   showLateTags?: boolean;
+  listLayout?: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
+  perTimeHosting?: EventSchedulingProps["perTimeHosting"];
 }) {
   const nowIso = new Date().toISOString();
   const passed = isPassedProposedCandidate(candidate, nowIso);
   const badge = passed
     ? "Passed"
     : candidateStatusBadge(eventStatus, candidate.status, evaluation?.passes ?? false);
+
+  const rowSummary =
+    evaluation && listLayout ? perTimeAvailabilityRowLabel(evaluation) : null;
 
   return (
     <li
@@ -478,24 +561,44 @@ function CandidateCard({
             : "bg-muted"
       }`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="text-sm font-bold text-foreground">
-          {timeLabel}
-        </p>
-        {badge ? (
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-              badge === "Confirmed time" || badge === "Meets requirements"
-                ? "bg-sage-soft text-success"
-                : badge === "Withdrawn"
-                  ? "bg-muted text-foreground"
-                  : "bg-muted text-foreground"
-            }`}
-          >
-            {badge}
+      {listLayout && onToggle ? (
+        <button
+          type="button"
+          className="hui-focus-ring flex w-full items-start justify-between gap-3 text-left"
+          onClick={onToggle}
+          aria-expanded={expanded}
+        >
+          <span className="flex flex-wrap items-center gap-2 text-sm font-bold text-foreground">
+            {timeLabel}
+            {passed ? (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
+                Passed
+              </span>
+            ) : null}
           </span>
-        ) : null}
-      </div>
+          <span className="shrink-0 text-sm font-semibold text-muted-foreground">
+            {passed ? "No longer available" : (rowSummary ?? "No responses yet")}
+          </span>
+        </button>
+      ) : (
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <p className="text-sm font-bold text-foreground">{timeLabel}</p>
+          {badge ? (
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                badge === "Confirmed time" || badge === "Meets requirements"
+                  ? "bg-sage-soft text-success"
+                  : badge === "Withdrawn"
+                    ? "bg-muted text-foreground"
+                    : "bg-muted text-foreground"
+              }`}
+            >
+              {badge}
+            </span>
+          ) : null}
+        </div>
+      )}
+      {listLayout && expanded === false ? null : (
       <CandidateConsensusNote
         eventStatus={eventStatus}
         candidate={candidate}
@@ -504,8 +607,10 @@ function CandidateCard({
         maybeResponsesEnabled={maybeResponsesEnabled}
         roster={roster}
         showLateTags={showLateTags}
+        listLayout={listLayout}
       />
-      {candidate.status !== "withdrawn" && !passed ? (
+      )}
+      {(!listLayout || expanded !== false) && candidate.status !== "withdrawn" && !passed ? (
         <CandidateResponseForm
           eventId={eventId}
           eventStatus={eventStatus}
@@ -514,7 +619,10 @@ function CandidateCard({
           canRespond={canRespond}
         />
       ) : null}
-      {shouldShowFinaliseControl(
+      {listLayout && expanded !== false && perTimeHosting ? (
+        <PerTimeExpandedHosting eventId={eventId} hosting={perTimeHosting} />
+      ) : null}
+      {(!listLayout || expanded !== false) && shouldShowFinaliseControl(
         canFinalise && !passed,
         eventStatus,
         candidate.status,
@@ -539,7 +647,7 @@ function CandidateCard({
           requireExtraConfirm
         />
       ) : null}
-      {canRemoveCandidates && candidate.status === "proposed" ? (
+      {(!listLayout || expanded !== false) && canRemoveCandidates && candidate.status === "proposed" ? (
         <WithdrawCandidateButton eventId={eventId} candidateId={candidate.id} />
       ) : null}
     </li>
@@ -564,6 +672,7 @@ export function EventScheduling({
   timeZone,
   candidateTimeLabels,
   attendanceRosters,
+  perTimeHosting = null,
 }: EventSchedulingProps) {
   const evaluations = new Map(
     consensus.candidates.map((candidate) => [candidate.candidateId, candidate]),
@@ -577,6 +686,21 @@ export function EventScheduling({
     passingCount,
     canFinalise,
   );
+  const useCompactTimeList = candidates.length > 1;
+  const defaultExpandedCandidateId = useMemo(() => {
+    if (!useCompactTimeList) {
+      return null;
+    }
+    const nowIso = new Date().toISOString();
+    return (
+      candidates.find((candidate) => !isPassedProposedCandidate(candidate, nowIso))?.id ?? null
+    );
+  }, [candidates, useCompactTimeList]);
+  const [expandedCandidateId, setExpandedCandidateId] = useState<string | null | undefined>(
+    undefined,
+  );
+  const resolvedExpandedCandidateId =
+    expandedCandidateId !== undefined ? expandedCandidateId : defaultExpandedCandidateId;
 
   return (
     <section className="hui-card-section">
@@ -657,6 +781,19 @@ export function EventScheduling({
               timeLabel={candidateTimeLabels[candidate.id] ?? ""}
               roster={attendanceRosters[candidate.id] ?? null}
               showLateTags={canFinalise}
+              listLayout={useCompactTimeList}
+              expanded={!useCompactTimeList || resolvedExpandedCandidateId === candidate.id}
+              onToggle={
+                useCompactTimeList
+                  ? () =>
+                      setExpandedCandidateId((current) => {
+                        const active =
+                          current !== undefined ? current : defaultExpandedCandidateId;
+                        return active === candidate.id ? null : candidate.id;
+                      })
+                  : undefined
+              }
+              perTimeHosting={perTimeHosting}
             />
           ))
         )}

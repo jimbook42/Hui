@@ -29,12 +29,13 @@ export function formatProposalDeadlineDefaultNote(groupHours: number | null): st
 }
 
 export function proposalReplyByPreviewLabel(
-  deadlineAt: string,
+  deadlineAt: string | null,
   timeZone: string,
-  groupHours: number | null,
 ): string {
-  const defaultNote = formatProposalDeadlineDefaultNote(groupHours);
-  return `${replyByDeadlineLabel(deadlineAt, timeZone)} (${defaultNote})`;
+  if (!deadlineAt?.trim()) {
+    return "Not set";
+  }
+  return replyByDeadlineLabel(deadlineAt, timeZone);
 }
 
 export function replyByLabelForEvent(

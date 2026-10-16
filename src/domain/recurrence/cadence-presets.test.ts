@@ -19,4 +19,9 @@ describe("cadence presets", () => {
     expect(cadencePresetFromParts("month", 1)).toBe("monthly");
     expect(formatCadenceLabel({ intervalUnit: "month", intervalCount: 1 })).toBe("Every month");
   });
+
+  it("treats non-preset intervals as custom", () => {
+    expect(cadencePresetFromParts("week", 5)).toBe("custom");
+    expect(formatCadenceLabel({ intervalUnit: "week", intervalCount: 5 })).toBe("Every 5 weeks");
+  });
 });

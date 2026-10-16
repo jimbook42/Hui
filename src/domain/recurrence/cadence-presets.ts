@@ -18,14 +18,17 @@ export const FIRST_GROUP_CADENCE_PRESETS: CadencePreset[] = [
 export function cadencePresetFromParts(
   intervalUnit: "week" | "month",
   intervalCount: number,
-): CadencePresetId {
+): CadencePresetId | "custom" {
   if (intervalUnit === "week" && intervalCount === 2) {
     return "fortnightly";
   }
   if (intervalUnit === "week" && intervalCount === 1) {
     return "weekly";
   }
-  return "monthly";
+  if (intervalUnit === "month" && intervalCount === 1) {
+    return "monthly";
+  }
+  return "custom";
 }
 
 export function formatCadenceLabel(cadence: Pick<RecurrenceCadence, "intervalUnit" | "intervalCount">): string {

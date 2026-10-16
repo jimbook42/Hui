@@ -313,4 +313,35 @@ describe("dietary: share with all my groups (HUI-026U.3)", () => {
     await setAllGroups(ids.sharer, entryId, true);
     expect(await listFor(ids.outsider, groupA)).toEqual([]);
   });
+
+  it("per-group opt-out after all-groups sharing hides dietaries only in that group", async () => {
+    const entryId = await createEntry("Opt out one group");
+    await setAllGroups(ids.sharer, entryId, true);
+    expect(await listFor(ids.peerA, groupA)).toEqual([
+      { label: "Opt out one group", scope: "all_groups" },
+    ]);
+    expect(await listFor(ids.peerB, groupB)).toEqual([
+      { label: "Opt out one group", scope: "all_groups" },
+    ]);
+
+    await asUser(db, ids.sharer);
+    await db.query(
+      `insert into public.dietary_entry_shares (dietary_entry_id, group_id) values ($1, $2)`,
+      [entryId, groupB],
+    );
+    await db.query(`update public.dietary_entries set share_with_all_groups = false where id = $1`, [
+      entryId,
+    ]);
+    await db.query(`delete from public.dietary_entry_shares where dietary_entry_id = $1 and group_id = $2`, [
+      entryId,
+      groupA,
+    ]);
+
+    expect(await listFor(ids.peerA, groupA)).toEqual([]);
+    expect(await listFor(ids.peerB, groupB)).toEqual([
+      { label: "Opt out one group", scope: "group" },
+    ]);
+    expect(await canReadEntry(ids.peerA, entryId)).toBe(false);
+    expect(await canReadEntry(ids.peerB, entryId)).toBe(true);
+  });
 });

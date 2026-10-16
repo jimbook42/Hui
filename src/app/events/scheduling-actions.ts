@@ -22,6 +22,15 @@ import {
   validateCandidateWindow,
 } from "@/domain/scheduling/validation";
 import { eventAcceptsResponseDeadline } from "@/domain/events/response-deadline-status";
+import { formatAvailabilityNudgeSuccessMessage } from "@/domain/scheduling/availability-nudge-copy";
+import { friendlyFinaliseErrorMessage } from "@/domain/scheduling/finalise-errors";
+import {
+  canAdminPickEventTime,
+  canEditEventResponseDeadline,
+  canNudgeEventAvailability,
+} from "@/domain/scheduling/response-deadline-permissions";
+import { pickAcceptedHost } from "@/domain/hosts/display";
+import { getEventHostContext } from "@/lib/hosts/queries";
 import { wallClockToUtcIso } from "@/domain/datetime/timezone";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
@@ -451,13 +460,50 @@ export async function finaliseEventAction(
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: friendlyFinaliseErrorMessage(error.message) };
   }
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/groups/${detail.groupId}/events`);
   schedulePushDelivery();
   return { message: "Event confirmed." };
+}
+
+export async function adminFinaliseEventAction(
+  _prev: EventActionState,
+  formData: FormData,
+): Promise<EventActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+  const candidateId = String(formData.get("candidate_id") ?? "");
+
+  if (!eventId || !candidateId) {
+    return { error: "Choose a time." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getEventDetail(supabase, eventId, user.id);
+  if (!detail) {
+    return { error: "Event not found." };
+  }
+
+  if (!canAdminPickEventTime(detail.status, detail.viewerRole)) {
+    return { error: "Only group owners or admins can pick a different time." };
+  }
+
+  const { error } = await supabase.rpc("admin_finalise_event", {
+    p_event_id: eventId,
+    p_candidate_id: candidateId,
+  });
+
+  if (error) {
+    return { error: friendlyFinaliseErrorMessage(error.message) };
+  }
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/manage`);
+  revalidatePath(`/groups/${detail.groupId}/events`);
+  schedulePushDelivery();
+  return { message: "Time confirmed." };
 }
 
 export async function updateEventResponseDeadlineAction(
@@ -467,8 +513,8 @@ export async function updateEventResponseDeadlineAction(
   const eventId = String(formData.get("event_id") ?? "");
   const deadlineLocal = String(formData.get("response_deadline_at") ?? "").trim();
 
-  if (!eventId || !deadlineLocal) {
-    return { error: "Reply deadline is required." };
+  if (!eventId) {
+    return { error: "Event not found." };
   }
 
   const { supabase, user } = await requireUser();
@@ -481,17 +527,25 @@ export async function updateEventResponseDeadlineAction(
     return { error: "This hui is no longer open for scheduling." };
   }
 
-  const canEdit =
-    detail.viewerRole === "owner" ||
-    detail.viewerRole === "admin" ||
-    detail.createdBy === user.id;
-  if (!canEdit) {
+  const hostContext = await getEventHostContext(supabase, eventId, detail.groupId, user.id);
+  const acceptedHostUserId =
+    pickAcceptedHost(hostContext?.assignments ?? [])?.userId ?? null;
+
+  if (
+    !canEditEventResponseDeadline(
+      detail.status,
+      detail.viewerRole,
+      user.id,
+      detail.createdBy,
+      acceptedHostUserId,
+    )
+  ) {
     return { error: "You cannot change the reply deadline." };
   }
 
   const timeZone = detail.timezone ?? "Pacific/Auckland";
-  const deadlineAt = wallClockToUtcIso(deadlineLocal, timeZone);
-  if (!deadlineAt) {
+  const deadlineAt = deadlineLocal ? wallClockToUtcIso(deadlineLocal, timeZone) : null;
+  if (deadlineLocal && !deadlineAt) {
     return { error: "Enter a valid date and time." };
   }
 
@@ -507,7 +561,70 @@ export async function updateEventResponseDeadlineAction(
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events/${eventId}/manage`);
   revalidatePath(`/events/${eventId}/respond`);
-  return { message: "Reply deadline updated." };
+  return { message: deadlineAt ? "Reply deadline updated." : "Reply deadline cleared." };
+}
+
+export async function nudgeEventAvailabilityAction(
+  _prev: EventActionState,
+  formData: FormData,
+): Promise<EventActionState> {
+  const eventId = String(formData.get("event_id") ?? "");
+
+  if (!eventId) {
+    return { error: "Event not found." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const detail = await getEventDetail(supabase, eventId, user.id);
+  if (!detail) {
+    return { error: "Event not found." };
+  }
+
+  const hostContext = await getEventHostContext(supabase, eventId, detail.groupId, user.id);
+  const acceptedHostUserId =
+    pickAcceptedHost(hostContext?.assignments ?? [])?.userId ?? null;
+
+  if (
+    !canNudgeEventAvailability(
+      detail.status,
+      detail.viewerRole,
+      user.id,
+      detail.createdBy,
+      acceptedHostUserId,
+    )
+  ) {
+    return { error: "You cannot nudge members for this hui." };
+  }
+
+  const { data, error } = await supabase.rpc("nudge_event_availability", {
+    p_event_id: eventId,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  const payload = data as {
+    queued?: number;
+    rate_limited?: boolean;
+    next_nudge_at?: string;
+  } | null;
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}/manage`);
+
+  if (payload?.rate_limited) {
+    return {
+      error: "You can nudge once every 24 hours for this hui.",
+      notice: payload.next_nudge_at ?? undefined,
+    };
+  }
+
+  const queued = payload?.queued ?? 0;
+  schedulePushDelivery();
+  return {
+    message: formatAvailabilityNudgeSuccessMessage(queued),
+  };
 }
 
 export async function updateEventConfirmRuleAction(

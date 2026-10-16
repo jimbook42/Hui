@@ -52,7 +52,7 @@ function phaseCopy(context: GroupPlanningContext): { title: string; detail: stri
       return {
         title: "Recurrence paused",
         detail: target
-          ? `Next nominal date would be ${target} when you resume.`
+          ? `Next planned date would be ${target} when you resume.`
           : "Planning reminders are paused until an admin resumes.",
       };
     default:

@@ -4,7 +4,7 @@ import type { ConsensusRule } from "@/domain/scheduling/consensus";
 import type { AttendanceCountSummary } from "@/domain/events/who-is-coming";
 import { formatWhoIsComingSummary } from "@/domain/events/who-is-coming";
 
-export type EventConfirmationMethod = "consensus" | "organiser";
+export type EventConfirmationMethod = "consensus" | "organiser" | "admin";
 
 /** Short confirmed reason from the group's consensus rule (live counts shown separately). */
 export function formatConfirmedReasonLine(
@@ -12,6 +12,9 @@ export function formatConfirmedReasonLine(
   confirmationMethod?: EventConfirmationMethod | null,
   confirmRule?: EventConfirmRule | null,
 ): string {
+  if (confirmationMethod === "admin") {
+    return "Confirmed by admin";
+  }
   if (confirmationMethod === "organiser" || confirmRule === "organiser_picks") {
     return "Confirmed by organiser";
   }
@@ -45,7 +48,7 @@ export function confirmedEventConsensusPassesForDisplay(
   anyCandidatePasses: boolean,
   confirmationMethod?: EventConfirmationMethod | null,
 ): boolean {
-  if (confirmationMethod === "organiser") {
+  if (confirmationMethod === "organiser" || confirmationMethod === "admin") {
     return true;
   }
   return anyCandidatePasses;

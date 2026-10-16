@@ -66,7 +66,8 @@ describe("finaliseEventAction", () => {
     const result = await finaliseEventAction({}, formData);
 
     expect(result).toEqual({
-      error: "waiting on the host to say yes to this time",
+      error:
+        "The host can't make that time. Ask them to answer Yes or swap hosting first.",
     });
   });
 });

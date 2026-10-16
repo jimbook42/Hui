@@ -13,9 +13,9 @@ describe("host swap form (no replacement)", () => {
   });
 
   it("labels the confirm submit clearly", () => {
-    expect(hostSwapPrimaryActionLabel(false, "idle", false)).toBe("Ask to swap");
+    expect(hostSwapPrimaryActionLabel(false, "idle", false)).toBe("Ask to swap hosting");
     expect(hostSwapPrimaryActionLabel(false, "confirm", false)).toBe("Yes, step back");
-    expect(hostSwapPrimaryActionLabel(true, "idle", false)).toBe("Ask to swap");
+    expect(hostSwapPrimaryActionLabel(true, "idle", false)).toBe("Ask to swap hosting");
     expect(hostSwapPrimaryActionLabel(false, "confirm", true)).toBe("Please wait…");
   });
 });

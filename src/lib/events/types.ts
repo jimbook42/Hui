@@ -49,7 +49,8 @@ export type EventDetail = {
   updatedAt: string;
   cancelledAt: string | null;
   responseDeadlineAt: string | null;
-  confirmationMethod: "consensus" | "organiser" | null;
+  lastAvailabilityNudgeAt: string | null;
+  confirmationMethod: "consensus" | "organiser" | "admin" | null;
   confirmRule: EventConfirmRule;
   viewerRole: "owner" | "admin" | "member";
 };

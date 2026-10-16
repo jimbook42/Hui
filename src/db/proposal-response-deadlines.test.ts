@@ -91,7 +91,7 @@ describe("proposal response deadlines", () => {
     await db?.close();
   });
 
-  it("sets default response deadline from group hours on insert", async () => {
+  it("keeps response deadline null on insert until explicitly set", async () => {
     await asUser(db, ids.owner);
     const groupId = (
       await db.query<{ create_group: string }>(`select public.create_group($1) as create_group`, [
@@ -104,17 +104,14 @@ describe("proposal response deadlines", () => {
       [groupId],
     );
 
-    const row = await db.query<{ response_deadline_at: string; created_at: string }>(
+    const row = await db.query<{ response_deadline_at: string | null }>(
       `insert into public.events (group_id, title, status, created_by)
        values ($1, 'Dinner', 'proposing', $2)
-       returning response_deadline_at::text, created_at::text`,
+       returning response_deadline_at::text`,
       [groupId, ids.owner],
     );
 
-    const deadline = new Date(row.rows[0].response_deadline_at);
-    const created = new Date(row.rows[0].created_at);
-    const hours = (deadline.getTime() - created.getTime()) / (60 * 60 * 1000);
-    expect(hours).toBeCloseTo(24, 0);
+    expect(row.rows[0]?.response_deadline_at).toBeNull();
   });
 
   it("marks responses after the deadline as late", async () => {

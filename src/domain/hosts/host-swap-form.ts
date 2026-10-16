@@ -9,9 +9,9 @@ export function hostSwapPrimaryActionLabel(
     return "Please wait…";
   }
   if (hasReplacement) {
-    return "Ask to swap";
+    return "Ask to swap hosting";
   }
-  return step === "confirm" ? "Yes, step back" : "Ask to swap";
+  return step === "confirm" ? "Yes, step back" : "Ask to swap hosting";
 }
 
 export function shouldIncludeNoReplacementAck(

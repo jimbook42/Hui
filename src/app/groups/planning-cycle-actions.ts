@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { friendlyPlanningSkipError } from "@/domain/recurrence/planning-skip";
 import { parseRecurrenceCadenceInput } from "@/domain/recurrence/recurrence-cadence-validation";
 import { canEditSettings } from "@/domain/groups/permissions";
 import { getGroupDetail } from "@/lib/groups/queries";
@@ -92,7 +93,7 @@ export async function skipPlanningCycleAction(
     p_reason: reason || null,
   });
   if (error) {
-    return { error: error.message };
+    return { error: friendlyPlanningSkipError(error) };
   }
 
   await syncGroupPlanningAfterChange(supabase, groupId);
@@ -154,5 +155,5 @@ export async function updateGroupRecurrenceCadenceAction(
   revalidatePath(`/groups/${groupId}`);
   revalidatePath(`/groups/${groupId}/events/new`);
   revalidatePath("/dashboard");
-  return { message: "Recurrence cadence saved." };
+  return { message: "How often saved." };
 }

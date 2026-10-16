@@ -50,6 +50,27 @@ describe("deriveDietarySharingScope", () => {
     expect(scope.entryCount).toBe(0);
   });
 
+  it("shows target group off and others on after per-group opt-out from all-groups sharing", () => {
+    const multiGroups = [
+      { groupId: "g-a", groupName: "A" },
+      { groupId: "g-b", groupName: "B" },
+    ];
+    const entries: UserDietaryEntry[] = [
+      {
+        id: "e1",
+        label: "Vegetarian",
+        notes: null,
+        category: "requirement",
+        shareWithAllGroups: false,
+        shares: [{ groupId: "g-a", groupName: "A" }],
+      },
+    ];
+    const scope = deriveDietarySharingScope(entries, multiGroups);
+    expect(scope.groups.find((g) => g.groupId === "g-a")?.enabled).toBe(true);
+    expect(scope.groups.find((g) => g.groupId === "g-b")?.enabled).toBe(false);
+    expect(scope.shareAllGroups).toBe(false);
+  });
+
   it("flags empty share with private entries so the UI can warn the owner", () => {
     const entries: UserDietaryEntry[] = [
       {
