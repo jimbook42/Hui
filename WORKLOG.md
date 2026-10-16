@@ -1,5 +1,11 @@
 # Worklog
 
+## 2026-10-17 — v0.18.14 groups list + dietary per-group opt-out
+
+- Profile **Hui groups** lists active memberships when households flag is off (name, display name, dietary link).
+- Turning off dietary sharing for one group materializes explicit shares for other groups before clearing `share_with_all_groups`, so opt-out sticks without RLS changes.
+- Version **0.18.14**; tests + Playwright smoke for `/profile/groups`.
+
 ## 2026-10-16 — v0.18.13 fix2 (QA repair 2/2)
 
 - Past hui host card: ended gatherings use `endedGatheringHostCopy` (host vs other viewer); no “Hui has suggested …” on past hui; accepted-host branch matches.

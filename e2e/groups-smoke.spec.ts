@@ -106,4 +106,15 @@ test.describe("live group smoke", () => {
     await expect.poll(() => pastConfirmMessage).toMatch(/in the past/i);
     await expect(page.getByRole("heading", { name: "When could it happen?" })).toBeVisible();
   });
+
+  test("profile Hui groups lists memberships at mobile width", async ({ page }) => {
+    const email = process.env.E2E_TEST_EMAIL!;
+    const password = process.env.E2E_TEST_PASSWORD!;
+
+    await signInWithEmail(page, email, password);
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.goto("/profile/groups");
+    await expect(page.getByRole("heading", { name: "Hui groups" })).toBeVisible();
+    await expect(page.getByText(/Your groups|Household/).first()).toBeVisible();
+  });
 });

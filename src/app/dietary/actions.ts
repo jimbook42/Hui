@@ -11,6 +11,7 @@ import {
   parseGroupId,
 } from "@/domain/dietary/validation";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { materializeSharesBeforeGroupOptOut } from "@/lib/dietary/group-opt-out-materialization";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 
 export type DietaryActionState = {
@@ -33,6 +34,7 @@ function revalidateDietaryPaths(groupId?: string) {
   if (groupId) {
     revalidatePath(`/groups/${groupId}`);
     revalidatePath(`/groups/${groupId}/events`);
+    revalidatePath("/events/[eventId]", "page");
   }
 }
 
@@ -185,7 +187,25 @@ export async function unshareDietaryEntryAction(
     return { error: "Could not stop sharing dietary information." };
   }
 
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
+  const { data: entry, error: entryError } = await supabase
+    .from("dietary_entries")
+    .select("id")
+    .eq("id", entryId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (entryError || !entry) {
+    return { error: "Could not stop sharing dietary information." };
+  }
+
+  const materialized = await materializeSharesBeforeGroupOptOut(supabase, user.id, groupId, [
+    entryId,
+  ]);
+  if (!materialized.ok) {
+    return { error: materialized.error };
+  }
+
   const { error } = await supabase
     .from("dietary_entry_shares")
     .delete()
@@ -348,6 +368,16 @@ export async function setDietaryGroupShareAction(
       }
     }
   } else {
+    const materialized = await materializeSharesBeforeGroupOptOut(
+      supabase,
+      user.id,
+      groupId,
+      entries.ids,
+    );
+    if (!materialized.ok) {
+      return { error: materialized.error };
+    }
+
     const { error: emptyError } = await supabase
       .from("dietary_empty_group_shares")
       .delete()

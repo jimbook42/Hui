@@ -1,4 +1,5 @@
 import { HouseholdSettingsSection } from "@/components/households/household-section";
+import { ProfileMembershipGroupsSection } from "@/components/profile/profile-membership-groups-section";
 import { ProfileSectionShell } from "@/components/profile/profile-hub-link";
 import { SettingsSection } from "@/components/profile/settings-section";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
@@ -13,7 +14,11 @@ export default async function ProfileGroupsPage() {
   }
 
   const supabase = await getServerSupabase();
-  const membershipGroups = await listActiveMembershipGroups(supabase, user.id);
+  const [{ data: profile }, membershipGroups] = await Promise.all([
+    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+    listActiveMembershipGroups(supabase, user.id),
+  ]);
+  const displayName = profile?.display_name?.trim() || user.email || "You";
   const householdContexts = householdsEnabled()
     ? await listUserHouseholdsByGroup(supabase, user.id, membershipGroups)
     : [];
@@ -34,7 +39,14 @@ export default async function ProfileGroupsPage() {
         >
           <HouseholdSettingsSection contexts={householdContexts} currentUserId={user.id} />
         </SettingsSection>
-      ) : null}
+      ) : (
+        <SettingsSection
+          title="Your groups"
+          description="Groups you belong to and how you appear in each one."
+        >
+          <ProfileMembershipGroupsSection groups={membershipGroups} displayName={displayName} />
+        </SettingsSection>
+      )}
     </ProfileSectionShell>
   );
 }
