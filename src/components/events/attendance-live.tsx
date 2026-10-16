@@ -100,6 +100,7 @@ const SHORT_LABEL: Record<AvailabilityChoice, string> = {
 
 type ViewerResponseCardProps = {
   eventId: string;
+  groupId: string;
   /** The time the answer applies to (the selected time once confirmed). */
   candidateId: string;
   /** What the server currently has for the viewer. */
@@ -126,6 +127,7 @@ type ViewerResponseCardProps = {
  */
 export function ViewerResponseCard({
   eventId,
+  groupId,
   candidateId,
   serverResponse,
   serverPrivateNote,
@@ -206,7 +208,7 @@ export function ViewerResponseCard({
       }
       setFollowUp(choice);
       setOpen(false);
-      void revalidateHomeGatheringSurfacesAction();
+      void revalidateHomeGatheringSurfacesAction(groupId);
       markInteraction(interaction, "navigation-start");
       // One refresh reconciles everything derived from the answer (counts, consensus, host and
       // contribution sections). The optimistic UI above has already updated.

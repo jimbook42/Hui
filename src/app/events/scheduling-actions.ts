@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { isEventConfirmRule } from "@/domain/events/confirm-rule";
 import { assertCanFinalise } from "@/domain/events/lifecycle";
@@ -9,7 +10,6 @@ import { availabilityToDbResponse } from "@/domain/scheduling/mapping";
 import {
   canAddCandidates,
   canFinaliseEvent,
-  canRespondToCandidates,
   canWithdrawCandidate,
 } from "@/domain/scheduling/permissions";
 import {
@@ -24,8 +24,8 @@ import { eventAcceptsResponseDeadline } from "@/domain/events/response-deadline-
 import { wallClockToUtcIso } from "@/domain/datetime/timezone";
 import { getEventDetail } from "@/lib/events/queries";
 import { getGroupDetail } from "@/lib/groups/queries";
-import { getGroupResponseSettings } from "@/lib/groups/response-settings";
 import { getEventSchedulingContext } from "@/lib/scheduling/queries";
+import { loadAvailabilitySaveContext } from "@/lib/scheduling/availability-save-context";
 import { schedulePushDelivery } from "@/lib/push/schedule";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 import {
@@ -34,7 +34,10 @@ import {
   resolveConfirmRaceAfterFailedSave,
   shouldRetryAvailabilitySaveAfterConfirmRace,
 } from "@/domain/scheduling/confirm-during-save";
-import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import {
+  getServerAuthUserFromSession,
+  getServerSupabase,
+} from "@/lib/auth/server-session";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -256,10 +259,68 @@ export async function withdrawCandidateAction(
   return { message: "Candidate removed." };
 }
 
-/** Refresh home / Your hui lists after attendance saves (debounce on the client). */
-export async function revalidateHomeGatheringSurfacesAction(): Promise<void> {
+/** Refresh home / Your hui / group event lists after attendance saves (debounce on the client). */
+export async function revalidateHomeGatheringSurfacesAction(
+  groupId?: string,
+): Promise<void> {
   revalidatePath("/dashboard");
   revalidatePath("/events");
+  if (groupId) {
+    revalidatePath(`/groups/${groupId}/events`);
+  }
+}
+
+async function confirmSnapshotAfterAvailabilitySave(
+  supabase: SupabaseClient,
+  input: { eventId: string; groupId: string; timeZone: string },
+): Promise<EventActionState | null> {
+  const { data: statusRow, error: statusError } = await supabase
+    .from("events")
+    .select("status")
+    .eq("id", input.eventId)
+    .maybeSingle();
+  if (statusError) {
+    return { error: statusError.message };
+  }
+  if (statusRow?.status !== "confirmed") {
+    return null;
+  }
+
+  const { data: selected } = await supabase
+    .from("event_candidates")
+    .select("id, starts_at, ends_at")
+    .eq("event_id", input.eventId)
+    .eq("group_id", input.groupId)
+    .eq("status", "selected")
+    .maybeSingle();
+
+  if (!selected?.id || !selected.starts_at) {
+    return null;
+  }
+
+  return {
+    message: "Response saved.",
+    notice: confirmedDuringSaveToast(selected.starts_at, selected.ends_at, input.timeZone),
+    confirmedCandidate: {
+      id: selected.id,
+      startsAt: selected.starts_at,
+      endsAt: selected.ends_at,
+    },
+  };
+}
+
+/** Off the save hot path: detect auto-confirm after a fast availability upsert. */
+export async function fetchConfirmAfterAvailabilitySaveAction(
+  eventId: string,
+  groupId: string,
+  timeZone: string,
+): Promise<EventActionState | null> {
+  const user = await getServerAuthUserFromSession();
+  if (!user) {
+    redirect("/sign-in");
+  }
+  const supabase = await getServerSupabase();
+  return confirmSnapshotAfterAvailabilitySave(supabase, { eventId, groupId, timeZone });
 }
 
 export async function setAvailabilityResponseAction(
@@ -275,37 +336,22 @@ export async function setAvailabilityResponseAction(
       return { error: "Choose a valid response." };
     }
 
-    const user = await devTimed("setAvailabilityResponseAction:getUser", () =>
-      getServerAuthUser(),
+    const [user, supabase] = await devTimed("setAvailabilityResponseAction:session", () =>
+      Promise.all([getServerAuthUserFromSession(), getServerSupabase()]),
     );
     if (!user) {
       redirect("/sign-in");
     }
-    const supabase = await getServerSupabase();
 
-    const detail = await devTimed("setAvailabilityResponseAction:getEventDetail", () =>
-      getEventDetail(supabase, eventId, user.id),
+    const loaded = await devTimed("setAvailabilityResponseAction:context", () =>
+      loadAvailabilitySaveContext(supabase, eventId, candidateId),
     );
-    if (!detail) {
-      return { error: "Event not found." };
+    if (!loaded.ok) {
+      return { error: loaded.error };
     }
+    const { groupId, timeZone, maybeResponsesEnabled } = loaded.context;
 
-    if (!canRespondToCandidates(detail.status)) {
-      return { error: "This event is no longer accepting availability responses." };
-    }
-
-    const responseSettings = await devTimed(
-      "setAvailabilityResponseAction:response-settings",
-      () => getGroupResponseSettings(supabase, detail.groupId),
-    );
-    if (!responseSettings) {
-      return { error: "You do not have access to this group." };
-    }
-
-    const maybeError = validateAvailabilityChoice(
-      choice,
-      responseSettings.maybeResponsesEnabled,
-    );
+    const maybeError = validateAvailabilityChoice(choice, maybeResponsesEnabled);
     if (maybeError) {
       return { error: maybeError };
     }
@@ -319,30 +365,7 @@ export async function setAvailabilityResponseAction(
       return { error: "Private note is too long (500 characters max)." };
     }
 
-    const { data: candidate, error: candidateError } = await devTimed(
-      "setAvailabilityResponseAction:candidate",
-      async () =>
-        await supabase
-          .from("event_candidates")
-          .select("id, status")
-          .eq("id", candidateId)
-          .eq("event_id", eventId)
-          .eq("group_id", detail.groupId)
-          .maybeSingle(),
-    );
-
-    if (candidateError) {
-      return { error: candidateError.message };
-    }
-    if (!candidate) {
-      return { error: "Candidate not found." };
-    }
-    if (candidate.status !== "proposed" && candidate.status !== "selected") {
-      return { error: "This candidate is no longer open for responses." };
-    }
-
     const dbResponse = availabilityToDbResponse(choice);
-    const timeZone = detail.timezone ?? "Pacific/Auckland";
     const { error: upsertError } = await devTimed("setAvailabilityResponseAction:upsert", () =>
       upsertMemberAvailability(supabase, {
         candidateId,
@@ -353,16 +376,17 @@ export async function setAvailabilityResponseAction(
       }),
     );
 
-    const revalidateAfterAvailabilitySave = () => {
-      revalidatePath(`/events/${eventId}`);
-      revalidatePath(`/events/${eventId}/respond`);
+    const scheduleRevalidateAfterAvailabilitySave = () => {
+      after(() => {
+        revalidatePath(`/events/${eventId}`);
+      });
     };
 
     if (upsertError) {
       if (isSchedulingClosedDbError(upsertError)) {
         const recovered = await recoverAvailabilityAfterConfirmRace(supabase, {
           eventId,
-          groupId: detail.groupId,
+          groupId,
           userId: user.id,
           originalCandidateId: candidateId,
           dbResponse,
@@ -379,41 +403,9 @@ export async function setAvailabilityResponseAction(
     }
 
     schedulePushDelivery();
-    revalidateAfterAvailabilitySave();
+    scheduleRevalidateAfterAvailabilitySave();
 
-    const { data: statusRow, error: statusError } = await supabase
-      .from("events")
-      .select("status")
-      .eq("id", eventId)
-      .maybeSingle();
-    if (statusError) {
-      return { error: statusError.message };
-    }
-    if (statusRow?.status !== "confirmed") {
-      return { message: "Response saved." };
-    }
-
-    const { data: selected } = await supabase
-      .from("event_candidates")
-      .select("id, starts_at, ends_at")
-      .eq("event_id", eventId)
-      .eq("group_id", detail.groupId)
-      .eq("status", "selected")
-      .maybeSingle();
-
-    if (!selected?.id || !selected.starts_at) {
-      return { message: "Response saved." };
-    }
-
-    return {
-      message: "Response saved.",
-      notice: confirmedDuringSaveToast(selected.starts_at, selected.ends_at, timeZone),
-      confirmedCandidate: {
-        id: selected.id,
-        startsAt: selected.starts_at,
-        endsAt: selected.ends_at,
-      },
-    };
+    return { message: "Response saved." };
   });
 }
 

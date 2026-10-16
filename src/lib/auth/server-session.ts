@@ -19,3 +19,16 @@ export const getServerAuthUser = cache(async (): Promise<User | null> => {
   } = await supabase.auth.getUser();
   return user;
 });
+
+/**
+ * Reads the signed-in user from the session cookie without an Auth server round-trip.
+ * Use for high-frequency mutations where RLS enforces access; prefer getServerAuthUser when
+ * you need a live revocation check.
+ */
+export const getServerAuthUserFromSession = cache(async (): Promise<User | null> => {
+  const supabase = await getServerSupabase();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.user ?? null;
+});

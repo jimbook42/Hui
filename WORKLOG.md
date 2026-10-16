@@ -1,5 +1,12 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX5 fix1 save latency (v0.18.9)
+
+- **Profile:** multi-time respond `aria-busy` tracks the server-action POST only (no `router.refresh` on that path). Slowness was server work per save, not client re-render after the action.
+- **Server:** lightweight `loadAvailabilitySaveContext` (replaces `getEventDetail`), session-cookie auth (`getServerAuthUserFromSession`), return right after upsert (confirm snapshot moved to `fetchConfirmAfterAvailabilitySaveAction` for single-time flow), defer `/events/[id]` revalidate via `after()`, stop revalidating `/respond` on each tap.
+- **Home surfaces:** debounced `revalidateHomeGatheringSurfacesAction(groupId)` restores `/groups/:id/events` refresh dropped in cc12e2c.
+- **PM timing** (`next build` + `next start` :3130, proxy :3000, `zz-pm-save-timing.spec.ts`): tap→saved ms before fix1 ~[2676,2215,1907,3538,2441,2561] (cc12e2c ~4.0s mean per ticket); after fix1 ~[1075,1363,2792,1591,1661,1281] (~1.6s mean, several saves ~1.0–1.4s). Target &lt;1s not met on every tap; remaining cost is mostly Supabase round-trips on the save action.
+
 ## 2026-10-16 — HUI-UX5 pre-beta (v0.18.9)
 
 - **Dashboard attention:** `homeViewerResponseCandidateIds` loads the **selected** time for confirmed hui even when other proposed candidates remain, so answered confirmed gatherings leave Needs attention.

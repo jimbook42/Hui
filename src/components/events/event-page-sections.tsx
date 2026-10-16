@@ -268,6 +268,7 @@ export function EventHeroMeta({
       ) : respondable && data.primaryCandidate ? (
         <ViewerResponseCard
           eventId={detail.id}
+          groupId={detail.groupId}
           candidateId={data.primaryCandidate.id}
           serverResponse={
             data.multiTimeAnswerPresentation?.statusChoice ?? data.viewerResponse

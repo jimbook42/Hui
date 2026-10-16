@@ -14,6 +14,7 @@ import {
 import type { EventActionState } from "@/app/events/actions";
 import {
   addCandidateAction,
+  fetchConfirmAfterAvailabilitySaveAction,
   revalidateHomeGatheringSurfacesAction,
   setAvailabilityResponseAction,
 } from "@/app/events/scheduling-actions";
@@ -278,9 +279,9 @@ export function EventParticipantRespondFlow({
     }
     homeSurfacesRevalidateTimerRef.current = window.setTimeout(() => {
       homeSurfacesRevalidateTimerRef.current = null;
-      void revalidateHomeGatheringSurfacesAction();
+      void revalidateHomeGatheringSurfacesAction(groupId);
     }, 400);
-  }, []);
+  }, [groupId]);
 
   useEffect(() => {
     return () => {
@@ -635,6 +636,19 @@ export function EventParticipantRespondFlow({
             ...result.confirmedCandidate,
             notice: result.notice,
           });
+        } else if (eventStatus === "proposing" && !multipleTimeOptions) {
+          void fetchConfirmAfterAvailabilitySaveAction(eventId, groupId, timeZone).then(
+            (confirm) => {
+              if (confirm?.confirmedCandidate) {
+                applyConfirmedTransition({
+                  ...confirm.confirmedCandidate,
+                  notice: confirm.notice,
+                });
+                return;
+              }
+              showSaveToast(participantSaveToastMessage(choice, timeLabelForToast));
+            },
+          );
         } else {
           showSaveToast(participantSaveToastMessage(choice, timeLabelForToast));
         }
