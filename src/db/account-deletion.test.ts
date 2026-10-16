@@ -434,6 +434,131 @@ describe("account deletion (HUI-012B)", () => {
     expect(newProfile.rows[0].display_name).toBe("New Signup Name");
   });
 
+  it("clears place on every hosted hui and leaves other hosts' places unchanged", async () => {
+    const hostLeaverId = await createUser(db, "host-leaver@hui.test", "Host Leaver");
+
+    await asUser(db, ids.owner);
+    const groupId = (
+      await db.query<{ create_group: string }>(
+        `select public.create_group($1) as create_group`,
+        ["Host place deletion"],
+      )
+    ).rows[0].create_group;
+    await asUser(db, null);
+    await db.query(
+      `insert into public.group_memberships (group_id, user_id, role)
+       values ($1, $2, 'member')`,
+      [groupId, hostLeaverId],
+    );
+
+    async function insertHostedEvent(
+      title: string,
+      status: string,
+      location: string | null,
+      lat: number | null,
+      lng: number | null,
+      hostStatus: string,
+    ) {
+      await asUser(db, ids.owner);
+      const eventId = (
+        await db.query<{ id: string }>(
+          `insert into public.events (
+             group_id, title, status, created_by, location, location_lat, location_lng
+           ) values ($1, $2, $3::public.event_status, $4, $5, $6, $7)
+           returning id`,
+          [groupId, title, status, ids.owner, location, lat, lng],
+        )
+      ).rows[0].id;
+      await db.query(
+        `insert into public.host_assignments (
+           event_id, group_id, user_id, display_name, status, assigned_by
+         ) values ($1, $2, $3, 'Host Leaver', $4::public.host_assignment_status, $5)`,
+        [eventId, groupId, hostLeaverId, hostStatus, ids.owner],
+      );
+      return eventId;
+    }
+
+    const pastEventId = await insertHostedEvent(
+      "Past at park",
+      "completed",
+      "Central Park",
+      -36.8485,
+      174.7633,
+      "accepted",
+    );
+    const upcomingEventId = await insertHostedEvent(
+      "Upcoming cafe",
+      "proposing",
+      "42 Coffee St",
+      -36.85,
+      174.76,
+      "accepted",
+    );
+    const noPlaceEventId = await insertHostedEvent(
+      "TBD venue",
+      "proposing",
+      null,
+      null,
+      null,
+      "proposed",
+    );
+
+    await asUser(db, ids.owner);
+    const otherHostEventId = (
+      await db.query<{ id: string }>(
+        `insert into public.events (
+           group_id, title, status, created_by, location, location_lat, location_lng
+         ) values ($1, 'Owner hosts', 'proposing', $2, 'Owner Home', -36.84, 174.77)
+         returning id`,
+        [groupId, ids.owner],
+      )
+    ).rows[0].id;
+    await db.query(
+      `insert into public.host_assignments (
+         event_id, group_id, user_id, display_name, status, assigned_by
+       ) values ($1, $2, $3, 'Owner Del', 'accepted', $3)`,
+      [otherHostEventId, groupId, ids.owner],
+    );
+
+    await asUser(db, hostLeaverId);
+    await db.query(`select public.delete_my_account_data()`);
+
+    await asUser(db, null);
+    const hostedPlaces = await db.query<{
+      id: string;
+      location: string | null;
+      location_lat: number | null;
+      location_lng: number | null;
+    }>(
+      `select id, location, location_lat, location_lng
+       from public.events
+       where id = any($1::uuid[])`,
+      [[pastEventId, upcomingEventId, noPlaceEventId]],
+    );
+    const otherPlace = await db.query<{
+      location: string | null;
+      location_lat: number | null;
+      location_lng: number | null;
+    }>(
+      `select location, location_lat, location_lng from public.events where id = $1`,
+      [otherHostEventId],
+    );
+    const hostRow = await db.query<{ display_name: string }>(
+      `select display_name from public.host_assignments
+       where event_id = $1 and user_id = $2`,
+      [pastEventId, hostLeaverId],
+    );
+
+    for (const row of hostedPlaces.rows) {
+      expect(row.location).toBeNull();
+      expect(row.location_lat).toBeNull();
+      expect(row.location_lng).toBeNull();
+    }
+    expect(otherPlace.rows[0].location).toBe("Owner Home");
+    expect(otherPlace.rows[0].location_lat).toBe(-36.84);
+    expect(hostRow.rows[0].display_name).toBe("Former member");
+  });
+
   it("allows idempotent second deletion call after tombstone", async () => {
     const userId = await createUser(db, "twice@hui.test", "Twice");
     await asUser(db, userId);

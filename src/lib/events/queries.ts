@@ -61,7 +61,7 @@ export async function listEventsForGroup(
       status: row.status as EventStatus,
       kind: row.recurrence_series_id ? "recurring" : "one_off",
       createdAt: row.created_at as string,
-      creatorDisplayName: profile?.display_name ?? "Member",
+      creatorDisplayName: profile?.display_name ?? "Former member",
     };
   });
 }
@@ -187,7 +187,7 @@ export async function getEventDetail(
     gatheringType: (event.gathering_type as string | null) ?? null,
     gatheringTypeCustom: (event.gathering_type_custom as string | null) ?? null,
     createdBy: event.created_by as string,
-    creatorDisplayName: profile?.display_name ?? "Member",
+    creatorDisplayName: profile?.display_name ?? "Former member",
     recurrenceSeries,
     createdAt: event.created_at as string,
     updatedAt: event.updated_at as string,

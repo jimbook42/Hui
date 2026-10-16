@@ -27,7 +27,7 @@ test("unauthenticated profile access redirects to sign-in", async ({ page }) => 
 test("privacy policy is public", async ({ page }) => {
   await page.goto("/privacy");
   await expect(page).toHaveURL(/\/privacy/);
-  await expect(page.getByRole("heading", { name: "Privacy policy" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hui Privacy Statement" })).toBeVisible();
   await expect(page.locator("#delete-your-data")).toBeVisible();
 });
 

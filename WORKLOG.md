@@ -1,5 +1,17 @@
 # Worklog
 
+## 2026-10-16 — v0.18.12 fix1 former member roster + upcoming host cleanup
+
+- Migration `20261016210000_hui_former_member_roster.sql`: roster + display counts for deleted-account responders; `delete_my_account_data()` drops upcoming `host_assignments` and clears `creator_initial_host_user_id` after UX6 place strip.
+- Event creator join fallback: `Former member` when profile is hidden (`queries.ts`).
+- PGlite + roster Vitest coverage.
+
+## 2026-10-16 — HUI-UX6 v0.18.12 delete host place + privacy statement
+
+- Migration `20261016190000_hui_ux6_delete_host_place.sql`: `delete_my_account_data()` nulls `events.location` / lat / lng for every hui the leaver hosted (via `host_assignments`).
+- `/privacy` matches approved `hui-privacy-final.md` (Last updated 16 October 2026); PGlite + component tests.
+- **Part C:** `/sign-in/email` shows `Email or password is incorrect.` on failed sign-in; clears on field edit/resubmit.
+
 ## 2026-10-16 — v0.18.11 welcome tagline + stepper scroll-to-top
 
 - Landing tagline: “Regular catch-ups, without the group chat chaos.”
