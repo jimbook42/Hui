@@ -52,7 +52,7 @@ export function GroupRecurrenceCadenceSection({
   return (
     <div className="mt-6 space-y-6 border-t border-border/60 pt-6">
       <div>
-        <p className="hui-type-label text-muted-foreground">Upcoming nominal dates</p>
+        <p className="hui-type-label text-muted-foreground">Upcoming planned dates</p>
         {context.recurrencePaused ? (
           <p className="mt-1 text-sm font-semibold text-muted-foreground">
             Recurrence is paused — dates below are informational until an admin resumes.
@@ -78,9 +78,9 @@ export function GroupRecurrenceCadenceSection({
 
       {context.canManageRecurrence ? (
         <div>
-          <p className="hui-type-label text-muted-foreground">Cadence</p>
+          <p className="hui-type-label text-muted-foreground">How often</p>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            Interval counts from each nominal target date. Changing cadence affects future cycles.
+            How often you plan to meet. Changes apply to future gatherings.
           </p>
           <form action={formAction} className="mt-4 space-y-3">
             <input type="hidden" name="group_id" value={context.groupId} />
@@ -109,7 +109,7 @@ export function GroupRecurrenceCadenceSection({
                 </select>
               </label>
               <label className="block text-sm font-semibold text-foreground">
-                Anchor date
+                Starts from
                 <input
                   type="date"
                   name="anchor_date"
@@ -130,20 +130,20 @@ export function GroupRecurrenceCadenceSection({
               disabled={pending}
               className="hui-btn hui-btn-secondary rounded-full hui-focus-ring text-sm"
             >
-              {pending ? "Saving…" : "Save cadence"}
+              {pending ? "Saving…" : "Save schedule"}
             </button>
           </form>
         </div>
       ) : (
         <dl className="grid gap-3 text-sm">
           <div>
-            <dt className="hui-type-label text-muted-foreground">Cadence</dt>
+            <dt className="hui-type-label text-muted-foreground">How often</dt>
             <dd className="mt-1 font-extrabold text-foreground">
               {formatCadenceLabel(cadence)}
             </dd>
           </div>
           <div>
-            <dt className="hui-type-label text-muted-foreground">Anchor date</dt>
+            <dt className="hui-type-label text-muted-foreground">Starts from</dt>
             <dd className="mt-1 font-extrabold text-foreground">
               {formatNominalPlanningDate(cadence.anchorDate)}
             </dd>

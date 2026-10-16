@@ -7,7 +7,7 @@ import { avatarToneClass, initialsFor } from "@/components/hui/avatar-stack";
 import { ProfileHubLink } from "@/components/profile/profile-hub-link";
 import { cn } from "@/lib/ui/cn";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
-import { profileHuiGroupsDescription } from "@/lib/features";
+import { householdsEnabled, profileHuiGroupsDescription } from "@/lib/features";
 import { devTimed } from "@/lib/perf/dev-server-timing";
 
 export default async function ProfilePage() {
@@ -50,11 +50,13 @@ export default async function ProfilePage() {
             title="Account"
             description="Display name and sign-in details"
           />
-          <ProfileHubLink
-            href="/profile/groups"
-            title="Hui groups"
-            description={profileHuiGroupsDescription()}
-          />
+          {householdsEnabled() ? (
+            <ProfileHubLink
+              href="/profile/groups"
+              title="Hui groups"
+              description={profileHuiGroupsDescription()}
+            />
+          ) : null}
           <ProfileHubLink
             href="/profile/home"
             title="Home"

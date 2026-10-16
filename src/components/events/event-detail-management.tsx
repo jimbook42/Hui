@@ -31,6 +31,8 @@ type EventDetailManagementProps = {
   status: EventStatus;
   timeZone: string;
   viewerHomeLocation?: ProfileHomeLocation | null;
+  /** When true, reschedule/cancel/delete are shown in the manage page header instead. */
+  hideLifecycleActions?: boolean;
 };
 
 export function EventDetailManagement({
@@ -51,6 +53,7 @@ export function EventDetailManagement({
   status,
   timeZone,
   viewerHomeLocation = null,
+  hideLifecycleActions = false,
 }: EventDetailManagementProps) {
   if (!canEdit && !canEditLocation && !canCancel && !canComplete && !canReschedule && !canDelete) {
     return null;
@@ -102,7 +105,7 @@ export function EventDetailManagement({
         </section>
       ) : null}
 
-      {canReschedule && defaultStartsAt ? (
+      {!hideLifecycleActions && canReschedule && defaultStartsAt ? (
         <section className="hui-card-section">
           <h3 className="hui-type-section text-foreground">Reschedule</h3>
           <RescheduleConfirmedForm
@@ -124,7 +127,7 @@ export function EventDetailManagement({
         </section>
       ) : null}
 
-      {canCancel ? (
+      {!hideLifecycleActions && canCancel ? (
         <section className="hui-card-section">
           <h3 className="hui-type-section text-foreground">Cancel</h3>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -134,7 +137,7 @@ export function EventDetailManagement({
         </section>
       ) : null}
 
-      {canDelete ? (
+      {!hideLifecycleActions && canDelete ? (
         <section className="hui-card-section">
           <h3 className="hui-type-section text-foreground">Delete</h3>
           <p className="mt-2 text-sm text-muted-foreground">

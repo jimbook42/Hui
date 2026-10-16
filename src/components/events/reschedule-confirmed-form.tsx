@@ -18,6 +18,7 @@ type RescheduleConfirmedFormProps = {
   timeZone: string;
   defaultStartsAt: string;
   defaultEndsAt: string | null;
+  mode?: "full" | "reschedule-only" | "reopen-only";
 };
 
 export function RescheduleConfirmedForm({
@@ -25,6 +26,7 @@ export function RescheduleConfirmedForm({
   timeZone,
   defaultStartsAt,
   defaultEndsAt,
+  mode = "full",
 }: RescheduleConfirmedFormProps) {
   const [timeStep, setTimeStep] = useState<"idle" | "confirm">("idle");
   const [reopenStep, setReopenStep] = useState<"idle" | "confirm">("idle");
@@ -44,8 +46,12 @@ export function RescheduleConfirmedForm({
     ? formatDateTimeLocalInTimeZone(defaultEndsAt, timeZone)
     : "";
 
+  const showReschedule = mode === "full" || mode === "reschedule-only";
+  const showReopen = mode === "full" || mode === "reopen-only";
+
   return (
     <div className="space-y-6">
+      {showReschedule ? (
       <div>
         <p className="text-sm font-semibold text-muted-foreground">
           Pick a new confirmed time. Attendance answers are cleared and members are notified to
@@ -106,8 +112,10 @@ export function RescheduleConfirmedForm({
           </form>
         )}
       </div>
+      ) : null}
 
-      <div className="border-t border-border/60 pt-6">
+      {showReopen ? (
+      <div className={showReschedule ? "border-t border-border/60 pt-6" : undefined}>
         <p className="text-sm font-semibold text-muted-foreground">
           Or reopen the hui to proposing so you can add new candidate times.
         </p>
@@ -148,6 +156,7 @@ export function RescheduleConfirmedForm({
           </form>
         )}
       </div>
+      ) : null}
     </div>
   );
 }

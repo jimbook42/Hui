@@ -241,6 +241,28 @@ export function CreateEventProposalFlow({
 
   function selectMeetFrequency(next: StoredMeetFrequency) {
     setMeetFrequency(next);
+    if (next === "custom") {
+      setDraft((current) =>
+        applyMeetFrequencyToDraft(
+          {
+            ...current,
+            eventKind: "recurring",
+            recurrence: {
+              ...(current.recurrence ?? {
+                seriesTitle: "",
+                intervalUnit: "week",
+                intervalCount: 5,
+                startsOn: "",
+                planningTargetDate: null,
+              }),
+            },
+          },
+          "custom",
+          { groupName },
+        ),
+      );
+      return;
+    }
     setDraft((current) => applyMeetFrequencyToDraft(current, next, { groupName }));
   }
 
@@ -325,10 +347,19 @@ export function CreateEventProposalFlow({
             setStepError("This group only allows one-off gatherings.");
             return;
           }
-          const preset = FIRST_GROUP_CADENCE_PRESETS.find((row) => row.id === meetFrequency);
-          if (!preset) {
-            setStepError("Choose how often this group meets.");
-            return;
+          if (meetFrequency === "custom") {
+            const count = draft.recurrence?.intervalCount ?? 0;
+            const unit = draft.recurrence?.intervalUnit;
+            if (count < 1 || count > 52 || (unit !== "week" && unit !== "month")) {
+              setStepError("Enter how often you meet — every 1 to 52 weeks or months.");
+              return;
+            }
+          } else {
+            const preset = FIRST_GROUP_CADENCE_PRESETS.find((row) => row.id === meetFrequency);
+            if (!preset) {
+              setStepError("Choose how often this group meets.");
+              return;
+            }
           }
         }
         setDraft((current) =>
@@ -684,7 +715,92 @@ export function CreateEventProposalFlow({
                       </label>
                     ))
                   : null}
+                {canRecurring ? (
+                  <label
+                    className={cn(
+                      "hui-focus-ring flex min-h-12 cursor-pointer items-center justify-center rounded-hui-lg px-3 py-2 text-center text-sm font-extrabold sm:col-span-2",
+                      meetFrequency === "custom"
+                        ? "border-2 border-primary bg-sage-soft text-foreground"
+                        : "border border-transparent bg-muted text-foreground",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="meet_frequency"
+                      className="sr-only"
+                      checked={meetFrequency === "custom"}
+                      onChange={() => selectMeetFrequency("custom")}
+                    />
+                    Custom
+                  </label>
+                ) : null}
               </div>
+              {meetFrequency === "custom" && canRecurring ? (
+                <div className="flex flex-wrap gap-3 rounded-hui-lg bg-muted p-4">
+                  <label className="block text-sm font-semibold text-foreground">
+                    Every
+                    <input
+                      type="number"
+                      min={1}
+                      max={52}
+                      className="mt-1 hui-input w-20"
+                      value={draft.recurrence?.intervalCount ?? 5}
+                      onChange={(event) => {
+                        const intervalCount = Number(event.target.value);
+                        setDraft((current) => ({
+                          ...current,
+                          eventKind: "recurring",
+                          recurrence: {
+                            ...(current.recurrence ?? {
+                              seriesTitle: "",
+                              intervalUnit: "week",
+                              intervalCount: 5,
+                              startsOn: "",
+                              planningTargetDate: null,
+                            }),
+                            intervalCount,
+                          },
+                        }));
+                      }}
+                    />
+                  </label>
+                  <label className="block text-sm font-semibold text-foreground">
+                    Unit
+                    <select
+                      className="mt-1 hui-input"
+                      value={draft.recurrence?.intervalUnit ?? "week"}
+                      onChange={(event) => {
+                        const intervalUnit = event.target.value as "week" | "month";
+                        setDraft((current) => ({
+                          ...current,
+                          eventKind: "recurring",
+                          recurrence: {
+                            ...(current.recurrence ?? {
+                              seriesTitle: "",
+                              intervalUnit: "week",
+                              intervalCount: 5,
+                              startsOn: "",
+                              planningTargetDate: null,
+                            }),
+                            intervalUnit,
+                          },
+                        }));
+                      }}
+                    >
+                      <option value="week">Week(s)</option>
+                      <option value="month">Month(s)</option>
+                    </select>
+                  </label>
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    {draft.recurrence
+                      ? formatCadenceLabel({
+                          intervalUnit: draft.recurrence.intervalUnit,
+                          intervalCount: draft.recurrence.intervalCount,
+                        })
+                      : null}
+                  </p>
+                </div>
+              ) : null}
             </fieldset>
             ) : null
           ) : null}

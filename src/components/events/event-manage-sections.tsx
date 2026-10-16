@@ -3,6 +3,7 @@ import { EventContributionsSection } from "@/components/contributions/event-cont
 import { EventDecisionsSection } from "@/components/decisions/event-decisions-section";
 import { EventDietarySection } from "@/components/dietary/event-dietary-section";
 import { EventDetailManagement } from "@/components/events/event-detail-management";
+import { EventManageTopActionBar } from "@/components/events/event-manage-top-action-bar";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
 import { EventScheduling } from "@/components/events/event-scheduling";
 import { LiveGatheringVisual } from "@/components/events/attendance-live";
@@ -170,6 +171,16 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
         ) : null}
       </HuiSurface>
 
+      <EventManageTopActionBar
+        eventId={detail.id}
+        timeZone={tz}
+        defaultStartsAt={detail.startsAt}
+        defaultEndsAt={detail.endsAt}
+        canReschedule={data.canReschedule}
+        canCancel={data.canCancel}
+        canDelete={data.canDelete}
+      />
+
       <DisclosureCard id="hui" title="Hui" summary={huiLifecycle} defaultOpen={sectionOpen("hui")}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
@@ -248,6 +259,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
               status={detail.status}
               timeZone={data.displayTimeZone}
               viewerHomeLocation={data.viewerHomeLocation}
+              hideLifecycleActions
             />
           </div>
         ) : null}

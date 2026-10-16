@@ -5,7 +5,7 @@ import {
   type CadencePresetId,
 } from "@/domain/recurrence/cadence-presets";
 
-export type StoredMeetFrequency = null | "once" | CadencePresetId;
+export type StoredMeetFrequency = null | "once" | CadencePresetId | "custom";
 
 export function deriveMeetFrequencyFromDraft(
   draft: EventProposalDraft,
@@ -46,6 +46,24 @@ export function applyMeetFrequencyToDraft(
       ...draft,
       eventKind: "one_off",
       recurrence: null,
+    };
+  }
+
+  if (meetFrequency === "custom") {
+    const recurrence = draft.recurrence;
+    if (!recurrence || recurrence.intervalCount < 1) {
+      return draft;
+    }
+    return {
+      ...draft,
+      eventKind: "recurring",
+      recurrence: {
+        ...recurrence,
+        seriesTitle:
+          draft.title.trim() ||
+          recurrence.seriesTitle?.trim() ||
+          `${options.groupName} gatherings`,
+      },
     };
   }
 

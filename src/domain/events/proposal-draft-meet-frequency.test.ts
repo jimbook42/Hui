@@ -1,66 +1,63 @@
 import { describe, expect, it } from "vitest";
 
-import type { EventProposalDraft } from "@/domain/events/proposal";
-import {
-  applyMeetFrequencyToDraft,
-  deriveMeetFrequencyFromDraft,
-} from "./proposal-draft-meet-frequency";
+import { applyMeetFrequencyToDraft } from "./proposal-draft-meet-frequency";
+import type { EventProposalDraft } from "./proposal";
 
-const baseDraft = (): EventProposalDraft => ({
-  title: "",
-  gatheringType: "dinner_meal",
+const baseDraft: EventProposalDraft = {
+  title: "Board night",
+  gatheringType: "meeting",
   gatheringTypeCustom: "",
-  location: "",
   notes: "",
+  location: "",
+  locationCoordinates: null,
+  organiserWillHost: false,
   eventKind: "one_off",
   recurrence: null,
   candidates: [],
-  initialHostUserId: null,
+  initialHostUserId: "suggest",
   foodInvolvement: null,
-  hostPlaceRequired: true,
-  organiserWillHost: false,
-  confirmRule: "when_most_can_come",
+  hostPlaceRequired: false,
   requestedContributions: [],
-});
+  confirmRule: "when_most_can_come",
+};
 
-describe("deriveMeetFrequencyFromDraft", () => {
-  it("restores once vs cadence preset for first-group drafts", () => {
-    expect(
-      deriveMeetFrequencyFromDraft(baseDraft(), {
-        establishedRecurrence: false,
-        isFirstGroupEvent: true,
-      }),
-    ).toBe("once");
-
-    const recurring = {
-      ...baseDraft(),
-      eventKind: "recurring" as const,
-      recurrence: {
-        seriesTitle: "",
-        intervalUnit: "week" as const,
-        intervalCount: 2,
-        startsOn: "2026-11-01",
-        planningTargetDate: "2026-11-01",
+describe("applyMeetFrequencyToDraft", () => {
+  it("keeps custom every-N weeks on the draft", () => {
+    const draft = applyMeetFrequencyToDraft(
+      {
+        ...baseDraft,
+        recurrence: {
+          seriesTitle: "",
+          intervalUnit: "week",
+          intervalCount: 5,
+          startsOn: "",
+          planningTargetDate: null,
+        },
       },
-    };
-    expect(
-      deriveMeetFrequencyFromDraft(recurring, {
-        establishedRecurrence: false,
-        isFirstGroupEvent: true,
-      }),
-    ).toBe("fortnightly");
+      "custom",
+      { groupName: "Friends" },
+    );
+    expect(draft.eventKind).toBe("recurring");
+    expect(draft.recurrence?.intervalCount).toBe(5);
+    expect(draft.recurrence?.intervalUnit).toBe("week");
   });
 
-  it("persists once vs recurring cadence on the draft", () => {
-    const recurring = applyMeetFrequencyToDraft(baseDraft(), "fortnightly", {
-      groupName: "Book club",
-    });
-    expect(recurring.eventKind).toBe("recurring");
-    expect(recurring.recurrence?.intervalUnit).toBe("week");
-    expect(recurring.recurrence?.intervalCount).toBe(2);
-
-    const once = applyMeetFrequencyToDraft(recurring, "once", { groupName: "Book club" });
-    expect(once.eventKind).toBe("one_off");
-    expect(once.recurrence).toBeNull();
+  it("keeps custom every-N months on the draft", () => {
+    const draft = applyMeetFrequencyToDraft(
+      {
+        ...baseDraft,
+        recurrence: {
+          seriesTitle: "",
+          intervalUnit: "month",
+          intervalCount: 2,
+          startsOn: "",
+          planningTargetDate: null,
+        },
+      },
+      "custom",
+      { groupName: "Friends" },
+    );
+    expect(draft.recurrence?.intervalCount).toBe(2);
+    expect(draft.recurrence?.intervalUnit).toBe("month");
   });
 });
