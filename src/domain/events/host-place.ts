@@ -29,3 +29,14 @@ export function hostAcceptPlaceHeading(
 ): string {
   return hasConfirmableEventPlace(location, coordinates) ? "Confirm this place" : "Choose a place";
 }
+
+/** Host-only place save must not succeed with an empty venue (avoids silent no-op RPC updates). */
+export function hostPlaceSaveValidationError(
+  location: string | null | undefined,
+  coordinates: EventCoordinates | null,
+): string | null {
+  if (!hasConfirmableEventPlace(location, coordinates)) {
+    return "Confirm where this hui happens before saving.";
+  }
+  return null;
+}

@@ -55,14 +55,17 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
       ? `${suggestedName} suggested`
       : "No host yet";
 
-  const bringSummary = formatContributionDisclosureSummary(
-    data.requestedContributionSlotCount,
-    data.unclaimedContributionCount,
-    data.claimedContributionCount,
+  const hasActiveBringCategories = data.contributionCategories.some(
+    (category) => category.archivedAt === null,
   );
-  const showContributionCoordination =
-    isDietaryCoordinationRelevant(detail.foodInvolvement) &&
-    data.requestedContributionSlotCount > 0;
+  const bringSummary = hasActiveBringCategories
+    ? formatContributionDisclosureSummary(
+        data.requestedContributionSlotCount,
+        data.unclaimedContributionCount,
+        data.claimedContributionCount,
+      )
+    : "Nothing to bring yet";
+  const showContributionCoordination = isDietaryCoordinationRelevant(detail.foodInvolvement);
 
   const roster = data.primaryRoster;
   let peopleSummary = "Nobody has answered a time yet";

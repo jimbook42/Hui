@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { EventLocationFields } from "@/components/map/event-location-fields";
 import type { EventCoordinates } from "@/domain/events/location";
+import {
+  initialHostVenueMode,
+  resolvedHostVenueSubmission,
+  type HostVenueMode,
+} from "@/domain/profile/host-venue";
 import {
   hasUsableHomeLocation,
   type ProfileHomeLocation,
 } from "@/domain/profile/home-location";
 import { cn } from "@/lib/ui/cn";
-
-type VenueMode = "home" | "elsewhere";
 
 type HostVenueLocationFieldsProps = {
   defaultLocation: string | null;
@@ -25,24 +28,6 @@ type HostVenueLocationFieldsProps = {
   helperText?: string;
   defaultMapOpen?: boolean;
 };
-
-function initialVenueMode(
-  home: ProfileHomeLocation | null,
-  defaultLocation: string | null,
-  defaultCoordinates: EventCoordinates | null,
-): VenueMode {
-  if (!hasUsableHomeLocation(home)) {
-    return "elsewhere";
-  }
-  const homeLabel = home!.label.trim();
-  if (!defaultLocation?.trim() && !defaultCoordinates) {
-    return "home";
-  }
-  if (defaultLocation?.trim() === homeLabel) {
-    return "home";
-  }
-  return "elsewhere";
-}
 
 /**
  * Host place entry with optional saved-home path (no address search when "At my home" is selected).
@@ -62,11 +47,23 @@ export function HostVenueLocationFields({
 }: HostVenueLocationFieldsProps) {
   const canUseHome = hasUsableHomeLocation(viewerHomeLocation);
   const home = viewerHomeLocation;
-  const [venueMode, setVenueMode] = useState<VenueMode>(() =>
-    initialVenueMode(home, defaultLocation, defaultCoordinates),
+  const [venueMode, setVenueMode] = useState<HostVenueMode>(() =>
+    initialHostVenueMode(home, defaultLocation, defaultCoordinates),
   );
 
-  function selectVenueMode(next: VenueMode) {
+  useEffect(() => {
+    const resolved = resolvedHostVenueSubmission(venueMode, home, location, coordinates);
+    if (resolved.location !== location) {
+      onLocationChange(resolved.location);
+    }
+    const latMatch = resolved.coordinates?.lat === coordinates?.lat;
+    const lngMatch = resolved.coordinates?.lng === coordinates?.lng;
+    if (!latMatch || !lngMatch) {
+      onCoordinatesChange(resolved.coordinates);
+    }
+  }, [venueMode, home, location, coordinates, onLocationChange, onCoordinatesChange]);
+
+  function selectVenueMode(next: HostVenueMode) {
     setVenueMode(next);
     if (next === "home" && home) {
       onLocationChange(home.label);

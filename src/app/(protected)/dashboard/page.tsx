@@ -18,15 +18,12 @@ import { getVapidPublicKey } from "@/lib/push/config";
 async function Greeting() {
   const user = await getServerAuthUser();
   const supabase = await getServerSupabase();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", user!.id)
-    .maybeSingle();
+  const [{ data: profile }, { events }] = await Promise.all([
+    supabase.from("profiles").select("display_name").eq("id", user!.id).maybeSingle(),
+    loadHomeData(supabase, user!.id),
+  ]);
 
   const displayName = profile?.display_name?.trim() ?? user?.email ?? "there";
-
-  const { events } = await loadHomeData(supabase, user!.id);
   const sections = splitHomeEvents(events);
   const nextEvent =
     sections.attention[0] ?? sections.upcoming[0] ?? sections.planning[0] ?? null;

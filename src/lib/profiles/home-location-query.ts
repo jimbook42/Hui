@@ -16,6 +16,23 @@ function rowFromRpc(data: HomeLocationRow | HomeLocationRow[] | null): HomeLocat
   return Array.isArray(data) ? (data[0] ?? null) : data;
 }
 
+type PostgrestErrorLike = { code?: string; message?: string } | null | undefined;
+
+/** True when PostgREST/Postgres reports the RPC is not installed (pre-migration live DB). */
+export function isMissingPostgrestRpc(error: PostgrestErrorLike): boolean {
+  if (!error) {
+    return false;
+  }
+  const code = error.code ?? "";
+  const message = (error.message ?? "").toLowerCase();
+  return (
+    code === "PGRST202" ||
+    code === "42883" ||
+    message.includes("could not find the function") ||
+    message.includes("does not exist")
+  );
+}
+
 /**
  * Loads the caller's saved home location. Uses `my_home_location` when deployed; falls back to
  * direct profile columns when the migration is not applied yet (e.g. live DB during rollout).
@@ -30,11 +47,19 @@ export async function fetchMyHomeLocation(
     return row ? homeLocationFromProfileRow(row) : null;
   }
 
-  const { data: profileRow } = await supabase
+  if (!isMissingPostgrestRpc(rpcError)) {
+    return null;
+  }
+
+  const { data: profileRow, error: profileError } = await supabase
     .from("profiles")
     .select("home_location_label, home_location_lat, home_location_lng")
     .eq("id", userId)
     .maybeSingle();
 
-  return profileRow ? homeLocationFromProfileRow(profileRow) : null;
+  if (profileError || !profileRow) {
+    return null;
+  }
+
+  return homeLocationFromProfileRow(profileRow);
 }

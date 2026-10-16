@@ -10,6 +10,7 @@ import {
   cancellationPatch,
   validateMetadataUpdate,
 } from "@/domain/events/lifecycle";
+import { hostPlaceSaveValidationError } from "@/domain/events/host-place";
 import {
   canCancelEvent,
   canCompleteEvent,
@@ -265,6 +266,16 @@ export async function updateEventAction(
 
   if (!canEditAll && !canEditLocation) {
     return { error: "You cannot edit this event." };
+  }
+
+  if (!canEditAll && canEditLocation) {
+    const placeError = hostPlaceSaveValidationError(
+      location,
+      coordinates.coordinates ?? null,
+    );
+    if (placeError) {
+      return { error: placeError };
+    }
   }
 
   if (!canEditAll) {
