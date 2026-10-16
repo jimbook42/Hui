@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-16 — v0.18.11 welcome tagline + stepper scroll-to-top
+
+- Landing tagline: “Regular catch-ups, without the group chat chaos.”
+- `useScrollTopOnStepChange` on proposal, respond, personal setup, and delete-account steppers; Vitest + Playwright propose Continue scroll smoke.
+
 ## 2026-10-16 — v0.18.10 fix2 (bring Add something, non-member load, 404)
 
 - **Add something:** Organisers with no group bring categories need the contributions disclosure **open by default** (`contributionsDisclosureDefaultOpen`); link stays inside `EventContributionsSection` but was hidden in a collapsed `<details>`. Integration test covers `DisclosureCard` + section path.

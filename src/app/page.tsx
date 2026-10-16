@@ -27,8 +27,7 @@ export default async function Home() {
           <HuiWordmark height={72} priority />
         </h1>
         <p className="hui-rise-2 hui-type-supporting mx-auto mt-5 max-w-sm text-lg leading-relaxed">
-          A calm place for the people you gather with. Hui proposes, coordinates and remembers
-          &mdash; the group decides.
+          Regular catch-ups, without the group chat chaos.
         </p>
         <InAppBrowserAuthBanner className="hui-rise-2 mx-auto mt-8 max-w-sm text-left" />
         <div className="hui-rise-3 mx-auto mt-10 flex max-w-xs flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:justify-center">

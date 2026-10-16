@@ -62,6 +62,7 @@ import type { ContributionCategoryRow } from "@/lib/contributions/types";
 import type { GroupSettingsRow } from "@/lib/groups/types";
 import { formatNominalPlanningDate } from "@/lib/groups/planning-cycle";
 import { cn } from "@/lib/ui/cn";
+import { useScrollTopOnStepChange } from "@/lib/ui/use-scroll-top-on-step-change";
 
 /**
  * Three calm steps. Place, notes and contributions are optional extras (HUI-026U): the place and
@@ -281,6 +282,7 @@ export function CreateEventProposalFlow({
   );
 
   const stepIndex = STEPS.indexOf(step);
+  useScrollTopOnStepChange(step, { enabled: draftRestoredFromClient });
   const activeCategories = useMemo(
     () => contributionCategories.filter((row) => !row.archivedAt),
     [contributionCategories],

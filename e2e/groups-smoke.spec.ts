@@ -52,6 +52,26 @@ test.describe("live group smoke", () => {
     await expect(groupSettings.getByText("Group settings", { exact: true })).toBeVisible();
   });
 
+  test("proposal wizard scrolls to top after Continue", async ({ page }) => {
+    const email = process.env.E2E_TEST_EMAIL!;
+    const password = process.env.E2E_TEST_PASSWORD!;
+    const groupName = `E2E propose scroll ${Date.now()}`;
+
+    await signInWithEmail(page, email, password);
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    const groupId = await createGroup(page, groupName);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/groups/${groupId}/events/new`);
+
+    await page.getByLabel("Type of hui").selectOption({ label: "Meeting" });
+    await page.locator("label").filter({ hasText: /^Monthly$/ }).click();
+    await page.evaluate(() => window.scrollTo(0, 400));
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page.getByRole("heading", { name: "When could it happen?" })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(16);
+  });
+
   test("proposing a past date shows a confirmation dialog", async ({ page }) => {
     const email = process.env.E2E_TEST_EMAIL!;
     const password = process.env.E2E_TEST_PASSWORD!;

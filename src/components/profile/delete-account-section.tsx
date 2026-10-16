@@ -7,6 +7,7 @@ import {
   type AuthActionState,
 } from "@/app/auth/actions";
 import { ACCOUNT_DELETION_CONFIRMATION } from "@/lib/auth/account-deletion";
+import { useScrollTopOnStepChange } from "@/lib/ui/use-scroll-top-on-step-change";
 
 const initialState: AuthActionState = {};
 
@@ -20,6 +21,8 @@ export function DeleteAccountSection() {
     initialState,
   );
   const canSubmit = confirmation === ACCOUNT_DELETION_CONFIRMATION && !pending;
+
+  useScrollTopOnStepChange(step);
 
   function handleCancel() {
     setStep("idle");
