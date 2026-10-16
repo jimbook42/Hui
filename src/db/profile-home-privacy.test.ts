@@ -61,15 +61,6 @@ function message(error: unknown): string {
   return String(error);
 }
 
-async function expectFail(run: () => Promise<unknown>): Promise<string> {
-  try {
-    await run();
-  } catch (error) {
-    return message(error);
-  }
-  throw new Error("expected the statement to fail");
-}
-
 async function asUser(database: PGlite, userId: string | null) {
   await database.exec("reset role");
   await database.query(`select set_config('request.jwt.claim.sub', $1, false)`, [

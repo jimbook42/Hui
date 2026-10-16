@@ -1,5 +1,11 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX5 fix2 Sydney + privacy (v0.18.9)
+
+- **Part A (d924b02):** `vercel.json` `regions: ["syd1"]`; availability save + middleware use `auth.getClaims()` (JWT verify) instead of session cookie user; vitest rejects forged/missing JWT on save.
+- **Part B (37fd5bb):** Migration `supabase/migrations/20261016103000_hui_ux5_privacy_home_and_deletion.sql` — G1 revoke co-member `profiles` home column SELECT (grant safe columns + `my_home_location` / `co_member_host_home_location` RPCs); G2 null home on delete; G3 delete standing availability + all `event_responses`, anonymise denormalised `display_name` copies; app uses `fetchMyHomeLocation` with RPC-first + profile fallback for live DB without migration.
+- **PM save timing (post fix2a, prod build :3130):** tap→saved ms `[1474,940,982,1799,1262,918]`; POST ms `[1414,942,920,877]`.
+
 ## 2026-10-16 — HUI-UX5 fix1 save latency (v0.18.9)
 
 - **Profile:** multi-time respond `aria-busy` tracks the server-action POST only (no `router.refresh` on that path). Slowness was server work per save, not client re-render after the action.
