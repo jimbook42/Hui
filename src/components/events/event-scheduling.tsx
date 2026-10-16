@@ -80,6 +80,10 @@ type EventSchedulingProps = {
     viewerHomeLocation: ProfileHomeLocation | null;
     acceptedHostDisplayName: string | null;
   } | null;
+  /** When true, use compact per-time rows even for a single proposed or confirmed time. */
+  forceCompactTimeList?: boolean;
+  /** Main hui page shows only the time list; full controls stay under Details. */
+  timesOnlySurface?: boolean;
 };
 
 const initialState: EventActionState = {};
@@ -673,6 +677,8 @@ export function EventScheduling({
   candidateTimeLabels,
   attendanceRosters,
   perTimeHosting = null,
+  forceCompactTimeList = false,
+  timesOnlySurface = false,
 }: EventSchedulingProps) {
   const evaluations = new Map(
     consensus.candidates.map((candidate) => [candidate.candidateId, candidate]),
@@ -686,7 +692,7 @@ export function EventScheduling({
     passingCount,
     canFinalise,
   );
-  const useCompactTimeList = candidates.length > 1;
+  const useCompactTimeList = forceCompactTimeList || candidates.length > 1;
   const defaultExpandedCandidateId = useMemo(() => {
     if (!useCompactTimeList) {
       return null;
@@ -703,38 +709,46 @@ export function EventScheduling({
     expandedCandidateId !== undefined ? expandedCandidateId : defaultExpandedCandidateId;
 
   return (
-    <section className="hui-card-section">
-      <h2 className="hui-type-section text-foreground">Finding a time</h2>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Share your availability for each time on the table. Your answer is visible to the group;
-        private notes stay private.
-      </p>
-      <details className="hui-details mt-3 rounded-hui-lg bg-muted px-4 py-2">
-        <summary className="hui-focus-ring cursor-pointer text-sm font-extrabold text-foreground">
-          Advanced — how confirmation works
-        </summary>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This hui: <span className="font-medium text-foreground">{confirmRuleLabel}</span>.{" "}
-          {eventConfirmRuleRequirementSummary(consensus.confirmRule, {
-            minimumAttendees,
-            eligibleMemberCount: consensus.eligibleMemberCount,
-          })}{" "}
-          {consensus.maybeResponsesEnabled
-            ? consensus.confirmRule === "when_most_can_come"
-              ? "Maybe can help reach the minimum number needed, but only Yes counts toward the majority."
-              : "Maybe can help reach the minimum number needed."
-            : "Only Yes counts toward confirmation."}
-        </p>
-      </details>
-      {replyByLabel ? (
-        <p className="mt-2 text-sm font-semibold text-foreground">{replyByLabel}</p>
-      ) : null}
-      {deadlineNotice ? (
-        <p className="mt-2 text-sm text-muted-foreground">{deadlineNotice}</p>
-      ) : null}
-      <p className="mt-3 text-sm text-foreground">{sectionMessage}</p>
+    <section className={timesOnlySurface ? undefined : "hui-card-section"}>
+      {timesOnlySurface ? null : (
+        <>
+          <h2 className="hui-type-section text-foreground">Finding a time</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Share your availability for each time on the table. Your answer is visible to the group;
+            private notes stay private.
+          </p>
+          <details className="hui-details mt-3 rounded-hui-lg bg-muted px-4 py-2">
+            <summary className="hui-focus-ring cursor-pointer text-sm font-extrabold text-foreground">
+              Advanced — how confirmation works
+            </summary>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This hui: <span className="font-medium text-foreground">{confirmRuleLabel}</span>.{" "}
+              {eventConfirmRuleRequirementSummary(consensus.confirmRule, {
+                minimumAttendees,
+                eligibleMemberCount: consensus.eligibleMemberCount,
+              })}{" "}
+              {consensus.maybeResponsesEnabled
+                ? consensus.confirmRule === "when_most_can_come"
+                  ? "Maybe can help reach the minimum number needed, but only Yes counts toward the majority."
+                  : "Maybe can help reach the minimum number needed."
+                : "Only Yes counts toward confirmation."}
+            </p>
+          </details>
+          {replyByLabel ? (
+            <p className="mt-2 text-sm font-semibold text-foreground">{replyByLabel}</p>
+          ) : null}
+          {deadlineNotice ? (
+            <p className="mt-2 text-sm text-muted-foreground">{deadlineNotice}</p>
+          ) : null}
+          <p className="mt-3 text-sm text-foreground">{sectionMessage}</p>
+        </>
+      )}
 
-      {canAddCandidates ? (
+      {timesOnlySurface && replyByLabel ? (
+        <p className="mb-3 text-sm font-semibold text-muted-foreground">{replyByLabel}</p>
+      ) : null}
+
+      {!timesOnlySurface && canAddCandidates ? (
         <div className="mt-6 max-w-lg">
           <h3 className="text-sm font-bold text-foreground">
             Add a candidate time
@@ -757,7 +771,7 @@ export function EventScheduling({
         </div>
       ) : null}
 
-      <ul className="mt-8 space-y-6">
+      <ul className={timesOnlySurface ? "space-y-3" : "mt-8 space-y-6"}>
         {candidates.length === 0 ? (
           <li className="text-sm text-muted-foreground">
             No candidate times yet.

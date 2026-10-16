@@ -14,6 +14,8 @@ type EventProposeInviteSectionProps = {
   planningTargetDate: string | null;
   timeZone: string;
   prominent?: boolean;
+  /** Nested under collapsed invite on the compact hui page. */
+  compactLayout?: boolean;
 };
 
 export async function EventProposeInviteSection({
@@ -24,6 +26,7 @@ export async function EventProposeInviteSection({
   planningTargetDate,
   timeZone,
   prominent = false,
+  compactLayout = false,
 }: EventProposeInviteSectionProps) {
   const supabase = await createClient();
   const appOrigin = await resolveAuthRedirectOrigin();
@@ -62,6 +65,22 @@ export async function EventProposeInviteSection({
         })
       : null;
 
+  if (compactLayout) {
+    return (
+      <GroupInviteSection
+        groupId={detail.groupId}
+        groupName={detail.groupName}
+        inviteToken={token}
+        appOrigin={appOrigin}
+        variant="planning"
+        invitePreviewHeadline={previewHeadline}
+        focusEventId={detail.id}
+        hideTitle
+        hideInviteUrl
+      />
+    );
+  }
+
   return (
     <HuiSurface
       tone={prominent ? "default" : "subtle"}
@@ -77,6 +96,7 @@ export async function EventProposeInviteSection({
         variant="planning"
         invitePreviewHeadline={previewHeadline}
         focusEventId={detail.id}
+        hideInviteUrl
       />
     </HuiSurface>
   );

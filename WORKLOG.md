@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-17 — v0.18.16 compact hui page layout
+
+- Shorter hui page: summary header + next action, compact per-time list (no table visual), collapsed invite/planning/organiser/details; manage actions in Organiser tools.
+- Version **0.18.16**; Vitest for next-action domain + compact layout building blocks.
+
 ## 2026-10-17 — v0.18.15 delete hui with decided polls
 
 - Fix `_delete_event_cascade` / `_delete_group_cascade` so decided polls delete cleanly (responses → decisions; no options-before-decisions).
