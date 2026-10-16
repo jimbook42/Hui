@@ -16,7 +16,10 @@ describe("buildProposingPastDateWarning", () => {
     });
 
     expect(warning).not.toBeNull();
+    expect(warning!.title).toBe("That time has already passed");
     const detail = warning!.detail;
+    expect(detail).not.toContain("That time has already passed");
+    expect(detail).toContain("Pick a time in the future.");
     expect(detail.match(/if it stays unconfirmed/g)?.length ?? 0).toBe(1);
     expect(detail).toContain("The planning date would be in the past —");
   });

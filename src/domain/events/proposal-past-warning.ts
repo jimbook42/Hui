@@ -1,7 +1,10 @@
 import { wallClockToUtcIso } from "@/domain/datetime/timezone";
 import type { ProposalCandidateInput } from "@/domain/events/proposal";
 import { isProposalDateBeforeToday } from "@/domain/events/proposal-past-time";
-import { PROPOSAL_PAST_START_ERROR, isCandidateStartInPast } from "@/domain/scheduling/candidate-start-past";
+import {
+  PROPOSAL_PAST_START_BODY,
+  isCandidateStartInPast,
+} from "@/domain/scheduling/candidate-start-past";
 import {
   STALE_PROPOSAL_GRACE_DAYS,
   formatStaleProposalAutoCancelClause,
@@ -81,7 +84,7 @@ export function buildProposingPastDateWarning(input: {
     timeZone: input.timeZone,
   });
 
-  const lines = [PROPOSAL_PAST_START_ERROR];
+  const lines = [PROPOSAL_PAST_START_BODY];
 
   if (nominalDate && isProposalDateBeforeToday(nominalDate, input.todayDateOnly)) {
     const autoCancel = formatStaleProposalAutoCancelClause(nominalDate, input.todayDateOnly);

@@ -9,7 +9,10 @@ import { AuthForm } from "@/components/auth/auth-form";
 import { HostSwapRequestForm } from "@/components/hosts/host-swap-request-form";
 import type { EventCoordinates } from "@/domain/events/location";
 import type { ProfileHomeLocation } from "@/domain/profile/home-location";
-import { gatheringTimeHasPassed } from "@/domain/events/host-prompt-copy";
+import {
+  acceptHostPromptLine,
+  gatheringTimeHasPassed,
+} from "@/domain/events/host-prompt-copy";
 import { filterHostAssignableMembers } from "@/domain/hosts/attendance-eligibility";
 import type { EventStatus } from "@/domain/events/types";
 import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
@@ -128,7 +131,10 @@ export function EventHostSection({
           <p className="text-sm text-foreground">
             <span className="font-medium">{view.acceptedHost.displayName}</span> is hosting.
           </p>
-          {canRequestSwap && view.acceptedHost.userId === viewerUserId && !readOnly ? (
+          {canRequestSwap &&
+          view.acceptedHost.userId === viewerUserId &&
+          !readOnly &&
+          !gatheringEnded ? (
             <div className="mt-3">
               <HostSwapRequestForm
                 eventId={eventId}
@@ -142,7 +148,14 @@ export function EventHostSection({
           <p className="text-foreground">
             Hui has suggested {suggestedName} to host this gathering.
           </p>
-          {canRespond || canRequestSwap ? (
+          {gatheringEnded ? (
+            <p className="mt-3 text-sm text-foreground">
+              {acceptHostPromptLine({
+                suggestedHostName: suggestedName,
+                gatheringEnded: true,
+              })}
+            </p>
+          ) : canRespond || canRequestSwap ? (
             <div className="mt-3 flex flex-wrap gap-3">
               {canRespond ? (
                 <AcceptHostWithPlaceForm
@@ -154,7 +167,7 @@ export function EventHostSection({
                   defaultCoordinates={eventCoordinates}
                   suggestedHostName={suggestedName ?? "You"}
                   viewerHomeLocation={viewerHomeLocation}
-                  gatheringEnded={gatheringEnded}
+                  gatheringEnded={false}
                 />
               ) : null}
               {canRequestSwap ? (
@@ -172,7 +185,7 @@ export function EventHostSection({
         </p>
       )}
 
-      {canAssign && !readOnly && !view.acceptedHost ? (
+      {canAssign && !readOnly && !gatheringEnded && !view.acceptedHost ? (
         <div className="mt-6 max-w-md">
           <h3 className="text-sm font-bold text-foreground">
             Suggest someone else

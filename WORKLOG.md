@@ -1,5 +1,9 @@
 # Worklog
 
+## 2026-10-16 — v0.18.13 fix1 (QA repair 1/2)
+
+- Past gatherings: hide host accept/assign UI; profile Hui groups copy without households when flag off; past-time warning body deduped; organiser-picks excludes passed proposed times; Vitest coverage.
+
 ## 2026-10-16 — v0.18.13 docs (ROADMAP + HANDOVER)
 
 - `ROADMAP.md`: release path v0.18.13 → full prod QA → beta; post-beta deferred list.

@@ -15,6 +15,7 @@ import {
 } from "@/domain/decisions/permissions";
 import { buildContributionSlots, isContributionSlotFilled } from "@/domain/contributions/slots";
 import { membersHouseholdViewForDisplay } from "@/domain/households/group-display";
+import { activeProposedCandidates } from "@/domain/scheduling/candidate-start-past";
 import { buildEventAttention } from "@/domain/events/attention";
 import { attendanceStateFromChoice } from "@/domain/events/home";
 import {
@@ -272,7 +273,12 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
   const canCreateDecisions = canCreateEventDecisions(detail.status);
 
   const anyCandidatePasses = consensus.candidates.some((candidate) => candidate.passes);
-  const proposedIds = new Set(scheduling.candidates.map((row) => row.id));
+  const proposedIds = new Set(
+    activeProposedCandidates(
+      scheduling.candidates.filter((row) => row.status === "proposed"),
+      nowIso,
+    ).map((row) => row.id),
+  );
   const rosterByCandidateId = new Map(
     Object.entries(attendanceRosters).map(([candidateId, roster]) => [candidateId, roster]),
   );

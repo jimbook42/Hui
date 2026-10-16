@@ -192,6 +192,63 @@ describe("consensus display (HUI-017)", () => {
     expect(organiserPicksHostHasSaidYesOnCandidate("c1", null, new Map())).toBe(false);
   });
 
+  it("does not offer organiser confirm for passed proposed times", () => {
+    expect(
+      organiserPicksCanConfirmNow(
+        true,
+        "proposing",
+        "organiser_picks",
+        [
+          {
+            candidateId: "past",
+            yesCount: 2,
+            failureReason: "organiser_picks",
+          },
+          {
+            candidateId: "future",
+            yesCount: 1,
+            failureReason: "organiser_picks",
+          },
+        ],
+        new Set(["future"]),
+        {
+          acceptedHostUserId: "host-1",
+          rosterByCandidateId: new Map([
+            [
+              "future",
+              {
+                maybeResponsesEnabled: true,
+                members: [
+                  {
+                    userId: "host-1",
+                    displayName: "Host",
+                    response: "yes",
+                    submittedLate: false,
+                  },
+                ],
+              },
+            ],
+          ]),
+        },
+      ),
+    ).toEqual({ candidateId: "future" });
+    expect(
+      organiserPicksCanConfirmNow(
+        true,
+        "proposing",
+        "organiser_picks",
+        [
+          {
+            candidateId: "past",
+            yesCount: 2,
+            failureReason: "organiser_picks",
+          },
+        ],
+        new Set(),
+      ),
+    ).toBeNull();
+  });
+
   it("supports organiser_picks manual confirm and host waiting", () => {
     expect(
       shouldShowFinaliseControl(true, "proposing", "proposed", false, {

@@ -1,5 +1,6 @@
-export const PROPOSAL_PAST_START_ERROR =
-  "That time has already passed. Pick a time in the future.";
+export const PROPOSAL_PAST_START_TITLE = "That time has already passed";
+export const PROPOSAL_PAST_START_BODY = "Pick a time in the future.";
+export const PROPOSAL_PAST_START_ERROR = `${PROPOSAL_PAST_START_TITLE}. ${PROPOSAL_PAST_START_BODY}`;
 
 /** True when the candidate start instant is not strictly after now (UTC ISO compare). */
 export function isCandidateStartInPast(startsAt: string, nowIso: string): boolean {
