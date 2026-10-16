@@ -13,6 +13,7 @@ import type { ProfileHomeLocation } from "@/domain/profile/home-location";
 import type { EventCoordinates } from "@/domain/events/location";
 import { PendingButton } from "@/components/ui/pending-button";
 import { normalizeDisplayName } from "@/lib/profiles/validation";
+import { useScrollTopOnStepChange } from "@/lib/ui/use-scroll-top-on-step-change";
 
 type Step = "welcome" | "home" | "finish";
 
@@ -53,6 +54,8 @@ export function PersonalSetupFlow({ defaultDisplayName, home }: PersonalSetupFlo
   const [homeCoordinates, setHomeCoordinates] = useState<EventCoordinates | null>(
     home?.coordinates ?? null,
   );
+
+  useScrollTopOnStepChange(step);
 
   function goToHome() {
     const normalized = normalizeDisplayName(displayName);

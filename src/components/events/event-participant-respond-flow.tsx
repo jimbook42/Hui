@@ -85,6 +85,7 @@ import {
 } from "@/lib/perf/client-interaction-perf";
 import type { RespondSecondaryData } from "@/lib/events/respond-page-data";
 import type { EventCandidateRow } from "@/lib/scheduling/types";
+import { useScrollTopOnStepChange } from "@/lib/ui/use-scroll-top-on-step-change";
 
 type EventParticipantRespondFlowProps = {
   eventId: string;
@@ -158,6 +159,13 @@ export function EventParticipantRespondFlow({
 }: EventParticipantRespondFlowProps) {
   const router = useRouter();
   const [step, setStep] = useState<ParticipantFlowStep>("time");
+  const [stepScrollEnabled, setStepScrollEnabled] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return readStepFromHash() === "time";
+  });
+  useScrollTopOnStepChange(step, { enabled: stepScrollEnabled });
   const [responseOverride, setResponseOverride] = useState<AvailabilityChoice | null>(null);
   const viewerResponse = responseOverride ?? initialViewerResponse;
   const [pinnedMultiTimeSession] = useState(() => {
@@ -440,7 +448,10 @@ export function EventParticipantRespondFlow({
     const resolved =
       fromHash === "bring" && !showBringStep ? "done" : fromHash;
     // Defer so SSR/hydration first paint matches server ("time"), then apply deep-link hash.
-    const id = window.requestAnimationFrame(() => setStep(resolved));
+    const id = window.requestAnimationFrame(() => {
+      setStep(resolved);
+      setStepScrollEnabled(true);
+    });
     return () => window.cancelAnimationFrame(id);
   }, [secondary, secondaryDataPromise, showBringStep]);
 
