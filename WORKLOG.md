@@ -1,5 +1,9 @@
 # Worklog
 
+## 2026-10-16 — v0.18.13 fix2 (QA repair 2/2)
+
+- Past hui host card: ended gatherings use `endedGatheringHostCopy` (host vs other viewer); no “Hui has suggested …” on past hui; accepted-host branch matches.
+
 ## 2026-10-16 — v0.18.13 fix1 (QA repair 1/2)
 
 - Past gatherings: hide host accept/assign UI; profile Hui groups copy without households when flag off; past-time warning body deduped; organiser-picks excludes passed proposed times; Vitest coverage.
