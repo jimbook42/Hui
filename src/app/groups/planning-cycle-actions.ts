@@ -155,5 +155,5 @@ export async function updateGroupRecurrenceCadenceAction(
   revalidatePath(`/groups/${groupId}`);
   revalidatePath(`/groups/${groupId}/events/new`);
   revalidatePath("/dashboard");
-  return { message: "Recurrence cadence saved." };
+  return { message: "How often saved." };
 }

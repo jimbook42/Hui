@@ -22,6 +22,7 @@ import {
   validateCandidateWindow,
 } from "@/domain/scheduling/validation";
 import { eventAcceptsResponseDeadline } from "@/domain/events/response-deadline-status";
+import { formatAvailabilityNudgeSuccessMessage } from "@/domain/scheduling/availability-nudge-copy";
 import { friendlyFinaliseErrorMessage } from "@/domain/scheduling/finalise-errors";
 import {
   canAdminPickEventTime,
@@ -486,7 +487,7 @@ export async function adminFinaliseEventAction(
   }
 
   if (!canAdminPickEventTime(detail.status, detail.viewerRole)) {
-    return { error: "Only group admins can pick a different time." };
+    return { error: "Only group owners or admins can pick a different time." };
   }
 
   const { error } = await supabase.rpc("admin_finalise_event", {
@@ -622,10 +623,7 @@ export async function nudgeEventAvailabilityAction(
   const queued = payload?.queued ?? 0;
   schedulePushDelivery();
   return {
-    message:
-      queued > 0
-        ? `Nudge sent to ${queued} member${queued === 1 ? "" : "s"} who have not answered yet.`
-        : "Everyone has already answered a proposed time.",
+    message: formatAvailabilityNudgeSuccessMessage(queued),
   };
 }
 

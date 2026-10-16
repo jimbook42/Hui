@@ -47,5 +47,7 @@ export function canAdminPickEventTime(
   status: EventStatus,
   viewerRole: MembershipRole,
 ): boolean {
-  return status === "proposing" && viewerRole === "admin";
+  return (
+    status === "proposing" && (viewerRole === "owner" || viewerRole === "admin")
+  );
 }

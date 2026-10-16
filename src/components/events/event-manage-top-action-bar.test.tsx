@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/events/reschedule-confirmed-form", () => ({
   RescheduleConfirmedForm: () => <div data-testid="reschedule-form" />,
@@ -40,6 +40,21 @@ const baseProps = {
 };
 
 describe("EventManageTopActionBar", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("shows pick a different time for group leads", () => {
+    render(
+      <EventManageTopActionBar
+        {...baseProps}
+        canAdminPickTime
+        adminPickCandidates={[{ id: "c1", label: "Mon" }]}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Pick a different time" })).toBeInTheDocument();
+  });
+
   it("renders lifecycle actions in order with delete last", () => {
     render(
       <EventManageTopActionBar
