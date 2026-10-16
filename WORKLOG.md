@@ -1,5 +1,20 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX5 fix4 host place + bring empty + load (v0.18.9)
+
+- **#1 Host “At my home”:** Default venue mode was `home` while React state for `location`/`coordinates` stayed empty, so `updateEventAction` called `update_event_place` with null location (HTTP 200, no visible place). Sync home fields when home mode is active; reject host-only saves without a confirmable place; `fetchMyHomeLocation` profile fallback only when `my_home_location` RPC is missing (not on permission errors). Tests: `host-venue.test.ts`, `home-location-query.test.ts`, `host-place.test.ts`; PGlite privacy migration path unchanged in `profile-home-privacy.test.ts`. E2E step in `e2e/hosts.spec.ts` (live auth).
+- **#2 First-load (low-risk):** Dashboard greeting loads profile + `loadHomeData` in parallel; group page runs invite-link RPC + `resolveAuthRedirectOrigin` inside the existing `Promise.all`. Event page already parallelises `loadEventPage`; layout `getServerAuthUser` is request-cached.
+
+| Page | Before (typical bottleneck) | After this change | Still dominates |
+| --- | --- | --- | --- |
+| Dashboard | Serial profile then home list (~2 Supabase round-trips in Greeting) | One parallel batch for greeting data | `DashboardEvents` + `NoGroupsStartGate` separate suspenses; middleware JWT |
+| Group | 6-way parallel block then serial invite + origin | 8-way parallel including invite + origin | `getGroupDetail` + `loadGroupPlanningContext` serial upfront |
+| Event | `getEventDetail` then `loadEventPage` (wide parallel inside) | unchanged structure | Detail fetch before page bundle; scheduling roster fan-out on busy hui |
+
+QA-reported 4.5–6.8s local / 10–16s preview remains mostly Supabase latency, cold start, and sign-in — not addressed here (no caching/region changes).
+
+- **#3 Bring:** Show “What to bring” whenever food coordination applies, even with zero categories (organiser empty state was already in `EventContributionsSection` but the disclosure was hidden).
+
 ## 2026-10-16 — HUI-UX5 fix3 past answers on deletion (v0.18.9)
 
 - **fix3:** Same migration `20261016103000_hui_ux5_privacy_home_and_deletion.sql` — `delete_my_account_data()` deletes `event_responses` only on **upcoming** hui (not `completed`/`cancelled`, and not `confirmed` with `starts_at` already passed); **past** rows stay for yes/no counts with `note` cleared via `hui.account_deletion` bypass on `responses_before_write`. PGlite test in `account-deletion.test.ts`.
