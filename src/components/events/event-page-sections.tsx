@@ -40,6 +40,7 @@ import {
   formatConfirmedHeroStatusLine,
 } from "@/domain/scheduling/confirmed-because";
 import { formatEventTimeDisclosureSummary } from "@/domain/scheduling/event-time-disclosure-summary";
+import { gatheringTimeHasPassed } from "@/domain/events/host-prompt-copy";
 import {
   multiTimeAnswerDetailRows,
   multiTimeViewerVisualState,
@@ -279,9 +280,17 @@ export function EventHeroMeta({
             data.multiTimeAnswerPresentation
               ? multiTimeAnswerDetailRows(
                   data.scheduling.candidates,
-                  buildEventTimeLabelMap(data.scheduling.candidates, tz),
+                  buildEventTimeLabelMap(data.scheduling.candidates, tz, "compact"),
+                  { nowIso: new Date().toISOString(), includePassed: true },
                 )
-              : null
+              : data.viewerPrivateNote
+                ? multiTimeAnswerDetailRows(
+                    data.scheduling.candidates.filter(
+                      (c) => c.status === "selected" || c.status === "proposed",
+                    ),
+                    buildEventTimeLabelMap(data.scheduling.candidates, tz, "compact"),
+                  ).slice(0, 1)
+                : null
           }
           answerIconState={
             data.multiTimeAnswerPresentation
@@ -289,7 +298,9 @@ export function EventHeroMeta({
               : null
           }
           showPlaceFollowUp={data.multiTimeAnswerPresentation?.showPlaceFollowUp ?? true}
-          serverPrivateNote={data.viewerPrivateNote}
+          serverPrivateNote={
+            data.multiTimeAnswerPresentation ? null : data.viewerPrivateNote
+          }
           maybeResponsesEnabled={data.scheduling.maybeResponsesEnabled}
           confirmed={confirmed}
           hasContribution={viewerReleasableContributions > 0}
@@ -532,6 +543,11 @@ export async function EventOpenDecisionsCard({ detail, userId }: SectionProps) {
 export async function EventHostGentlePromptSection({ detail, userId }: SectionProps) {
   const data = await loadEventPage(detail, userId);
   const suggestedName = data.hostContext?.view.pendingProposal?.displayName ?? null;
+  const gatheringEnded = gatheringTimeHasPassed({
+    status: detail.status,
+    startsAt: detail.startsAt,
+    nowIso: new Date().toISOString(),
+  });
   if (!data.canAcceptHost && !data.canSwapHost) {
     return null;
   }
@@ -548,6 +564,7 @@ export async function EventHostGentlePromptSection({ detail, userId }: SectionPr
       eventLocation={detail.location}
       eventCoordinates={detail.locationCoordinates}
       viewerHomeLocation={data.viewerHomeLocation}
+      gatheringEnded={gatheringEnded}
     />
   );
 }
@@ -704,6 +721,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             eventId={detail.id}
             groupId={detail.groupId}
             eventStatus={detail.status}
+            eventStartsAt={detail.startsAt}
             hostingEnabled={settings.hostingEnabled}
             canAssign={data.canAssignHost}
             canRespond={data.canAcceptHost}

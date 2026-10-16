@@ -55,6 +55,8 @@ import {
 import { resolveAuthRedirectOrigin } from "@/lib/auth/app-origin";
 import { getGroupContributionHistory, listContributionCategories } from "@/lib/contributions/queries";
 import { listGroupSharedDietary } from "@/lib/dietary/queries";
+import { membersHouseholdViewForDisplay } from "@/domain/households/group-display";
+import { householdsEnabled } from "@/lib/features";
 import { getGroupDetail } from "@/lib/groups/queries";
 import { getGroupHostHistory } from "@/lib/hosts/queries";
 import { getGroupHouseholdMemberView } from "@/lib/households/queries";
@@ -123,6 +125,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
     resolveAuthRedirectOrigin(),
   ]);
   const viewerCanManageCategories = canManageContributionCategories(detail.viewerRole);
+  const peopleHouseholdView = membersHouseholdViewForDisplay(detail.members, householdView);
 
   let inviteToken: string | null = null;
   if (!inviteTokenResult.error && typeof inviteTokenResult.data === "string") {
@@ -216,22 +219,28 @@ export default async function GroupDetailPage({ params }: PageProps) {
         <HuiSurface padding="lg" shape="organic-alt" elevated className="hui-rise-3">
           <SectionHeader
             title="People"
-            description="People in this group. Those who share a home are listed together."
+            description={
+              householdsEnabled()
+                ? "People in this group. Those who share a home are listed together."
+                : "People in this group."
+            }
           />
           <div className="mt-4">
             <GroupMembersHouseholds
-              view={householdView}
+              view={peopleHouseholdView}
               members={detail.members}
               currentUserId={user!.id}
             />
           </div>
-          <p className="hui-type-supporting mt-5">
-            Manage your own household from{" "}
-            <Link href="/profile" className="hui-link">
-              your profile
-            </Link>
-            .
-          </p>
+          {householdsEnabled() ? (
+            <p className="hui-type-supporting mt-5">
+              Manage your own household from{" "}
+              <Link href="/profile" className="hui-link">
+                your profile
+              </Link>
+              .
+            </p>
+          ) : null}
         </HuiSurface>
 
         <section aria-labelledby="group-more" className="space-y-3">
@@ -330,6 +339,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
 
           {viewerCanManageCategories ? (
             <DisclosureCard
+              id="bring"
               title="What to bring"
               summary="What people can bring"
               icon={<BowlIcon size={20} />}

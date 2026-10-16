@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import {
   createContributionCategoryAction,
   deactivateContributionCategoryAction,
@@ -27,6 +29,17 @@ export function ContributionCategoriesAdmin({
   categories,
   members,
 }: ContributionCategoriesAdminProps) {
+  useEffect(() => {
+    if (window.location.hash !== "#bring") {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLInputElement>("#bring input[name='name']")
+        ?.focus();
+    });
+  }, []);
+
   const active = categories.filter((c) => c.archivedAt === null);
   const archived = categories.filter((c) => c.archivedAt !== null);
 

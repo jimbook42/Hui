@@ -103,6 +103,16 @@ describe("invite presentation (HUI-ONBOARDING-002)", () => {
     expect(second[2]).toContain("9 November");
   });
 
+  it("avoids Former member in planning invite headline", () => {
+    const headline = inviteHeadline({
+      groupName: "Smith Family",
+      inviterDisplayName: "Former member",
+      planning: basePlanning,
+    });
+    expect(headline).toBe("You were invited to help plan Dinner with Smith Family.");
+    expect(headline).not.toMatch(/Former member invited/i);
+  });
+
   it("avoids inventing a confirmed gathering date when only type is known", () => {
     const headline = inviteHeadline({
       groupName: "Smith Family",

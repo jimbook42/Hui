@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 
 import type { EventActionState } from "@/app/events/actions";
@@ -31,8 +32,8 @@ import {
   groupHasEstablishedRecurrence,
   initialCandidateDateFromDraft,
 } from "@/domain/events/proposal-defaults";
-import { isProposalDateBeforeToday } from "@/domain/events/proposal-past-time";
 import { buildProposingPastDateWarning } from "@/domain/events/proposal-past-warning";
+import { validateCandidateStartNotPast } from "@/domain/scheduling/candidate-start-past";
 import { applyMeetFrequencyToDraft } from "@/domain/events/proposal-draft-meet-frequency";
 import { resolveProposalFlowStateFromClient } from "@/domain/events/proposal-draft-restore";
 import {
@@ -85,6 +86,7 @@ type CreateEventProposalFlowProps = {
   contributionCategories: ContributionCategoryRow[];
   planningCycle: GroupPlanningCycle | null;
   timeRecommendations: TimeRecommendation[];
+  canManageRecurrence?: boolean;
 };
 
 const initialActionState: EventActionState = {};
@@ -107,6 +109,7 @@ export function CreateEventProposalFlow({
   contributionCategories,
   planningCycle,
   timeRecommendations,
+  canManageRecurrence = false,
 }: CreateEventProposalFlowProps) {
   const todayDateOnly = useMemo(
     () => todayDateOnlyInTimeZone(settings.timezone),
@@ -339,13 +342,8 @@ export function CreateEventProposalFlow({
       return;
     }
     if (step === "time") {
-      if (
-        timeDate &&
-        isProposalDateBeforeToday(timeDate, todayDateOnly) &&
-        !window.confirm(
-          "This date is in the past. Proposing a past time can confuse members. Continue anyway?",
-        )
-      ) {
+      if (pastDateWarning) {
+        setStepError(pastDateWarning.detail.split(".")[0] ?? pastDateWarning.title);
         return;
       }
       const parsed = parseWallClockCandidate(
@@ -370,6 +368,14 @@ export function CreateEventProposalFlow({
       if (merged.candidates.length < 1) {
         setStepError("Add at least one proposed time.");
         return;
+      }
+      const nowIso = new Date().toISOString();
+      for (const candidate of merged.candidates) {
+        const pastError = validateCandidateStartNotPast(candidate.startsAt, nowIso);
+        if (pastError) {
+          setStepError(pastError);
+          return;
+        }
       }
       setDraft((current) => {
         let next = { ...current, candidates: merged.candidates };
@@ -422,6 +428,11 @@ export function CreateEventProposalFlow({
           ? "Enter a valid date and times. The end must be after the start."
           : "Enter a valid date and start time.",
       );
+      return;
+    }
+    const pastError = validateCandidateStartNotPast(parsed.startsAt, new Date().toISOString());
+    if (pastError) {
+      setStepError(pastError);
       return;
     }
     const merged = mergeWallClockIntoCandidates(draft.candidates, parsed);
@@ -478,16 +489,25 @@ export function CreateEventProposalFlow({
   const canOneOff = settings.oneOffEventsAllowed;
   const canRecurring = settings.recurringEventsEnabled;
 
-  const pastDateWarning = useMemo(
-    () =>
-      buildProposingPastDateWarning({
-        draft,
-        timeZone: settings.timezone,
-        todayDateOnly,
-        pendingDateOnly: step === "time" ? timeDate : undefined,
-      }),
-    [draft, settings.timezone, todayDateOnly, step, timeDate],
-  );
+  const pastDateWarning = buildProposingPastDateWarning({
+    draft,
+    timeZone: settings.timezone,
+    todayDateOnly,
+    nowIso: new Date().toISOString(),
+    pendingDateOnly: step === "time" ? timeDate : undefined,
+    pendingStartTime: step === "time" ? timeStart : undefined,
+  });
+
+  function persistDraftForNavigation() {
+    writeStoredProposalDraft(groupId, {
+      step,
+      draft,
+      timeDate,
+      timeStart,
+      timeEnd,
+      meetFrequency,
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -717,6 +737,18 @@ export function CreateEventProposalFlow({
               This hui follows how often you meet
               {establishedCadence ? ` (${formatCadenceLabel(establishedCadence)})` : ""}. Proposed
               times are options — not confirmed dates yet.
+              {canManageRecurrence ? (
+                <>
+                  {" "}
+                  <Link
+                    href={`/groups/${groupId}#recurring-planning`}
+                    className="hui-link font-extrabold text-foreground"
+                    onClick={persistDraftForNavigation}
+                  >
+                    Change how often you meet
+                  </Link>
+                </>
+              ) : null}
             </p>
           ) : null}
           {draft.eventKind === "recurring" && canRecurring && establishedRecurrence ? (
@@ -811,6 +843,7 @@ export function CreateEventProposalFlow({
               label="Date"
               value={timeDate}
               onChange={setTimeDate}
+              min={todayDateOnly}
             />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <WallClockTimeField
@@ -1036,7 +1069,7 @@ export function CreateEventProposalFlow({
             ) : null}
             <PendingButton
               type="submit"
-              disabled={reviewMissing.length > 0}
+              disabled={reviewMissing.length > 0 || Boolean(pastDateWarning)}
               pendingLabel="Proposing…"
               size="touch"
             >

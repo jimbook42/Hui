@@ -318,6 +318,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
             eventId={detail.id}
             groupId={detail.groupId}
             eventStatus={detail.status}
+            eventStartsAt={detail.startsAt}
             hostingEnabled={settings.hostingEnabled}
             canAssign={data.canAssignHost}
             canRespond={data.canAcceptHost}

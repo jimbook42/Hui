@@ -1,5 +1,18 @@
 # Worklog
 
+## 2026-10-16 — v0.18.13 fix2 (QA repair 2/2)
+
+- Past hui host card: ended gatherings use `endedGatheringHostCopy` (host vs other viewer); no “Hui has suggested …” on past hui; accepted-host branch matches.
+
+## 2026-10-16 — v0.18.13 fix1 (QA repair 1/2)
+
+- Past gatherings: hide host accept/assign UI; profile Hui groups copy without households when flag off; past-time warning body deduped; organiser-picks excludes passed proposed times; Vitest coverage.
+
+## 2026-10-16 — v0.18.13 docs (ROADMAP + HANDOVER)
+
+- `ROADMAP.md`: release path v0.18.13 → full prod QA → beta; post-beta deferred list.
+- `docs/HANDOVER.md`: repo copy with Part B refreshed (prod v0.18.12 @ a31f6e4, `qa/v0.18.13-feedback`, migration pending approval).
+
 ## 2026-10-16 — v0.18.12 fix1 former member roster + upcoming host cleanup
 
 - Migration `20261016210000_hui_former_member_roster.sql`: roster + display counts for deleted-account responders; `delete_my_account_data()` drops upcoming `host_assignments` and clears `creator_initial_host_user_id` after UX6 place strip.

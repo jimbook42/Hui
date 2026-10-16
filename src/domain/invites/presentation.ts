@@ -51,9 +51,14 @@ export function invitePlanningDateLine(
   return "Date still being worked out.";
 }
 
+function isDeletedInviterDisplayName(displayName: string | null | undefined): boolean {
+  return displayName?.trim().toLowerCase() === "former member";
+}
+
 export function inviteHeadline(input: InvitePreviewCopyInput): string {
   const group = input.groupName.trim();
   const inviter = input.inviterDisplayName?.trim();
+  const inviterIsDeleted = isDeletedInviterDisplayName(inviter);
 
   if (input.planning) {
     const phrase = gatheringPlanningPhrase({
@@ -61,14 +66,20 @@ export function inviteHeadline(input: InvitePreviewCopyInput): string {
       customDescription: input.planning.gathering.customDescription,
       eventTitle: input.planning.gathering.eventTitle,
     });
-    if (inviter) {
+    if (inviter && !inviterIsDeleted) {
       return `${inviter} invited you to help plan ${phrase} with ${group}.`;
+    }
+    if (inviterIsDeleted) {
+      return `You were invited to help plan ${phrase} with ${group}.`;
     }
     return `You're invited to help plan ${phrase} with ${group}.`;
   }
 
-  if (inviter) {
+  if (inviter && !inviterIsDeleted) {
     return `${inviter} invited you to join ${group}.`;
+  }
+  if (inviterIsDeleted) {
+    return `You were invited to join ${group}.`;
   }
   return `You're invited to join ${group}.`;
 }

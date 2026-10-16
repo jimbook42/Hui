@@ -9,7 +9,12 @@ import { AuthForm } from "@/components/auth/auth-form";
 import { HostSwapRequestForm } from "@/components/hosts/host-swap-request-form";
 import type { EventCoordinates } from "@/domain/events/location";
 import type { ProfileHomeLocation } from "@/domain/profile/home-location";
+import {
+  endedGatheringHostCopy,
+  gatheringTimeHasPassed,
+} from "@/domain/events/host-prompt-copy";
 import { filterHostAssignableMembers } from "@/domain/hosts/attendance-eligibility";
+import type { EventStatus } from "@/domain/events/types";
 import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 import type { EventHostView } from "@/lib/hosts/queries";
 import type { GroupMemberRow } from "@/lib/groups/types";
@@ -17,7 +22,8 @@ import type { GroupMemberRow } from "@/lib/groups/types";
 type EventHostSectionProps = {
   eventId: string;
   groupId: string;
-  eventStatus: string;
+  eventStatus: EventStatus;
+  eventStartsAt: string | null;
   hostingEnabled: boolean;
   canAssign: boolean;
   canRespond: boolean;
@@ -38,6 +44,7 @@ export function EventHostSection({
   eventId,
   groupId,
   eventStatus,
+  eventStartsAt,
   hostingEnabled,
   canAssign,
   canRespond,
@@ -53,6 +60,11 @@ export function EventHostSection({
   hostPlaceRequired,
   viewerHomeLocation,
 }: EventHostSectionProps) {
+  const gatheringEnded = gatheringTimeHasPassed({
+    status: eventStatus,
+    startsAt: eventStartsAt,
+    nowIso: new Date().toISOString(),
+  });
   const assignableMembers = filterHostAssignableMembers(
     eligibleMembers,
     attendanceRoster,
@@ -117,9 +129,22 @@ export function EventHostSection({
       {view.acceptedHost ? (
         <div className="mt-4">
           <p className="text-sm text-foreground">
-            <span className="font-medium">{view.acceptedHost.displayName}</span> is hosting.
+            {gatheringEnded
+              ? endedGatheringHostCopy({
+                  hostDisplayName: view.acceptedHost.displayName,
+                  hostUserId: view.acceptedHost.userId,
+                  viewerUserId,
+                })
+              : (
+                  <>
+                    <span className="font-medium">{view.acceptedHost.displayName}</span> is hosting.
+                  </>
+                )}
           </p>
-          {canRequestSwap && view.acceptedHost.userId === viewerUserId && !readOnly ? (
+          {canRequestSwap &&
+          view.acceptedHost.userId === viewerUserId &&
+          !readOnly &&
+          !gatheringEnded ? (
             <div className="mt-3">
               <HostSwapRequestForm
                 eventId={eventId}
@@ -129,6 +154,15 @@ export function EventHostSection({
           ) : null}
         </div>
       ) : suggestedName ? (
+        gatheringEnded ? (
+          <p className="mt-4 text-sm text-foreground">
+            {endedGatheringHostCopy({
+              hostDisplayName: suggestedName,
+              hostUserId: view.pendingProposal?.userId ?? "",
+              viewerUserId,
+            })}
+          </p>
+        ) : (
         <div className="mt-4 rounded-hui-md px-4 py-3 text-sm bg-muted">
           <p className="text-foreground">
             Hui has suggested {suggestedName} to host this gathering.
@@ -156,13 +190,14 @@ export function EventHostSection({
             </div>
           ) : null}
         </div>
+        )
       ) : (
         <p className="mt-4 text-sm text-foreground">
           No host has been suggested yet.
         </p>
       )}
 
-      {canAssign && !readOnly && !view.acceptedHost ? (
+      {canAssign && !readOnly && !gatheringEnded && !view.acceptedHost ? (
         <div className="mt-6 max-w-md">
           <h3 className="text-sm font-bold text-foreground">
             Suggest someone else

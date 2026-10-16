@@ -233,45 +233,18 @@ export function ViewerResponseCard({
       shape="organic-alt"
       padding="md"
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-4">
         <AttendanceDot
           state={state}
           label={viewerStatusLabel(state, { confirmed })}
           size="lg"
+          className="mt-0.5"
         />
         <div className="min-w-0 flex-1">
           <p className="hui-type-label text-muted-foreground">Your answer</p>
           <p className="text-lg font-extrabold leading-tight text-foreground" role="status">
             {answerLine}
           </p>
-          {answerDetailRows && answerDetailRows.length > 0 ? (
-            <ul className="mt-2 space-y-2">
-              {answerDetailRows.map((row) => {
-                const rowState = row.choice
-                  ? attendanceStateFromChoice(row.choice, maybeResponsesEnabled)
-                  : "pending";
-                const rowLabel = row.choice
-                  ? participantAttendanceSummaryLabel(row.choice)
-                  : "No answer yet";
-                return (
-                  <li
-                    key={row.candidateId}
-                    className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground"
-                  >
-                    <AttendanceDot
-                      state={rowState}
-                      label={rowLabel}
-                      size="sm"
-                      hideBadge={!row.choice}
-                      subdued={!row.choice}
-                    />
-                    <span className="min-w-0 flex-1 text-foreground">{row.timeLabel}</span>
-                    <span className="shrink-0">{rowLabel}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
           {pending ? (
             <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
               {confirmed
@@ -279,13 +252,60 @@ export function ViewerResponseCard({
                 : "The group is waiting to hear from you."}
             </p>
           ) : null}
-          {!pending && serverPrivateNote?.trim() ? (
-            <p className="mt-1 text-sm font-semibold text-muted-foreground">
-              Your note: {serverPrivateNote.trim()}
+          {!pending && !multiTime && serverPrivateNote?.trim() ? (
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">
+              {serverPrivateNote.trim()}
             </p>
           ) : null}
         </div>
       </div>
+      {answerDetailRows && answerDetailRows.length > 0 ? (
+        <ul className="mt-4 space-y-3 border-t border-border/60 pt-4">
+          {answerDetailRows.map((row) => {
+            const rowState = row.passed
+              ? "pending"
+              : row.choice
+                ? attendanceStateFromChoice(row.choice, maybeResponsesEnabled)
+                : "pending";
+            const rowLabel = row.passed
+              ? "Passed"
+              : row.choice
+                ? participantAttendanceSummaryLabel(row.choice)
+                : "No answer yet";
+            const choiceShort = row.passed
+              ? null
+              : row.choice
+                ? SHORT_LABEL[row.choice]
+                : null;
+            return (
+              <li
+                key={row.candidateId}
+                className={cn(
+                  "text-sm font-semibold",
+                  row.passed ? "text-muted-foreground opacity-60" : "text-muted-foreground",
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <AttendanceDot
+                    state={rowState}
+                    label={rowLabel}
+                    size="sm"
+                    hideBadge={row.passed || !row.choice}
+                    subdued={row.passed || !row.choice}
+                  />
+                  <span className="min-w-0 flex-1 text-foreground">{row.timeLabel}</span>
+                  <span className="shrink-0 text-foreground">{rowLabel}</span>
+                </div>
+                {choiceShort && row.privateNote?.trim() ? (
+                  <p className="mt-0.5 pl-8 text-xs font-semibold text-muted-foreground">
+                    {choiceShort} · {row.privateNote.trim()}
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
 
       {pending ? (
         <HuiLinkButton

@@ -12,6 +12,10 @@ import type { AvailabilityChoice } from "@/domain/scheduling/types";
 import type { ParticipantPlaceView } from "@/domain/events/participant-place";
 import type { EventStatus } from "@/domain/events/types";
 import type { GroupSettingsRow } from "@/lib/groups/types";
+import {
+  activeProposedCandidates,
+  isPassedProposedCandidate,
+} from "@/domain/scheduling/candidate-start-past";
 import type { EventCandidateRow } from "@/lib/scheduling/types";
 
 export type ParticipantFlowStep =
@@ -46,6 +50,7 @@ export function pickParticipantTimeCandidate(
 export function respondAttendanceCandidates(
   candidates: ParticipantTimeCandidate[],
   eventStatus: EventStatus,
+  nowIso?: string,
 ): ParticipantTimeCandidate[] {
   if (eventStatus === "confirmed") {
     const selected = candidates.filter((candidate) => candidate.status === "selected");
@@ -53,22 +58,31 @@ export function respondAttendanceCandidates(
       return selected;
     }
   }
-  return candidates.filter((candidate) => candidate.status === "proposed");
+  return proposedAttendanceCandidates(candidates, nowIso);
 }
 
 /** Proposed times only — used to pin the multi-time respond list for the whole visit. */
 export function proposedAttendanceCandidates(
   candidates: ParticipantTimeCandidate[],
+  nowIso?: string,
 ): ParticipantTimeCandidate[] {
-  return candidates.filter((candidate) => candidate.status === "proposed");
+  const proposed = candidates.filter((candidate) => candidate.status === "proposed");
+  if (!nowIso) {
+    return proposed;
+  }
+  return activeProposedCandidates(proposed, nowIso);
 }
 
 /** True when the member should see one row per proposed time (not the post-confirm single-time UI). */
 export function multiTimeRespondSessionActive(
   candidates: ParticipantTimeCandidate[],
   eventStatus: EventStatus,
+  nowIso?: string,
 ): boolean {
-  return eventStatus !== "confirmed" && proposedAttendanceCandidates(candidates).length > 1;
+  return (
+    eventStatus !== "confirmed" &&
+    proposedAttendanceCandidates(candidates, nowIso).length > 1
+  );
 }
 
 /** Viewer answer for hero/summary: confirmed events use the selected time only. */
@@ -128,11 +142,17 @@ export type MultiTimeViewerAnswerPresentation = {
 export function multiTimeProposingAnswerPresentation(
   candidates: ParticipantTimeCandidate[],
   eventStatus: EventStatus,
+  nowIso?: string,
 ): MultiTimeViewerAnswerPresentation | null {
   if (eventStatus !== "proposing") {
     return null;
   }
-  const proposed = candidates.filter((candidate) => candidate.status === "proposed");
+  const proposed = nowIso
+    ? activeProposedCandidates(
+        candidates.filter((candidate) => candidate.status === "proposed"),
+        nowIso,
+      )
+    : candidates.filter((candidate) => candidate.status === "proposed");
   if (proposed.length <= 1) {
     return null;
   }
@@ -192,18 +212,36 @@ export type MultiTimeAnswerDetailRow = {
   candidateId: string;
   timeLabel: string;
   choice: AvailabilityChoice | null;
+  privateNote?: string | null;
+  passed?: boolean;
 };
 
 export function multiTimeAnswerDetailRows(
   candidates: ParticipantTimeCandidate[],
   timeLabels: Record<string, string>,
+  options?: { nowIso?: string; includePassed?: boolean },
 ): MultiTimeAnswerDetailRow[] {
+  const nowIso = options?.nowIso;
+  const includePassed = options?.includePassed ?? true;
   const proposed = candidates.filter((candidate) => candidate.status === "proposed");
-  return proposed.map((candidate) => ({
-    candidateId: candidate.id,
-    timeLabel: timeLabels[candidate.id]?.trim() || "Time",
-    choice: candidate.viewerResponse,
-  }));
+  return proposed
+    .filter((candidate) => {
+      if (!nowIso || includePassed) {
+        return true;
+      }
+      return !isPassedProposedCandidate(candidate, nowIso);
+    })
+    .map((candidate) => {
+      const passed = nowIso ? isPassedProposedCandidate(candidate, nowIso) : false;
+      const note = candidate.viewerPrivateNote?.trim() || null;
+      return {
+        candidateId: candidate.id,
+        timeLabel: timeLabels[candidate.id]?.trim() || "Time",
+        choice: passed ? null : candidate.viewerResponse,
+        privateNote: passed ? null : note,
+        passed,
+      };
+    });
 }
 
 export function bestViewerResponseAcrossProposedCandidates(

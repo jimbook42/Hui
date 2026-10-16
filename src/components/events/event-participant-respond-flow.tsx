@@ -168,23 +168,25 @@ export function EventParticipantRespondFlow({
   useScrollTopOnStepChange(step, { enabled: stepScrollEnabled });
   const [responseOverride, setResponseOverride] = useState<AvailabilityChoice | null>(null);
   const viewerResponse = responseOverride ?? initialViewerResponse;
+  const respondNowIso = useMemo(() => new Date().toISOString(), []);
   const [pinnedMultiTimeSession] = useState(() => {
-    const active = multiTimeRespondSessionActive(proposedCandidates, eventStatus);
+    const active = multiTimeRespondSessionActive(proposedCandidates, eventStatus, respondNowIso);
     const candidates = active
-      ? proposedAttendanceCandidates(proposedCandidates)
-      : respondAttendanceCandidates(proposedCandidates, eventStatus);
+      ? proposedAttendanceCandidates(proposedCandidates, respondNowIso)
+      : respondAttendanceCandidates(proposedCandidates, eventStatus, respondNowIso);
     return { active, candidates };
   });
   const attendanceCandidates = useMemo(() => {
     if (pinnedMultiTimeSession.active) {
       return pinnedMultiTimeSession.candidates;
     }
-    return respondAttendanceCandidates(proposedCandidates, eventStatus);
+    return respondAttendanceCandidates(proposedCandidates, eventStatus, respondNowIso);
   }, [
     pinnedMultiTimeSession.active,
     pinnedMultiTimeSession.candidates,
     proposedCandidates,
     eventStatus,
+    respondNowIso,
   ]);
   const [confirmedDuringVisit, setConfirmedDuringVisit] = useState<{
     id: string;
@@ -252,7 +254,7 @@ export function EventParticipantRespondFlow({
   const [savedCandidateFlash, setSavedCandidateFlash] = useState<Record<string, boolean>>({});
   const initialNotesByCandidate = (() => {
     const initial: Record<string, string> = {};
-    for (const row of respondAttendanceCandidates(proposedCandidates, eventStatus)) {
+    for (const row of respondAttendanceCandidates(proposedCandidates, eventStatus, respondNowIso)) {
       if (row.viewerPrivateNote) {
         initial[row.id] = row.viewerPrivateNote;
       }

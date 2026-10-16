@@ -12,6 +12,7 @@ import {
   participantAttendanceBranch,
   participantFlowStepsForBack,
   pickParticipantTimeCandidate,
+  multiTimeAnswerDetailRows,
   multiTimeProposingAnswerPresentation,
   respondAttendanceCandidates,
   shouldShowParticipantBringStep,
@@ -82,6 +83,42 @@ describe("participant flow (HUI-026B)", () => {
         "confirmed",
       ),
     ).toBe("available");
+  });
+
+  it("excludes passed proposed times from multi-time counts", () => {
+    const nowIso = "2026-10-16T10:00:00.000Z";
+    const candidates = [
+      { ...candidate, startsAt: "2026-10-01T18:00:00Z", viewerResponse: "available" as const },
+      { ...candidate, id: "c2", viewerResponse: "available" as const },
+    ];
+    const presentation = multiTimeProposingAnswerPresentation(
+      candidates,
+      "proposing",
+      nowIso,
+    );
+    expect(presentation).toBeNull();
+
+    const twoActive = multiTimeProposingAnswerPresentation(
+      [
+        { ...candidate, id: "c2", viewerResponse: "available" as const },
+        { ...candidate, id: "c3", viewerResponse: "maybe" as const },
+      ],
+      "proposing",
+      nowIso,
+    );
+    expect(twoActive?.summaryLabel).toBe("Yes to 1 of 2 times");
+
+    const rows = respondAttendanceCandidates(candidates, "proposing", nowIso);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.id).toBe("c2");
+
+    const detailRows = multiTimeAnswerDetailRows(
+      candidates,
+      { c1: "Past", c2: "Future" },
+      { nowIso, includePassed: true },
+    );
+    expect(detailRows.find((row) => row.candidateId === "c1")?.passed).toBe(true);
+    expect(detailRows.find((row) => row.candidateId === "c2")?.passed).toBe(false);
   });
 
   it("summarises multi-time answers without treating one yes as yes to all times", () => {

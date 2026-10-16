@@ -96,6 +96,7 @@ export async function proposeGroupEventAction(
     memberUserIds: detail.members.map((member) => member.userId),
     groupName: detail.name,
     contributionCategoryNames: categoryNames,
+    nowIso: new Date().toISOString(),
   });
 
   if (!validation.ok) {

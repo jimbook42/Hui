@@ -1,5 +1,10 @@
+import { wallClockToUtcIso } from "@/domain/datetime/timezone";
 import type { ProposalCandidateInput } from "@/domain/events/proposal";
 import { isProposalDateBeforeToday } from "@/domain/events/proposal-past-time";
+import {
+  PROPOSAL_PAST_START_BODY,
+  isCandidateStartInPast,
+} from "@/domain/scheduling/candidate-start-past";
 import {
   STALE_PROPOSAL_GRACE_DAYS,
   formatStaleProposalAutoCancelClause,
@@ -11,8 +16,11 @@ export function proposalHasPastProposedTimes(input: {
   candidates: ProposalCandidateInput[];
   timeZone: string;
   todayDateOnly: string;
+  nowIso: string;
   /** Wall-clock date being edited on the time step (YYYY-MM-DD). */
   pendingDateOnly?: string;
+  pendingStartTime?: string;
+  pendingTimeZone?: string;
 }): boolean {
   if (
     input.pendingDateOnly &&
@@ -20,9 +28,26 @@ export function proposalHasPastProposedTimes(input: {
   ) {
     return true;
   }
+  if (
+    input.pendingDateOnly &&
+    input.pendingStartTime &&
+    input.pendingTimeZone &&
+    input.pendingDateOnly === input.todayDateOnly
+  ) {
+    const startsAt = wallClockToUtcIso(
+      `${input.pendingDateOnly}T${input.pendingStartTime}`,
+      input.pendingTimeZone,
+    );
+    if (startsAt && isCandidateStartInPast(startsAt, input.nowIso)) {
+      return true;
+    }
+  }
   for (const candidate of input.candidates) {
     const day = instantToDateOnlyInTimeZone(candidate.startsAt, input.timeZone);
     if (isProposalDateBeforeToday(day, input.todayDateOnly)) {
+      return true;
+    }
+    if (isCandidateStartInPast(candidate.startsAt, input.nowIso)) {
       return true;
     }
   }
@@ -36,13 +61,18 @@ export function buildProposingPastDateWarning(input: {
   };
   timeZone: string;
   todayDateOnly: string;
+  nowIso: string;
   pendingDateOnly?: string;
+  pendingStartTime?: string;
 }): { title: string; detail: string } | null {
   const hasPast = proposalHasPastProposedTimes({
     candidates: input.draft.candidates,
     timeZone: input.timeZone,
     todayDateOnly: input.todayDateOnly,
+    nowIso: input.nowIso,
     pendingDateOnly: input.pendingDateOnly,
+    pendingStartTime: input.pendingStartTime,
+    pendingTimeZone: input.timeZone,
   });
   if (!hasPast) {
     return null;
@@ -54,9 +84,7 @@ export function buildProposingPastDateWarning(input: {
     timeZone: input.timeZone,
   });
 
-  const lines = [
-    "Proposing a time in the past can confuse members. Double-check before you continue.",
-  ];
+  const lines = [PROPOSAL_PAST_START_BODY];
 
   if (nominalDate && isProposalDateBeforeToday(nominalDate, input.todayDateOnly)) {
     const autoCancel = formatStaleProposalAutoCancelClause(nominalDate, input.todayDateOnly);
@@ -68,7 +96,7 @@ export function buildProposingPastDateWarning(input: {
   }
 
   return {
-    title: "A proposed time is in the past",
+    title: "That time has already passed",
     detail: lines.join(" "),
   };
 }

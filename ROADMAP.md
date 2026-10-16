@@ -12,6 +12,45 @@
 
 **Next implementation area:** The focused HUI-026A–E event-flow workstream below, alongside the existing GDD roadmap tickets. It does not replace or renumber HUI-025–030.
 
+**Production (2026-10-16):** **v0.18.12** on `main` @ `a31f6e4` (https://huiapp.vercel.app, Vercel region syd1).
+
+---
+
+## Release path: v0.18.13 → full prod QA → beta
+
+Work is sequenced **before** the long GDD backlog below. Do not merge v0.18.13 or apply its DB migration to production without Isaac’s approval.
+
+### v0.18.13 (Isaac feedback, 16 Oct) — branch `qa/v0.18.13-feedback`
+
+- [ ] **Polls:** separate option inputs (no comma-split); 2–12 options; duplicate inline errors.
+- [ ] **Past proposed times:** block new past starts in UI, server actions, and domain validation; grey **Passed** on existing past proposed times; exclude from counts, respond flow, and host pick list. **Migration (approval required):** `20261016230000_hui_v01813_past_proposed_times.sql` (INSERT-only trigger on `event_candidates`).
+- [ ] **Your answer card:** per-time private notes under each row; compact time labels; no stray bottom note line on multi-time.
+- [ ] **Create flow:** recurrence admin link “Change how often you meet” → `#recurring-planning` with draft restore.
+- [ ] **Households hidden for beta:** `NEXT_PUBLIC_HUI_HOUSEHOLDS_ENABLED` off by default; flat people lists; household actions return error when off (data/schema unchanged).
+- [ ] **In-app browser:** Copy link + paste-into-Safari/Chrome confirmation.
+- [ ] **v0.18.12 QA gaps:** no “down to host” on past hui; no “Former member invited you to help plan”; **Add something** → group `#bring` add-category form.
+
+### After v0.18.13 merges
+
+- [ ] **Final full production QA** — end-to-end on production (or agreed pre-beta build): sign-in, invites, multi-time respond, host swap, contributions, delete flow, Web Push smoke, mobile width ~393px, no console errors/5xx. Includes migration apply + verify on preview/staging if used.
+- [ ] **Beta** — limited release to real groups with support path; monitor errors, performance, and feedback; no broad marketing until beta criteria met.
+
+### Post-beta / deferred (not in v0.18.13)
+
+- Households **redesign** (product meaning, consent, +N/guests) — current feature hidden, not removed from schema.
+- **huiapp.app** custom domain and DNS move off default Vercel URLs.
+- **Google OAuth consent branding** (verified app name/logo).
+- **Facebook login** re-enable after Meta verification.
+- **Custom SMTP / email confirmation** (transactional auth and notifications).
+- **Second pass on load times** (HUI-026P follow-ups, confirm/swap latency, N+1).
+- **Monetisation** (after GDD definition of done — see locked decision #1).
+- **Native app** (wrapper or dedicated clients).
+- **In-app chat**.
+- **Memories** (post-event history UX beyond current schema hooks).
+- **Calendar import/sync** (outbound ICS MVP remains; no Google/Microsoft/Apple sync).
+
+Long-term GDD tickets (recurring cycle engine, HUI-028 email delivery, HUI-029 calendar export polish, HUI-030 hardening, etc.) continue in the sections below and run **after** beta unless Isaac reprioritises.
+
 ---
 
 ## Product philosophy

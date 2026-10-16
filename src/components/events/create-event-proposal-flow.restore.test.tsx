@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreateEventProposalFlow } from "@/components/events/create-event-proposal-flow";
+import { groupHasEstablishedRecurrence } from "@/domain/events/proposal-defaults";
 import { buildInitialProposalDraft } from "@/domain/events/proposal-defaults";
 import {
   readStoredProposalDraft,
@@ -55,16 +56,27 @@ const freshSettings: GroupSettingsRow = {
   canonicalRecurrenceSeriesId: null,
 };
 
-function renderFlow(groupId = "group-test") {
+const establishedSettings: GroupSettingsRow = {
+  ...freshSettings,
+  recurrenceIntervalUnit: "week",
+  recurrenceIntervalCount: 2,
+  recurrenceAnchorDate: "2026-10-01",
+};
+
+function renderFlow(
+  groupId = "group-test",
+  options?: { canManageRecurrence?: boolean; isFirstGroupEvent?: boolean; settings?: GroupSettingsRow },
+) {
   return render(
     <CreateEventProposalFlow
       groupId={groupId}
       groupName="QA group"
-      settings={freshSettings}
-      isFirstGroupEvent={true}
+      settings={options?.settings ?? freshSettings}
+      isFirstGroupEvent={options?.isFirstGroupEvent ?? true}
       contributionCategories={[]}
       planningCycle={null}
       timeRecommendations={[]}
+      canManageRecurrence={options?.canManageRecurrence ?? false}
     />,
   );
 }
@@ -156,6 +168,42 @@ describe("CreateEventProposalFlow draft restore", () => {
     await waitFor(() => {
       expect(screen.getByRole("radio", { name: /Fortnightly/i })).toBeChecked();
     });
+  });
+
+  it("shows recurrence link for admins and saves draft on click", async () => {
+    const groupId = "recurrence-link";
+    const user = userEvent.setup();
+    renderFlow(groupId, {
+      canManageRecurrence: true,
+      isFirstGroupEvent: false,
+      settings: establishedSettings,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: /Change how often you meet/i })).toBeInTheDocument();
+    });
+
+    const link = screen.getByRole("link", { name: /Change how often you meet/i });
+    link.addEventListener("click", (event) => event.preventDefault());
+    await user.click(link);
+    const stored = readStoredProposalDraft(groupId);
+    expect(stored?.step).toBeTruthy();
+    expect(stored?.draft).toBeTruthy();
+  });
+
+  it("hides recurrence link for non-admins on established groups", async () => {
+    renderFlow("recurrence-no-link", {
+      canManageRecurrence: false,
+      isFirstGroupEvent: false,
+      settings: establishedSettings,
+    });
+
+    await waitFor(() => {
+      expect(groupHasEstablishedRecurrence(establishedSettings, { isFirstGroupEvent: false })).toBe(
+        true,
+      );
+    });
+    expect(screen.queryByRole("link", { name: /Change how often you meet/i })).toBeNull();
   });
 
   it("persists one-off event kind when Just this once is selected", async () => {
