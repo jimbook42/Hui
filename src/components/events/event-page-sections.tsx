@@ -29,6 +29,7 @@ import {
 import { SectionHeader } from "@/components/hui/section-header";
 import { AddToCalendarButton } from "@/components/events/add-to-calendar-button";
 import { EventHostGentlePrompt } from "@/components/events/event-host-gentle-prompt";
+import { HostSwapRequestForm } from "@/components/hosts/host-swap-request-form";
 import { eventConfirmRuleDisplayLine } from "@/domain/events/confirm-rule";
 import {
   eventShowsWaitingOnHost,
@@ -88,6 +89,17 @@ export function EventHeroMeta({
   const closed = detail.status === "cancelled" || completed;
   const acceptedHost = data.hostContext?.view.acceptedHost ?? null;
   const isAcceptedHost = acceptedHost?.userId === userId;
+  const gatheringEnded = gatheringTimeHasPassed({
+    status: detail.status,
+    startsAt: startsAt,
+    nowIso: new Date().toISOString(),
+  });
+  const showHostSwapNearHost =
+    Boolean(acceptedHost) &&
+    isAcceptedHost &&
+    data.canSwapHost &&
+    !closed &&
+    !gatheringEnded;
   const hasPlace = Boolean(detail.location?.trim());
   const showHostPlaceAction = isAcceptedHost && data.canEditLocation && !closed;
   const heroDateCopy = shouldShowEventHeroTime(detail.status, startsAt)
@@ -241,7 +253,15 @@ export function EventHeroMeta({
         {acceptedHost ? (
           <li className="flex items-start gap-3">
             <SparkIcon size={20} className="mt-0.5 shrink-0 text-accent" />
-            <span className="min-w-0">Hosted by {acceptedHost.displayName}</span>
+            <span className="flex min-w-0 flex-1 flex-col gap-2">
+              <span className="min-w-0">Hosted by {acceptedHost.displayName}</span>
+              {showHostSwapNearHost ? (
+                <HostSwapRequestForm
+                  eventId={detail.id}
+                  hasReplacement={data.hostSwapReplacementAvailable}
+                />
+              ) : null}
+            </span>
           </li>
         ) : null}
         <li className="flex items-start gap-3 font-semibold text-muted-foreground">
@@ -612,7 +632,8 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
   const { settings, group } = data;
   const attentionKinds = new Set(data.attention.map((item) => item.kind));
 
-  const hostName = data.hostContext?.view.acceptedHost?.displayName ?? null;
+  const acceptedHost = data.hostContext?.view.acceptedHost ?? null;
+  const hostName = acceptedHost?.displayName ?? null;
   const suggestedName = data.hostContext?.view.pendingProposal?.displayName ?? null;
   const hostSummary = hostName
     ? `${hostName} is hosting`
@@ -705,6 +726,23 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             timeZone={data.displayTimeZone}
             candidateTimeLabels={candidateTimeLabels}
             attendanceRosters={data.attendanceRosters}
+            perTimeHosting={
+              data.showHostSection && settings.hostingEnabled
+                ? {
+                    canAcceptHost: data.canAcceptHost,
+                    canRequestSwap: data.canSwapHost,
+                    hostSwapHasReplacement: data.hostSwapReplacementAvailable,
+                    suggestedHostName:
+                      data.hostContext?.view.pendingProposal?.displayName ?? null,
+                    hostingEnabled: settings.hostingEnabled,
+                    hostPlaceRequired: detail.hostPlaceRequired,
+                    defaultLocation: detail.location,
+                    defaultCoordinates: detail.locationCoordinates,
+                    viewerHomeLocation: data.viewerHomeLocation,
+                    acceptedHostDisplayName: acceptedHost?.displayName ?? null,
+                  }
+                : null
+            }
           />
         </DisclosureCard>
       ) : null}

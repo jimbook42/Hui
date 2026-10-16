@@ -97,6 +97,7 @@ export async function getEventDetail(
       updated_at,
       cancelled_at,
       response_deadline_at,
+      last_availability_nudge_at,
       confirmation_method,
       confirm_rule,
       groups:group_id (
@@ -193,8 +194,11 @@ export async function getEventDetail(
     updatedAt: event.updated_at as string,
     cancelledAt: event.cancelled_at as string | null,
     responseDeadlineAt: (event.response_deadline_at as string | null) ?? null,
+    lastAvailabilityNudgeAt: (event.last_availability_nudge_at as string | null) ?? null,
     confirmationMethod:
-      event.confirmation_method === "organiser" || event.confirmation_method === "consensus"
+      event.confirmation_method === "organiser" ||
+      event.confirmation_method === "consensus" ||
+      event.confirmation_method === "admin"
         ? event.confirmation_method
         : null,
     confirmRule: isEventConfirmRule(String(event.confirm_rule ?? ""))

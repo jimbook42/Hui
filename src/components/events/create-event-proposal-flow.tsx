@@ -20,10 +20,7 @@ import {
   formatDateTimeLocalInTimeZone,
   wallClockToUtcIso,
 } from "@/domain/datetime/timezone";
-import {
-  computeDefaultResponseDeadlineAt,
-  proposalReplyByPreviewLabel,
-} from "@/domain/scheduling/response-deadline";
+import { proposalReplyByPreviewLabel } from "@/domain/scheduling/response-deadline";
 import type { EventProposalDraft } from "@/domain/events/proposal";
 import { mergeWallClockIntoCandidates, parseWallClockCandidate } from "@/domain/events/proposal";
 import {
@@ -173,13 +170,7 @@ export function CreateEventProposalFlow({
   // The end time is optional: an empty value means "start only".
   const [timeEnd, setTimeEnd] = useState("");
   const [timeAddedMessage, setTimeAddedMessage] = useState<string | null>(null);
-  const defaultReplyDeadlineIso = useMemo(
-    () => computeDefaultResponseDeadlineAt(new Date(), settings.proposalDeadlineHours).toISOString(),
-    [settings.proposalDeadlineHours],
-  );
-  const [replyDeadlineLocal, setReplyDeadlineLocal] = useState(() =>
-    formatDateTimeLocalInTimeZone(defaultReplyDeadlineIso, settings.timezone),
-  );
+  const [replyDeadlineLocal, setReplyDeadlineLocal] = useState("");
 
   const establishedRecurrence = groupHasEstablishedRecurrence(settings, { isFirstGroupEvent });
   const establishedCadence: RecurrenceCadence | null = !establishedRecurrence
@@ -1150,10 +1141,10 @@ export function CreateEventProposalFlow({
               <dt>Reply by</dt>
               <dd>
                 {proposalReplyByPreviewLabel(
-                  wallClockToUtcIso(replyDeadlineLocal, settings.timezone) ??
-                    defaultReplyDeadlineIso,
+                  replyDeadlineLocal
+                    ? wallClockToUtcIso(replyDeadlineLocal, settings.timezone)
+                    : null,
                   settings.timezone,
-                  settings.proposalDeadlineHours,
                 )}
               </dd>
             </div>
@@ -1168,14 +1159,13 @@ export function CreateEventProposalFlow({
             <input type="hidden" name="group_id" value={groupId} />
             <input type="hidden" name="proposal_draft" value={JSON.stringify(draft)} />
             <label className="hui-label block">
-              <span>When should people reply by?</span>
+              <span>When should people reply by? (optional)</span>
               <input
                 type="datetime-local"
                 name="response_deadline_at"
                 value={replyDeadlineLocal}
                 onChange={(event) => setReplyDeadlineLocal(event.target.value)}
                 className="hui-input max-w-full"
-                required
               />
             </label>
             {actionState.error ? (

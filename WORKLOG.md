@@ -6,6 +6,7 @@
 - Turning off dietary sharing for one group materializes explicit shares for other groups before clearing `share_with_all_groups`, so opt-out sticks without RLS changes.
 - Version **0.18.14**; tests + Playwright smoke for `/profile/groups`.
 - **Addendum:** households-off profile hub hides Hui groups row and `/profile/groups` redirects to `/groups`; skip-date friendly errors + default; first-hui Custom cadence; compact per-time availability list; plain recurrence copy; manage-hui top action row (Reschedule, Reopen, Cancel, Delete).
+- **Items 8–10:** swap hosting on hui hero for accepted host; admin pick time + “Confirmed by admin”; optional reply-by on propose, manage reply-by/nudge (24h); migration `20261017133600_hui_v01814_admin_confirm_nudge_deadline.sql` (not applied).
 
 ## 2026-10-16 — v0.18.13 fix2 (QA repair 2/2)
 

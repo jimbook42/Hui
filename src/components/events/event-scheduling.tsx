@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 
 import type { EventActionState } from "@/app/events/actions";
 import {
@@ -43,6 +43,11 @@ import { perTimeAvailabilityRowLabel } from "@/domain/scheduling/per-time-availa
 import { GatheringVisual } from "@/components/hui/gathering-visual";
 import { AttendanceLegend } from "@/components/hui/attendance-legend";
 import { HuiSurface } from "@/components/hui/hui-surface";
+import { acceptHostProposalAction } from "@/app/hosts/actions";
+import { AcceptHostWithPlaceForm } from "@/components/hosts/accept-host-with-place-form";
+import { HostSwapRequestForm } from "@/components/hosts/host-swap-request-form";
+import type { EventCoordinates } from "@/domain/events/location";
+import type { ProfileHomeLocation } from "@/domain/profile/home-location";
 
 type EventSchedulingProps = {
   eventId: string;
@@ -63,6 +68,18 @@ type EventSchedulingProps = {
   /** Server-preformatted labels keyed by candidate id (avoids hydration mismatches). */
   candidateTimeLabels: Record<string, string>;
   attendanceRosters: Record<string, AttendanceRoster>;
+  perTimeHosting?: {
+    canAcceptHost: boolean;
+    canRequestSwap: boolean;
+    hostSwapHasReplacement: boolean;
+    suggestedHostName: string | null;
+    hostingEnabled: boolean;
+    hostPlaceRequired: boolean | null;
+    defaultLocation: string | null;
+    defaultCoordinates: EventCoordinates | null;
+    viewerHomeLocation: ProfileHomeLocation | null;
+    acceptedHostDisplayName: string | null;
+  } | null;
 };
 
 const initialState: EventActionState = {};
@@ -442,6 +459,54 @@ function WithdrawCandidateButton({
   );
 }
 
+function PerTimeExpandedHosting({
+  eventId,
+  hosting,
+}: {
+  eventId: string;
+  hosting: NonNullable<EventSchedulingProps["perTimeHosting"]>;
+}) {
+  if (!hosting.canAcceptHost && !hosting.canRequestSwap && !hosting.acceptedHostDisplayName) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 space-y-3 border-t border-border/60 pt-4" data-testid="per-time-host-actions">
+      {hosting.acceptedHostDisplayName ? (
+        <p className="text-sm font-semibold text-foreground">
+          Host: {hosting.acceptedHostDisplayName}
+        </p>
+      ) : hosting.suggestedHostName ? (
+        <p className="text-sm text-muted-foreground">
+          Suggested host: {hosting.suggestedHostName}
+        </p>
+      ) : null}
+      {hosting.canAcceptHost || hosting.canRequestSwap ? (
+        <div className="flex flex-wrap gap-3">
+          {hosting.canAcceptHost ? (
+            <AcceptHostWithPlaceForm
+              action={acceptHostProposalAction}
+              eventId={eventId}
+              hostingEnabled={hosting.hostingEnabled}
+              hostPlaceRequired={hosting.hostPlaceRequired}
+              defaultLocation={hosting.defaultLocation}
+              defaultCoordinates={hosting.defaultCoordinates}
+              suggestedHostName={hosting.suggestedHostName ?? "You"}
+              viewerHomeLocation={hosting.viewerHomeLocation}
+            />
+          ) : null}
+          {hosting.canRequestSwap ? (
+            <HostSwapRequestForm
+              eventId={eventId}
+              hasReplacement={hosting.hostSwapHasReplacement}
+            />
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function CandidateCard({
   eventId,
   eventStatus,
@@ -458,6 +523,7 @@ function CandidateCard({
   listLayout,
   expanded,
   onToggle,
+  perTimeHosting,
 }: {
   eventId: string;
   eventStatus: EventStatus;
@@ -474,6 +540,7 @@ function CandidateCard({
   listLayout?: boolean;
   expanded?: boolean;
   onToggle?: () => void;
+  perTimeHosting?: EventSchedulingProps["perTimeHosting"];
 }) {
   const nowIso = new Date().toISOString();
   const passed = isPassedProposedCandidate(candidate, nowIso);
@@ -552,6 +619,9 @@ function CandidateCard({
           canRespond={canRespond}
         />
       ) : null}
+      {listLayout && expanded !== false && perTimeHosting ? (
+        <PerTimeExpandedHosting eventId={eventId} hosting={perTimeHosting} />
+      ) : null}
       {(!listLayout || expanded !== false) && shouldShowFinaliseControl(
         canFinalise && !passed,
         eventStatus,
@@ -602,6 +672,7 @@ export function EventScheduling({
   timeZone,
   candidateTimeLabels,
   attendanceRosters,
+  perTimeHosting = null,
 }: EventSchedulingProps) {
   const evaluations = new Map(
     consensus.candidates.map((candidate) => [candidate.candidateId, candidate]),
@@ -616,18 +687,20 @@ export function EventScheduling({
     canFinalise,
   );
   const useCompactTimeList = candidates.length > 1;
-  const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
-
-  useEffect(() => {
+  const defaultExpandedCandidateId = useMemo(() => {
     if (!useCompactTimeList) {
-      return;
+      return null;
     }
     const nowIso = new Date().toISOString();
-    const firstOpen = candidates.find(
-      (candidate) => !isPassedProposedCandidate(candidate, nowIso),
+    return (
+      candidates.find((candidate) => !isPassedProposedCandidate(candidate, nowIso))?.id ?? null
     );
-    setExpandedCandidateId(firstOpen?.id ?? null);
   }, [candidates, useCompactTimeList]);
+  const [expandedCandidateId, setExpandedCandidateId] = useState<string | null | undefined>(
+    undefined,
+  );
+  const resolvedExpandedCandidateId =
+    expandedCandidateId !== undefined ? expandedCandidateId : defaultExpandedCandidateId;
 
   return (
     <section className="hui-card-section">
@@ -709,15 +782,18 @@ export function EventScheduling({
               roster={attendanceRosters[candidate.id] ?? null}
               showLateTags={canFinalise}
               listLayout={useCompactTimeList}
-              expanded={!useCompactTimeList || expandedCandidateId === candidate.id}
+              expanded={!useCompactTimeList || resolvedExpandedCandidateId === candidate.id}
               onToggle={
                 useCompactTimeList
                   ? () =>
-                      setExpandedCandidateId((current) =>
-                        current === candidate.id ? null : candidate.id,
-                      )
+                      setExpandedCandidateId((current) => {
+                        const active =
+                          current !== undefined ? current : defaultExpandedCandidateId;
+                        return active === candidate.id ? null : candidate.id;
+                      })
                   : undefined
               }
+              perTimeHosting={perTimeHosting}
             />
           ))
         )}

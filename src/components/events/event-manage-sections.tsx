@@ -126,12 +126,16 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
     detail.responseDeadlineAt,
     tz,
   );
-  const canEditResponseDeadline =
-    data.canEdit && eventAcceptsResponseDeadline(detail.status) && detail.responseDeadlineAt;
   const defaultDeadlineLocal =
     detail.responseDeadlineAt
       ? formatDateTimeLocalInTimeZone(detail.responseDeadlineAt, tz)
       : "";
+  const adminPickCandidates = data.scheduling.candidates
+    .filter((candidate) => candidate.status === "proposed")
+    .map((candidate) => ({
+      id: candidate.id,
+      label: candidateTimeLabels[candidate.id] ?? "Proposed time",
+    }));
 
   const overviewWhen =
     startsAt && !closed
@@ -176,7 +180,13 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
         timeZone={tz}
         defaultStartsAt={detail.startsAt}
         defaultEndsAt={detail.endsAt}
+        defaultDeadlineLocal={defaultDeadlineLocal}
+        lastAvailabilityNudgeAt={detail.lastAvailabilityNudgeAt}
         canReschedule={data.canReschedule}
+        canAdminPickTime={data.canAdminPickTime && adminPickCandidates.length > 0}
+        adminPickCandidates={adminPickCandidates}
+        canEditResponseDeadline={data.canEditResponseDeadline}
+        canNudgeAvailability={data.canNudgeAvailability}
         canCancel={data.canCancel}
         canDelete={data.canDelete}
       />
@@ -225,7 +235,7 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
             <dd className="mt-1 font-semibold text-foreground">{detail.creatorDisplayName}</dd>
           </div>
         </dl>
-        {canEditResponseDeadline ? (
+        {data.canEditResponseDeadline ? (
           <div className="mt-6 border-t border-border/60 pt-6">
             <h3 className="hui-type-section text-foreground">Reply deadline</h3>
             <p className="mt-2 text-sm text-muted-foreground">

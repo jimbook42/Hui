@@ -37,13 +37,15 @@ describe("response deadline copy", () => {
     expect(formatProposalDeadlineDefaultNote(null)).toBe("default: 2 days");
   });
 
-  it("includes default hours in the propose preview label", () => {
+  it("shows not set when propose flow leaves reply-by blank", () => {
+    expect(proposalReplyByPreviewLabel(null, "Pacific/Auckland")).toBe("Not set");
+  });
+
+  it("formats a chosen reply-by in the propose preview", () => {
     const label = proposalReplyByPreviewLabel(
       "2026-10-17T06:28:00.000Z",
       "Pacific/Auckland",
-      null,
     );
     expect(label).toMatch(/Reply by/);
-    expect(label).toMatch(/default: 2 days/);
   });
 });

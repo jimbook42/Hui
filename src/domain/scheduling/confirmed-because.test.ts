@@ -14,6 +14,12 @@ describe("formatConfirmedReasonLine", () => {
     expect(formatConfirmedReasonLine("majority_active_members")).toBe("Confirmed by majority");
   });
 
+  it("uses admin wording when an admin picked the time", () => {
+    expect(formatConfirmedReasonLine("majority_active_members", "admin")).toBe(
+      "Confirmed by admin",
+    );
+  });
+
   it("covers other consensus rules briefly", () => {
     expect(formatConfirmedReasonLine("all_active_members")).toBe(
       "Confirmed · everyone can come",

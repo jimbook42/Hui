@@ -21,6 +21,12 @@ vi.mock("@/components/auth/auth-form", () => ({
 vi.mock("@/components/hui/gathering-visual", () => ({
   GatheringVisual: () => <div data-testid="gathering-visual" />,
 }));
+vi.mock("@/components/hosts/host-swap-request-form", () => ({
+  HostSwapRequestForm: () => <div data-testid="host-swap-form" />,
+}));
+vi.mock("@/components/hosts/accept-host-with-place-form", () => ({
+  AcceptHostWithPlaceForm: () => <div data-testid="accept-host-form" />,
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -129,5 +135,55 @@ describe("EventScheduling compact per-time list", () => {
 
     await user.click(screen.getByRole("button", { name: /Tue 21 Oct/i }));
     expect(screen.queryByText("Alex")).not.toBeInTheDocument();
+  });
+
+  it("shows host actions inside the expanded per-time row", () => {
+    const a = buildCandidate("a", "2026-10-20T10:00:00.000Z");
+    const b = buildCandidate("b", "2026-10-21T10:00:00.000Z");
+
+    render(
+      <EventScheduling
+        eventId="event-1"
+        groupId="group-1"
+        eventStatus="proposing"
+        candidates={[a, b]}
+        withdrawnCandidates={[]}
+        maybeResponsesEnabled={false}
+        minimumAttendees={2}
+        proposalDeadlineHours={null}
+        replyByLabel={null}
+        consensus={{
+          confirmRule: "when_most_can_come",
+          consensusRule: "majority_active_members",
+          minimumAttendees: 2,
+          eligibleMemberCount: 4,
+          maybeResponsesEnabled: false,
+          candidates: [],
+        }}
+        canAddCandidates={false}
+        canRemoveCandidates={false}
+        canRespond={false}
+        canFinalise={true}
+        timeZone="Pacific/Auckland"
+        candidateTimeLabels={{ a: "Mon 20 Oct", b: "Tue 21 Oct" }}
+        attendanceRosters={{}}
+        perTimeHosting={{
+          canAcceptHost: false,
+          canRequestSwap: true,
+          hostSwapHasReplacement: true,
+          suggestedHostName: null,
+          hostingEnabled: true,
+          hostPlaceRequired: null,
+          defaultLocation: null,
+          defaultCoordinates: null,
+          viewerHomeLocation: null,
+          acceptedHostDisplayName: "Jamie",
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId("per-time-host-actions")).toBeInTheDocument();
+    expect(screen.getByText("Host: Jamie")).toBeInTheDocument();
+    expect(screen.getByTestId("host-swap-form")).toBeInTheDocument();
   });
 });

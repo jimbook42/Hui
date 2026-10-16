@@ -49,6 +49,11 @@ import {
   canRespondToCandidates,
   canWithdrawCandidate,
 } from "@/domain/scheduling/permissions";
+import {
+  canAdminPickEventTime,
+  canEditEventResponseDeadline,
+  canNudgeEventAvailability,
+} from "@/domain/scheduling/response-deadline-permissions";
 import { getServerSupabase } from "@/lib/auth/server-session";
 import { fetchMyHomeLocation } from "@/lib/profiles/home-location-query";
 import {
@@ -282,6 +287,22 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
   const rosterByCandidateId = new Map(
     Object.entries(attendanceRosters).map(([candidateId, roster]) => [candidateId, roster]),
   );
+  const canEditResponseDeadline = canEditEventResponseDeadline(
+    detail.status,
+    detail.viewerRole,
+    userId,
+    detail.createdBy,
+    acceptedHostUserId,
+  );
+  const canNudgeAvailability = canNudgeEventAvailability(
+    detail.status,
+    detail.viewerRole,
+    userId,
+    detail.createdBy,
+    acceptedHostUserId,
+  );
+  const canAdminPickTime = canAdminPickEventTime(detail.status, detail.viewerRole);
+
   const organiserPicksConfirm = organiserPicksCanConfirmNow(
     canFinalise,
     detail.status,
@@ -364,6 +385,9 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     canCreateDecisions,
     canRespondToDecisions,
     openDecisionNeedsResponse,
+    canEditResponseDeadline,
+    canNudgeAvailability,
+    canAdminPickTime,
   };
 });
 
