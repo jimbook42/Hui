@@ -11,6 +11,7 @@ describe("buildProposingPastDateWarning", () => {
       },
       timeZone: "Pacific/Auckland",
       todayDateOnly: "2026-10-14",
+      nowIso: "2026-10-14T12:00:00.000Z",
       pendingDateOnly: "2026-10-01",
     });
 

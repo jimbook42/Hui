@@ -14,6 +14,7 @@ import {
   canRespondToEventDecisions,
 } from "@/domain/decisions/permissions";
 import { buildContributionSlots, isContributionSlotFilled } from "@/domain/contributions/slots";
+import { membersHouseholdViewForDisplay } from "@/domain/households/group-display";
 import { buildEventAttention } from "@/domain/events/attention";
 import { attendanceStateFromChoice } from "@/domain/events/home";
 import {
@@ -101,7 +102,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     ]),
   );
 
-  const [householdView, hostContext] = await Promise.all([
+  const [householdViewRaw, hostContext] = await Promise.all([
     group
       ? getGroupHouseholdMemberView(supabase, detail.groupId, group.members)
       : Promise.resolve(null),
@@ -109,6 +110,11 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
       ? getEventHostContext(supabase, detail.id, detail.groupId, userId)
       : Promise.resolve(null),
   ]);
+
+  const householdView =
+    group && householdViewRaw
+      ? membersHouseholdViewForDisplay(group.members, householdViewRaw)
+      : null;
 
   const settings = group?.settings ?? null;
 
@@ -194,9 +200,11 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
 
   const displayTimeZone = detail.timezone ?? settings?.timezone ?? "Pacific/Auckland";
 
+  const nowIso = new Date().toISOString();
   const multiTimeAnswerPresentation = multiTimeProposingAnswerPresentation(
     scheduling.candidates,
     detail.status,
+    nowIso,
   );
   const viewerResponse = viewerResponseForDisplay(
     scheduling.candidates,

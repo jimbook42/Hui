@@ -34,6 +34,7 @@ grant authenticated to current_user;
 grant service_role to current_user;
 grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
+select set_config('hui.allow_past_event_candidates', 'on', false);
 `;
 
 type Ids = { owner: string; isaac: string; jamie: string };

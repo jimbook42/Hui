@@ -20,6 +20,7 @@ import {
   isEventConfirmRule,
   type EventConfirmRule,
 } from "@/domain/events/confirm-rule";
+import { validateCandidateStartNotPast } from "@/domain/scheduling/candidate-start-past";
 import { validateCandidateWindow } from "@/domain/scheduling/validation";
 import { normalizeProposalContributionRequests } from "@/domain/events/proposal-contributions";
 
@@ -172,6 +173,7 @@ export function validateEventProposalDraft(
     memberUserIds: string[];
     groupName?: string;
     contributionCategoryNames?: Map<string, string>;
+    nowIso?: string;
   },
 ): ProposalValidationResult {
   const gatheringType = parseGatheringType(draft.gatheringType);
@@ -215,8 +217,13 @@ export function validateEventProposalDraft(
     return { ok: false, error: "Add at least one proposed time." };
   }
 
+  const nowIso = options.nowIso ?? new Date().toISOString();
   const seen = new Set<string>();
   for (const candidate of draft.candidates) {
+    const pastError = validateCandidateStartNotPast(candidate.startsAt, nowIso);
+    if (pastError) {
+      return { ok: false, error: pastError };
+    }
     const windowError = validateCandidateWindow(candidate.startsAt, candidate.endsAt);
     if (windowError) {
       return { ok: false, error: windowError };

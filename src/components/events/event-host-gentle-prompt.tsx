@@ -21,6 +21,7 @@ type EventHostGentlePromptProps = {
   eventLocation: string | null;
   eventCoordinates: EventCoordinates | null;
   viewerHomeLocation: ProfileHomeLocation | null;
+  gatheringEnded?: boolean;
 };
 
 export function EventHostGentlePrompt({
@@ -34,6 +35,7 @@ export function EventHostGentlePrompt({
   eventLocation,
   eventCoordinates,
   viewerHomeLocation,
+  gatheringEnded = false,
 }: EventHostGentlePromptProps) {
   const hidden = useSyncExternalStore(
     () => () => undefined,
@@ -41,7 +43,7 @@ export function EventHostGentlePrompt({
     () => false,
   );
 
-  if (!hostingEnabled || hidden || !suggestedHostName) {
+  if (!hostingEnabled || hidden || !suggestedHostName || gatheringEnded) {
     return null;
   }
   if (!canAcceptHost && !canRequestSwap) {
@@ -66,6 +68,7 @@ export function EventHostGentlePrompt({
             defaultCoordinates={eventCoordinates}
             suggestedHostName={suggestedHostName}
             viewerHomeLocation={viewerHomeLocation}
+            gatheringEnded={gatheringEnded}
           />
         ) : null}
         {canRequestSwap ? (

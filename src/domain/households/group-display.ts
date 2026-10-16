@@ -1,4 +1,5 @@
 import type { GroupMemberRow } from "@/lib/groups/types";
+import { householdsEnabled } from "@/lib/features";
 
 export type HouseholdMemberRow = {
   userId: string;
@@ -59,4 +60,19 @@ export function buildGroupMembersHouseholdView(
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
   return { households: householdsBlocks, ungroupedMembers };
+}
+
+export function membersHouseholdViewForDisplay(
+  members: GroupMemberRow[],
+  householdView: GroupMembersHouseholdView,
+): GroupMembersHouseholdView {
+  if (householdsEnabled()) {
+    return householdView;
+  }
+  return {
+    households: [],
+    ungroupedMembers: members
+      .map((member) => ({ userId: member.userId, displayName: member.displayName }))
+      .sort((a, b) => a.displayName.localeCompare(b.displayName)),
+  };
 }

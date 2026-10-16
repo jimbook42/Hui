@@ -113,7 +113,12 @@ export function EventContributionsSection({
               : "This group has not set up what to bring yet."}
           </p>
           {canCoordinate ? (
-            <HuiLinkButton href={`/groups/${groupId}`} size="sm" shape="melt" className="mt-3">
+            <HuiLinkButton
+              href={`/groups/${groupId}#bring`}
+              size="sm"
+              shape="melt"
+              className="mt-3"
+            >
               Add something
             </HuiLinkButton>
           ) : (

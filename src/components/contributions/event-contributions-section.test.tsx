@@ -29,7 +29,7 @@ describe("EventContributionsSection", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Add something" })).toHaveAttribute(
       "href",
-      `/groups/${baseProps.groupId}`,
+      `/groups/${baseProps.groupId}#bring`,
     );
   });
 });

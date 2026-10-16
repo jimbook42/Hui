@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 
 import { normalizeHouseholdName } from "@/domain/households/validation";
 import { parseUserId } from "@/domain/groups/validation";
+import { householdsEnabled } from "@/lib/features";
 import { createClient } from "@/lib/supabase/server";
+
+function householdsDisabledState(): HouseholdActionState {
+  return { error: "Households are not available in this version of Hui." };
+}
 
 export type HouseholdActionState = {
   error?: string;
@@ -27,6 +32,9 @@ export async function createHouseholdAction(
   _prev: HouseholdActionState,
   formData: FormData,
 ): Promise<HouseholdActionState> {
+  if (!householdsEnabled()) {
+    return householdsDisabledState();
+  }
   const groupId = String(formData.get("group_id") ?? "");
   const name = normalizeHouseholdName(String(formData.get("name") ?? ""));
   if (!groupId || !name) {
@@ -52,6 +60,9 @@ export async function updateHouseholdNameAction(
   _prev: HouseholdActionState,
   formData: FormData,
 ): Promise<HouseholdActionState> {
+  if (!householdsEnabled()) {
+    return householdsDisabledState();
+  }
   const householdId = String(formData.get("household_id") ?? "");
   const groupId = String(formData.get("group_id") ?? "");
   const name = normalizeHouseholdName(String(formData.get("name") ?? ""));
@@ -78,6 +89,9 @@ export async function addHouseholdMemberAction(
   _prev: HouseholdActionState,
   formData: FormData,
 ): Promise<HouseholdActionState> {
+  if (!householdsEnabled()) {
+    return householdsDisabledState();
+  }
   const householdId = String(formData.get("household_id") ?? "");
   const groupId = String(formData.get("group_id") ?? "");
   const userId = parseUserId(String(formData.get("user_id") ?? ""));
@@ -104,6 +118,9 @@ export async function removeHouseholdMemberAction(
   _prev: HouseholdActionState,
   formData: FormData,
 ): Promise<HouseholdActionState> {
+  if (!householdsEnabled()) {
+    return householdsDisabledState();
+  }
   const householdId = String(formData.get("household_id") ?? "");
   const groupId = String(formData.get("group_id") ?? "");
   const userId = String(formData.get("user_id") ?? "");

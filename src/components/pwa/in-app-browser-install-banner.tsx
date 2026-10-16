@@ -21,11 +21,26 @@ export function InAppBrowserInstallBanner({
 
   async function copyPageLink() {
     const url = window.location.href;
+    const pastedInto = platform === "ios" ? "Safari" : "Chrome";
     try {
-      await navigator.clipboard.writeText(url);
-      setCopyMessage("Link copied.");
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = url;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopyMessage(`Link copied — paste it into ${pastedInto}`);
+      window.setTimeout(() => setCopyMessage(null), 3000);
     } catch {
       setCopyMessage("Could not copy. Select the address bar and copy the link manually.");
+      window.setTimeout(() => setCopyMessage(null), 3000);
     }
   }
 

@@ -84,6 +84,18 @@ describe("participant flow (HUI-026B)", () => {
     ).toBe("available");
   });
 
+  it("excludes passed proposed times from multi-time counts", () => {
+    const presentation = multiTimeProposingAnswerPresentation(
+      [
+        { ...candidate, startsAt: "2026-10-01T18:00:00Z", viewerResponse: "available" },
+        { ...candidate, id: "c2", viewerResponse: "available" },
+      ],
+      "proposing",
+      "2026-10-16T10:00:00.000Z",
+    );
+    expect(presentation).toBeNull();
+  });
+
   it("summarises multi-time answers without treating one yes as yes to all times", () => {
     const presentation = multiTimeProposingAnswerPresentation(
       [

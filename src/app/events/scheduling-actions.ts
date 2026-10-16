@@ -12,6 +12,7 @@ import {
   canFinaliseEvent,
   canWithdrawCandidate,
 } from "@/domain/scheduling/permissions";
+import { validateCandidateStartNotPast } from "@/domain/scheduling/candidate-start-past";
 import {
   isDuplicateCandidate,
   parseAvailabilityChoice,
@@ -154,6 +155,11 @@ export async function addCandidateAction(
   const windowError = validateCandidateWindow(startsAt, endsAt);
   if (windowError) {
     return { error: windowError };
+  }
+
+  const pastError = validateCandidateStartNotPast(startsAt, new Date().toISOString());
+  if (pastError) {
+    return { error: pastError };
   }
 
   if (!canAddCandidates(detail.viewerRole, group.settings, detail.status)) {

@@ -9,7 +9,9 @@ import { AuthForm } from "@/components/auth/auth-form";
 import { HostSwapRequestForm } from "@/components/hosts/host-swap-request-form";
 import type { EventCoordinates } from "@/domain/events/location";
 import type { ProfileHomeLocation } from "@/domain/profile/home-location";
+import { gatheringTimeHasPassed } from "@/domain/events/host-prompt-copy";
 import { filterHostAssignableMembers } from "@/domain/hosts/attendance-eligibility";
+import type { EventStatus } from "@/domain/events/types";
 import type { AttendanceRoster } from "@/domain/scheduling/attendance-roster";
 import type { EventHostView } from "@/lib/hosts/queries";
 import type { GroupMemberRow } from "@/lib/groups/types";
@@ -17,7 +19,8 @@ import type { GroupMemberRow } from "@/lib/groups/types";
 type EventHostSectionProps = {
   eventId: string;
   groupId: string;
-  eventStatus: string;
+  eventStatus: EventStatus;
+  eventStartsAt: string | null;
   hostingEnabled: boolean;
   canAssign: boolean;
   canRespond: boolean;
@@ -38,6 +41,7 @@ export function EventHostSection({
   eventId,
   groupId,
   eventStatus,
+  eventStartsAt,
   hostingEnabled,
   canAssign,
   canRespond,
@@ -53,6 +57,11 @@ export function EventHostSection({
   hostPlaceRequired,
   viewerHomeLocation,
 }: EventHostSectionProps) {
+  const gatheringEnded = gatheringTimeHasPassed({
+    status: eventStatus,
+    startsAt: eventStartsAt,
+    nowIso: new Date().toISOString(),
+  });
   const assignableMembers = filterHostAssignableMembers(
     eligibleMembers,
     attendanceRoster,
@@ -145,6 +154,7 @@ export function EventHostSection({
                   defaultCoordinates={eventCoordinates}
                   suggestedHostName={suggestedName ?? "You"}
                   viewerHomeLocation={viewerHomeLocation}
+                  gatheringEnded={gatheringEnded}
                 />
               ) : null}
               {canRequestSwap ? (

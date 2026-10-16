@@ -88,6 +88,7 @@ export default async function NewGroupEventPage({ params }: PageProps) {
         contributionCategories={contributionCategories}
         planningCycle={planningContext?.cycle ?? null}
         timeRecommendations={timeRecommendations}
+        canManageRecurrence={planningContext?.canManageRecurrence ?? false}
       />
     </AppShell>
   );

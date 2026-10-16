@@ -47,8 +47,9 @@ export async function createEventDecisionAction(
 ): Promise<DecisionActionState> {
   const eventId = String(formData.get("event_id") ?? "");
   const question = String(formData.get("question") ?? "");
-  const optionsRaw = String(formData.get("options") ?? "");
-  const optionLabels = parseDecisionOptionDrafts(optionsRaw);
+  const optionLabels = parseDecisionOptionDrafts(
+    formData.getAll("option").map((value) => String(value)),
+  );
   const validationError = validateDecisionDraft(question, optionLabels);
   if (!eventId || validationError) {
     return { error: validationError ?? "Could not create this decision." };
@@ -81,8 +82,9 @@ export async function updateEventDecisionDraftAction(
   const decisionId = String(formData.get("decision_id") ?? "");
   const eventId = String(formData.get("event_id") ?? "");
   const question = String(formData.get("question") ?? "");
-  const optionsRaw = String(formData.get("options") ?? "");
-  const optionLabels = parseDecisionOptionDrafts(optionsRaw);
+  const optionLabels = parseDecisionOptionDrafts(
+    formData.getAll("option").map((value) => String(value)),
+  );
   const validationError = validateDecisionDraft(question, optionLabels);
   if (!decisionId || !eventId || validationError) {
     return { error: validationError ?? "Could not update this decision." };

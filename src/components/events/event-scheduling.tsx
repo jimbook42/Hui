@@ -11,6 +11,7 @@ import {
 } from "@/app/events/scheduling-actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import type { EventStatus } from "@/domain/events/types";
+import { isPassedProposedCandidate } from "@/domain/scheduling/candidate-start-past";
 import {
   availabilityResponseOptions,
   buildAttendanceSummaryLines,
@@ -461,16 +462,20 @@ function CandidateCard({
   roster?: AttendanceRoster | null;
   showLateTags?: boolean;
 }) {
-  const badge = candidateStatusBadge(
-    eventStatus,
-    candidate.status,
-    evaluation?.passes ?? false,
-  );
+  const nowIso = new Date().toISOString();
+  const passed = isPassedProposedCandidate(candidate, nowIso);
+  const badge = passed
+    ? "Passed"
+    : candidateStatusBadge(eventStatus, candidate.status, evaluation?.passes ?? false);
 
   return (
     <li
       className={`rounded-hui-lg p-4 ${
-        candidate.status === "selected" ? "bg-sage-soft" : "bg-muted"
+        passed
+          ? "bg-muted opacity-60"
+          : candidate.status === "selected"
+            ? "bg-sage-soft"
+            : "bg-muted"
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -500,7 +505,7 @@ function CandidateCard({
         roster={roster}
         showLateTags={showLateTags}
       />
-      {candidate.status !== "withdrawn" ? (
+      {candidate.status !== "withdrawn" && !passed ? (
         <CandidateResponseForm
           eventId={eventId}
           eventStatus={eventStatus}
@@ -510,7 +515,7 @@ function CandidateCard({
         />
       ) : null}
       {shouldShowFinaliseControl(
-        canFinalise,
+        canFinalise && !passed,
         eventStatus,
         candidate.status,
         evaluation?.passes ?? false,

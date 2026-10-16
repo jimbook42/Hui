@@ -21,20 +21,40 @@ export function normalizeDecisionOptionLabel(raw: string): string | null {
   return trimmed;
 }
 
-/** Parse newline- or comma-separated draft options from a form field. */
-export function parseDecisionOptionDrafts(raw: string): string[] {
-  const parts = raw
-    .split(/\n|,/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-  const unique: string[] = [];
-  for (const part of parts) {
-    const label = normalizeDecisionOptionLabel(part);
-    if (label && !unique.includes(label)) {
-      unique.push(label);
+/** One form field value = one option (trimmed). Empty rows are ignored. */
+export function parseDecisionOptionDrafts(rawInputs: string[]): string[] {
+  const labels: string[] = [];
+  for (const raw of rawInputs) {
+    const label = normalizeDecisionOptionLabel(raw);
+    if (label) {
+      labels.push(label);
     }
   }
-  return unique;
+  return labels;
+}
+
+export function validateDecisionOptionInputs(rawInputs: string[]): string | null {
+  const labels = parseDecisionOptionDrafts(rawInputs);
+  if (labels.length < MIN_OPTIONS) {
+    return "Add at least two options.";
+  }
+  if (labels.length > MAX_OPTIONS) {
+    return "At most twelve options are allowed.";
+  }
+  const seen = new Set<string>();
+  for (const label of labels) {
+    const key = label.toLowerCase();
+    if (seen.has(key)) {
+      return "Each option must be unique.";
+    }
+    seen.add(key);
+  }
+  for (const label of labels) {
+    if (!normalizeDecisionOptionLabel(label)) {
+      return "Each option must be between 1 and 120 characters.";
+    }
+  }
+  return null;
 }
 
 export function validateDecisionDraft(question: string, optionLabels: string[]): string | null {
@@ -47,10 +67,16 @@ export function validateDecisionDraft(question: string, optionLabels: string[]):
   if (optionLabels.length > MAX_OPTIONS) {
     return "At most twelve options are allowed.";
   }
+  const seen = new Set<string>();
   for (const label of optionLabels) {
     if (!normalizeDecisionOptionLabel(label)) {
       return "Each option must be between 1 and 120 characters.";
     }
+    const key = label.toLowerCase();
+    if (seen.has(key)) {
+      return "Each option must be unique.";
+    }
+    seen.add(key);
   }
   return null;
 }
