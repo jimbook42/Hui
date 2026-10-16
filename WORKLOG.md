@@ -1,5 +1,22 @@
 # Worklog
 
+## 2026-10-16 — v0.18.10 fix2 (bring Add something, non-member load, 404)
+
+- **Add something:** Organisers with no group bring categories need the contributions disclosure **open by default** (`contributionsDisclosureDefaultOpen`); link stays inside `EventContributionsSection` but was hidden in a collapsed `<details>`. Integration test covers `DisclosureCard` + section path.
+- **Non-member slow load:** Removed parent `events/loading.tsx` and `events/[eventId]/respond/loading.tsx` so a `notFound()` on event routes is not preceded by a streamed AppShell 200 shell (RSC retry loop / 30s timeouts).
+
+## 2026-10-16 — v0.18.10 fix1 (profile/home #418, bring, hui 404)
+
+- **/profile/home #418:** `LocationPicker` deferred geolocation detection until after mount so SSR and hydration both omit “Use my location” on first paint.
+- **Bring regression:** Invalid `<h2>` inside `<summary>` broke disclosure content; disclosure titles use `role="heading"` `aria-level={2}` instead. Component test for empty-category organiser **Add something**.
+- **Hui 404 status:** Removed `events/[eventId]/loading.tsx` (streamed 200 before `notFound()`); `requireEventDetail` + `isEventId` guard malformed ids before data fetch.
+
+## 2026-10-16 — v0.18.10 profile home save + hydration + bring heading
+
+- **Profile home save:** PostgREST `UPDATE` default return tried to read revoked `home_location_*` columns after migration `20261016103000`; profile actions now `.select("id")` only (same pattern as display name). PGlite test for label-only home update + `my_home_location()` readback.
+- **Profile #418:** `AppShell` awaited unread count once and removed Suspense fallbacks that rendered `0` unread then swapped to the real badge count on hydration.
+- **Event bring heading:** Disclosure title `Who's bringing what` with semantic `h2`; `#contributions` anchor on the disclosure (inner duplicate `h2` stays hidden via `.hui-embedded`).
+
 ## 2026-10-16 — HUI-UX5 fix4 host place + bring empty + load (v0.18.9)
 
 - **#1 Host “At my home”:** Default venue mode was `home` while React state for `location`/`coordinates` stayed empty, so `updateEventAction` called `update_event_place` with null location (HTTP 200, no visible place). Sync home fields when home mode is active; reject host-only saves without a confirmable place; `fetchMyHomeLocation` profile fallback only when `my_home_location` RPC is missing (not on permission errors). Tests: `host-venue.test.ts`, `home-location-query.test.ts`, `host-place.test.ts`; PGlite privacy migration path unchanged in `profile-home-privacy.test.ts`. E2E step in `e2e/hosts.spec.ts` (live auth).

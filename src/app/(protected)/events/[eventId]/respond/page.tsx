@@ -8,6 +8,7 @@ import { formatEventTimeRange } from "@/domain/datetime/timezone";
 import { viewerResponseForDisplay } from "@/domain/events/participant-flow";
 import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
 import { loadRespondPrimary, loadRespondSecondary } from "@/lib/events/respond-page-data";
+import { isEventId } from "@/lib/events/event-id";
 import { eventDetailPath } from "@/lib/events/paths";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { devTimed } from "@/lib/perf/dev-server-timing";
@@ -18,6 +19,9 @@ type PageProps = {
 
 export default async function EventParticipantRespondPage({ params }: PageProps) {
   const { eventId } = await params;
+  if (!isEventId(eventId)) {
+    notFound();
+  }
   const user = await devTimed("respond-page:getUser", () => getServerAuthUser());
   if (!user) {
     notFound();

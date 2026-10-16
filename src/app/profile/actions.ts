@@ -39,17 +39,21 @@ export async function updateHomeLocationAction(
   const { supabase, user } = await requireUser();
   const home = parsed.home;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .update({
       home_location_label: home?.label ?? null,
       home_location_lat: home?.coordinates?.lat ?? null,
       home_location_lng: home?.coordinates?.lng ?? null,
     })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .select("id");
 
   if (error) {
     return { error: error.message };
+  }
+  if (!data?.length) {
+    return { error: "Profile not found." };
   }
 
   revalidatePath("/profile");
@@ -79,10 +83,17 @@ export async function completePersonalSetupAction(
     update.home_location_lng = patch.home?.coordinates?.lng ?? null;
   }
 
-  const { error } = await supabase.from("profiles").update(update).eq("id", user.id);
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(update)
+    .eq("id", user.id)
+    .select("id");
 
   if (error) {
     return { error: error.message };
+  }
+  if (!data?.length) {
+    return { error: "Profile not found." };
   }
 
   revalidatePath("/dashboard");
@@ -106,7 +117,14 @@ export async function skipPersonalSetupAction(formData: FormData): Promise<void>
     update.home_location_lng = patch.home?.coordinates?.lng ?? null;
   }
 
-  await supabase.from("profiles").update(update).eq("id", user.id);
+  const { error } = await supabase
+    .from("profiles")
+    .update(update)
+    .eq("id", user.id)
+    .select("id");
+  if (error) {
+    throw new Error(error.message);
+  }
   revalidatePath("/dashboard");
   revalidatePath("/profile");
   redirect("/dashboard");

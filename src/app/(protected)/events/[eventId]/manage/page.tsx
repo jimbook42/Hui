@@ -5,7 +5,7 @@ import { EventManageSections } from "@/components/events/event-manage-sections";
 import { canAccessEventManagement } from "@/domain/events/permissions";
 import { pickAcceptedHost } from "@/domain/hosts/display";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
-import { getEventDetail } from "@/lib/events/queries";
+import { requireEventDetail } from "@/lib/events/require-event-detail";
 import { getEventHostContext } from "@/lib/hosts/queries";
 import { eventDetailPath } from "@/lib/events/paths";
 
@@ -18,10 +18,7 @@ export default async function EventManagePage({ params }: PageProps) {
   const user = await getServerAuthUser();
   const supabase = await getServerSupabase();
 
-  const detail = await getEventDetail(supabase, eventId, user!.id);
-  if (!detail) {
-    notFound();
-  }
+  const detail = await requireEventDetail(supabase, eventId, user!.id);
 
   const hostContext = await getEventHostContext(
     supabase,

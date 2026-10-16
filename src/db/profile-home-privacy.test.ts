@@ -148,6 +148,32 @@ describe("profile home location privacy (HUI-UX5 G1)", () => {
     });
   });
 
+  it("lets the owner update home label without coordinates and read back via my_home_location", async () => {
+    await asUser(db, ids.owner);
+    await db.query(
+      `update public.profiles
+       set home_location_label = $2,
+           home_location_lat = null,
+           home_location_lng = null
+       where id = $1`,
+      [ids.owner, "3 Queen Street"],
+    );
+
+    const rows = await db.query<{ home_location_label: string }>(
+      `select home_location_label from public.my_home_location()`,
+    );
+    expect(rows.rows[0]?.home_location_label).toBe("3 Queen Street");
+
+    await db.query(
+      `update public.profiles
+       set home_location_label = $2,
+           home_location_lat = -36.8485,
+           home_location_lng = 174.7633
+       where id = $1`,
+      [ids.owner, "1 Queen St"],
+    );
+  });
+
   it("returns host home only to the host with group membership (not co-members)", async () => {
     await asUser(db, ids.owner);
     const groupId = (

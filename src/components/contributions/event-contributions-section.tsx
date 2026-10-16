@@ -79,7 +79,7 @@ export function EventContributionsSection({
 
   if (eventStatus === "cancelled") {
     return (
-      <section id="contributions" className="hui-card-section">
+      <section className="hui-card-section">
         <h2 className="hui-type-section text-foreground">Who&apos;s bringing what</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           This event was cancelled. Who&apos;s bringing what is closed.
@@ -98,7 +98,7 @@ export function EventContributionsSection({
   }
 
   return (
-    <section id="contributions" className="hui-card-section">
+    <section className="hui-card-section">
       <h2 className="hui-type-section text-foreground">Who&apos;s bringing what</h2>
       {isProposed ? (
         <p className="hui-message-note mt-2">
