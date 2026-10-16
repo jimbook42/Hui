@@ -1,5 +1,11 @@
 # Worklog
 
+## 2026-10-16 — v0.18.10 profile home save + hydration + bring heading
+
+- **Profile home save:** PostgREST `UPDATE` default return tried to read revoked `home_location_*` columns after migration `20261016103000`; profile actions now `.select("id")` only (same pattern as display name). PGlite test for label-only home update + `my_home_location()` readback.
+- **Profile #418:** `AppShell` awaited unread count once and removed Suspense fallbacks that rendered `0` unread then swapped to the real badge count on hydration.
+- **Event bring heading:** Disclosure title `Who's bringing what` with semantic `h2`; `#contributions` anchor on the disclosure (inner duplicate `h2` stays hidden via `.hui-embedded`).
+
 ## 2026-10-16 — HUI-UX5 fix4 host place + bring empty + load (v0.18.9)
 
 - **#1 Host “At my home”:** Default venue mode was `home` while React state for `location`/`coordinates` stayed empty, so `updateEventAction` called `update_event_place` with null location (HTTP 200, no visible place). Sync home fields when home mode is active; reject host-only saves without a confirmable place; `fetchMyHomeLocation` profile fallback only when `my_home_location` RPC is missing (not on permission errors). Tests: `host-venue.test.ts`, `home-location-query.test.ts`, `host-place.test.ts`; PGlite privacy migration path unchanged in `profile-home-privacy.test.ts`. E2E step in `e2e/hosts.spec.ts` (live auth).

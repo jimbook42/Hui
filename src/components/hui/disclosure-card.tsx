@@ -47,9 +47,9 @@ export function DisclosureCard({
           </span>
         ) : null}
         <span className="min-w-0 flex-1">
-          <span className="block text-[1.0625rem] font-extrabold leading-tight text-foreground">
+          <h2 className="block text-[1.0625rem] font-extrabold leading-tight text-foreground">
             {title}
-          </span>
+          </h2>
           {summary ? (
             <span className="mt-0.5 block truncate text-sm font-semibold text-muted-foreground">
               {summary}

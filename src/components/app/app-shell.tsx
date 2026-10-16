@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Suspense, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { signOutAction } from "@/app/auth/actions";
 import { HuiBotanical } from "@/components/hui/botanical";
@@ -28,16 +28,6 @@ type AppShellProps = {
   narrow?: boolean;
 };
 
-async function BottomNavWithBadge() {
-  const unread = await getUnreadNotificationCount();
-  return <BottomNavigation unreadCount={unread} />;
-}
-
-async function HeaderBell() {
-  const unread = await getUnreadNotificationCount();
-  return <BellLink unread={unread} />;
-}
-
 function BellLink({ unread }: { unread: number }) {
   return (
     <Link
@@ -58,7 +48,9 @@ function BellLink({ unread }: { unread: number }) {
   );
 }
 
-export function AppShell({ title, children, back, hideTitle, subtitle, narrow }: AppShellProps) {
+export async function AppShell({ title, children, back, hideTitle, subtitle, narrow }: AppShellProps) {
+  const unread = await getUnreadNotificationCount();
+
   return (
     <div className="hui-canvas flex min-h-full flex-1 flex-col">
       <HuiBotanical />
@@ -99,9 +91,7 @@ export function AppShell({ title, children, back, hideTitle, subtitle, narrow }:
             </form>
           </nav>
 
-          <Suspense fallback={<BellLink unread={0} />}>
-            <HeaderBell />
-          </Suspense>
+          <BellLink unread={unread} />
         </div>
       </header>
 
@@ -120,9 +110,7 @@ export function AppShell({ title, children, back, hideTitle, subtitle, narrow }:
         {children}
       </main>
 
-      <Suspense fallback={<BottomNavigation />}>
-        <BottomNavWithBadge />
-      </Suspense>
+      <BottomNavigation unreadCount={unread} />
     </div>
   );
 }

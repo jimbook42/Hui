@@ -748,7 +748,8 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
 
       {showContributionCoordination ? (
         <DisclosureCard
-          title="What to bring"
+          id="contributions"
+          title="Who's bringing what"
           summary={bringSummary}
           icon={<BowlIcon size={20} />}
           attention={attentionKinds.has("contribute")}
