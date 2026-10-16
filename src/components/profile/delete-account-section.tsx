@@ -1,19 +1,20 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 
 import {
   deleteAccountAction,
   type AuthActionState,
 } from "@/app/auth/actions";
 import { ACCOUNT_DELETION_CONFIRMATION } from "@/lib/auth/account-deletion";
-import { useScrollTopOnStepChange } from "@/lib/ui/use-scroll-top-on-step-change";
+import { useFocusOnStepChange } from "@/lib/ui/use-focus-on-step-change";
 
 const initialState: AuthActionState = {};
 
 type DeleteStep = "idle" | "warning" | "confirm";
 
 export function DeleteAccountSection() {
+  const sectionRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<DeleteStep>("idle");
   const [confirmation, setConfirmation] = useState("");
   const [state, formAction, pending] = useActionState(
@@ -22,7 +23,7 @@ export function DeleteAccountSection() {
   );
   const canSubmit = confirmation === ACCOUNT_DELETION_CONFIRMATION && !pending;
 
-  useScrollTopOnStepChange(step);
+  useFocusOnStepChange(step, sectionRef);
 
   function handleCancel() {
     setStep("idle");
@@ -30,7 +31,7 @@ export function DeleteAccountSection() {
   }
 
   return (
-    <div className="pt-8">
+    <div ref={sectionRef} className="pt-8">
       <h3 className="text-sm font-extrabold text-foreground">
         Delete account
       </h3>
@@ -53,7 +54,7 @@ export function DeleteAccountSection() {
 
       {step === "warning" ? (
         <div className="mt-2 max-w-lg">
-          <h3 className="text-sm font-extrabold text-foreground">
+          <h3 data-step-heading className="text-sm font-extrabold text-foreground">
             Delete your Hui account?
           </h3>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">

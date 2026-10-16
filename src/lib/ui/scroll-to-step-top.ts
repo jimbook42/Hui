@@ -16,6 +16,22 @@ export function scrollToStepTop(root?: HTMLElement | null): void {
   }
 }
 
+/** Focus heading or first control inside an inline step, without scrolling the page. */
+export function focusInlineStepTarget(scope: ParentNode): void {
+  const heading = scope.querySelector<HTMLElement>("[data-step-heading]");
+  const control = scope.querySelector<HTMLElement>(
+    'input:not([type="hidden"]):not([disabled]), button:not([disabled])',
+  );
+  const target = heading ?? control;
+  if (!target || target.closest('[aria-hidden="true"]')) {
+    return;
+  }
+  if (heading && heading.tabIndex < 0) {
+    heading.tabIndex = -1;
+  }
+  target.focus({ preventScroll: true });
+}
+
 /** Move focus to the primary heading for the current step, if present. */
 export function focusStepHeading(scope: ParentNode = document): void {
   const heading = scope.querySelector<HTMLElement>(

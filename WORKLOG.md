@@ -3,7 +3,8 @@
 ## 2026-10-16 — v0.18.11 welcome tagline + stepper scroll-to-top
 
 - Landing tagline: “Regular catch-ups, without the group chat chaos.”
-- `useScrollTopOnStepChange` on proposal, respond, personal setup, and delete-account steppers; Vitest + Playwright propose Continue scroll smoke.
+- `useScrollTopOnStepChange` on proposal, respond, and personal setup; Vitest + Playwright propose Continue scroll smoke.
+- **fix1:** delete-account uses `useFocusOnStepChange` (focus only, no window scroll).
 
 ## 2026-10-16 — v0.18.10 fix2 (bring Add something, non-member load, 404)
 
