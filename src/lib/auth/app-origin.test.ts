@@ -15,6 +15,9 @@ describe("app origin", () => {
   });
 
   it("derives origin from forwarded request headers", () => {
+    const previousUrl = process.env.NEXT_PUBLIC_APP_URL;
+    delete process.env.NEXT_PUBLIC_APP_URL;
+
     const request = new Request("http://localhost:3000/sign-in", {
       headers: {
         "x-forwarded-host": "hui-seven-gamma.vercel.app",
@@ -22,8 +25,12 @@ describe("app origin", () => {
       },
     });
 
-    expect(
-      resolveAuthRedirectOriginFromRequest(request as never),
-    ).toBe("https://hui-seven-gamma.vercel.app");
+    try {
+      expect(
+        resolveAuthRedirectOriginFromRequest(request as never),
+      ).toBe("https://hui-seven-gamma.vercel.app");
+    } finally {
+      process.env.NEXT_PUBLIC_APP_URL = previousUrl;
+    }
   });
 });

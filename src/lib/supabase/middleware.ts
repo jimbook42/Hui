@@ -40,10 +40,8 @@ export async function updateSession(request: NextRequest) {
 
   let hasUser = false;
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    hasUser = Boolean(user);
+    const { data, error } = await supabase.auth.getClaims();
+    hasUser = !error && Boolean(data?.claims?.sub);
   } catch {
     hasUser = false;
   }
