@@ -15,6 +15,7 @@ import { EventStatusPill } from "@/components/hui/status-pill";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { OpenInMapsLink } from "@/components/map/open-in-maps-link";
 import { formatContributionDisclosureSummary } from "@/domain/contributions/display";
+import { contributionsDisclosureDefaultOpen } from "@/domain/contributions/event-bring-disclosure";
 import { isDietaryCoordinationRelevant } from "@/domain/events/food";
 import {
   defaultOpenManageSection,
@@ -374,7 +375,14 @@ export async function EventManageSections({ detail, userId }: SectionProps) {
           id="contributions"
           title="Who's bringing what"
           summary={bringSummary}
-          defaultOpen={sectionOpen("contributions")}
+          defaultOpen={
+            sectionOpen("contributions") ||
+            contributionsDisclosureDefaultOpen(
+              false,
+              hasActiveBringCategories,
+              data.canAssignContributions,
+            )
+          }
         >
           <EventContributionsSection
             eventId={detail.id}

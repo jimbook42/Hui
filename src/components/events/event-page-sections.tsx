@@ -14,6 +14,7 @@ import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { OpenInMapsLink } from "@/components/map/open-in-maps-link";
 import { formatContributionDisclosureSummary } from "@/domain/contributions/display";
+import { contributionsDisclosureDefaultOpen } from "@/domain/contributions/event-bring-disclosure";
 import { isDietaryCoordinationRelevant } from "@/domain/events/food";
 import {
   BowlIcon,
@@ -753,7 +754,11 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
           summary={bringSummary}
           icon={<BowlIcon size={20} />}
           attention={attentionKinds.has("contribute")}
-          defaultOpen={attentionKinds.has("contribute")}
+          defaultOpen={contributionsDisclosureDefaultOpen(
+            attentionKinds.has("contribute"),
+            hasActiveBringCategories,
+            data.canAssignContributions,
+          )}
         >
           <EventContributionsSection
             eventId={detail.id}

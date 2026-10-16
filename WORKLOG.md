@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-16 — v0.18.10 fix2 (bring Add something, non-member load, 404)
+
+- **Add something:** Organisers with no group bring categories need the contributions disclosure **open by default** (`contributionsDisclosureDefaultOpen`); link stays inside `EventContributionsSection` but was hidden in a collapsed `<details>`. Integration test covers `DisclosureCard` + section path.
+- **Non-member slow load:** Removed parent `events/loading.tsx` and `events/[eventId]/respond/loading.tsx` so a `notFound()` on event routes is not preceded by a streamed AppShell 200 shell (RSC retry loop / 30s timeouts).
+
 ## 2026-10-16 — v0.18.10 fix1 (profile/home #418, bring, hui 404)
 
 - **/profile/home #418:** `LocationPicker` deferred geolocation detection until after mount so SSR and hydration both omit “Use my location” on first paint.
