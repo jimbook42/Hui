@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-17 — v0.18.15 delete hui with decided polls
+
+- Fix `_delete_event_cascade` / `_delete_group_cascade` so decided polls delete cleanly (responses → decisions; no options-before-decisions).
+- Friendly delete errors in hui/group actions; migration `20261017150000_hui_v01815_delete_hui_decisions.sql` (not applied).
+
 ## 2026-10-17 — v0.18.14 groups list + dietary per-group opt-out
 
 - Profile **Hui groups** lists active memberships when households flag is off (name, display name, dietary link).

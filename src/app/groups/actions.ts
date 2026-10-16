@@ -417,7 +417,8 @@ export async function deleteGroupAction(
 
   const { error } = await supabase.rpc("delete_group", { p_group_id: groupId });
   if (error) {
-    return { error: error.message };
+    console.error("delete_group failed", { groupId, message: error.message, code: error.code });
+    return { error: "Couldn't delete this group. Please try again." };
   }
 
   revalidatePath("/groups");
