@@ -330,6 +330,6 @@ describe("account deletion home + responses (HUI-UX5 G2–G3)", () => {
     expect(standing.rows).toEqual([]);
     expect(responses.rows).toEqual([]);
     expect(contribution.rows[0]?.display_name).toBe("Former member");
-    expect(host.rows[0]?.display_name).toBe("Former member");
+    expect(host.rows).toEqual([]);
   });
 });

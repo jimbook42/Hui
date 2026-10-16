@@ -22,6 +22,21 @@ describe("attendance roster", () => {
     ]);
   });
 
+  it("groups Former member rows from roster payload", () => {
+    const groups = groupAttendanceByResponse({
+      maybeResponsesEnabled: true,
+      members: [
+        { userId: "1", displayName: "Alex", response: "yes" },
+        { userId: "2", displayName: "Former member", response: "yes" },
+      ],
+    });
+
+    expect(groups[0]).toEqual({
+      label: "Can come",
+      names: ["Alex", "Former member"],
+    });
+  });
+
   it("includes late markers for organisers when requested", () => {
     const groups = groupAttendanceByResponse(
       {
