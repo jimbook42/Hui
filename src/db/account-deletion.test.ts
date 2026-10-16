@@ -180,7 +180,7 @@ describe("account deletion (HUI-012B)", () => {
     expect(profile.rows[0].account_deleted_at).toBeTruthy();
   });
 
-  it("removes personal dietary data and private responses but keeps group-visible history", async () => {
+  it("removes personal dietary data and all availability responses in shared groups", async () => {
     await asUser(db, ids.owner);
     const groupId = (
       await db.query<{ create_group: string }>(
@@ -272,7 +272,7 @@ describe("account deletion (HUI-012B)", () => {
 
     expect(dietaryRows.rows).toEqual([]);
     expect(privateResponses.rows).toEqual([]);
-    expect(groupResponses.rows).toHaveLength(1);
+    expect(groupResponses.rows).toEqual([]);
     expect(membership.rows[0].status).toBe("removed");
     expect(eventStillThere.rows).toHaveLength(1);
   });

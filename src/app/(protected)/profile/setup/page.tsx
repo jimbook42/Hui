@@ -1,8 +1,8 @@
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { PersonalSetupFlow } from "@/components/profile/personal-setup-flow";
 import { ProfileSectionShell } from "@/components/profile/profile-hub-link";
-import { homeLocationFromProfileRow } from "@/domain/profile/home-location";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { fetchMyHomeLocation } from "@/lib/profiles/home-location-query";
 import { redirect } from "next/navigation";
 
 export default async function ProfileSetupPage() {
@@ -14,9 +14,7 @@ export default async function ProfileSetupPage() {
   const supabase = await getServerSupabase();
   const { data: profile } = await supabase
     .from("profiles")
-    .select(
-      "display_name, personal_setup_completed_at, home_location_label, home_location_lat, home_location_lng",
-    )
+    .select("display_name, personal_setup_completed_at")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -24,7 +22,7 @@ export default async function ProfileSetupPage() {
     redirect("/profile");
   }
 
-  const home = profile ? homeLocationFromProfileRow(profile) : null;
+  const home = await fetchMyHomeLocation(supabase, user.id);
 
   return (
     <ProfileSectionShell
