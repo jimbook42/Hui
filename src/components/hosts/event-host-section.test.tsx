@@ -70,8 +70,11 @@ describe("EventHostSection", () => {
     render(<EventHostSection {...baseProps} />);
 
     expect(
-      screen.getByText("Alex, you hosted this hui — thanks for hosting."),
+      screen.getByText("You hosted this hui — thanks for hosting."),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Hui has suggested/i),
+    ).not.toBeInTheDocument();
     expect(screen.queryByTestId("accept-host-form")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Confirm hosting" })).not.toBeInTheDocument();
     expect(screen.queryByText("Suggest someone else")).not.toBeInTheDocument();
@@ -88,7 +91,52 @@ describe("EventHostSection", () => {
 
     expect(screen.getByTestId("accept-host-form")).toBeInTheDocument();
     expect(
-      screen.queryByText("Alex, you hosted this hui — thanks for hosting."),
+      screen.queryByText("You hosted this hui — thanks for hosting."),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows who hosted for another viewer when the gathering has ended", () => {
+    render(
+      <EventHostSection
+        {...baseProps}
+        viewerUserId="other-user"
+      />,
+    );
+
+    expect(screen.getByText("Alex hosted this hui.")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Hui has suggested/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/you hosted this hui/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows past-tense copy for accepted host when the gathering has ended", () => {
+    const view: EventHostView = {
+      acceptedHost: {
+        id: "ha-2",
+        eventId: "ev-1",
+        userId: "host-user",
+        status: "accepted",
+        displayName: "Alex",
+        createdAt: "2026-01-01T00:00:00Z",
+      },
+      pendingProposal: null,
+      suggestion: null,
+    };
+
+    render(
+      <EventHostSection
+        {...baseProps}
+        view={view}
+        canRespond={false}
+      />,
+    );
+
+    expect(
+      screen.getByText("You hosted this hui — thanks for hosting."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/is hosting/i)).not.toBeInTheDocument();
   });
 });

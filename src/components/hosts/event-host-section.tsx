@@ -10,7 +10,7 @@ import { HostSwapRequestForm } from "@/components/hosts/host-swap-request-form";
 import type { EventCoordinates } from "@/domain/events/location";
 import type { ProfileHomeLocation } from "@/domain/profile/home-location";
 import {
-  acceptHostPromptLine,
+  endedGatheringHostCopy,
   gatheringTimeHasPassed,
 } from "@/domain/events/host-prompt-copy";
 import { filterHostAssignableMembers } from "@/domain/hosts/attendance-eligibility";
@@ -129,7 +129,17 @@ export function EventHostSection({
       {view.acceptedHost ? (
         <div className="mt-4">
           <p className="text-sm text-foreground">
-            <span className="font-medium">{view.acceptedHost.displayName}</span> is hosting.
+            {gatheringEnded
+              ? endedGatheringHostCopy({
+                  hostDisplayName: view.acceptedHost.displayName,
+                  hostUserId: view.acceptedHost.userId,
+                  viewerUserId,
+                })
+              : (
+                  <>
+                    <span className="font-medium">{view.acceptedHost.displayName}</span> is hosting.
+                  </>
+                )}
           </p>
           {canRequestSwap &&
           view.acceptedHost.userId === viewerUserId &&
@@ -144,18 +154,20 @@ export function EventHostSection({
           ) : null}
         </div>
       ) : suggestedName ? (
+        gatheringEnded ? (
+          <p className="mt-4 text-sm text-foreground">
+            {endedGatheringHostCopy({
+              hostDisplayName: suggestedName,
+              hostUserId: view.pendingProposal?.userId ?? "",
+              viewerUserId,
+            })}
+          </p>
+        ) : (
         <div className="mt-4 rounded-hui-md px-4 py-3 text-sm bg-muted">
           <p className="text-foreground">
             Hui has suggested {suggestedName} to host this gathering.
           </p>
-          {gatheringEnded ? (
-            <p className="mt-3 text-sm text-foreground">
-              {acceptHostPromptLine({
-                suggestedHostName: suggestedName,
-                gatheringEnded: true,
-              })}
-            </p>
-          ) : canRespond || canRequestSwap ? (
+          {canRespond || canRequestSwap ? (
             <div className="mt-3 flex flex-wrap gap-3">
               {canRespond ? (
                 <AcceptHostWithPlaceForm
@@ -167,7 +179,6 @@ export function EventHostSection({
                   defaultCoordinates={eventCoordinates}
                   suggestedHostName={suggestedName ?? "You"}
                   viewerHomeLocation={viewerHomeLocation}
-                  gatheringEnded={false}
                 />
               ) : null}
               {canRequestSwap ? (
@@ -179,6 +190,7 @@ export function EventHostSection({
             </div>
           ) : null}
         </div>
+        )
       ) : (
         <p className="mt-4 text-sm text-foreground">
           No host has been suggested yet.

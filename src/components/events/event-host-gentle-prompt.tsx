@@ -68,7 +68,6 @@ export function EventHostGentlePrompt({
             defaultCoordinates={eventCoordinates}
             suggestedHostName={suggestedHostName}
             viewerHomeLocation={viewerHomeLocation}
-            gatheringEnded={gatheringEnded}
           />
         ) : null}
         {canRequestSwap ? (

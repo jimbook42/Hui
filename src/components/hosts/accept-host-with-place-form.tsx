@@ -25,7 +25,6 @@ type AcceptHostWithPlaceFormProps = {
   defaultCoordinates: EventCoordinates | null;
   suggestedHostName: string;
   viewerHomeLocation: ProfileHomeLocation | null;
-  gatheringEnded?: boolean;
 };
 
 type VenueMode = "home" | "elsewhere";
@@ -39,7 +38,6 @@ export function AcceptHostWithPlaceForm({
   defaultCoordinates,
   suggestedHostName,
   viewerHomeLocation,
-  gatheringEnded = false,
 }: AcceptHostWithPlaceFormProps) {
   const needsPlace = hostPlaceRequiredOnAccept(hostingEnabled, hostPlaceRequired);
   const canUseHome = hasUsableHomeLocation(viewerHomeLocation);
@@ -87,7 +85,7 @@ export function AcceptHostWithPlaceForm({
       />
       <p className="text-sm font-semibold text-foreground">{heading}</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        {acceptHostPromptLine({ suggestedHostName, gatheringEnded })}
+        {acceptHostPromptLine({ suggestedHostName })}
       </p>
 
       {canUseHome ? (
