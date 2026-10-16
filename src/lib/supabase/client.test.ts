@@ -1,6 +1,10 @@
+import WebSocket from "ws";
 import { describe, expect, it } from "vitest";
 
 import { createClient } from "./client";
+
+// Supabase Realtime expects a WebSocket implementation in Node test runs.
+globalThis.WebSocket = WebSocket as unknown as typeof globalThis.WebSocket;
 import { hasPublicSupabaseConfig } from "./env";
 
 const testEnv = {

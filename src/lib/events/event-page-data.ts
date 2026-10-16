@@ -47,8 +47,8 @@ import {
   canRespondToCandidates,
   canWithdrawCandidate,
 } from "@/domain/scheduling/permissions";
-import { homeLocationFromProfileRow } from "@/domain/profile/home-location";
 import { getServerSupabase } from "@/lib/auth/server-session";
+import { fetchMyHomeLocation } from "@/lib/profiles/home-location-query";
 import {
   getGroupContributionHistory,
   listContributionCategories,
@@ -86,7 +86,7 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
     contributionHistory,
     sharedDietary,
     decisionBundles,
-    viewerHomeRow,
+    viewerHomeLocation,
   ] = await devTimed("event-page:parallel-load", () =>
     Promise.all([
       getGroupDetail(supabase, detail.groupId, userId),
@@ -97,16 +97,9 @@ export const loadEventPage = cache(async (detail: EventDetail, userId: string) =
       getGroupContributionHistory(supabase, detail.groupId, userId),
       listGroupSharedDietary(supabase, detail.groupId),
       listEventDecisions(supabase, detail.id),
-      supabase
-        .from("profiles")
-        .select("home_location_label, home_location_lat, home_location_lng")
-        .eq("id", userId)
-        .maybeSingle()
-        .then(({ data }) => data),
+      fetchMyHomeLocation(supabase, userId),
     ]),
   );
-
-  const viewerHomeLocation = viewerHomeRow ? homeLocationFromProfileRow(viewerHomeRow) : null;
 
   const [householdView, hostContext] = await Promise.all([
     group

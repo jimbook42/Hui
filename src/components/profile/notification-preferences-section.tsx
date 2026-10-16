@@ -47,7 +47,7 @@ export function NotificationPreferencesSection({
             />
             <PushPreference
               name="push_event_confirmed_enabled"
-              label="Event confirmed"
+              label="Hui confirmed"
               defaultChecked={pushPreferences.eventConfirmedEnabled}
             />
             <PushPreference

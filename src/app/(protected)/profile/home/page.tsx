@@ -1,8 +1,8 @@
 import { ProfileSectionShell } from "@/components/profile/profile-hub-link";
 import { HomeLocationSection } from "@/components/profile/home-location-section";
 import { SettingsSection } from "@/components/profile/settings-section";
-import { homeLocationFromProfileRow } from "@/domain/profile/home-location";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
+import { fetchMyHomeLocation } from "@/lib/profiles/home-location-query";
 
 export default async function ProfileHomePage() {
   const user = await getServerAuthUser();
@@ -11,13 +11,7 @@ export default async function ProfileHomePage() {
   }
 
   const supabase = await getServerSupabase();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("home_location_label, home_location_lat, home_location_lng")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const home = profile ? homeLocationFromProfileRow(profile) : null;
+  const home = await fetchMyHomeLocation(supabase, user.id);
 
   return (
     <ProfileSectionShell

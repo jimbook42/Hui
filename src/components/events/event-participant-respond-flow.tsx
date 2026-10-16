@@ -12,7 +12,12 @@ import {
 } from "react";
 
 import type { EventActionState } from "@/app/events/actions";
-import { addCandidateAction, setAvailabilityResponseAction } from "@/app/events/scheduling-actions";
+import {
+  addCandidateAction,
+  fetchConfirmAfterAvailabilitySaveAction,
+  revalidateHomeGatheringSurfacesAction,
+  setAvailabilityResponseAction,
+} from "@/app/events/scheduling-actions";
 import { claimContributionAction } from "@/app/contributions/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
 import {
@@ -250,6 +255,7 @@ export function EventParticipantRespondFlow({
   const [noNotesByCandidate, setNoNotesByCandidate] =
     useState<Record<string, string>>(initialNotesByCandidate);
   const noteSaveTimersRef = useRef<Record<string, number>>({});
+  const homeSurfacesRevalidateTimerRef = useRef<number | null>(null);
   const candidateSavePromisesRef = useRef<Record<string, Promise<void>>>({});
   const runSerializedAttendanceSaveRef = useRef(createPerCandidateAttendanceSaveSerializers());
   const lastAttemptedChoiceByCandidateRef = useRef<Record<string, AvailabilityChoice>>({});
@@ -266,6 +272,24 @@ export function EventParticipantRespondFlow({
   const [isSubmittingSuggest, startSubmitSuggest] = useTransition();
   const [secondary, setSecondary] = useState<RespondSecondaryData | null>(null);
   const [secondaryError, setSecondaryError] = useState<string | null>(null);
+
+  const scheduleHomeSurfacesRevalidate = useCallback(() => {
+    if (homeSurfacesRevalidateTimerRef.current !== null) {
+      window.clearTimeout(homeSurfacesRevalidateTimerRef.current);
+    }
+    homeSurfacesRevalidateTimerRef.current = window.setTimeout(() => {
+      homeSurfacesRevalidateTimerRef.current = null;
+      void revalidateHomeGatheringSurfacesAction(groupId);
+    }, 400);
+  }, [groupId]);
+
+  useEffect(() => {
+    return () => {
+      if (homeSurfacesRevalidateTimerRef.current !== null) {
+        window.clearTimeout(homeSurfacesRevalidateTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!secondaryDataPromise) {
@@ -596,6 +620,7 @@ export function EventParticipantRespondFlow({
           ...current,
           [targetCandidateId]: choice,
         }));
+        scheduleHomeSurfacesRevalidate();
         if (multipleTimeOptions) {
           setSavedCandidateFlash((current) => ({ ...current, [targetCandidateId]: true }));
           window.setTimeout(() => {
@@ -611,6 +636,19 @@ export function EventParticipantRespondFlow({
             ...result.confirmedCandidate,
             notice: result.notice,
           });
+        } else if (eventStatus === "proposing" && !multipleTimeOptions) {
+          void fetchConfirmAfterAvailabilitySaveAction(eventId, groupId, timeZone).then(
+            (confirm) => {
+              if (confirm?.confirmedCandidate) {
+                applyConfirmedTransition({
+                  ...confirm.confirmedCandidate,
+                  notice: confirm.notice,
+                });
+                return;
+              }
+              showSaveToast(participantSaveToastMessage(choice, timeLabelForToast));
+            },
+          );
         } else {
           showSaveToast(participantSaveToastMessage(choice, timeLabelForToast));
         }

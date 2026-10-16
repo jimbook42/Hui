@@ -51,14 +51,20 @@ export function viewerResponseForHomeList(
 }
 
 /** Candidate ids whose viewer responses must be loaded for home classification. */
-export function homeViewerResponseCandidateIds(candidates: HomeListCandidate[]): string[] {
+export function homeViewerResponseCandidateIds(
+  candidates: HomeListCandidate[],
+  eventStatus: EventStatus,
+): string[] {
+  const selected = candidates.find((candidate) => candidate.status === "selected");
+  if (eventStatus === "confirmed") {
+    return selected ? [selected.id] : [];
+  }
+  if (selected) {
+    return [selected.id];
+  }
   const proposed = candidates.filter((candidate) => candidate.status === "proposed");
   if (proposed.length > 1) {
     return proposed.map((candidate) => candidate.id);
-  }
-  const selected = candidates.find((candidate) => candidate.status === "selected");
-  if (selected) {
-    return [selected.id];
   }
   if (proposed.length === 1) {
     return [proposed[0].id];

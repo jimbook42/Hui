@@ -1,5 +1,45 @@
 # Worklog
 
+## 2026-10-16 — HUI-UX5 fix4 host place + bring empty + load (v0.18.9)
+
+- **#1 Host “At my home”:** Default venue mode was `home` while React state for `location`/`coordinates` stayed empty, so `updateEventAction` called `update_event_place` with null location (HTTP 200, no visible place). Sync home fields when home mode is active; reject host-only saves without a confirmable place; `fetchMyHomeLocation` profile fallback only when `my_home_location` RPC is missing (not on permission errors). Tests: `host-venue.test.ts`, `home-location-query.test.ts`, `host-place.test.ts`; PGlite privacy migration path unchanged in `profile-home-privacy.test.ts`. E2E step in `e2e/hosts.spec.ts` (live auth).
+- **#2 First-load (low-risk):** Dashboard greeting loads profile + `loadHomeData` in parallel; group page runs invite-link RPC + `resolveAuthRedirectOrigin` inside the existing `Promise.all`. Event page already parallelises `loadEventPage`; layout `getServerAuthUser` is request-cached.
+
+| Page | Before (typical bottleneck) | After this change | Still dominates |
+| --- | --- | --- | --- |
+| Dashboard | Serial profile then home list (~2 Supabase round-trips in Greeting) | One parallel batch for greeting data | `DashboardEvents` + `NoGroupsStartGate` separate suspenses; middleware JWT |
+| Group | 6-way parallel block then serial invite + origin | 8-way parallel including invite + origin | `getGroupDetail` + `loadGroupPlanningContext` serial upfront |
+| Event | `getEventDetail` then `loadEventPage` (wide parallel inside) | unchanged structure | Detail fetch before page bundle; scheduling roster fan-out on busy hui |
+
+QA-reported 4.5–6.8s local / 10–16s preview remains mostly Supabase latency, cold start, and sign-in — not addressed here (no caching/region changes).
+
+- **#3 Bring:** Show “What to bring” whenever food coordination applies, even with zero categories (organiser empty state was already in `EventContributionsSection` but the disclosure was hidden).
+
+## 2026-10-16 — HUI-UX5 fix3 past answers on deletion (v0.18.9)
+
+- **fix3:** Same migration `20261016103000_hui_ux5_privacy_home_and_deletion.sql` — `delete_my_account_data()` deletes `event_responses` only on **upcoming** hui (not `completed`/`cancelled`, and not `confirmed` with `starts_at` already passed); **past** rows stay for yes/no counts with `note` cleared via `hui.account_deletion` bypass on `responses_before_write`. PGlite test in `account-deletion.test.ts`.
+
+## 2026-10-16 — HUI-UX5 fix2 Sydney + privacy (v0.18.9)
+
+- **Part A (d924b02):** `vercel.json` `regions: ["syd1"]`; availability save + middleware use `auth.getClaims()` (JWT verify) instead of session cookie user; vitest rejects forged/missing JWT on save.
+- **Part B (37fd5bb):** Migration `supabase/migrations/20261016103000_hui_ux5_privacy_home_and_deletion.sql` — G1 revoke co-member `profiles` home column SELECT (grant safe columns + `my_home_location` / `co_member_host_home_location` RPCs); G2 null home on delete; G3 delete standing availability + upcoming `event_responses`, anonymise denormalised `display_name` copies; app uses `fetchMyHomeLocation` with RPC-first + profile fallback for live DB without migration.
+- **PM save timing (post fix2a, prod build :3130):** tap→saved ms `[1474,940,982,1799,1262,918]`; POST ms `[1414,942,920,877]`.
+
+## 2026-10-16 — HUI-UX5 fix1 save latency (v0.18.9)
+
+- **Profile:** multi-time respond `aria-busy` tracks the server-action POST only (no `router.refresh` on that path). Slowness was server work per save, not client re-render after the action.
+- **Server:** lightweight `loadAvailabilitySaveContext` (replaces `getEventDetail`), session-cookie auth (`getServerAuthUserFromSession`), return right after upsert (confirm snapshot moved to `fetchConfirmAfterAvailabilitySaveAction` for single-time flow), defer `/events/[id]` revalidate via `after()`, stop revalidating `/respond` on each tap.
+- **Home surfaces:** debounced `revalidateHomeGatheringSurfacesAction(groupId)` restores `/groups/:id/events` refresh dropped in cc12e2c.
+- **PM timing** (`next build` + `next start` :3130, proxy :3000, `zz-pm-save-timing.spec.ts`): tap→saved ms before fix1 ~[2676,2215,1907,3538,2441,2561] (cc12e2c ~4.0s mean per ticket); after fix1 ~[1075,1363,2792,1591,1661,1281] (~1.6s mean, several saves ~1.0–1.4s). Target &lt;1s not met on every tap; remaining cost is mostly Supabase round-trips on the save action.
+
+## 2026-10-16 — HUI-UX5 pre-beta (v0.18.9)
+
+- **Dashboard attention:** `homeViewerResponseCandidateIds` loads the **selected** time for confirmed hui even when other proposed candidates remain, so answered confirmed gatherings leave Needs attention.
+- **Save latency:** availability save no longer revalidates `/dashboard`, `/events`, or group event lists on every tap; replaces post-save `getEventDetail` with a status-only read; debounced `revalidateHomeGatheringSurfacesAction` refreshes home lists after saves (respond flow + attendance live).
+- **Perf note (local `next build` + `next start`, dev-timing spans):** prod ~2.3s/save was dominated by full-path revalidation and a second event detail fetch; after change, server action work is upsert + two path revalidates + one lightweight status query (target well under 1s on warm instances).
+- **Alerts:** `displayNotificationTitle` maps legacy **Event confirmed** / **New event proposal** (and similar) to **Hui …: &lt;title&gt;** using quoted titles from notification bodies; push + in-app list pass body through.
+- **Bring section:** clearer empty state on event **Who's bringing what** with organiser **Add something** link to the group page.
+
 ## 2026-10-16 — HUI-UX4 fix4 recurring default (PR #50)
 
 - New hui defaults to **Recurring** (weekly cadence on first hui when unset); **Just this once** stays explicit. Established groups keep prefilled planning date + submit path. Delete-group warning copy updated.

@@ -1,6 +1,6 @@
 {
   "name": "hui",
-  "version": "0.18.8",
+  "version": "0.18.9",
   "private": true,
   "scripts": {
     "predev": "node scripts/copy-maplibre-worker.mjs",
@@ -39,6 +39,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
+    "@types/ws": "^8.18.2",
     "dotenv": "^18.0.5",
     "esbuild": "^0.28.2",
     "eslint": "^9",

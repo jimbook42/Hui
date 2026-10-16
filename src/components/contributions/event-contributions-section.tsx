@@ -9,6 +9,7 @@ import {
   updateContributionAction,
 } from "@/app/contributions/actions";
 import { AuthField, AuthForm } from "@/components/auth/auth-form";
+import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { BowlIcon } from "@/components/hui/icons";
 import { buildContributionBoard } from "@/domain/contributions/display";
@@ -105,10 +106,22 @@ export function EventContributionsSection({
         </p>
       ) : null}
       {!hasActiveCategories ? (
-        <p className="mt-2 text-sm text-muted-foreground">
-          This group has not set up what to bring yet. Group admins can add categories from the group
-          page.
-        </p>
+        <div className="mt-4 rounded-hui-lg border border-border/70 bg-muted/60 px-4 py-4">
+          <p className="text-sm font-semibold text-foreground">
+            {canCoordinate
+              ? "Nothing to bring yet."
+              : "This group has not set up what to bring yet."}
+          </p>
+          {canCoordinate ? (
+            <HuiLinkButton href={`/groups/${groupId}`} size="sm" shape="melt" className="mt-3">
+              Add something
+            </HuiLinkButton>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your group admin can add categories from the group page when they are ready.
+            </p>
+          )}
+        </div>
       ) : null}
 
       {requestedSlotCount === 0 && hasActiveCategories ? (

@@ -268,6 +268,7 @@ export function EventHeroMeta({
       ) : respondable && data.primaryCandidate ? (
         <ViewerResponseCard
           eventId={detail.id}
+          groupId={detail.groupId}
           candidateId={data.primaryCandidate.id}
           serverResponse={
             data.multiTimeAnswerPresentation?.statusChoice ?? data.viewerResponse
@@ -601,14 +602,17 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
       ? `${suggestedName} suggested`
       : "No host yet";
 
-  const bringSummary = formatContributionDisclosureSummary(
-    data.requestedContributionSlotCount,
-    data.unclaimedContributionCount,
-    data.claimedContributionCount,
+  const hasActiveBringCategories = data.contributionCategories.some(
+    (category) => category.archivedAt === null,
   );
-  const showContributionCoordination =
-    isDietaryCoordinationRelevant(detail.foodInvolvement) &&
-    data.requestedContributionSlotCount > 0;
+  const bringSummary = hasActiveBringCategories
+    ? formatContributionDisclosureSummary(
+        data.requestedContributionSlotCount,
+        data.unclaimedContributionCount,
+        data.claimedContributionCount,
+      )
+    : "Nothing to bring yet";
+  const showContributionCoordination = isDietaryCoordinationRelevant(detail.foodInvolvement);
 
   const openDecisionCount = data.decisionPolls.filter((poll) => poll.status === "open").length;
   const decisionsSummary =

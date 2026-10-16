@@ -110,6 +110,8 @@ export default async function GroupDetailPage({ params }: PageProps) {
     hostHistory,
     sharedDietary,
     standingAvailabilityWindows,
+    inviteTokenResult,
+    appOrigin,
   ] = await Promise.all([
     getGroupHouseholdMemberView(supabase, groupId, detail.members),
     listContributionCategories(supabase, groupId),
@@ -117,17 +119,15 @@ export default async function GroupDetailPage({ params }: PageProps) {
     getGroupHostHistory(supabase, groupId, user!.id),
     listGroupSharedDietary(supabase, groupId),
     listMyStandingAvailabilityForGroup(supabase, groupId, user!.id),
+    supabase.rpc("get_group_invite_link", { p_group_id: groupId }),
+    resolveAuthRedirectOrigin(),
   ]);
   const viewerCanManageCategories = canManageContributionCategories(detail.viewerRole);
 
   let inviteToken: string | null = null;
-  const { data: tokenData, error: inviteError } = await supabase.rpc("get_group_invite_link", {
-    p_group_id: groupId,
-  });
-  if (!inviteError && typeof tokenData === "string") {
-    inviteToken = tokenData;
+  if (!inviteTokenResult.error && typeof inviteTokenResult.data === "string") {
+    inviteToken = inviteTokenResult.data;
   }
-  const appOrigin = await resolveAuthRedirectOrigin();
 
   const memberCount = detail.members.length;
   const removable = detail.members.filter(

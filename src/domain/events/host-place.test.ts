@@ -4,6 +4,7 @@ import {
   hasConfirmableEventPlace,
   hostAcceptPlaceHeading,
   hostPlaceRequiredOnAccept,
+  hostPlaceSaveValidationError,
 } from "./host-place";
 
 describe("host place on accept", () => {
@@ -24,5 +25,12 @@ describe("host place on accept", () => {
   it("labels the accept step from existing place data", () => {
     expect(hostAcceptPlaceHeading("Alex's", null)).toBe("Confirm this place");
     expect(hostAcceptPlaceHeading("", null)).toBe("Choose a place");
+  });
+
+  it("rejects host place saves with no confirmable venue", () => {
+    expect(hostPlaceSaveValidationError("", null)).toBe(
+      "Confirm where this hui happens before saving.",
+    );
+    expect(hostPlaceSaveValidationError("Park", null)).toBeNull();
   });
 });

@@ -131,7 +131,34 @@ const LEGACY_NOTIFICATION_TITLES: Record<string, string> = {
   "Contribution updated": "What to bring updated",
 };
 
+/** First quoted string in legacy notification bodies (usually the hui title). */
+export function quotedTitleFromNotificationBody(body: string | null | undefined): string | null {
+  if (!body) {
+    return null;
+  }
+  const match = body.match(/^"([^"]+)"/);
+  return match?.[1] ?? null;
+}
+
+function huiPrefixedAlertTitle(prefix: string, body: string | null | undefined): string {
+  const huiTitle = quotedTitleFromNotificationBody(body);
+  return huiTitle ? `${prefix}: ${huiTitle}` : prefix;
+}
+
 /** User-facing notification title (maps legacy DB copy to current product language). */
-export function displayNotificationTitle(title: string): string {
-  return LEGACY_NOTIFICATION_TITLES[title] ?? title;
+export function displayNotificationTitle(title: string, body?: string | null): string {
+  const legacy = LEGACY_NOTIFICATION_TITLES[title];
+  if (legacy) {
+    return legacy;
+  }
+  switch (title) {
+    case "Event confirmed":
+      return huiPrefixedAlertTitle("Hui confirmed", body);
+    case "New event proposal":
+      return huiPrefixedAlertTitle("New hui", body);
+    case "Consensus reached":
+      return huiPrefixedAlertTitle("A time works", body);
+    default:
+      return title;
+  }
 }
