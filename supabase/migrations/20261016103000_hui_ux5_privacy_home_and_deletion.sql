@@ -1,4 +1,5 @@
--- HUI-UX5 fix2: G1 home location column privacy; G2–G3 account deletion hardening.
+-- HUI-UX5 fix2–fix3: G1 home location column privacy; G2–G3 account deletion hardening;
+-- fix3 keeps past-hui event_responses (notes cleared), deletes upcoming-hui responses.
 
 -- G1: Co-members must not read saved home coordinates via the profiles API.
 revoke select on table public.profiles from authenticated;
@@ -270,6 +271,101 @@ begin
 end;
 $function$;
 
+-- Allow account deletion to clear response notes on closed hui (trigger normally rejects writes).
+create or replace function public.responses_before_write()
+returns trigger
+language plpgsql
+set search_path = public
+as $function$
+declare
+  v_event_status public.event_status;
+  v_candidate_status public.candidate_status;
+  v_deadline timestamptz;
+begin
+  if tg_op = 'UPDATE'
+     and coalesce(pg_catalog.current_setting('hui.account_deletion', true), '') = '1'
+  then
+    return new;
+  end if;
+
+  if tg_op = 'UPDATE' then
+    new.candidate_id = old.candidate_id;
+    new.event_id = old.event_id;
+    new.group_id = old.group_id;
+    new.user_id = old.user_id;
+  else
+    select c.event_id, c.group_id, c.status
+    into new.event_id, new.group_id, v_candidate_status
+    from public.event_candidates c
+    where c.id = new.candidate_id;
+
+    if new.group_id is null then
+      raise exception 'candidate not found';
+    end if;
+  end if;
+
+  select e.status, e.response_deadline_at
+  into v_event_status, v_deadline
+  from public.events e
+  where e.id = new.event_id;
+
+  if v_event_status is null then
+    raise exception 'event not found';
+  end if;
+
+  if v_event_status in ('completed', 'cancelled') then
+    raise exception 'this event is no longer open for scheduling changes';
+  end if;
+
+  if v_candidate_status is null then
+    select c.status into v_candidate_status
+    from public.event_candidates c
+    where c.id = new.candidate_id;
+  end if;
+
+  if v_event_status = 'confirmed' then
+    if v_candidate_status is distinct from 'selected' then
+      raise exception 'this event is no longer open for scheduling changes';
+    end if;
+    new.submitted_late := false;
+  elsif v_event_status in ('proposing', 'voting', 'awaiting_agreement', 'reopened', 'draft') then
+    if v_candidate_status is distinct from 'proposed' then
+      raise exception 'this event is no longer open for scheduling changes';
+    end if;
+    if v_deadline is not null and pg_catalog.now() > v_deadline then
+      new.submitted_late := true;
+    else
+      new.submitted_late := false;
+    end if;
+  elsif v_deadline is not null and pg_catalog.now() > v_deadline then
+    new.submitted_late := true;
+  else
+    new.submitted_late := false;
+  end if;
+
+  if not exists (
+    select 1
+    from public.group_memberships m
+    where m.group_id = new.group_id
+      and m.user_id = new.user_id
+      and m.status = 'active'
+  ) then
+    raise exception 'responses require an active group member';
+  end if;
+
+  if new.response = 'maybe' and not exists (
+    select 1
+    from public.group_settings s
+    where s.group_id = new.group_id
+      and s.maybe_responses_enabled
+  ) then
+    raise exception 'maybe responses are disabled for this group';
+  end if;
+
+  return new;
+end;
+$function$;
+
 -- G2–G3: extend account deletion.
 create or replace function public.delete_my_account_data()
 returns void
@@ -338,7 +434,40 @@ begin
 
   delete from public.group_member_standing_availability where user_id = v_user;
 
-  delete from public.event_responses where user_id = v_user;
+  -- Past hui (responses kept, notes cleared): status completed/cancelled, or confirmed with
+  -- starts_at already passed. Upcoming/open hui: proposing/voting/reopened/draft/awaiting_agreement,
+  -- or confirmed with starts_at still in the future — delete all of the leaver's responses.
+  delete from public.event_responses er
+  using public.events e
+  where er.user_id = v_user
+    and er.event_id = e.id
+    and not (
+      e.status in ('completed', 'cancelled')
+      or (
+        e.status = 'confirmed'
+        and e.starts_at is not null
+        and e.starts_at < pg_catalog.now()
+      )
+    );
+
+  perform pg_catalog.set_config('hui.account_deletion', '1', true);
+
+  update public.event_responses er
+  set note = null
+  from public.events e
+  where er.user_id = v_user
+    and er.event_id = e.id
+    and er.note is not null
+    and (
+      e.status in ('completed', 'cancelled')
+      or (
+        e.status = 'confirmed'
+        and e.starts_at is not null
+        and e.starts_at < pg_catalog.now()
+      )
+    );
+
+  perform pg_catalog.set_config('hui.account_deletion', '', true);
 
   delete from public.household_members where user_id = v_user;
 

@@ -51,16 +51,6 @@ type Ids = {
 let db: PGlite;
 let ids: Ids;
 
-function message(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === "object" && error && "message" in error) {
-    return String(error.message);
-  }
-  return String(error);
-}
-
 async function asUser(database: PGlite, userId: string | null) {
   await database.exec("reset role");
   await database.query(`select set_config('request.jwt.claim.sub', $1, false)`, [

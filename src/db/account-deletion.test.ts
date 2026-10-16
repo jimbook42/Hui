@@ -277,6 +277,140 @@ describe("account deletion (HUI-012B)", () => {
     expect(eventStillThere.rows).toHaveLength(1);
   });
 
+  it("keeps past-hui responses with cleared notes and deletes upcoming-hui responses", async () => {
+    const pastLeaverId = await createUser(db, "past-leaver@hui.test", "Past Leaver");
+
+    await asUser(db, ids.owner);
+    const groupId = (
+      await db.query<{ create_group: string }>(
+        `select public.create_group($1) as create_group`,
+        ["Past vs upcoming"],
+      )
+    ).rows[0].create_group;
+    await asUser(db, null);
+    await db.query(
+      `insert into public.group_memberships (group_id, user_id, role)
+       values ($1, $2, 'member')`,
+      [groupId, pastLeaverId],
+    );
+
+    await asUser(db, ids.owner);
+    const pastEventId = (
+      await db.query<{ id: string }>(
+        `insert into public.events (group_id, title, status, created_by)
+         values ($1, 'Past dinner', 'proposing', $2)
+         returning id`,
+        [groupId, ids.owner],
+      )
+    ).rows[0].id;
+    const pastCandidateId = (
+      await db.query<{ id: string }>(
+        `insert into public.event_candidates (
+           event_id, group_id, starts_at, ends_at, proposed_by
+         ) values ($1, $2, now() - interval '7 days', now() - interval '6 days 22 hours', $3)
+         returning id`,
+        [pastEventId, groupId, ids.owner],
+      )
+    ).rows[0].id;
+
+    await asUser(db, ids.owner);
+    await db.query(
+      `insert into public.event_responses (
+         candidate_id, event_id, group_id, user_id, response, visibility, note
+       ) values ($1, $2, $3, $4, 'yes', 'group', null)`,
+      [pastCandidateId, pastEventId, groupId, ids.owner],
+    );
+    await asUser(db, pastLeaverId);
+    await db.query(
+      `insert into public.event_responses (
+         candidate_id, event_id, group_id, user_id, response, visibility, note
+       ) values ($1, $2, $3, $4, 'yes', 'group', 'sensitive note')`,
+      [pastCandidateId, pastEventId, groupId, pastLeaverId],
+    );
+
+    await asUser(db, ids.owner);
+    await db.query(`select public.finalise_event($1::uuid, $2::uuid)`, [
+      pastEventId,
+      pastCandidateId,
+    ]);
+    await db.query(`select public.complete_event($1::uuid)`, [pastEventId]);
+
+    const upcomingEventId = (
+      await db.query<{ id: string }>(
+        `insert into public.events (group_id, title, status, created_by)
+         values ($1, 'Future brunch', 'proposing', $2)
+         returning id`,
+        [groupId, ids.owner],
+      )
+    ).rows[0].id;
+    const upcomingCandidateId = (
+      await db.query<{ id: string }>(
+        `insert into public.event_candidates (
+           event_id, group_id, starts_at, ends_at, proposed_by
+         ) values ($1, $2, now() + interval '3 days', now() + interval '3 days 2 hours', $3)
+         returning id`,
+        [upcomingEventId, groupId, ids.owner],
+      )
+    ).rows[0].id;
+
+    await asUser(db, pastLeaverId);
+    await db.query(
+      `insert into public.event_responses (
+         candidate_id, event_id, group_id, user_id, response, visibility, note
+       ) values ($1, $2, $3, $4, 'yes', 'group', 'future note')`,
+      [upcomingCandidateId, upcomingEventId, groupId, pastLeaverId],
+    );
+
+    await asUser(db, null);
+    const yesBefore = (
+      await db.query<{ n: string }>(
+        `select count(*)::text as n
+         from public.event_responses
+         where event_id = $1 and response = 'yes'`,
+        [pastEventId],
+      )
+    ).rows[0].n;
+
+    await asUser(db, pastLeaverId);
+    await db.query(`select public.delete_my_account_data()`);
+
+    await asUser(db, null);
+    const pastResponse = await db.query<{
+      note: string | null;
+      response: string;
+    }>(
+      `select er.note, er.response::text as response
+       from public.event_responses er
+       where er.event_id = $1 and er.user_id = $2`,
+      [pastEventId, pastLeaverId],
+    );
+    const upcomingResponses = await db.query(
+      `select id from public.event_responses
+       where event_id = $1 and user_id = $2`,
+      [upcomingEventId, pastLeaverId],
+    );
+    const yesAfter = (
+      await db.query<{ n: string }>(
+        `select count(*)::text as n
+         from public.event_responses
+         where event_id = $1 and response = 'yes'`,
+        [pastEventId],
+      )
+    ).rows[0].n;
+    const leaverProfile = await db.query<{ display_name: string }>(
+      `select display_name from public.profiles where id = $1`,
+      [pastLeaverId],
+    );
+
+    expect(pastResponse.rows).toHaveLength(1);
+    expect(pastResponse.rows[0].response).toBe("yes");
+    expect(pastResponse.rows[0].note).toBeNull();
+    expect(upcomingResponses.rows).toEqual([]);
+    expect(Number(yesAfter)).toBeGreaterThanOrEqual(1);
+    expect(yesAfter).toBe(yesBefore);
+    expect(leaverProfile.rows[0].display_name).toBe("Former member");
+  });
+
   it("allows re-registration with a new auth user id and fresh profile", async () => {
     const email = "reregister@hui.test";
     const firstId = await createUser(db, email, "Original Name");
