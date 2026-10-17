@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CalendarIcon } from "@/components/hui/icons";
 import { StatusPill } from "@/components/hui/status-pill";
 import { formatClockTime, formatShortDay, relativeDayLabel } from "@/domain/datetime/display";
+import { formatHomeEventTimeLine } from "@/domain/events/home-event-time-line";
 import { eventDetailPath } from "@/lib/events/paths";
 import type { HomeEvent } from "@/lib/events/home-data";
 import type { RecentCancelledGroupEvent } from "@/lib/events/recent-cancelled-for-groups";
@@ -27,10 +28,22 @@ export function upcomingEventForGroup(events: HomeEvent[], groupId: string): Hom
 }
 
 function upcomingSubtitle(event: HomeEvent): string {
-  if (event.startsAt) {
-    return `${relativeDayLabel(event.startsAt, event.timeZone)} · ${formatShortDay(event.startsAt, event.timeZone)} ${formatClockTime(event.startsAt, event.timeZone)}`;
+  const when = formatHomeEventTimeLine({
+    status: event.status,
+    startsAt: event.startsAt,
+    endsAt: event.endsAt,
+    timeZone: event.timeZone,
+    proposalDatePassed: event.proposalDatePassed,
+    leadingProposedTime: event.leadingProposedTime,
+    planning: event.bucket === "planning" || event.attention === "respond",
+  });
+  if (!event.startsAt) {
+    return when;
   }
-  return "Time still to be agreed";
+  if (event.leadingProposedTime) {
+    return when;
+  }
+  return `${relativeDayLabel(event.startsAt, event.timeZone)} · ${when}`;
 }
 
 function cancelledSubtitle(event: RecentCancelledGroupEvent): string {

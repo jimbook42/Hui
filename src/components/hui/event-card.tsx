@@ -6,11 +6,7 @@ import { formatEventDateBadgeParts } from "@/domain/datetime/event-hero-dates";
 import { HuiLinkButton } from "@/components/hui/hui-button";
 import { BowlIcon, CheckIcon, ClockIcon, PinIcon, SparkIcon } from "@/components/hui/icons";
 import { StatusPill, type StatusPillTone } from "@/components/hui/status-pill";
-import {
-  formatClockTime,
-  formatShortDay,
-  formatTimeSpan,
-} from "@/domain/datetime/display";
+import { formatHomeEventTimeLine } from "@/domain/events/home-event-time-line";
 import { viewerStatusLabel } from "@/domain/events/home";
 import { isConfirmedEventReasking, REASKING_STATUS_PILL_LABEL } from "@/domain/scheduling/confirmed-because";
 import { eventStatusLabel } from "@/lib/events/labels";
@@ -82,27 +78,16 @@ export function EventCard({ event, variant = "standard", tone = "primary", class
     .map((member) => ({ id: member.userId, name: member.displayName }));
   const summary = peopleSummary(event);
   const planning = event.bucket === "planning" || event.attention === "respond";
-  const proposedPrefix =
-    planning && event.startsAt && event.status !== "confirmed" ? "Proposed · " : "";
-  const timeLine =
-    event.status === "cancelled"
-      ? event.startsAt
-        ? `Cancelled · ${formatShortDay(event.startsAt, event.timeZone)} · ${formatClockTime(
-            event.startsAt,
-            event.timeZone,
-          )}`
-        : "Cancelled"
-      : event.proposalDatePassed && event.status === "proposing"
-        ? "This proposal's date has passed"
-        : event.startsAt
-          ? `${proposedPrefix}${formatShortDay(event.startsAt, event.timeZone)} · ${
-              featured
-                ? formatTimeSpan(event.startsAt, event.endsAt, event.timeZone)
-                : formatClockTime(event.startsAt, event.timeZone)
-            }`
-          : planning
-            ? "Time proposed — not confirmed yet"
-            : "Time still to be agreed";
+  const timeLine = formatHomeEventTimeLine({
+    status: event.status,
+    startsAt: event.startsAt,
+    endsAt: event.endsAt,
+    timeZone: event.timeZone,
+    proposalDatePassed: event.proposalDatePassed,
+    leadingProposedTime: event.leadingProposedTime,
+    planning,
+    featured,
+  });
   const when = event.relativeDayChip;
   const showAddToCalendar = canDownloadEventIcs(event.status, event.startsAt);
   const hasAttentionAction = event.attention !== null;
