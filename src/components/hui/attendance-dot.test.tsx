@@ -3,6 +3,17 @@ import { describe, expect, it } from "vitest";
 
 import { AttendanceDot } from "@/components/hui/attendance-dot";
 
+describe("AttendanceDot legend swatches", () => {
+  it("uses outline styling for yes so the key does not look selected", () => {
+    const { container } = render(
+      <AttendanceDot state="yes" label="Can come" size="xs" hideBadge legend />,
+    );
+    const dot = container.querySelector("span.inline-flex.items-center");
+    expect(dot?.className).toMatch(/border-attendance-yes/);
+    expect(dot?.className).not.toMatch(/\bbg-attendance-yes\b/);
+  });
+});
+
 describe("AttendanceDot subdued options", () => {
   it("uses neutral pending styling for unselected yes/maybe/no", () => {
     const { container: yesContainer } = render(
