@@ -120,7 +120,9 @@ function AttendanceSummary({
           className="mt-3"
         />
       ) : null}
-      <AttendanceLegend maybeEnabled={maybeResponsesEnabled} />
+      {!listLayout ? (
+        <AttendanceLegend maybeEnabled={maybeResponsesEnabled} />
+      ) : null}
       {namedGroups.length > 0 ? (
         <div className="mt-2 space-y-2 text-muted-foreground">
           {namedGroups.map((group) => (
