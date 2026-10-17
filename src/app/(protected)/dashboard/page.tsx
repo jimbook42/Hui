@@ -4,8 +4,6 @@ import { AppShell } from "@/components/app/app-shell";
 import { NoGroupsStartGate } from "@/components/dashboard/no-groups-start";
 import { DisplayNamePromptGate } from "@/components/dashboard/display-name-prompt-gate";
 import { PersonalSetupPrompt } from "@/components/dashboard/personal-setup-prompt";
-import { InstallHuiCard } from "@/components/pwa/install-hui";
-import { PushNotificationsOnboardCard } from "@/components/pwa/push-notifications-onboard";
 import { DashboardEvents, DashboardEventsSkeleton } from "@/components/home/home-sections";
 import {
   dashboardGreetingHeading,
@@ -14,8 +12,6 @@ import {
 import { todayDateOnlyInTimeZone } from "@/lib/groups/planning-cycle";
 import { getServerAuthUser, getServerSupabase } from "@/lib/auth/server-session";
 import { loadHomeData, splitHomeEvents } from "@/lib/events/home-data";
-import { getVapidPublicKey } from "@/lib/push/config";
-
 async function Greeting() {
   const user = await getServerAuthUser();
   const supabase = await getServerSupabase();
@@ -75,9 +71,6 @@ async function PersonalSetupGate() {
 }
 
 export default function DashboardPage() {
-  const vapidPublicKey = getVapidPublicKey();
-  const pushConfigured = vapidPublicKey !== null;
-
   return (
     <AppShell title="Home" hideTitle>
       <Suspense fallback={<GreetingText />}>
@@ -92,11 +85,6 @@ export default function DashboardPage() {
       <Suspense fallback={null}>
         <DisplayNamePromptGate />
       </Suspense>
-      <InstallHuiCard />
-      <PushNotificationsOnboardCard
-        pushConfigured={pushConfigured}
-        vapidPublicKey={vapidPublicKey}
-      />
       <Suspense fallback={<DashboardEventsSkeleton />}>
         <DashboardEvents />
       </Suspense>

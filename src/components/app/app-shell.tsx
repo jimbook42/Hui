@@ -6,6 +6,7 @@ import { HuiBotanical } from "@/components/hui/botanical";
 import { BottomNavigation } from "@/components/hui/bottom-navigation";
 import { HuiWordmark } from "@/components/hui/hui-wordmark";
 import { ArrowLeftIcon, BellIcon } from "@/components/hui/icons";
+import { SignedInEngagementNudgesSlot } from "@/components/pwa/signed-in-engagement-nudges-slot";
 import { WhatsNewBanner } from "@/components/whats-new/whats-new-banner";
 import { appVersion } from "@/lib/build/app-version";
 import { getUnreadNotificationCount } from "@/lib/notifications/unread-count";
@@ -110,6 +111,7 @@ export async function AppShell({ title, children, back, hideTitle, subtitle, nar
           </div>
         )}
         <WhatsNewBanner currentVersion={appVersion()} />
+        <SignedInEngagementNudgesSlot />
         {children}
       </main>
 
