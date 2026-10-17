@@ -8,6 +8,7 @@ import {
 } from "@/app/groups/invite-actions";
 import { InviteLinkFallbackSheet } from "@/components/groups/invite-link-fallback-sheet";
 import { copyInviteLink, shareInviteLink } from "@/domain/invites/share";
+import { GROUP_INVITE_GROUP_ACCESS_NOTE } from "@/domain/invites/copy";
 import { buildGroupInviteUrl } from "@/domain/invites/urls";
 
 const initialState: InviteActionState = {};
@@ -96,6 +97,7 @@ export function GroupInviteSection({
         </h2>
       )}
       <p className="mt-1 text-sm text-muted-foreground">{joinCopy}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{GROUP_INVITE_GROUP_ACCESS_NOTE}</p>
       {invitePreviewHeadline ? (
         <p className="mt-3 rounded-hui-md bg-muted px-3 py-2 text-sm font-semibold text-foreground">
           {invitePreviewHeadline}
