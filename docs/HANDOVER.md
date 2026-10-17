@@ -4,14 +4,15 @@ This file is self-contained: Part A is the shared process (same in every repo) a
 
 # Part B: Hui
 
-## Snapshot (16 Oct 2026, ~11pm NZ)
+## Snapshot (17 Oct 2026)
 - **What:** a mobile-first PWA for small groups planning recurring gatherings (Next.js, Supabase).
 - **Repo:** `jimbook42/Hui` (public). Base and production branch: `main`. Each ticket gets its own branch off main (`cursor/<ticket>` or `qa/<ticket>`).
 - **Live:** https://huiapp.vercel.app (primary). Older aliases: hui-seven-gamma.vercel.app, hui-jimbook.vercel.app. Vercel project `hui` (team jimbook), region **syd1**. `main` auto-deploys to production.
-- **Prod:** **v0.18.12** @ main **`a31f6e4`** (PR #54).
-- **In flight:** **v0.18.13** (Isaac feedback 16 Oct) on branch **`qa/v0.18.13-feedback`** — polls, past-time blocking, answer-card notes, recurrence draft link, households flag off, in-app Copy link, v0.18.12 QA copy/navigation fixes. Latest pushed work includes code + docs; **no open PR** on GitHub yet (PM opens draft PR via connector).
-- **Pending prod approval:** migration file **`20261016230000_hui_v01813_past_proposed_times.sql`** (INSERT-only past-start guard on `event_candidates`). Do not apply to live Supabase until Isaac approves.
+- **Prod:** **v0.18.16** @ main **`f5a9b65`** (PR #58).
+- **In flight:** **v0.18.17** on branch **`qa/v0.18.17`** — claim/release push to host/organiser, notification settings copy, member Questions row, What's new banner, invite access note. Draft PR (see below).
+- **Pending prod approval:** migration **`20261017180000_hui_v01817_contribution_claim_push.sql`** — extends `notify_contribution_coordination` so member claim/release can Web Push the accepted host (or event creator if no host), rate-limited via `contribution_event_push_recently`; in-app coordinator notifications unchanged. **NOT applied** to live Supabase until Isaac approves.
 - **Rollback points:**
+  - v0.18.16 `f5a9b65` (previous `a4542f3`)
   - v0.18.12 `a31f6e4`
   - v0.18.11 `62948e4`
   - v0.18.10 `b6d9ffd`
