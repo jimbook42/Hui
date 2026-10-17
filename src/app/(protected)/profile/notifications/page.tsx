@@ -68,6 +68,7 @@ export default async function ProfileNotificationsPage() {
       description="In-app updates stay in Hui. Push is optional."
     >
       <SettingsSection
+        id="notification-settings"
         title="Notifications"
         description="Push only alerts you about the same updates you would see in Hui."
       >

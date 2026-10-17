@@ -137,6 +137,43 @@ describe("EventScheduling compact per-time list", () => {
     expect(screen.queryByText("Alex")).not.toBeInTheDocument();
   });
 
+  it("uses compact rows when forceCompactTimeList is set for one candidate", () => {
+    const a = buildCandidate("solo", "2026-10-22T10:00:00.000Z");
+
+    render(
+      <EventScheduling
+        eventId="event-1"
+        groupId="group-1"
+        eventStatus="confirmed"
+        candidates={[{ ...a, status: "selected" }]}
+        withdrawnCandidates={[]}
+        maybeResponsesEnabled={false}
+        minimumAttendees={2}
+        proposalDeadlineHours={null}
+        replyByLabel={null}
+        consensus={{
+          confirmRule: "when_most_can_come",
+          consensusRule: "majority_active_members",
+          minimumAttendees: 2,
+          eligibleMemberCount: 4,
+          maybeResponsesEnabled: false,
+          candidates: [],
+        }}
+        canAddCandidates={false}
+        canRemoveCandidates={false}
+        canRespond={false}
+        canFinalise={false}
+        timeZone="Pacific/Auckland"
+        candidateTimeLabels={{ solo: "Wed 22 Oct" }}
+        attendanceRosters={{}}
+        forceCompactTimeList={true}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /Wed 22 Oct/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("gathering-visual")).toBeNull();
+  });
+
   it("shows host actions inside the expanded per-time row", () => {
     const a = buildCandidate("a", "2026-10-20T10:00:00.000Z");
     const b = buildCandidate("b", "2026-10-21T10:00:00.000Z");

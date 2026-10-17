@@ -25,6 +25,14 @@ export default async function NotificationsPage() {
       title="Notifications"
       subtitle="What needs you, and what has changed. Private availability and dietary details never appear here."
     >
+      <p className="mb-4 text-sm font-semibold text-muted-foreground">
+        <a
+          href="/profile/notifications#notification-settings"
+          className="text-accent underline-offset-2 hover:underline hui-focus-ring rounded"
+        >
+          Too many notifications?
+        </a>
+      </p>
       <NotificationsListPaginated
         initialNotifications={notifications}
         initialHasMore={notifications.length === 50}

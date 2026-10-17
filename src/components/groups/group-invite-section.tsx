@@ -24,6 +24,8 @@ type GroupInviteSectionProps = {
   focusEventId?: string | null;
   /** Hide the section heading when a parent already provides one. */
   hideTitle?: boolean;
+  /** Compact hui page: Share / Copy only — no raw URL in the layout. */
+  hideInviteUrl?: boolean;
 };
 
 export function GroupInviteSection({
@@ -35,6 +37,7 @@ export function GroupInviteSection({
   invitePreviewHeadline,
   focusEventId,
   hideTitle = false,
+  hideInviteUrl = false,
 }: GroupInviteSectionProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [fallbackOpen, setFallbackOpen] = useState(false);
@@ -99,9 +102,11 @@ export function GroupInviteSection({
         </p>
       ) : null}
 
-      <p className="mt-4 break-all rounded-hui-md bg-muted px-3 py-2 text-sm text-foreground">
-        {inviteUrl}
-      </p>
+      {hideInviteUrl ? null : (
+        <p className="mt-4 break-all rounded-hui-md bg-muted px-3 py-2 text-sm text-foreground">
+          {inviteUrl}
+        </p>
+      )}
 
       {feedback ? (
         <p className="hui-message-success mt-2" role="status">

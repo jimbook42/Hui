@@ -3,9 +3,8 @@ import { EventDecisionsSection } from "@/components/decisions/event-decisions-se
 import { HostEventPlaceHeroAction } from "@/components/events/host-event-place-hero-action";
 import { EventDietarySection } from "@/components/dietary/event-dietary-section";
 import { EventParticipantsSummary } from "@/components/events/event-participants-summary";
-import { ConfirmThisTimeButton } from "@/components/events/event-confirm-this-time-button";
 import { EventScheduling } from "@/components/events/event-scheduling";
-import { LiveGatheringVisual, ViewerResponseCard } from "@/components/events/attendance-live";
+import { ViewerResponseCard } from "@/components/events/attendance-live";
 import { DisclosureCard } from "@/components/hui/disclosure-card";
 import { EventHeroDateBlock } from "@/components/hui/event-hero-date-block";
 import { buildEventHeroDateCopy } from "@/domain/datetime/event-hero-dates";
@@ -14,7 +13,6 @@ import { HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
 import { OpenInMapsLink } from "@/components/map/open-in-maps-link";
 import { formatContributionDisclosureSummary } from "@/domain/contributions/display";
-import { contributionsDisclosureDefaultOpen } from "@/domain/contributions/event-bring-disclosure";
 import { isDietaryCoordinationRelevant } from "@/domain/events/food";
 import {
   BowlIcon,
@@ -33,7 +31,6 @@ import { HostSwapRequestForm } from "@/components/hosts/host-swap-request-form";
 import { eventConfirmRuleDisplayLine } from "@/domain/events/confirm-rule";
 import {
   eventShowsWaitingOnHost,
-  organiserPicksHostHasSaidYesOnCandidate,
   WAITING_ON_HOST_STATUS_MESSAGE,
 } from "@/domain/scheduling/consensus-display";
 import {
@@ -46,7 +43,6 @@ import {
   multiTimeAnswerDetailRows,
   multiTimeViewerVisualState,
 } from "@/domain/events/participant-flow";
-import { whoIsComingPresentation } from "@/domain/events/who-is-coming";
 import { EventHostSection } from "@/components/hosts/event-host-section";
 import { canDownloadEventIcs } from "@/lib/calendar/event-ics-export";
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
@@ -55,7 +51,6 @@ import { shouldShowEventHeroTime } from "@/domain/events/event-hero-visibility";
 import { buildProposedHuiGuidance } from "@/domain/events/proposed-guidance";
 import { replyByLabelForEvent } from "@/domain/scheduling/response-deadline";
 import { eventKindLabel } from "@/lib/events/labels";
-import { GroupInviteShareBlock } from "@/components/groups/group-invite-share-block";
 import { loadEventPage } from "@/lib/events/event-page-data";
 import { eventManagePath } from "@/lib/events/paths";
 import type { EventDetail } from "@/lib/events/types";
@@ -74,8 +69,6 @@ export function EventHeroMeta({
   detail,
   userId,
   pageData,
-  appOrigin,
-  inviteToken = null,
 }: EventHeroMetaProps & {
   pageData: Awaited<ReturnType<typeof loadEventPage>>;
   appOrigin: string;
@@ -151,36 +144,6 @@ export function EventHeroMeta({
 
   return (
     <div className="mt-5 space-y-5">
-      {data.organiserPicksConfirm ? (
-        <HuiSurface tone="sage" shape="soft" padding="md" className="hui-rise-2" role="status">
-          <p className="text-lg font-extrabold text-foreground">Ready to confirm a time?</p>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            {organiserPicksHostHasSaidYesOnCandidate(
-              data.organiserPicksConfirm.candidateId,
-              data.acceptedHostUserId,
-              data.attendanceRosters,
-            )
-              ? "The host has said Yes. Pick the time you want to lock in for the group."
-              : "Pick the time you want to lock in for the group."}
-          </p>
-          <div className="mt-4">
-            <ConfirmThisTimeButton
-              eventId={detail.id}
-              candidateId={data.organiserPicksConfirm.candidateId}
-            />
-          </div>
-        </HuiSurface>
-      ) : null}
-      {inviteToken ? (
-        <GroupInviteShareBlock
-          groupName={detail.groupName}
-          inviteToken={inviteToken}
-          appOrigin={appOrigin}
-          focusEventId={detail.id}
-          focusHuiTitle={detail.title}
-          variant="page"
-        />
-      ) : null}
       {heroDateCopy ? (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <div className="min-w-0 flex-1">
@@ -397,81 +360,9 @@ export async function EventProposedGuidanceCard({
 
 /* ------------------------------------------------------------- people + attention */
 
-export async function EventPeopleCard({ detail, userId }: SectionProps) {
-  const data = await loadEventPage(detail, userId);
-  const closed = detail.status === "cancelled";
-
-  if (closed) {
-    return null;
-  }
-
-  const presentation = whoIsComingPresentation({
-    eventStatus: detail.status,
-    candidates: data.scheduling.candidates,
-    attendanceRosters: data.attendanceRosters,
-    maybeResponsesEnabled: data.scheduling.maybeResponsesEnabled,
-    focusCandidateId: data.focusCandidate?.id ?? null,
-  });
-  const timeLabels =
-    presentation.mode === "per-candidate"
-      ? buildEventTimeLabelMap(
-          data.scheduling.candidates.filter((c) => c.status === "proposed"),
-          data.displayTimeZone,
-          "compact",
-        )
-      : {};
-
-  return (
-    <HuiSurface padding="lg" shape="organic" elevated className="hui-rise-2">
-      <SectionHeader
-        title="Who is coming"
-        description={
-          presentation.mode === "single" && presentation.summary
-            ? presentation.summary
-            : undefined
-        }
-      />
-      {presentation.mode === "per-candidate" ? (
-        <ul className="mt-4 space-y-6">
-          {presentation.rows.map((row) => (
-            <li key={row.candidateId}>
-              <p className="text-sm font-extrabold text-foreground">
-                {timeLabels[row.candidateId] ?? "Proposed time"}
-              </p>
-              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{row.summary}</p>
-              <LiveGatheringVisual
-                roster={row.roster}
-                viewerUserId={userId}
-                eventTitle={detail.title}
-                className="mt-3"
-              />
-            </li>
-          ))}
-          <p className="hui-type-supporting text-center">
-            Icons around the table show how people answered (full = yes, dashed = maybe). Private
-            notes are never shown.
-          </p>
-        </ul>
-      ) : presentation.mode === "single" && presentation.roster && presentation.roster.members.length > 0 ? (
-        <>
-          <LiveGatheringVisual
-            roster={presentation.roster}
-            viewerUserId={userId}
-            eventTitle={detail.title}
-            className="mt-4"
-          />
-          <p className="hui-type-supporting mt-4 text-center">
-            Icons around the table show how people answered (full = yes, dashed = maybe). Private
-            notes are never shown.
-          </p>
-        </>
-      ) : (
-        <p className="hui-type-supporting mt-3">
-          Nobody has been asked about a time yet, so there is no one to show.
-        </p>
-      )}
-    </HuiSurface>
-  );
+/** Attendance is shown on compact per-time rows; the table visual is no longer on the hui page. */
+export async function EventPeopleCard() {
+  return null;
 }
 
 const ATTENTION_TARGET = {
@@ -598,9 +489,11 @@ export async function EventAttentionCard({ detail, userId }: SectionProps) {
   }
 
   return (
-    <section aria-labelledby="event-attention" className="hui-rise-2 space-y-3">
-      <SectionHeader as="h2" id="event-attention" title="Needs your attention" />
-      <ul className="space-y-3">
+    <section aria-labelledby="event-attention" className="hui-rise-2 space-y-2">
+      <h2 id="event-attention" className="text-sm font-extrabold text-foreground">
+        Needs your attention
+      </h2>
+      <ul className="space-y-2">
         {items.map((item) => {
           if (item.kind === "respond") {
             return null;
@@ -608,12 +501,23 @@ export async function EventAttentionCard({ detail, userId }: SectionProps) {
           const target = ATTENTION_TARGET[item.kind];
           return (
             <li key={item.kind}>
-              <HuiSurface tone="clay" shape="soft" padding="md" className="flex items-center gap-4">
+              <HuiSurface
+                tone="clay"
+                shape="soft"
+                padding="sm"
+                className="flex items-center gap-3"
+              >
                 <div className="min-w-0 flex-1">
-                  <p className="font-extrabold leading-tight text-foreground">{item.title}</p>
-                  <p className="mt-0.5 text-sm font-semibold text-muted-foreground">{item.detail}</p>
+                  <p className="text-sm font-extrabold leading-tight text-foreground">{item.title}</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{item.detail}</p>
                 </div>
-                <HuiLinkButton href={target.href} size="sm" shape="melt" variant="primary" className="shrink-0">
+                <HuiLinkButton
+                  href={target.href}
+                  size="sm"
+                  shape="melt"
+                  variant="primary"
+                  className="shrink-0"
+                >
                   {target.label}
                 </HuiLinkButton>
               </HuiSurface>
@@ -690,23 +594,23 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
   });
 
   return (
-    <section aria-labelledby="event-details" className="hui-rise-3 space-y-3">
+    <section aria-labelledby="event-details" className="hui-rise-3">
       <HashDisclosureOpener />
-      <SectionHeader
-        as="h2"
+      <DisclosureCard
         id="event-details"
         title="Details"
-        description="Open anything you need. Nothing here is required."
-      />
-
+        summary="Place, hosting, polls, and more"
+        defaultOpen={false}
+      >
+      <div className="space-y-3">
       {settings ? (
         <DisclosureCard
-          id="scheduling"
+          id="scheduling-details"
           title="Times and agreement"
           summary={timeDisclosureSummary}
           icon={<ClockIcon size={20} />}
           attention={attentionKinds.has("confirm")}
-          defaultOpen={attentionKinds.has("confirm")}
+          defaultOpen={false}
         >
           <EventScheduling
             eventId={detail.id}
@@ -726,6 +630,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
             timeZone={data.displayTimeZone}
             candidateTimeLabels={candidateTimeLabels}
             attendanceRosters={data.attendanceRosters}
+            forceCompactTimeList={true}
             perTimeHosting={
               data.showHostSection && settings.hostingEnabled
                 ? {
@@ -753,7 +658,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
           summary={hostSummary}
           icon={<UserIcon size={20} />}
           attention={attentionKinds.has("host")}
-          defaultOpen={attentionKinds.has("host")}
+          defaultOpen={false}
         >
           <EventHostSection
             eventId={detail.id}
@@ -785,7 +690,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
           summary={decisionsSummary}
           icon={<HelpIcon size={20} />}
           attention={attentionKinds.has("decision")}
-          defaultOpen={attentionKinds.has("decision")}
+          defaultOpen={false}
         >
           <EventDecisionsSection
             eventId={detail.id}
@@ -810,11 +715,7 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
           summary={bringSummary}
           icon={<BowlIcon size={20} />}
           attention={attentionKinds.has("contribute")}
-          defaultOpen={contributionsDisclosureDefaultOpen(
-            attentionKinds.has("contribute"),
-            hasActiveBringCategories,
-            data.canAssignContributions,
-          )}
+          defaultOpen={false}
         >
           <EventContributionsSection
             eventId={detail.id}
@@ -896,7 +797,8 @@ export async function EventDetailsList({ detail, userId }: SectionProps) {
           </dl>
         </DisclosureCard>
       ) : null}
-
+      </div>
+      </DisclosureCard>
     </section>
   );
 }

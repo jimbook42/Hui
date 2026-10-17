@@ -45,7 +45,32 @@ describe("initialDisplayNameFromAuthMetadata", () => {
     ).toBe("Email User");
   });
 
-  it("resolves Microsoft/Azure metadata the same as other OAuth providers", () => {
+  it("resolves Microsoft/Azure metadata from given_name and family_name", () => {
+    expect(
+      initialDisplayNameFromAuthMetadata(
+        {
+          email: "isaac@outlook.com",
+          given_name: "Isaac",
+          family_name: "Tull",
+        },
+        "isaac@outlook.com",
+      ),
+    ).toBe("Isaac Tull");
+  });
+
+  it("resolves Azure custom_claims name before email prefix", () => {
+    expect(
+      initialDisplayNameFromAuthMetadata(
+        {
+          custom_claims: { name: "Isaac Tull" },
+          email: "isaac@outlook.com",
+        },
+        "isaac@outlook.com",
+      ),
+    ).toBe("Isaac Tull");
+  });
+
+  it("resolves Microsoft/Azure metadata the same as other OAuth providers when full_name present", () => {
     expect(
       initialDisplayNameFromAuthMetadata(
         { full_name: "Isaac Tull", name: "Isaac Tull", email: "isaac@outlook.com" },
@@ -77,5 +102,18 @@ describe("initialDisplayNameFromAuthMetadata", () => {
         "jane@example.com",
       ),
     ).toBe("Jane Doe");
+  });
+
+  it("leaves Google-style metadata unchanged", () => {
+    expect(
+      initialDisplayNameFromAuthMetadata(
+        {
+          full_name: "Isaac Tull",
+          name: "Isaac Tull",
+          avatar_url: "https://lh3.googleusercontent.com/a/example",
+        },
+        "isaactull@gmail.com",
+      ),
+    ).toBe("Isaac Tull");
   });
 });

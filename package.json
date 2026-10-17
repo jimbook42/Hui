@@ -1,6 +1,6 @@
 {
   "name": "hui",
-  "version": "0.18.15",
+  "version": "0.18.16",
   "private": true,
   "scripts": {
     "predev": "node scripts/copy-maplibre-worker.mjs",

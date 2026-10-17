@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { oauthCallbackFailureReason } from "@/lib/auth/oauth";
 import { sanitizeNextPath } from "@/lib/auth/routes";
 import { ensureUserProfile } from "@/lib/profiles/ensure-profile";
+import { shouldPromptForDisplayName } from "@/lib/profiles/display-name-prompt";
 import { initialDisplayNameFromAuthMetadata } from "@/lib/profiles/initial-display-name";
 import { createClient } from "@/lib/supabase/server";
 
@@ -58,6 +59,22 @@ export async function GET(request: NextRequest) {
   );
   if (!ensured.ok) {
     return redirectToSignIn(request, "failed", rawNext);
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (
+    shouldPromptForDisplayName({
+      displayName: profile?.display_name,
+      email: user.email,
+      userMetadata: user.user_metadata,
+    })
+  ) {
+    return NextResponse.redirect(new URL("/profile/display-name", requestUrl.origin));
   }
 
   return NextResponse.redirect(new URL(next, requestUrl.origin));
