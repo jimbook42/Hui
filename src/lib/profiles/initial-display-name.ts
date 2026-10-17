@@ -1,3 +1,5 @@
+import { personNameFromAuthMetadata } from "./auth-metadata-display-name";
+import { emailLocalPart } from "./display-name-prompt";
 import { normalizeDisplayName } from "./validation";
 
 /**
@@ -10,12 +12,13 @@ export function initialDisplayNameFromAuthMetadata(
   metadata: Record<string, unknown> | undefined,
   email: string | undefined,
 ): string {
-  const candidates = [metadata?.full_name, metadata?.name, metadata?.display_name];
-  for (const value of candidates) {
-    const normalized = normalizeDisplayName(String(value ?? ""));
-    if (normalized) {
-      return normalized;
-    }
+  const fromProvider = personNameFromAuthMetadata(metadata);
+  if (fromProvider) {
+    return fromProvider;
   }
-  return normalizeDisplayName(email?.split("@")[0] ?? "") ?? "Member";
+  const fromEmail = emailLocalPart(email);
+  if (fromEmail) {
+    return fromEmail;
+  }
+  return "Member";
 }

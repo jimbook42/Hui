@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
 import { NoGroupsStartGate } from "@/components/dashboard/no-groups-start";
+import { DisplayNamePromptGate } from "@/components/dashboard/display-name-prompt-gate";
 import { PersonalSetupPrompt } from "@/components/dashboard/personal-setup-prompt";
 import { InstallHuiCard } from "@/components/pwa/install-hui";
 import { PushNotificationsOnboardCard } from "@/components/pwa/push-notifications-onboard";
@@ -87,6 +88,9 @@ export default function DashboardPage() {
       </Suspense>
       <Suspense fallback={null}>
         <PersonalSetupGate />
+      </Suspense>
+      <Suspense fallback={null}>
+        <DisplayNamePromptGate />
       </Suspense>
       <InstallHuiCard />
       <PushNotificationsOnboardCard

@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { parseHomeLocationForm } from "@/domain/profile/home-location";
 import { parsePersonalSetupFormData } from "@/domain/profile/personal-setup-update";
+import {
+  DISPLAY_NAME_CONFIRMED_METADATA_KEY,
+  displayNameMatchesEmailPrefix,
+} from "@/lib/profiles/display-name-prompt";
+import { updateOwnDisplayName } from "@/lib/profiles/update-display-name";
+import { normalizeDisplayName } from "@/lib/profiles/validation";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -21,6 +27,44 @@ async function requireUser() {
     redirect("/sign-in");
   }
   return { supabase, user };
+}
+
+async function markDisplayNameConfirmed(supabase: Awaited<ReturnType<typeof createClient>>) {
+  await supabase.auth.updateUser({
+    data: {
+      [DISPLAY_NAME_CONFIRMED_METADATA_KEY]: true,
+    },
+  });
+}
+
+export async function saveDisplayNameFromPromptAction(
+  _prev: ProfileActionState,
+  formData: FormData,
+): Promise<ProfileActionState> {
+  const raw = String(formData.get("display_name") ?? "");
+  const { supabase, user } = await requireUser();
+  const result = await updateOwnDisplayName(supabase, user.id, raw, { email: user.email });
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  const normalized = normalizeDisplayName(raw);
+  if (
+    normalized &&
+    displayNameMatchesEmailPrefix(normalized, user.email)
+  ) {
+    await markDisplayNameConfirmed(supabase);
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/dashboard");
+}
+
+export async function dismissDisplayNamePromptAction(): Promise<void> {
+  const { supabase } = await requireUser();
+  await markDisplayNameConfirmed(supabase);
+  revalidatePath("/", "layout");
+  redirect("/dashboard");
 }
 
 export async function updateHomeLocationAction(
@@ -83,17 +127,30 @@ export async function completePersonalSetupAction(
     update.home_location_lng = patch.home?.coordinates?.lng ?? null;
   }
 
-  const { data, error } = await supabase
+  const result = await updateOwnDisplayName(supabase, user.id, displayName, {
+    email: user.email,
+  });
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  const { error: setupError } = await supabase
     .from("profiles")
-    .update(update)
+    .update({
+      personal_setup_completed_at: update.personal_setup_completed_at,
+      ...(patch.home !== undefined
+        ? {
+            home_location_label: update.home_location_label,
+            home_location_lat: update.home_location_lat,
+            home_location_lng: update.home_location_lng,
+          }
+        : {}),
+    })
     .eq("id", user.id)
     .select("id");
 
-  if (error) {
-    return { error: error.message };
-  }
-  if (!data?.length) {
-    return { error: "Profile not found." };
+  if (setupError) {
+    return { error: setupError.message };
   }
 
   revalidatePath("/dashboard");
@@ -109,7 +166,12 @@ export async function skipPersonalSetupAction(formData: FormData): Promise<void>
     personal_setup_completed_at: new Date().toISOString(),
   };
   if (patch.displayName) {
-    update.display_name = patch.displayName;
+    const result = await updateOwnDisplayName(supabase, user.id, patch.displayName, {
+      email: user.email,
+    });
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
   }
   if (patch.home !== undefined) {
     update.home_location_label = patch.home?.label ?? null;

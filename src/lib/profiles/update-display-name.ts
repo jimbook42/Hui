@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { syncOwnDisplayNameSnapshots } from "./sync-display-name-snapshots";
 import { normalizeDisplayName } from "./validation";
 
 export type UpdateDisplayNameResult =
@@ -10,6 +11,7 @@ export async function updateOwnDisplayName(
   supabase: SupabaseClient,
   userId: string,
   rawDisplayName: string,
+  options?: { email?: string | undefined },
 ): Promise<UpdateDisplayNameResult> {
   const displayName = normalizeDisplayName(rawDisplayName);
   if (!displayName) {
@@ -31,6 +33,10 @@ export async function updateOwnDisplayName(
 
   if (!data?.length) {
     return { ok: false, error: "Profile not found." };
+  }
+
+  if (options?.email) {
+    await syncOwnDisplayNameSnapshots(supabase, userId, displayName, options.email);
   }
 
   return { ok: true };

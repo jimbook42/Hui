@@ -245,7 +245,7 @@ export async function updateProfileAction(
   const supabase = await getServerSupabase();
   const displayName = String(formData.get("display_name") ?? "");
   const result = await devTimed("updateProfileAction:update", () =>
-    updateOwnDisplayName(supabase, user.id, displayName),
+    updateOwnDisplayName(supabase, user.id, displayName, { email: user.email }),
   );
   if (!result.ok) {
     return { error: result.error };

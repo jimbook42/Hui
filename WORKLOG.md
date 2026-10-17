@@ -1,5 +1,12 @@
 # Worklog
 
+## 2026-10-17 — v0.18.16 item B/C (Azure display names + alerts help)
+
+- **B1:** `personNameFromAuthMetadata` resolves Microsoft/Azure `given_name`/`family_name` and `custom_claims` before email-prefix fallback; shared by profile bootstrap.
+- **B2:** One-time “What should your group call you?” flow when profile name still matches email prefix (`display_name_confirmed` in auth metadata on dismiss/keep); OAuth callback + dashboard gate + `/profile/display-name`.
+- **B3:** On display-name save, sync own `host_assignments` / `event_contributions` rows that still match the old prefix (app-only; no migration).
+- **C:** Alerts page help link to `/profile/notifications#notification-settings`; `SettingsSection` supports anchor `id`.
+
 ## 2026-10-17 — v0.18.16 compact hui page layout
 
 - Shorter hui page: summary header + next action, compact per-time list (no table visual), collapsed invite/planning/organiser/details; manage actions in Organiser tools.
