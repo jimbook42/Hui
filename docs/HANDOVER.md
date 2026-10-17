@@ -9,7 +9,7 @@ This file is self-contained: Part A is the shared process (same in every repo) a
 - **Repo:** `jimbook42/Hui` (public). Base and production branch: `main`. Each ticket gets its own branch off main (`cursor/<ticket>` or `qa/<ticket>`).
 - **Live:** https://huiapp.vercel.app (primary). Older aliases: hui-seven-gamma.vercel.app, hui-jimbook.vercel.app. Vercel project `hui` (team jimbook), region **syd1**. `main` auto-deploys to production.
 - **Prod:** **v0.18.16** @ main **`f5a9b65`** (PR #58).
-- **In flight:** **v0.18.17** on branch **`qa/v0.18.17`** — claim/release push to host/organiser, notification settings copy, member Questions row, What's new banner, invite access note. Draft PR (see below).
+- **In flight:** **v0.18.17** on branch **`qa/v0.18.17`** @ **`b57eb3d`** — claim/release push to host/organiser, notification settings copy, member Questions row, What's new banner, invite access note. **Draft PR:** open `qa/v0.18.17` → `main` via GitHub connector (agent token cannot create PRs).
 - **Pending prod approval:** migration **`20261017180000_hui_v01817_contribution_claim_push.sql`** — extends `notify_contribution_coordination` so member claim/release can Web Push the accepted host (or event creator if no host), rate-limited via `contribution_event_push_recently`; in-app coordinator notifications unchanged. **NOT applied** to live Supabase until Isaac approves.
 - **Rollback points:**
   - v0.18.16 `f5a9b65` (previous `a4542f3`)
