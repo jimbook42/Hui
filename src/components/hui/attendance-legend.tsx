@@ -14,21 +14,21 @@ export function AttendanceLegend({ maybeEnabled, className }: AttendanceLegendPr
       }
     >
       <li className="flex items-center gap-2">
-        <AttendanceDot state="yes" label="Can come" size="xs" hideBadge />
+        <AttendanceDot state="yes" label="Can come" size="xs" hideBadge legend />
         Can come
       </li>
       {maybeEnabled ? (
         <li className="flex items-center gap-2">
-          <AttendanceDot state="maybe" label="Could make it work" size="xs" hideBadge />
+          <AttendanceDot state="maybe" label="Could make it work" size="xs" hideBadge legend />
           Could make it work
         </li>
       ) : null}
       <li className="flex items-center gap-2">
-        <AttendanceDot state="no" label="Can't come" size="xs" hideBadge />
+        <AttendanceDot state="no" label="Can't come" size="xs" hideBadge legend />
         Can&apos;t come
       </li>
       <li className="flex items-center gap-2">
-        <AttendanceDot state="pending" label="No answer yet" size="xs" hideBadge />
+        <AttendanceDot state="pending" label="No answer yet" size="xs" hideBadge legend />
         No answer yet
       </li>
     </ul>

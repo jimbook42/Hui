@@ -6,6 +6,22 @@ import { cn } from "@/lib/ui/cn";
  * One member's attendance. State is carried by shape and glyph as well as colour:
  * solid + check (yes), dashed ring + "?" (maybe), faded + cross (no), dotted outline (pending).
  */
+const legendStateStyles: Record<AttendanceVisualState, { dot: string }> = {
+  yes: {
+    dot:
+      "border-2 border-attendance-yes bg-[color-mix(in_srgb,var(--attendance-yes)_20%,var(--bg-surface))]",
+  },
+  maybe: {
+    dot: "border-2 border-dashed border-attendance-maybe bg-[color-mix(in_srgb,var(--attendance-maybe)_18%,var(--bg-surface))]",
+  },
+  no: {
+    dot: "border-2 border-muted bg-muted/40",
+  },
+  pending: {
+    dot: "border-2 border-dotted border-attendance-pending bg-surface",
+  },
+};
+
 const stateStyles: Record<AttendanceVisualState, { dot: string; text: string; badge?: string }> = {
   yes: {
     dot: "bg-attendance-yes ring-[3px] ring-[color-mix(in_srgb,var(--attendance-yes)_30%,transparent)]",
@@ -45,6 +61,8 @@ type AttendanceDotProps = {
   hideBadge?: boolean;
   /** Unselected option in the respond flow — outline only, no solid fill. */
   subdued?: boolean;
+  /** Key/legend swatch — same meaning as live dots but not a filled “selected” look. */
+  legend?: boolean;
 };
 
 export function AttendanceDot({
@@ -55,9 +73,11 @@ export function AttendanceDot({
   className,
   hideBadge = false,
   subdued = false,
+  legend = false,
 }: AttendanceDotProps) {
   const styles = stateStyles[state];
   const dims = sizes[size];
+  const legendDot = legend ? legendStateStyles[state].dot : null;
   const subduedDot =
     subdued && state !== "pending"
       ? stateStyles.pending.dot
@@ -74,7 +94,7 @@ export function AttendanceDot({
         className={cn(
           "inline-flex items-center justify-center rounded-full font-extrabold",
           dims.box,
-          subduedDot ?? styles.dot,
+          legendDot ?? subduedDot ?? styles.dot,
         )}
       >
         {initial ? (

@@ -199,6 +199,9 @@ function CandidateResponseForm({
   );
   useActionStateRefresh(state);
   const options = availabilityResponseOptions(maybeResponsesEnabled);
+  const [selectedResponse, setSelectedResponse] = useState(
+    () => candidate.viewerResponse ?? null,
+  );
   const open = canRespond && isCandidateOpenForResponses(eventStatus, candidate.status);
 
   if (!open) {
@@ -226,7 +229,7 @@ function CandidateResponseForm({
           <label
             key={option}
             className={`mt-2 inline-flex min-h-11 cursor-pointer items-center rounded-full px-4 text-sm font-bold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent-primary)] ${
-              candidate.viewerResponse === option
+              selectedResponse === option
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-foreground"
             }`}
@@ -236,7 +239,8 @@ function CandidateResponseForm({
               name="response"
               value={option}
               className="sr-only"
-              defaultChecked={candidate.viewerResponse === option}
+              checked={selectedResponse === option}
+              onChange={() => setSelectedResponse(option)}
             />
             {availabilityLabel(option)}
           </label>
@@ -616,6 +620,7 @@ function CandidateCard({
       )}
       {(!listLayout || expanded !== false) && candidate.status !== "withdrawn" && !passed ? (
         <CandidateResponseForm
+          key={`${candidate.id}-${candidate.viewerResponse ?? "none"}`}
           eventId={eventId}
           eventStatus={eventStatus}
           candidate={candidate}
