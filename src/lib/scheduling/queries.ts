@@ -24,6 +24,7 @@ export type RosterMemberRow = {
 type RosterResponseRow = {
   response: "yes" | "no" | "maybe" | null;
   submittedLate: boolean;
+  declineReason?: string | null;
 };
 
 /** Matches `candidate_attendance_roster` ordering (display name, then user id). */
@@ -51,6 +52,7 @@ export function buildAttendanceRoster(
         displayName: member.displayName,
         response: response?.response ?? null,
         submittedLate: response?.submittedLate ?? false,
+        declineReason: response?.declineReason ?? null,
       };
     }),
   };
@@ -75,11 +77,16 @@ export function parseAttendanceRosterPayload(data: unknown): AttendanceRoster | 
     const response = record.response;
     const normalizedResponse: RosterResponseRow["response"] =
       response === "yes" || response === "no" || response === "maybe" ? response : null;
+    const declineReason =
+      typeof record.decline_reason === "string" && record.decline_reason.trim().length > 0
+        ? record.decline_reason.trim()
+        : null;
     return {
       userId: String(record.user_id ?? ""),
       displayName: String(record.display_name ?? "Member"),
       response: normalizedResponse,
       submittedLate: record.submitted_late === true,
+      declineReason,
     };
   });
 

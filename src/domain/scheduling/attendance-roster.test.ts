@@ -3,6 +3,25 @@ import { describe, expect, it } from "vitest";
 import { groupAttendanceByResponse } from "./attendance-roster";
 
 describe("attendance roster", () => {
+  it("surfaces shared decline reasons under can't come", () => {
+    const groups = groupAttendanceByResponse(
+      {
+        maybeResponsesEnabled: true,
+        members: [
+          {
+            userId: "1",
+            displayName: "Alex",
+            response: "no",
+            declineReason: "Away that week",
+          },
+        ],
+      },
+      { showDeclineReasons: true },
+    );
+    const cant = groups.find((group) => group.label === "Can't come");
+    expect(cant?.entries?.[0]?.declineReason).toBe("Away that week");
+  });
+
   it("groups members by response without exposing private notes", () => {
     const groups = groupAttendanceByResponse({
       maybeResponsesEnabled: true,
@@ -50,8 +69,8 @@ describe("attendance roster", () => {
     );
 
     expect(groups[0]?.entries).toEqual([
-      { displayName: "Alex", submittedLate: true },
-      { displayName: "Sam", submittedLate: false },
+      { displayName: "Alex", submittedLate: true, declineReason: null },
+      { displayName: "Sam", submittedLate: false, declineReason: null },
     ]);
   });
 });

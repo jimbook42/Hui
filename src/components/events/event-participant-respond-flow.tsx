@@ -42,6 +42,10 @@ import {
 } from "@/domain/contributions/slots";
 import { formatCompactEventTimeRange } from "@/domain/datetime/timezone";
 import { privateAttendanceNoteForCandidate } from "@/domain/events/private-attendance-note";
+import {
+  DECLINE_REASON_FIELD_LABEL,
+  DECLINE_REASON_PLACEHOLDER,
+} from "@/domain/scheduling/decline-reason-copy";
 import { candidateIdsNeedingNoteFlushBeforeAdvance } from "@/domain/events/participant-respond-note-flush";
 import type { EventStatus } from "@/domain/events/types";
 import {
@@ -989,7 +993,7 @@ export function EventParticipantRespondFlow({
                       ) : null}
                       {rowResponse === "unavailable" || rowPendingUnavailable ? (
                         <label className="hui-label mt-3 block">
-                          <span>Optional note (only if you want)</span>
+                          <span>{DECLINE_REASON_FIELD_LABEL}</span>
                           <input
                             type="text"
                             name={`private_note_${row.id}`}
@@ -1006,7 +1010,7 @@ export function EventParticipantRespondFlow({
                             onBlur={() => flushNoteSave(row.id)}
                             maxLength={500}
                             className="hui-input"
-                            placeholder="e.g. Away that weekend"
+                            placeholder={DECLINE_REASON_PLACEHOLDER}
                           />
                         </label>
                       ) : null}
@@ -1085,7 +1089,7 @@ export function EventParticipantRespondFlow({
           {(viewerResponse === "unavailable" ||
             pendingByCandidate[activeTimeCandidate.id] === "unavailable") ? (
             <label className="hui-label block">
-              <span>Optional note (only if you want)</span>
+              <span>{DECLINE_REASON_FIELD_LABEL}</span>
               <input
                 type="text"
                 name="private_note"
@@ -1099,7 +1103,7 @@ export function EventParticipantRespondFlow({
                 onBlur={() => flushNoteSave(activeTimeCandidate.id)}
                 maxLength={500}
                 className="hui-input"
-                placeholder="e.g. Away that weekend"
+                placeholder={DECLINE_REASON_PLACEHOLDER}
               />
             </label>
           ) : null}

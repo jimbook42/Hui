@@ -377,7 +377,7 @@ export async function setAvailabilityResponseAction(
     const privateNoteRaw = String(formData.get("private_note") ?? "");
     const privateNote = normalizePrivateAttendanceNote(privateNoteRaw);
     if (privateNoteRaw.trim().length > 0 && privateNote === null) {
-      return { error: "Private note is too long (500 characters max)." };
+      return { error: "Reason is too long (500 characters max)." };
     }
 
     const dbResponse = availabilityToDbResponse(choice);

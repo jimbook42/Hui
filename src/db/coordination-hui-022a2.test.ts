@@ -294,16 +294,9 @@ describe("coordination HUI-022A.2", () => {
     expect(status.rows[0].status).toBe("proposing");
   });
 
-  it("keeps private attendance notes off roster and peer reads", async () => {
+  it("keeps legacy decline notes private when note_shared_with_group is false", async () => {
     const { candidateId } = await insertSubsequentEvent(db, "Private note");
     await respond(db, ids.alice, candidateId, "no", "Out of town");
-
-    await asUser(db, ids.alice);
-    const own = await db.query<{ note: string }>(
-      `select note from public.event_responses where candidate_id = $1 and user_id = $2`,
-      [candidateId, ids.alice],
-    );
-    expect(own.rows[0]?.note).toBe("Out of town");
 
     await asUser(db, ids.owner);
     const peer = await db.query(
@@ -312,16 +305,43 @@ describe("coordination HUI-022A.2", () => {
     );
     expect(peer.rows).toHaveLength(0);
 
-    const roster = await db.query<{ candidate_attendance_roster: { members: { user_id: string; response: string }[] } }>(
-      `select public.candidate_attendance_roster($1) as candidate_attendance_roster`,
-      [candidateId],
-    );
+    const roster = await db.query<{
+      candidate_attendance_roster: {
+        members: { user_id: string; response: string; decline_reason: string | null }[];
+      };
+    }>(`select public.candidate_attendance_roster($1) as candidate_attendance_roster`, [candidateId]);
     const alice = roster.rows[0].candidate_attendance_roster.members.find(
       (m) => m.user_id === ids.alice,
     );
     expect(alice?.response).toBe("no");
+    expect(alice?.decline_reason).toBeNull();
     const payload = JSON.stringify(roster.rows[0].candidate_attendance_roster);
     expect(payload).not.toContain("Out of town");
+  });
+
+  it("includes decline reasons on the roster when note_shared_with_group is true", async () => {
+    const { candidateId } = await insertSubsequentEvent(db, "Shared decline");
+    await asUser(db, ids.alice);
+    await db.query(
+      `insert into public.event_responses (candidate_id, user_id, response, visibility, note, note_shared_with_group)
+       values ($1, $2, 'no', 'group', $3, true)
+       on conflict (candidate_id, user_id) do update
+         set response = excluded.response,
+             note = excluded.note,
+             note_shared_with_group = excluded.note_shared_with_group`,
+      [candidateId, ids.alice, "In Australia"],
+    );
+
+    await asUser(db, ids.owner);
+    const roster = await db.query<{
+      candidate_attendance_roster: {
+        members: { user_id: string; decline_reason: string | null }[];
+      };
+    }>(`select public.candidate_attendance_roster($1) as candidate_attendance_roster`, [candidateId]);
+    const alice = roster.rows[0].candidate_attendance_roster.members.find(
+      (m) => m.user_id === ids.alice,
+    );
+    expect(alice?.decline_reason).toBe("In Australia");
   });
 
   it("regression D: consensus summary reports required_participants rule from settings", async () => {
