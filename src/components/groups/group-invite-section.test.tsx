@@ -24,6 +24,7 @@ describe("GroupInviteSection", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Invite people" })).toBeTruthy();
+    expect(screen.getByText(/future hui in this group/i)).toBeTruthy();
     expect(screen.getByText(/join the group/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Share invite" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Copy link" })).toBeTruthy();

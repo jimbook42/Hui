@@ -1,5 +1,11 @@
 # Worklog
 
+## 2026-10-17 — v0.18.17 claim push, settings, member questions, What's new, invite note
+
+- Migration `20261017180000_hui_v01817_contribution_claim_push.sql` (not applied): Web Push to accepted host or organiser on What to bring claim/release; PGlite tests updated.
+- Notification settings: plain NZ English per push type; member **Questions** row on compact hui page; dismissable What's new (0.18.16/0.18.17); invite access note for future hui.
+- Version **0.18.17** on `qa/v0.18.17`.
+
 ## 2026-10-17 — v0.18.16 item B/C (Azure display names + alerts help)
 
 - **B1:** `personNameFromAuthMetadata` resolves Microsoft/Azure `given_name`/`family_name` and `custom_claims` before email-prefix fallback; shared by profile bootstrap.

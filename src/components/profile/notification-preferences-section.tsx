@@ -4,6 +4,7 @@ import {
 } from "@/app/notifications/actions";
 import { AuthForm } from "@/components/auth/auth-form";
 import { HuiSwitchField } from "@/components/hui/hui-switch";
+import { PUSH_CONTRIBUTION_CHANGES_DESCRIPTION } from "@/domain/notifications/push-preference-copy";
 
 type NotificationPreferencesSectionProps = {
   reconnectRemindersEnabled: boolean;
@@ -16,6 +17,44 @@ type NotificationPreferencesSectionProps = {
   };
 };
 
+const PUSH_TYPE_COPY: {
+  name: string;
+  label: string;
+  description: string;
+  key: keyof NotificationPreferencesSectionProps["pushPreferences"];
+}[] = [
+  {
+    name: "push_event_proposals_enabled",
+    label: "New hui proposed",
+    description: "When someone suggests a new hui for your group.",
+    key: "eventProposalsEnabled",
+  },
+  {
+    name: "push_consensus_ready_enabled",
+    label: "Ready to confirm a time",
+    description: "When enough people have answered and a time can be locked in.",
+    key: "consensusReadyEnabled",
+  },
+  {
+    name: "push_event_confirmed_enabled",
+    label: "Hui confirmed",
+    description: "When the date and time are set for a hui.",
+    key: "eventConfirmedEnabled",
+  },
+  {
+    name: "push_host_assignment_enabled",
+    label: "Hosting updates",
+    description: "When you are asked to host or your hosting changes.",
+    key: "hostAssignmentEnabled",
+  },
+  {
+    name: "push_contribution_changes_enabled",
+    label: "What to bring",
+    description: PUSH_CONTRIBUTION_CHANGES_DESCRIPTION,
+    key: "contributionChangesEnabled",
+  },
+];
+
 export function NotificationPreferencesSection({
   reconnectRemindersEnabled,
   pushPreferences,
@@ -27,7 +66,7 @@ export function NotificationPreferencesSection({
           Push notification types
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose which Hui notifications can interrupt you. In-app notifications remain available.
+          Choose what can buzz your phone. You will still see everything in Hui when you open the app.
         </p>
         <AuthForm
           action={updatePushNotificationPreferencesAction}
@@ -35,31 +74,15 @@ export function NotificationPreferencesSection({
           refreshOnSuccess
         >
           <div className="space-y-3">
-            <PushPreference
-              name="push_event_proposals_enabled"
-              label="Event proposed"
-              defaultChecked={pushPreferences.eventProposalsEnabled}
-            />
-            <PushPreference
-              name="push_consensus_ready_enabled"
-              label="Decision ready"
-              defaultChecked={pushPreferences.consensusReadyEnabled}
-            />
-            <PushPreference
-              name="push_event_confirmed_enabled"
-              label="Hui confirmed"
-              defaultChecked={pushPreferences.eventConfirmedEnabled}
-            />
-            <PushPreference
-              name="push_host_assignment_enabled"
-              label="Host assignment"
-              defaultChecked={pushPreferences.hostAssignmentEnabled}
-            />
-            <PushPreference
-              name="push_contribution_changes_enabled"
-              label="What to bring changes"
-              defaultChecked={pushPreferences.contributionChangesEnabled}
-            />
+            {PUSH_TYPE_COPY.map((item) => (
+              <HuiSwitchField
+                key={item.name}
+                name={item.name}
+                label={item.label}
+                description={item.description}
+                defaultChecked={pushPreferences[item.key]}
+              />
+            ))}
           </div>
         </AuthForm>
       </div>
@@ -73,25 +96,11 @@ export function NotificationPreferencesSection({
           <HuiSwitchField
             name="member_reconnect_reminders_enabled"
             label="Reconnect reminders"
-            description="When a group you belong to enables reconnect reminders and has been inactive, Hui can show an in-app reminder here."
+            description="In-app only: when a group has been quiet for a while, Hui can nudge you here."
             defaultChecked={reconnectRemindersEnabled}
           />
         </AuthForm>
       </div>
     </div>
-  );
-}
-
-function PushPreference({
-  name,
-  label,
-  defaultChecked,
-}: {
-  name: string;
-  label: string;
-  defaultChecked: boolean;
-}) {
-  return (
-    <HuiSwitchField name={name} label={label} defaultChecked={defaultChecked} />
   );
 }

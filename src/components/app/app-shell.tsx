@@ -6,6 +6,8 @@ import { HuiBotanical } from "@/components/hui/botanical";
 import { BottomNavigation } from "@/components/hui/bottom-navigation";
 import { HuiWordmark } from "@/components/hui/hui-wordmark";
 import { ArrowLeftIcon, BellIcon } from "@/components/hui/icons";
+import { WhatsNewBanner } from "@/components/whats-new/whats-new-banner";
+import { appVersion } from "@/lib/build/app-version";
 import { getUnreadNotificationCount } from "@/lib/notifications/unread-count";
 import { cn } from "@/lib/ui/cn";
 
@@ -107,6 +109,7 @@ export async function AppShell({ title, children, back, hideTitle, subtitle, nar
             {subtitle ? <p className="hui-type-supporting mt-1.5 max-w-prose">{subtitle}</p> : null}
           </div>
         )}
+        <WhatsNewBanner currentVersion={appVersion()} />
         {children}
       </main>
 

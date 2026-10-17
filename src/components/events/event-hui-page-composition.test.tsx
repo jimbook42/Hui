@@ -472,4 +472,14 @@ describe("Event hui page composition", () => {
     expect(screen.queryByText("Organiser tools")).toBeNull();
     expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
   });
+
+  it("member sees Questions instead of Organiser tools", async () => {
+    const detail = buildDetail();
+    const pageData = buildPageData();
+    const ctx = forView("member", detail, pageData);
+    await renderHuiComposition(ctx.detail, ctx.pageData, ctx.userId);
+    expect(screen.queryByText("Organiser tools")).toBeNull();
+    expect(screen.getByText("Questions")).toBeInTheDocument();
+    expect(screen.getByText("Ask the group a question")).toBeInTheDocument();
+  });
 });
