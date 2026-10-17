@@ -50,7 +50,7 @@ This file is self-contained: Part A is the shared process (same in every repo) a
 - **Same-SHA pushes:** pushing a SHA that's already deployed to `qa/*` doesn't redeploy (Vercel dedupe). A preview then needs an API deploy through Cursor.
 
 ## Open issues / next
-1. **v0.18.13:** QA on `qa/v0.18.13-feedback` preview (393×852 + smoke); apply migration on preview DB if PM provides one; merge when pre-approval criteria met (zero QA issues, migration approved/applied as agreed).
+1. **v0.18.17:** Apply migration after Isaac OK; QA claim/release push on preview; Isaac checks notification settings + What's new + invite copy; merge when approved.
 2. **Final full prod QA** on production build after merge.
 3. **Beta** — limited real-group release.
 4. **Hardening list** (parallel / post-beta): lock-order deadlock risk (finalise_event vs auto-confirm trigger); test-only GUC `hui.skip_auto_confirm` in prod; slow confirm/swap (10–20s); pre-existing `/serwist/sw.js` trim TypeError; calendar export polish; migration version mismatches to tidy (e.g. 003A, auto_confirm).
