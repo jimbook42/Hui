@@ -416,7 +416,11 @@ export async function loadHomeData(
   const candidateIds: string[] = [];
   for (const row of eventRows) {
     const eventCandidates = candidatesByEvent.get(row.id) ?? [];
-    const picked = pickHomeDisplayCandidate(eventCandidates, yesCountByCandidateId);
+    const pickedRef = pickHomeDisplayCandidate(eventCandidates, yesCountByCandidateId);
+    const picked =
+      pickedRef != null
+        ? (eventCandidates.find((candidate) => candidate.id === pickedRef.id) ?? null)
+        : null;
     pickedByEvent.set(row.id, picked);
     for (const id of homeViewerResponseCandidateIds(eventCandidates, row.status)) {
       candidateIds.push(id);
