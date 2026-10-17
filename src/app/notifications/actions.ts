@@ -89,6 +89,7 @@ export async function updatePushNotificationPreferencesAction(
   formData: FormData,
 ): Promise<NotificationActionState> {
   const preferences = {
+    new_proposed_time_alerts_enabled: formData.get("new_proposed_time_alerts_enabled") === "on",
     push_event_proposals_enabled: formData.get("push_event_proposals_enabled") === "on",
     push_consensus_ready_enabled: formData.get("push_consensus_ready_enabled") === "on",
     push_event_confirmed_enabled: formData.get("push_event_confirmed_enabled") === "on",

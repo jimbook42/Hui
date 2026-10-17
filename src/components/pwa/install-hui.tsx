@@ -125,7 +125,8 @@ export function InstallHuiCard() {
             {state.availability === "prompt" ? "Install Hui" : "Add Hui to your home screen"}
           </h2>
           <p className="hui-type-supporting mt-1">
-            Open Hui in one tap, like any other app.
+            You might miss updates in a browser tab — add Hui to your home screen and open it in one
+            tap.
           </p>
           {expanded && state.availability === "instructions" ? (
             <div className="mt-3">

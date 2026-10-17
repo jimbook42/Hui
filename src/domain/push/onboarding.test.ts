@@ -50,8 +50,30 @@ describe("shouldShowPushOnboardCard", () => {
     ).toBe(false);
   });
 
-  it("shows denied hint without re-prompting", () => {
-    expect(shouldShowPushOnboardCard({ ...ready, permission: "denied" })).toBe("denied-hint");
+  it("hides when the browser blocked notifications", () => {
+    expect(shouldShowPushOnboardCard({ ...ready, permission: "denied" })).toBe(false);
+  });
+
+  it("hides when push is off in Hui but another device still has a subscription", () => {
+    expect(
+      shouldShowPushOnboardCard({
+        ...ready,
+        permission: "granted",
+        webPushEnabled: false,
+        deviceSubscribed: false,
+        subscriptionCount: 1,
+      }),
+    ).toBe(false);
+  });
+
+  it("can show before install when requireInstalled is false", () => {
+    expect(
+      shouldShowPushOnboardCard({
+        ...ready,
+        installed: false,
+        requireInstalled: false,
+      }),
+    ).toBe("enable-prompt");
   });
 
   it("hides after dismiss", () => {

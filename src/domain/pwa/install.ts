@@ -15,8 +15,8 @@ export type InstallAvailability =
   /** Nothing useful to offer. */
   | "unsupported";
 
-/** After "Not now" the dashboard card stays away for this long. Settings is never hidden. */
-export const INSTALL_DISMISS_COOLDOWN_DAYS = 30;
+/** After "Not now" the signed-in nudge stays away for this long. Settings is never hidden. */
+export const INSTALL_DISMISS_COOLDOWN_DAYS = 7;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

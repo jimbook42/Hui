@@ -178,7 +178,23 @@ describe("contributions HUI-026E", () => {
     await db?.close();
   });
 
+  it("sets assigned_by null on member self-claims", async () => {
+    await resetDessertOpenRow();
+    await asUser(db, ids.member);
+    await db.query(`select public.claim_event_contribution($1, $2, $3)`, [
+      eventId,
+      dessertId,
+      "Brownies",
+    ]);
+    const row = await db.query<{ assigned_by: string | null }>(
+      `select assigned_by from public.event_contributions where event_id = $1 and category_id = $2`,
+      [eventId, dessertId],
+    );
+    expect(row.rows[0]?.assigned_by).toBeNull();
+  });
+
   it("claims an existing open row instead of duplicating", async () => {
+    await resetDessertOpenRow();
     await asUser(db, ids.member);
     const contributionId = (
       await db.query<{ claim_event_contribution: string }>(

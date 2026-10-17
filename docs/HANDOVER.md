@@ -8,10 +8,11 @@ This file is self-contained: Part A is the shared process (same in every repo) a
 - **What:** a mobile-first PWA for small groups planning recurring gatherings (Next.js, Supabase).
 - **Repo:** `jimbook42/Hui` (public). Base and production branch: `main`. Each ticket gets its own branch off main (`cursor/<ticket>` or `qa/<ticket>`).
 - **Live:** https://huiapp.vercel.app (primary). Older aliases: hui-seven-gamma.vercel.app, hui-jimbook.vercel.app. Vercel project `hui` (team jimbook), region **syd1**. `main` auto-deploys to production.
-- **Prod:** **v0.18.17** @ main **`cc16614`** (PR #59 merged).
-- **In flight:** **v0.18.18** on branch **`qa/v0.18.18`** — new-time alert for members who already answered; contribution release reopens slots; organiser-assignment label fix; What's new 0.18.18. Branch is rebased on **`origin/main`** (`cc16614`).
-- **Migrations (agent does not apply):** **`20261017180000_hui_v01817_contribution_claim_push.sql`** may already be on live per the release plan — confirm with Isaac before QA. **`supabase/migrations/20261017190000_hui_v01818_new_time_notify.sql`** — `new_proposed_time` notifications (15‑min dedupe), `release_event_contribution` reopens rows; **not applied** until Isaac approves (typically after v0.18.17 migration is confirmed).
+- **Prod:** **v0.18.18** @ main **`fb86edf`** (PR #60 merged).
+- **In flight:** **v0.18.19** on branch **`qa/v0.18.19`** — signed-in install/notification nudges (AppShell), self-claim `assigned_by` null + trigger fix, revoke `queue_member_notification` from clients, What's new 0.18.19. Branch off **`origin/main`** (`fb86edf`).
+- **Migrations (agent does not apply):** **`supabase/migrations/20261017210000_hui_v01819_assigned_by_and_notify_grants.sql`** — self-claim `assigned_by` null + trigger; `profiles.new_proposed_time_alerts_enabled` (default on) gates `new_proposed_time` in-app/push; **REVOKE EXECUTE** on `queue_member_notification(..., boolean)` from clients (service_role only). **Not applied** until Isaac approves after v0.18.18 migration is confirmed on live.
 - **Rollback points:**
+  - v0.18.18 `fb86edf` (previous `cc16614`)
   - v0.18.17 `cc16614` (previous `f5a9b65`)
   - v0.18.16 `f5a9b65` (previous `a4542f3`)
   - v0.18.12 `a31f6e4`
@@ -51,9 +52,9 @@ This file is self-contained: Part A is the shared process (same in every repo) a
 - **Same-SHA pushes:** pushing a SHA that's already deployed to `qa/*` doesn't redeploy (Vercel dedupe). A preview then needs an API deploy through Cursor.
 
 ## Open issues / next
-1. **v0.18.18:** Confirm v0.18.17 migration status on live; apply v0.18.18 migration after Isaac OK; QA ticket `QA:` block on preview; PM opens draft PR for `qa/v0.18.18`.
-2. **v0.18.17 on prod:** Smoke claim/release push, notification settings, What's new, invite copy on production or agreed build.
-3. **Final full prod QA** on production build after v0.18.18 merges.
+1. **v0.18.19:** Confirm v0.18.18 migration on live; apply `20261017210000_hui_v01819_assigned_by_and_notify_grants.sql` after Isaac OK; QA on preview; PM opens draft PR for `qa/v0.18.19`.
+2. **v0.18.18 on prod:** Smoke new-time notify, release reopen, assignment labels.
+3. **Final full prod QA** after v0.18.19 merges toward beta.
 4. **Beta** — limited real-group release.
 5. **Hardening list** (parallel / post-beta): lock-order deadlock risk (finalise_event vs auto-confirm trigger); test-only GUC `hui.skip_auto_confirm` in prod; slow confirm/swap (10–20s); pre-existing `/serwist/sw.js` trim TypeError; calendar export polish; migration version mismatches to tidy (e.g. 003A, auto_confirm).
 

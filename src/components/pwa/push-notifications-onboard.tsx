@@ -19,11 +19,18 @@ import { useInstallSnapshot } from "@/lib/pwa/install-store";
 type PushNotificationsOnboardCardProps = {
   pushConfigured: boolean;
   vapidPublicKey: string | null;
+  requireInstalled?: boolean;
+  /** Parent already picked this card (signed-in nudge strip). */
+  managedVisibility?: boolean;
+  onEnabled?: () => void;
 };
 
 export function PushNotificationsOnboardCard({
   pushConfigured,
   vapidPublicKey,
+  requireInstalled = true,
+  managedVisibility = false,
+  onEnabled,
 }: PushNotificationsOnboardCardProps) {
   const router = useRouter();
   const install = useInstallSnapshot();
@@ -31,6 +38,7 @@ export function PushNotificationsOnboardCard({
   const [permission, setPermission] = useState<"default" | "granted" | "denied">("default");
   const [deviceSubscribed, setDeviceSubscribed] = useState(false);
   const [webPushEnabled, setWebPushEnabled] = useState(false);
+  const [subscriptionCount, setSubscriptionCount] = useState(0);
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +67,7 @@ export function PushNotificationsOnboardCard({
         }
         setDeviceSubscribed(state.deviceSubscribed === true);
         setWebPushEnabled(state.webPushEnabled === true);
+        setSubscriptionCount(state.subscriptionCount ?? 0);
       } catch {
         if (!cancelled) {
           setDeviceSubscribed(false);
@@ -87,10 +96,21 @@ export function PushNotificationsOnboardCard({
           supported: browserSupportsWebPush(),
           deviceSubscribed,
           webPushEnabled,
+          subscriptionCount,
+          requireInstalled,
         })
       : false;
 
-  if (!mode || !vapidPublicKey) {
+  if (!vapidPublicKey) {
+    return null;
+  }
+
+  if (!managedVisibility && !mode) {
+    return null;
+  }
+
+  const displayMode = managedVisibility ? "enable-prompt" : mode;
+  if (!displayMode) {
     return null;
   }
 
@@ -109,6 +129,7 @@ export function PushNotificationsOnboardCard({
       setWebPushEnabled(true);
       setDeviceSubscribed(result.deviceSubscribed);
       dismissPushOnboardCard();
+      onEnabled?.();
       router.refresh();
     } catch {
       setError("Could not enable push notifications on this browser.");
@@ -121,11 +142,11 @@ export function PushNotificationsOnboardCard({
     <HuiSurface tone="clay" shape="organic" padding="md" className="hui-rise mb-6">
       <section aria-label="Notification settings" className="space-y-3">
         <h2 className="text-base font-extrabold text-foreground">Stay in the loop</h2>
-        {mode === "enable-prompt" ? (
+        {displayMode === "enable-prompt" ? (
           <>
             <p className="hui-type-supporting">
-              Turn on notifications to hear when someone responds, proposes a time, confirms the hui,
-              or when you&apos;re asked to host — without checking the app constantly.
+              You might miss updates when plans change — turn on notifications for responses, new
+              times, confirmations, and hosting asks without checking the app all day.
             </p>
             {error ? (
               <p className="hui-message-error" role="alert">
