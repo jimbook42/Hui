@@ -35,6 +35,7 @@ function makeUpcoming(overrides: Partial<HomeEvent> = {}): HomeEvent {
     relativeDayChip: null,
     consensusCurrentlyPasses: null,
     confirmationMethod: null,
+    leadingProposedTime: false,
     ...overrides,
   };
 }

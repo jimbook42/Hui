@@ -55,6 +55,11 @@ import type {
 } from "@/domain/scheduling/types";
 import { ACTIVE_CANDIDATE_STATUSES } from "@/domain/scheduling/types";
 import { listOpenDecisionsForEvents } from "@/lib/decisions/queries";
+import {
+  homeShowsLeadingProposedTime,
+  pickHomeDisplayCandidate,
+  yesCountFromAttendanceRoster,
+} from "@/domain/scheduling/home-display-candidate";
 import { parseCandidateAttendanceRostersMap } from "@/lib/scheduling/queries";
 
 const DEFAULT_TIME_ZONE = "Pacific/Auckland";
@@ -94,6 +99,8 @@ export type HomeEvent = {
    */
   consensusCurrentlyPasses: boolean | null;
   confirmationMethod: "consensus" | "organiser" | "admin" | null;
+  /** Multi-time proposing: card shows the leading option by can-come, not a locked-in time. */
+  leadingProposedTime: boolean;
 };
 
 export type ProposableGroup = { id: string; name: string };
@@ -193,17 +200,24 @@ function one<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
-/** The time currently on the table: the selected candidate, else the earliest proposed one. */
-function pickCandidate(candidates: CandidateRow[]): CandidateRow | null {
-  const selected = candidates.find((candidate) => candidate.status === "selected");
-  if (selected) {
-    return selected;
+async function loadAttendanceRostersByCandidateId(
+  supabase: SupabaseClient,
+  candidateIds: string[],
+): Promise<Map<string, AttendanceRoster>> {
+  const rosters = new Map<string, AttendanceRoster>();
+  const unique = [...new Set(candidateIds)];
+  for (let i = 0; i < unique.length; i += 50) {
+    const rosterRpcResult = await supabase.rpc("candidate_attendance_rosters", {
+      p_candidate_ids: unique.slice(i, i + 50),
+    });
+    if (rosterRpcResult.error) {
+      throw new Error(rosterRpcResult.error.message);
+    }
+    for (const [candidateId, roster] of parseCandidateAttendanceRostersMap(rosterRpcResult.data)) {
+      rosters.set(candidateId, roster);
+    }
   }
-  return (
-    [...candidates]
-      .filter((candidate) => candidate.status === "proposed")
-      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())[0] ?? null
-  );
+  return rosters;
 }
 
 export async function loadHomeData(
@@ -380,11 +394,29 @@ export async function loadHomeData(
     membersByGroup.set(row.group_id, list);
   }
 
+  const multiTimePickCandidateIds: string[] = [];
+  for (const row of eventRows) {
+    const proposed = (candidatesByEvent.get(row.id) ?? []).filter(
+      (candidate) => candidate.status === "proposed",
+    );
+    if (proposed.length > 1) {
+      multiTimePickCandidateIds.push(...proposed.map((candidate) => candidate.id));
+    }
+  }
+  const rostersForLeadingPick =
+    multiTimePickCandidateIds.length > 0
+      ? await loadAttendanceRostersByCandidateId(supabase, multiTimePickCandidateIds)
+      : new Map<string, AttendanceRoster>();
+  const yesCountByCandidateId = new Map<string, number>();
+  for (const [candidateId, roster] of rostersForLeadingPick) {
+    yesCountByCandidateId.set(candidateId, yesCountFromAttendanceRoster(roster));
+  }
+
   const pickedByEvent = new Map<string, CandidateRow | null>();
   const candidateIds: string[] = [];
   for (const row of eventRows) {
     const eventCandidates = candidatesByEvent.get(row.id) ?? [];
-    const picked = pickCandidate(eventCandidates);
+    const picked = pickHomeDisplayCandidate(eventCandidates, yesCountByCandidateId);
     pickedByEvent.set(row.id, picked);
     for (const id of homeViewerResponseCandidateIds(eventCandidates, row.status)) {
       candidateIds.push(id);
@@ -543,6 +575,12 @@ export async function loadHomeData(
       now,
     );
 
+    const leadingProposedTime = homeShowsLeadingProposedTime(
+      eventCandidates,
+      picked,
+      yesCountByCandidateId,
+    );
+
     return {
       id: row.id,
       title: row.title,
@@ -554,6 +592,7 @@ export async function loadHomeData(
       endsAt,
       timeZone,
       candidateId: picked?.id ?? null,
+      leadingProposedTime,
       viewerResponse,
       viewerState: (() => {
         const proposed = eventCandidates.filter((candidate) => candidate.status === "proposed");
@@ -613,15 +652,13 @@ export async function loadHomeData(
     .map((event) => event.candidateId)
     .filter((id): id is string => id != null);
 
-  const rostersByCandidate = new Map<string, AttendanceRoster>();
-  if (rosterCandidateIds.length > 0) {
-    const rosterRpcResult = await supabase.rpc("candidate_attendance_rosters", {
-      p_candidate_ids: rosterCandidateIds,
-    });
-    if (rosterRpcResult.error) {
-      throw new Error(rosterRpcResult.error.message);
-    }
-    for (const [candidateId, roster] of parseCandidateAttendanceRostersMap(rosterRpcResult.data)) {
+  const rostersByCandidate = new Map<string, AttendanceRoster>(rostersForLeadingPick);
+  const rosterIdsToFetch = rosterCandidateIds.filter((id) => !rostersByCandidate.has(id));
+  if (rosterIdsToFetch.length > 0) {
+    for (const [candidateId, roster] of await loadAttendanceRostersByCandidateId(
+      supabase,
+      rosterIdsToFetch,
+    )) {
       rostersByCandidate.set(candidateId, roster);
     }
   }

@@ -2,6 +2,8 @@
 
 import { useActionState, useMemo, useState } from "react";
 
+import { pickHomeDisplayCandidate } from "@/domain/scheduling/home-display-candidate";
+
 import type { EventActionState } from "@/app/events/actions";
 import {
   addCandidateAction,
@@ -698,15 +700,36 @@ export function EventScheduling({
     canFinalise,
   );
   const useCompactTimeList = forceCompactTimeList || candidates.length > 1;
+  const yesCountByCandidateId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of consensus.candidates) {
+      map.set(row.candidateId, row.yesCount);
+    }
+    return map;
+  }, [consensus.candidates]);
+
   const defaultExpandedCandidateId = useMemo(() => {
     if (!useCompactTimeList) {
       return null;
     }
     const nowIso = new Date().toISOString();
-    return (
-      candidates.find((candidate) => !isPassedProposedCandidate(candidate, nowIso))?.id ?? null
+    const open = candidates.filter(
+      (candidate) =>
+        candidate.status === "proposed" && !isPassedProposedCandidate(candidate, nowIso),
     );
-  }, [candidates, useCompactTimeList]);
+    if (open.length === 0) {
+      return null;
+    }
+    const picked = pickHomeDisplayCandidate(
+      open.map((candidate) => ({
+        id: candidate.id,
+        starts_at: candidate.startsAt,
+        status: candidate.status,
+      })),
+      yesCountByCandidateId,
+    );
+    return picked?.id ?? null;
+  }, [candidates, useCompactTimeList, yesCountByCandidateId]);
   const [expandedCandidateId, setExpandedCandidateId] = useState<string | null | undefined>(
     undefined,
   );
