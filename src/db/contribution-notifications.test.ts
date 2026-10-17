@@ -177,7 +177,14 @@ describe("contribution notification policy", () => {
     await db?.close();
   });
 
-  it("records member claim for coordinators without Web Push", async () => {
+  it("pushes organiser on member claim but not the claimer", async () => {
+    await asUser(db, null, "service_role");
+    await db.query(`delete from public.notification_push_outbox`);
+    await db.query(
+      `delete from public.member_notifications where event_id = $1`,
+      [eventId],
+    );
+
     await asUser(db, ids.tim);
     await db.query(`select public.claim_event_contribution($1, $2, $3)`, [
       eventId,
@@ -194,26 +201,74 @@ describe("contribution notification policy", () => {
     expect(notes.rows.length).toBeGreaterThanOrEqual(1);
     expect(notes.rows.some((row) => /claimed/i.test(row.body))).toBe(true);
 
-    expect(await countContributionPushOutbox()).toBe(0);
+    await asUser(db, null, "service_role");
+    const pushes = await db.query<{ user_id: string }>(
+      `select o.user_id
+       from public.notification_push_outbox o
+       join public.member_notifications n on n.id = o.notification_id
+       where n.event_id = $1 and n.kind = 'contribution_changed'`,
+      [eventId],
+    );
+    expect(pushes.rows).toHaveLength(1);
+    expect(pushes.rows[0].user_id).toBe(ids.bob);
+
+    const timPush = await db.query(
+      `select 1
+       from public.notification_push_outbox o
+       join public.member_notifications n on n.id = o.notification_id
+       where n.user_id = $1 and n.event_id = $2 and n.kind = 'contribution_changed'`,
+      [ids.tim, eventId],
+    );
+    expect(timPush.rows).toHaveLength(0);
   });
 
-  it("records member release for coordinators without Web Push", async () => {
+  it("does not push when the organiser claims their own item", async () => {
+    await asUser(db, null, "service_role");
+    await db.query(`delete from public.notification_push_outbox`);
+
+    await asUser(db, ids.bob);
+    await db.query(`select public.claim_event_contribution($1, $2, $3)`, [
+      eventId,
+      dessertId,
+      "Pavlova",
+    ]);
+
+    await asUser(db, null, "service_role");
+    const pushes = await db.query(
+      `select 1
+       from public.notification_push_outbox o
+       join public.member_notifications n on n.id = o.notification_id
+       where n.event_id = $1 and n.kind = 'contribution_changed'`,
+      [eventId],
+    );
+    expect(pushes.rows).toHaveLength(0);
+  });
+
+  it("pushes organiser on member release", async () => {
     await asUser(db, ids.tim);
     const contributionId = await contributionIdForCategory(sideId);
     await db.query(`select public.release_event_contribution($1)`, [contributionId]);
 
-    await asUser(db, ids.bob);
-    const notes = await db.query(
-      `select 1 from public.member_notifications
-       where user_id = $1 and event_id = $2 and body like '%released%'`,
-      [ids.bob, eventId],
+    await asUser(db, null, "service_role");
+    const pushes = await db.query<{ user_id: string }>(
+      `select o.user_id
+       from public.notification_push_outbox o
+       join public.member_notifications n on n.id = o.notification_id
+       where n.event_id = $1 and n.kind = 'contribution_changed'`,
+      [eventId],
     );
-    expect(notes.rows.length).toBeGreaterThanOrEqual(1);
-    expect(await countContributionPushOutbox()).toBe(0);
+    expect(pushes.rows).toHaveLength(1);
+    expect(pushes.rows[0].user_id).toBe(ids.bob);
   });
 
   it("pushes only the assignee on manager assignment, not the whole group", async () => {
+    await asUser(db, null, "service_role");
+    await db.query(`delete from public.notification_push_outbox`);
+
     await asUser(db, ids.bob);
+    const dessertContributionId = await contributionIdForCategory(dessertId);
+    await db.query(`select public.release_event_contribution($1)`, [dessertContributionId]);
+
     await db.query(`select public.assign_event_contribution_as_manager($1, $2, $3, null)`, [
       eventId,
       dessertId,
