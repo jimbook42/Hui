@@ -333,7 +333,6 @@ export function forView(
     pageData: {
       ...pageData,
       canAccessManage: view === "organiser" ? pageData.canAccessManage : false,
-      canCreateDecisions: view === "organiser" ? pageData.canCreateDecisions : false,
       canManageDecisions: view === "organiser" ? pageData.canManageDecisions : false,
       canCancel: view === "organiser" ? pageData.canCancel : false,
       canDelete: view === "organiser" ? pageData.canDelete : false,

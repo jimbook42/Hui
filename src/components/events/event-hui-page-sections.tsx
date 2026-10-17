@@ -1,6 +1,7 @@
 import {
   EventCollapsedInviteSection,
   EventMainTimesSection,
+  EventMemberQuestionsSection,
   EventOrganiserToolsSection,
   EventPlanningHelpSection,
   EventSummaryHeader,
@@ -58,6 +59,7 @@ export async function EventHuiPageSections({
       <StaleProposalSection detail={detail} userId={userId} />
       <ResponseDeadlinePassedSection detail={detail} userId={userId} />
       <EventHostGentlePromptSection detail={detail} userId={userId} />
+      <EventMemberQuestionsSection detail={detail} userId={userId} />
       <EventOrganiserToolsSection detail={detail} userId={userId} />
       <EventDetailsList detail={detail} userId={userId} />
     </>
@@ -86,6 +88,7 @@ export async function EventHuiPageSectionsResolved(props: EventHuiPageSectionsPr
       {await StaleProposalSection({ detail, userId })}
       {await ResponseDeadlinePassedSection({ detail, userId })}
       {await EventHostGentlePromptSection({ detail, userId })}
+      {await EventMemberQuestionsSection({ detail, userId })}
       {await EventOrganiserToolsSection({ detail, userId })}
       {await EventDetailsList({ detail, userId })}
     </>

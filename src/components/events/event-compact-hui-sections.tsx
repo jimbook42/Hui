@@ -9,6 +9,7 @@ import { HuiSurface } from "@/components/hui/hui-surface";
 import { EventStatusPill } from "@/components/hui/status-pill";
 import { PeopleIcon, SparkIcon } from "@/components/hui/icons";
 import { buildEventTimeLabelMap } from "@/domain/datetime/candidate-time-labels";
+import { GROUP_INVITE_GROUP_ACCESS_NOTE } from "@/domain/invites/copy";
 import { buildHuiPageNextAction } from "@/domain/events/hui-page-next-action";
 import { buildProposedHuiGuidance } from "@/domain/events/proposed-guidance";
 import {
@@ -181,15 +182,18 @@ export async function EventCollapsedInviteSection({
       icon={<PeopleIcon size={20} />}
       defaultOpen={justProposed === true}
     >
-      <EventProposeInviteSection
-        detail={detail}
-        inviterDisplayName={detail.creatorDisplayName}
-        gatheringType={detail.gatheringType}
-        gatheringTypeCustom={detail.gatheringTypeCustom}
-        planningTargetDate={detail.planningTargetDate}
-        timeZone={detail.timezone ?? "Pacific/Auckland"}
-        compactLayout
-      />
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">{GROUP_INVITE_GROUP_ACCESS_NOTE}</p>
+        <EventProposeInviteSection
+          detail={detail}
+          inviterDisplayName={detail.creatorDisplayName}
+          gatheringType={detail.gatheringType}
+          gatheringTypeCustom={detail.gatheringTypeCustom}
+          planningTargetDate={detail.planningTargetDate}
+          timeZone={detail.timezone ?? "Pacific/Auckland"}
+          compactLayout
+        />
+      </div>
     </DisclosureCard>
   );
 }
@@ -245,11 +249,60 @@ export async function EventPlanningHelpSection({
   );
 }
 
+export async function EventMemberQuestionsSection({ detail, userId }: SectionProps) {
+  const data = await loadEventPage(detail, userId);
+  const closed = detail.status === "cancelled" || detail.status === "completed";
+  const showMemberQuestions =
+    !closed && data.canCreateDecisions && !data.canManageDecisions;
+
+  if (!showMemberQuestions) {
+    return null;
+  }
+
+  const openPolls = data.decisionPolls.filter((poll) => poll.status === "open");
+  const questionsSummary =
+    openPolls.length === 0 && data.decisionPolls.length === 0
+      ? "Ask the group a question"
+      : openPolls.length === 1
+        ? openPolls[0].question
+        : `${openPolls.length} questions open`;
+
+  const tz = data.displayTimeZone;
+
+  return (
+    <DisclosureCard
+      title="Questions"
+      summary={questionsSummary}
+      defaultOpen={openPolls.length > 0}
+    >
+      <EventDecisionsSection
+        eventId={detail.id}
+        bundles={
+          openPolls.length > 0
+            ? data.decisionBundles.filter((bundle) => bundle.decision.status === "open")
+            : []
+        }
+        members={data.groupMembers.map((member) => ({
+          userId: member.userId,
+          displayName: member.displayName,
+        }))}
+        viewerUserId={userId}
+        canManage={false}
+        canCreate={data.canCreateDecisions}
+        canRespond={data.canRespondToDecisions}
+        timeZone={tz}
+        compactOpenOnly
+        showSectionHeader={openPolls.length === 0 && data.decisionPolls.length === 0}
+      />
+    </DisclosureCard>
+  );
+}
+
 export async function EventOrganiserToolsSection({ detail, userId }: SectionProps) {
   const data = await loadEventPage(detail, userId);
   const closed = detail.status === "cancelled" || detail.status === "completed";
 
-  const showDecisions = !closed && data.canCreateDecisions;
+  const showDecisions = !closed && data.canManageDecisions;
   const showManage = data.canAccessManage;
 
   if (!showDecisions && !showManage) {
