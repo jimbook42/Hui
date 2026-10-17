@@ -9,7 +9,7 @@ This file is self-contained: Part A is the shared process (same in every repo) a
 - **Repo:** `jimbook42/Hui` (public). Base and production branch: `main`. Each ticket gets its own branch off main (`cursor/<ticket>` or `qa/<ticket>`).
 - **Live:** https://huiapp.vercel.app (primary). Older aliases: hui-seven-gamma.vercel.app, hui-jimbook.vercel.app. Vercel project `hui` (team jimbook), region **syd1**. `main` auto-deploys to production.
 - **Prod:** **v0.18.16** @ main **`f5a9b65`** (PR #58).
-- **In flight:** **v0.18.18** on branch **`qa/v0.18.18`** (stacks on **`qa/v0.18.17`**, draft PR #59 not merged) — new-time alert for members who already answered; contribution release reopens slots; organiser-assignment label fix; What's new 0.18.18.
+- **In flight:** **v0.18.18** on branch **`qa/v0.18.18`** @ **`9bbb8bc`** (stacks on **`qa/v0.18.17`**, draft PR #59 not merged) — new-time alert for members who already answered; contribution release reopens slots; organiser-assignment label fix; What's new 0.18.18.
 - **Pending prod approval (v0.18.17):** migration **`20261017180000_hui_v01817_contribution_claim_push.sql`** — claim/release Web Push to host/organiser. **NOT applied** until Isaac approves.
 - **Pending prod approval (v0.18.18):** migration **`supabase/migrations/20261017190000_hui_v01818_new_time_notify.sql`** — `new_proposed_time` notifications (15‑min dedupe), `release_event_contribution` reopens rows, `queue_member_notification` push mapping. **NOT applied** until Isaac approves (apply after or with v0.18.17 per release plan).
 - **Rollback points:**
