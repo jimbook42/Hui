@@ -8,11 +8,11 @@ This file is self-contained: Part A is the shared process (same in every repo) a
 - **What:** a mobile-first PWA for small groups planning recurring gatherings (Next.js, Supabase).
 - **Repo:** `jimbook42/Hui` (public). Base and production branch: `main`. Each ticket gets its own branch off main (`cursor/<ticket>` or `qa/<ticket>`).
 - **Live:** https://huiapp.vercel.app (primary). Older aliases: hui-seven-gamma.vercel.app, hui-jimbook.vercel.app. Vercel project `hui` (team jimbook), region **syd1**. `main` auto-deploys to production.
-- **Prod:** **v0.18.16** @ main **`f5a9b65`** (PR #58).
-- **In flight:** **v0.18.18** on branch **`qa/v0.18.18`** @ **`3b6e67a`** (stacks on **`qa/v0.18.17`**, draft PR #59 not merged) — new-time alert for members who already answered; contribution release reopens slots; organiser-assignment label fix; What's new 0.18.18.
-- **Pending prod approval (v0.18.17):** migration **`20261017180000_hui_v01817_contribution_claim_push.sql`** — claim/release Web Push to host/organiser. **NOT applied** until Isaac approves.
-- **Pending prod approval (v0.18.18):** migration **`supabase/migrations/20261017190000_hui_v01818_new_time_notify.sql`** — `new_proposed_time` notifications (15‑min dedupe), `release_event_contribution` reopens rows, `queue_member_notification` push mapping. **NOT applied** until Isaac approves (apply after or with v0.18.17 per release plan).
+- **Prod:** **v0.18.17** @ main **`cc16614`** (PR #59 merged).
+- **In flight:** **v0.18.18** on branch **`qa/v0.18.18`** — new-time alert for members who already answered; contribution release reopens slots; organiser-assignment label fix; What's new 0.18.18. Branch is rebased on **`origin/main`** (`cc16614`).
+- **Migrations (agent does not apply):** **`20261017180000_hui_v01817_contribution_claim_push.sql`** may already be on live per the release plan — confirm with Isaac before QA. **`supabase/migrations/20261017190000_hui_v01818_new_time_notify.sql`** — `new_proposed_time` notifications (15‑min dedupe), `release_event_contribution` reopens rows; **not applied** until Isaac approves (typically after v0.18.17 migration is confirmed).
 - **Rollback points:**
+  - v0.18.17 `cc16614` (previous `f5a9b65`)
   - v0.18.16 `f5a9b65` (previous `a4542f3`)
   - v0.18.12 `a31f6e4`
   - v0.18.11 `62948e4`
@@ -51,9 +51,9 @@ This file is self-contained: Part A is the shared process (same in every repo) a
 - **Same-SHA pushes:** pushing a SHA that's already deployed to `qa/*` doesn't redeploy (Vercel dedupe). A preview then needs an API deploy through Cursor.
 
 ## Open issues / next
-1. **v0.18.18:** Merge **qa/v0.18.17** (PR #59) first or rebase; apply **v0.18.17** then **v0.18.18** migrations after Isaac OK; QA ticket `QA:` block on preview; open/refresh draft PR for `qa/v0.18.18`.
-2. **v0.18.17:** QA claim/release push, notification settings, What's new, invite copy.
-3. **Final full prod QA** on production build after merge.
+1. **v0.18.18:** Confirm v0.18.17 migration status on live; apply v0.18.18 migration after Isaac OK; QA ticket `QA:` block on preview; PM opens draft PR for `qa/v0.18.18`.
+2. **v0.18.17 on prod:** Smoke claim/release push, notification settings, What's new, invite copy on production or agreed build.
+3. **Final full prod QA** on production build after v0.18.18 merges.
 4. **Beta** — limited real-group release.
 5. **Hardening list** (parallel / post-beta): lock-order deadlock risk (finalise_event vs auto-confirm trigger); test-only GUC `hui.skip_auto_confirm` in prod; slow confirm/swap (10–20s); pre-existing `/serwist/sw.js` trim TypeError; calendar export polish; migration version mismatches to tidy (e.g. 003A, auto_confirm).
 
