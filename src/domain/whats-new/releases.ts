@@ -39,6 +39,7 @@ export const WHATS_NEW_RELEASES: WhatsNewRelease[] = [
     title: "What\u2019s new in Hui",
     bullets: [
       "Gentle reminders to add Hui to your home screen or turn on notifications so you don\u2019t miss plan changes.",
+      "Notification settings include \u201cNew times added\u201d (on by default).",
       "Self-claimed \u201cWhat to bring\u201d items no longer look organiser-assigned.",
       "Behind the scenes: tighter security on how notifications are queued.",
     ],

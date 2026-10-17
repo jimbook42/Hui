@@ -1,7 +1,202 @@
--- v0.18.19: self-claim leaves assigned_by null; lock down queue_member_notification EXECUTE.
+-- v0.18.19: self-claim assigned_by null; new_proposed_time preference; queue_member_notification EXECUTE lockdown.
+
+alter table public.profiles
+  add column if not exists new_proposed_time_alerts_enabled boolean not null default true;
+
+comment on column public.profiles.new_proposed_time_alerts_enabled is
+  'When false, no in-app or push alerts when a new proposed time is added after the member already answered.';
+
+grant select (new_proposed_time_alerts_enabled) on table public.profiles to authenticated;
 
 alter table public.event_contributions
   alter column assigned_by drop not null;
+
+create or replace function public.notify_new_proposed_time(
+  p_event_id uuid,
+  p_actor_id uuid,
+  p_candidate_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_event public.events%rowtype;
+  v_group_name text;
+  v_body text;
+  v_title text := 'New time to consider';
+  v_member uuid;
+  v_bucket text;
+  v_dedupe text;
+begin
+  if p_event_id is null or p_actor_id is null then
+    return;
+  end if;
+
+  select * into v_event
+  from public.events e
+  where e.id = p_event_id;
+
+  if not found then
+    return;
+  end if;
+
+  if v_event.status in ('confirmed', 'cancelled', 'completed') then
+    return;
+  end if;
+
+  select g.name into v_group_name
+  from public.groups g
+  where g.id = v_event.group_id;
+
+  v_body := pg_catalog.format(
+    'A new time was added to "%s" in %s. Your earlier answers are still saved — please check the new time.',
+    coalesce(v_event.title, 'your hui'),
+    coalesce(v_group_name, 'your group')
+  );
+
+  v_bucket := public.new_proposed_time_notify_bucket(pg_catalog.now());
+
+  for v_member in
+    select distinct er.user_id
+    from public.event_responses er
+    inner join public.event_candidates c on c.id = er.candidate_id
+    inner join public.profiles p on p.id = er.user_id
+      and p.account_deleted_at is null
+      and coalesce(p.new_proposed_time_alerts_enabled, true)
+    where c.event_id = p_event_id
+      and c.status = 'proposed'
+      and c.id is distinct from p_candidate_id
+      and er.user_id is distinct from p_actor_id
+  loop
+    v_dedupe :=
+      'new_proposed_time:' || p_event_id::text || ':' || v_member::text || ':' || v_bucket;
+
+    perform public.queue_member_notification(
+      v_member,
+      'new_proposed_time'::public.notification_kind,
+      v_title,
+      v_body,
+      v_event.group_id,
+      p_event_id,
+      v_dedupe,
+      true
+    );
+  end loop;
+end;
+$function$;
+
+create or replace function public.queue_member_notification(
+  p_user_id uuid,
+  p_kind public.notification_kind,
+  p_title text,
+  p_body text,
+  p_group_id uuid,
+  p_event_id uuid,
+  p_dedupe_key text,
+  p_deliver_push boolean default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_id uuid;
+  v_push_enabled boolean;
+begin
+  if p_user_id is null or p_group_id is null or p_dedupe_key is null then
+    return null;
+  end if;
+
+  if pg_catalog.char_length(pg_catalog.btrim(coalesce(p_title, ''::text))) < 1
+     or pg_catalog.char_length(pg_catalog.btrim(coalesce(p_body, ''::text))) < 1 then
+    return null;
+  end if;
+
+  if not exists (
+    select 1
+    from public.group_memberships m
+    where m.group_id = p_group_id
+      and m.user_id = p_user_id
+      and m.status = 'active'
+  ) then
+    return null;
+  end if;
+
+  if p_event_id is not null and not exists (
+    select 1
+    from public.events e
+    where e.id = p_event_id
+      and e.group_id = p_group_id
+  ) then
+    return null;
+  end if;
+
+  if p_kind = 'new_proposed_time'::public.notification_kind then
+    if not exists (
+      select 1
+      from public.profiles p
+      where p.id = p_user_id
+        and p.account_deleted_at is null
+        and coalesce(p.new_proposed_time_alerts_enabled, true)
+    ) then
+      return null;
+    end if;
+  end if;
+
+  insert into public.member_notifications (
+    user_id,
+    kind,
+    title,
+    body,
+    group_id,
+    event_id,
+    dedupe_key
+  )
+  values (
+    p_user_id,
+    p_kind,
+    pg_catalog.btrim(p_title),
+    pg_catalog.btrim(p_body),
+    p_group_id,
+    p_event_id,
+    p_dedupe_key
+  )
+  on conflict (user_id, dedupe_key) do nothing
+  returning id into v_id;
+
+  if v_id is not null and p_deliver_push is not false then
+    select case p_kind
+      when 'event_proposed' then p.push_event_proposals_enabled
+      when 'consensus_ready' then p.push_consensus_ready_enabled
+      when 'event_confirmed' then p.push_event_confirmed_enabled
+      when 'event_cancelled' then p.push_event_confirmed_enabled
+      when 'event_rescheduled' then p.push_event_confirmed_enabled
+      when 'proposal_deadline_reminder' then p.push_event_proposals_enabled
+      when 'availability_nudge' then p.push_event_proposals_enabled
+      when 'new_proposed_time' then p.new_proposed_time_alerts_enabled
+      when 'host_proposed' then p.push_host_assignment_enabled
+      when 'host_accepted' then p.push_host_assignment_enabled
+      when 'host_declined' then p.push_host_assignment_enabled
+      when 'contribution_changed' then p.push_contribution_changes_enabled
+      else false
+    end
+    into v_push_enabled
+    from public.profiles p
+    where p.id = p_user_id
+      and p.account_deleted_at is null;
+
+    if coalesce(v_push_enabled, false) then
+      insert into public.notification_push_outbox (notification_id, user_id)
+      values (v_id, p_user_id);
+    end if;
+  end if;
+
+  return v_id;
+end;
+$function$;
 
 create or replace function public.claim_event_contribution(
   p_event_id uuid,

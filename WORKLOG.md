@@ -3,7 +3,7 @@
 ## 2026-10-17 — v0.18.19 nudges, self-claim assigned_by, notify grants
 
 - UI: `SignedInEngagementNudges` in AppShell (install or notification, one at a time, 7‑day dismiss); skips onboarding paths.
-- Migration `20261017210000_hui_v01819_assigned_by_and_notify_grants.sql` (not applied): self-claim `assigned_by` null + trigger; revoke client EXECUTE on `queue_member_notification`.
+- Migration `20261017210000_hui_v01819_assigned_by_and_notify_grants.sql` (not applied): self-claim `assigned_by` null + trigger; `new_proposed_time_alerts_enabled` preference; revoke client EXECUTE on `queue_member_notification`.
 - What's new 0.18.19; version **0.18.19** on `qa/v0.18.19`.
 
 ## 2026-10-17 — v0.18.18 new-time notify, release reopen, assignment label

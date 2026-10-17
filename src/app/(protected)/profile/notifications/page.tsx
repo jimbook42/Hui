@@ -17,7 +17,7 @@ export default async function ProfileNotificationsPage() {
     supabase
       .from("profiles")
       .select(
-        "push_event_proposals_enabled, push_consensus_ready_enabled, push_event_confirmed_enabled, push_host_assignment_enabled, push_contribution_changes_enabled",
+        "new_proposed_time_alerts_enabled, push_event_proposals_enabled, push_consensus_ready_enabled, push_event_confirmed_enabled, push_host_assignment_enabled, push_contribution_changes_enabled",
       )
       .eq("id", user.id)
       .maybeSingle()
@@ -83,6 +83,7 @@ export default async function ProfileNotificationsPage() {
           <NotificationPreferencesSection
             reconnectRemindersEnabled={reconnectPref}
             pushPreferences={{
+              newProposedTimeAlertsEnabled: profile?.new_proposed_time_alerts_enabled !== false,
               eventProposalsEnabled: profile?.push_event_proposals_enabled !== false,
               consensusReadyEnabled: profile?.push_consensus_ready_enabled !== false,
               eventConfirmedEnabled: profile?.push_event_confirmed_enabled !== false,

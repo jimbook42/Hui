@@ -10,7 +10,7 @@ This file is self-contained: Part A is the shared process (same in every repo) a
 - **Live:** https://huiapp.vercel.app (primary). Older aliases: hui-seven-gamma.vercel.app, hui-jimbook.vercel.app. Vercel project `hui` (team jimbook), region **syd1**. `main` auto-deploys to production.
 - **Prod:** **v0.18.18** @ main **`fb86edf`** (PR #60 merged).
 - **In flight:** **v0.18.19** on branch **`qa/v0.18.19`** — signed-in install/notification nudges (AppShell), self-claim `assigned_by` null + trigger fix, revoke `queue_member_notification` from clients, What's new 0.18.19. Branch off **`origin/main`** (`fb86edf`).
-- **Migrations (agent does not apply):** **`supabase/migrations/20261017210000_hui_v01819_assigned_by_and_notify_grants.sql`** — `claim_event_contribution` sets `assigned_by` null on self-claims; `contributions_before_write` allows that clear; `event_contributions.assigned_by` nullable; **REVOKE EXECUTE** on `queue_member_notification(..., boolean)` from `public`/`anon`/`authenticated` (service_role only). **Not applied** until Isaac approves after v0.18.18 migration is confirmed on live.
+- **Migrations (agent does not apply):** **`supabase/migrations/20261017210000_hui_v01819_assigned_by_and_notify_grants.sql`** — self-claim `assigned_by` null + trigger; `profiles.new_proposed_time_alerts_enabled` (default on) gates `new_proposed_time` in-app/push; **REVOKE EXECUTE** on `queue_member_notification(..., boolean)` from clients (service_role only). **Not applied** until Isaac approves after v0.18.18 migration is confirmed on live.
 - **Rollback points:**
   - v0.18.18 `fb86edf` (previous `cc16614`)
   - v0.18.17 `cc16614` (previous `f5a9b65`)

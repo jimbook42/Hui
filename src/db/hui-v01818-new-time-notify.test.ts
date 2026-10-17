@@ -157,10 +157,54 @@ describe("v0.18.18 new proposed time notifications", () => {
     expect(otherNotes.rows).toHaveLength(0);
   });
 
+  it("skips alerts when new_proposed_time_alerts_enabled is off", async () => {
+    const { groupId, eventId, firstCandidate } = await seedOpenHui();
+
+    await asUser(db, ids.member);
+    await db.query(
+      `update public.profiles set new_proposed_time_alerts_enabled = false where id = $1`,
+      [ids.member],
+    );
+    await db.query(
+      `insert into public.event_responses (event_id, candidate_id, user_id, response, visibility)
+       values ($1, $2, $3, 'yes', 'private')`,
+      [eventId, firstCandidate, ids.member],
+    );
+
+    await asUser(db, ids.owner);
+    await db.query(
+      `insert into public.event_candidates (event_id, group_id, starts_at, proposed_by)
+       values ($1, $2, '2026-12-02T10:00:00Z', $3)`,
+      [eventId, groupId, ids.owner],
+    );
+
+    await asUser(db, null);
+    await db.exec("set role service_role");
+    const rows = await db.query(
+      `select 1 from public.member_notifications
+       where event_id = $1 and user_id = $2 and kind = 'new_proposed_time'`,
+      [eventId, ids.member],
+    );
+    expect(rows.rows).toHaveLength(0);
+
+    const outbox = await db.query(
+      `select 1
+       from public.notification_push_outbox o
+       join public.member_notifications n on n.id = o.notification_id
+       where n.event_id = $1 and n.user_id = $2 and n.kind = 'new_proposed_time'`,
+      [eventId, ids.member],
+    );
+    expect(outbox.rows).toHaveLength(0);
+  });
+
   it("dedupes burst adds to one alert per member", async () => {
     const { groupId, eventId, firstCandidate } = await seedOpenHui();
 
     await asUser(db, ids.member);
+    await db.query(
+      `update public.profiles set new_proposed_time_alerts_enabled = true where id = $1`,
+      [ids.member],
+    );
     await db.query(
       `insert into public.event_responses (event_id, candidate_id, user_id, response, visibility)
        values ($1, $2, $3, 'yes', 'private')`,
