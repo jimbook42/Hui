@@ -122,18 +122,29 @@ export function buildDetail(overrides: Partial<EventDetail> = {}): EventDetail {
   };
 }
 
+function defaultScheduling(
+  candidates: EventCandidateRow[] = [buildCandidate("c1", "2026-12-01T10:00:00.000Z")],
+): EventPageData["scheduling"] {
+  return {
+    candidates,
+    withdrawnCandidates: [],
+    maybeResponsesEnabled: false,
+    minimumAttendees: 2,
+    consensusRule: "majority_active_members",
+  };
+}
+
+export function baseScheduling(): EventPageData["scheduling"] {
+  return defaultScheduling();
+}
+
 export function buildPageData(overrides: Partial<EventPageData> = {}): EventPageData {
   const group = buildGroup();
   const candidate = buildCandidate("c1", "2026-12-01T10:00:00.000Z");
   return {
     group,
     settings: group.settings,
-    scheduling: {
-      candidates: [candidate],
-      withdrawnCandidates: [],
-      maybeResponsesEnabled: false,
-      minimumAttendees: 2,
-    },
+    scheduling: defaultScheduling([candidate]),
     consensus: {
       confirmRule: "when_most_can_come",
       consensusRule: "majority_active_members",
@@ -163,13 +174,13 @@ export function buildPageData(overrides: Partial<EventPageData> = {}): EventPage
     },
     contributionCategories: [],
     eventContributions: [],
-    contributionHistory: { counts: {}, viewerCount: 0 },
+    contributionHistory: { entries: [], viewerCount: 0 },
     sharedDietary: [],
     householdView: null,
     hostContext: {
       assignments: [],
-      history: { counts: {}, viewerCount: 0 },
-      view: { acceptedHost: null, pendingProposal: null },
+      history: { entries: [], viewerCount: 0 },
+      view: { acceptedHost: null, pendingProposal: null, suggestion: null },
     },
     attendanceRosters: {
       c1: {
@@ -187,7 +198,7 @@ export function buildPageData(overrides: Partial<EventPageData> = {}): EventPage
     viewerPrivateNote: null,
     multiTimeAnswerPresentation: null,
     viewerState: "pending",
-    counts: { yes: 1, maybe: 0, no: 0, pending: 2 },
+    counts: { yes: 1, maybe: 0, no: 0, pending: 2, total: 3 },
     attention: [],
     unclaimedContributionCount: 0,
     claimedContributionCount: 0,
@@ -283,6 +294,28 @@ export function decisionPollsFromBundles(
       timeZone: "Pacific/Auckland",
     }),
   );
+}
+
+export function hostAssignmentSnapshot(
+  userId: string,
+  displayName: string,
+  status: "accepted" | "proposed",
+): {
+  id: string;
+  eventId: string;
+  userId: string;
+  status: "accepted" | "proposed";
+  displayName: string;
+  createdAt: string;
+} {
+  return {
+    id: `ha-${userId}`,
+    eventId: "event-1",
+    userId,
+    status,
+    displayName,
+    createdAt: "2026-01-01T00:00:00.000Z",
+  };
 }
 
 export function forView(

@@ -90,6 +90,8 @@ import {
   ORGANISER_ID,
   MEMBER_ID,
   HOST_ID,
+  hostAssignmentSnapshot,
+  baseScheduling,
   buildCandidate,
   buildDecisionBundle,
   buildDetail,
@@ -252,16 +254,11 @@ describe("Event hui page composition", () => {
         confirmationMethod: "consensus",
       });
       const pageData = buildPageData({
-        scheduling: {
-          candidates: [selected],
-          withdrawnCandidates: [],
-          maybeResponsesEnabled: false,
-          minimumAttendees: 2,
-        },
+        scheduling: { ...baseScheduling(), candidates: [selected] },
         isProposed: false,
         canRespond: false,
         anyCandidatePasses: true,
-        counts: { yes: 2, maybe: 0, no: 0, pending: 0 },
+        counts: { yes: 2, maybe: 0, no: 0, pending: 0, total: 2 },
       });
       const ctx = forView(view, detail, pageData);
       await renderHuiComposition(ctx.detail, ctx.pageData, ctx.userId);
@@ -281,14 +278,9 @@ describe("Event hui page composition", () => {
         confirmationMethod: "admin",
       });
       const pageData = buildPageData({
-        scheduling: {
-          candidates: [selected],
-          withdrawnCandidates: [],
-          maybeResponsesEnabled: false,
-          minimumAttendees: 2,
-        },
+        scheduling: { ...baseScheduling(), candidates: [selected] },
         isProposed: false,
-        counts: { yes: 2, maybe: 0, no: 0, pending: 0 },
+        counts: { yes: 2, maybe: 0, no: 0, pending: 0, total: 2 },
         anyCandidatePasses: true,
       });
       const ctx = forView(view, detail, pageData);
@@ -299,9 +291,9 @@ describe("Event hui page composition", () => {
     it("cancelled hui shows cancelled notice", async () => {
       const detail = buildDetail({ status: "cancelled" });
       const pageData = buildPageData({
-        scheduling: { candidates: [], withdrawnCandidates: [], maybeResponsesEnabled: false, minimumAttendees: 2 },
-        primaryCandidate: null,
-        focusCandidate: null,
+        scheduling: { ...baseScheduling(), candidates: [] },
+        primaryCandidate: undefined,
+        focusCandidate: undefined,
         isProposed: false,
         canRespond: false,
       });
@@ -324,18 +316,14 @@ describe("Event hui page composition", () => {
         creatorDisplayName: "Former member",
       });
       const pageData = buildPageData({
-        scheduling: {
-          candidates: [selected],
-          withdrawnCandidates: [],
-          maybeResponsesEnabled: false,
-          minimumAttendees: 2,
-        },
+        scheduling: { ...baseScheduling(), candidates: [selected] },
         hostContext: {
           assignments: [],
-          history: { counts: {}, viewerCount: 0 },
+          history: { entries: [], viewerCount: 0 },
           view: {
-            acceptedHost: { userId: "host-gone", displayName: "Alex" },
+            acceptedHost: hostAssignmentSnapshot("host-gone", "Alex", "accepted"),
             pendingProposal: null,
+            suggestion: null,
           },
         },
         acceptedHostUserId: "host-gone",
@@ -385,10 +373,8 @@ describe("Event hui page composition", () => {
       const base = buildPageData();
       const pageData = buildPageData({
         scheduling: {
+          ...baseScheduling(),
           candidates: [buildCandidate("c1", "2026-12-01T10:00:00.000Z", "selected")],
-          withdrawnCandidates: [],
-          maybeResponsesEnabled: false,
-          minimumAttendees: 2,
         },
         decisionBundles: [bundle],
         decisionPolls: decisionPollsFromBundles([bundle], ORGANISER_ID, base.groupMembers),
@@ -421,18 +407,23 @@ describe("Event hui page composition", () => {
 
   describe("host states while proposing", () => {
     it.each([
-      ["no host", { acceptedHost: null, pendingProposal: null }, /No host yet/],
+      ["no host", { acceptedHost: null, pendingProposal: null, suggestion: null }, /No host yet/],
       [
         "suggested host",
         {
           acceptedHost: null,
-          pendingProposal: { userId: HOST_ID, displayName: "Alex" },
+          pendingProposal: hostAssignmentSnapshot(HOST_ID, "Alex", "proposed"),
+          suggestion: null,
         },
         /Alex suggested/,
       ],
       [
         "accepted host",
-        { acceptedHost: { userId: HOST_ID, displayName: "Alex" }, pendingProposal: null },
+        {
+          acceptedHost: hostAssignmentSnapshot(HOST_ID, "Alex", "accepted"),
+          pendingProposal: null,
+          suggestion: null,
+        },
         /Hosted by Alex/,
       ],
     ] as const)("organiser sees %s copy", async (_label, hostView, matcher) => {
@@ -440,7 +431,7 @@ describe("Event hui page composition", () => {
       const pageData = buildPageData({
         hostContext: {
           assignments: [],
-          history: { counts: {}, viewerCount: 0 },
+          history: { entries: [], viewerCount: 0 },
           view: hostView,
         },
         acceptedHostUserId: hostView.acceptedHost?.userId ?? null,
