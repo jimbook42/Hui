@@ -17,7 +17,7 @@ describe("formatHomeEventTimeLine", () => {
         leadingProposedTime: true,
         planning: true,
       }),
-    ).toMatch(/Most popular time so far/);
+    ).toMatch(/Most popular proposed time/);
     expect(
       formatHomeEventTimeLine({
         status: "proposing",
