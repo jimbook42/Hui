@@ -113,6 +113,13 @@ const PRESENTATION: Record<NotificationKind, NotificationPresentation> = {
     actionLabel: "View group",
     actionable: false,
   },
+  new_proposed_time: {
+    label: "New time",
+    tone: "blue",
+    icon: "calendar",
+    actionLabel: "Reply",
+    actionable: true,
+  },
 };
 
 const FALLBACK_PRESENTATION: NotificationPresentation = {

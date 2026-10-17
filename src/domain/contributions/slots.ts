@@ -1,3 +1,4 @@
+import { isOrganiserAssignedContribution } from "@/domain/contributions/assignment-display";
 import type { ContributionCategoryRow, EventContributionRow } from "@/lib/contributions/types";
 
 export type ContributionSlotState =
@@ -89,23 +90,19 @@ export function buildContributionSlots(
     }
 
     if (assigneeId === viewerUserId) {
-      const assignedByOther =
-        contribution?.assignedByUserId !== null &&
-        contribution?.assignedByUserId !== viewerUserId;
+      const organiserAssigned =
+        contribution !== null && isOrganiserAssignedContribution(contribution);
       return {
         category,
         contribution,
         state: "yours",
-        statusLabel: assignedByOther
+        statusLabel: organiserAssigned
           ? `You're bringing this · Assigned by ${contribution?.assignedByDisplayName ?? "organiser"}`
           : "You're bringing this",
       };
     }
 
-    const assignedByOther =
-      contribution?.assignedByUserId !== null &&
-      contribution?.assignedByUserId !== assigneeId;
-    if (assignedByOther) {
+    if (contribution !== null && isOrganiserAssignedContribution(contribution)) {
       return {
         category,
         contribution,

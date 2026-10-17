@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-10-17 — v0.18.18 new-time notify, release reopen, assignment label
+
+- Migration `20261017190000_hui_v01818_new_time_notify.sql` (not applied): `new_proposed_time` in-app + push for members who already answered (15‑min dedupe); `release_event_contribution` reopens slot instead of delete.
+- Domain/UI: organiser-assignment label via `isOrganiserAssignedContribution`; What's new 0.18.18; version **0.18.18** on `qa/v0.18.18`.
+
 ## 2026-10-17 — v0.18.17 claim push, settings, member questions, What's new, invite note
 
 - Migration `20261017180000_hui_v01817_contribution_claim_push.sql` (not applied): Web Push to accepted host or organiser on What to bring claim/release; PGlite tests updated.

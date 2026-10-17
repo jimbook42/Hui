@@ -77,6 +77,32 @@ describe("contribution slots", () => {
     );
     expect(slots[0]?.state).toBe("assigned");
     expect(slots[0]?.statusLabel).toMatch(/Assigned to Mia/);
+    expect(slots[0]?.statusLabel).toMatch(/by Olivia/);
+  });
+
+  it("labels self-claims without crediting the organiser", () => {
+    const slots = buildContributionSlots(
+      [{ id: "salad", name: "Salad", ...baseCategory }],
+      [
+        {
+          id: "ec3",
+          eventId: "e",
+          groupId: "g",
+          categoryId: "salad",
+          categoryName: "Salad",
+          userId: "member",
+          label: "Salad",
+          status: "accepted",
+          displayName: "Mia",
+          assignedByUserId: "member",
+          assignedByDisplayName: "Mia",
+        },
+      ],
+      "viewer",
+      null,
+    );
+    expect(slots[0]?.statusLabel).toBe("Claimed by Mia");
+    expect(slots[0]?.statusLabel).not.toMatch(/· by /);
   });
 
   it("lists unclaimed slots before claimed ones", () => {
