@@ -1,24 +1,8 @@
 import { Suspense } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
-import {
-  EventCollapsedInviteSection,
-  EventMainTimesSection,
-  EventOrganiserToolsSection,
-  EventPlanningHelpSection,
-  EventSummaryHeader,
-} from "@/components/events/event-compact-hui-sections";
-import {
-  EventAttentionCard,
-  EventHostGentlePromptSection,
-  EventBodySkeleton,
-  EventDetailsList,
-  EventHeroMeta,
-  HostSwappedConfirmationCard,
-} from "@/components/events/event-page-sections";
-import { RescheduledFromSection } from "@/components/events/rescheduled-from-section";
-import { ResponseDeadlinePassedSection } from "@/components/events/response-deadline-section";
-import { StaleProposalSection } from "@/components/events/stale-proposal-section";
+import { EventHuiPageSections } from "@/components/events/event-hui-page-sections";
+import { EventBodySkeleton, EventHeroMeta } from "@/components/events/event-page-sections";
 import { EventRespondSavedToast } from "@/components/events/event-respond-saved-toast";
 import { AttendanceLiveProvider } from "@/components/events/attendance-live";
 import { EventLifecycleLiveRefresh } from "@/components/events/event-lifecycle-live-refresh";
@@ -58,9 +42,6 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
       ? inviteTokenResult.data
       : null;
 
-  const showPlanningHelp =
-    detail.status === "proposing" && (justProposed || detail.createdBy === userId);
-
   return (
     <AppShell title={detail.title} hideTitle back={{ href: "/events", label: "Hui" }}>
       <AttendanceLiveProvider>
@@ -95,28 +76,12 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
           </EventHero>
 
           <Suspense fallback={<EventBodySkeleton />}>
-            <EventSummaryHeader detail={detail} userId={userId} />
-            <EventMainTimesSection detail={detail} userId={userId} />
-            <EventAttentionCard detail={detail} userId={userId} />
-            <EventCollapsedInviteSection
+            <EventHuiPageSections
               detail={detail}
               userId={userId}
               justProposed={justProposed}
+              justSwappedHost={justSwappedHost}
             />
-            {showPlanningHelp ? (
-              <EventPlanningHelpSection
-                detail={detail}
-                userId={userId}
-                justProposed={justProposed}
-              />
-            ) : null}
-            {justSwappedHost ? <HostSwappedConfirmationCard /> : null}
-            <RescheduledFromSection detail={detail} userId={userId} />
-            <StaleProposalSection detail={detail} userId={userId} />
-            <ResponseDeadlinePassedSection detail={detail} userId={userId} />
-            <EventHostGentlePromptSection detail={detail} userId={userId} />
-            <EventOrganiserToolsSection detail={detail} userId={userId} />
-            <EventDetailsList detail={detail} userId={userId} />
           </Suspense>
         </div>
       </AttendanceLiveProvider>

@@ -3,7 +3,7 @@
 ## 2026-10-17 — v0.18.16 compact hui page layout
 
 - Shorter hui page: summary header + next action, compact per-time list (no table visual), collapsed invite/planning/organiser/details; manage actions in Organiser tools.
-- Version **0.18.16**; Vitest for next-action domain + compact layout building blocks.
+- Version **0.18.16**; Vitest for next-action domain, compact layout building blocks, and full hui page composition fixtures (organiser + member states).
 
 ## 2026-10-17 — v0.18.15 delete hui with decided polls
 
