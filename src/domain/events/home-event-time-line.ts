@@ -47,7 +47,7 @@ export function formatHomeEventTimeLine({
   const dayAndTime = `${formatShortDay(startsAt, timeZone)} · ${when}`;
 
   if (leadingProposedTime) {
-    return `Most popular time so far · ${dayAndTime} · not locked in yet`;
+    return `Most popular proposed time · ${dayAndTime} · not locked in yet`;
   }
   if (planning && status !== "confirmed") {
     return `Proposed · ${dayAndTime}`;
