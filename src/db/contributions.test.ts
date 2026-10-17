@@ -205,11 +205,11 @@ describe("contributions (HUI-018)", () => {
     expect(updated.rows[0].label).toBe("Brownies");
 
     await db.query(`select public.release_event_contribution($1)`, [contributionId]);
-    const gone = await db.query<{ count: string }>(
-      `select count(*)::text as count from public.event_contributions where id = $1`,
+    const reopened = await db.query<{ user_id: string | null; status: string }>(
+      `select user_id, status from public.event_contributions where id = $1`,
       [contributionId],
     );
-    expect(Number(gone.rows[0].count)).toBe(0);
+    expect(reopened.rows[0]).toMatchObject({ user_id: null, status: "open" });
   });
 
   it("prevents duplicate category claims and outsider access", async () => {

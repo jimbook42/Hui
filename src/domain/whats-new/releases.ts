@@ -25,6 +25,15 @@ export const WHATS_NEW_RELEASES: WhatsNewRelease[] = [
       "Clearer note about who can see future hui when you invite people.",
     ],
   },
+  {
+    version: "0.18.18",
+    title: "What\u2019s new in Hui",
+    bullets: [
+      "If you\u2019ve already answered times on an open hui, you\u2019ll get one alert when the organiser adds another time.",
+      "Releasing a \u201cWhat to bring\u201d claim puts the item back on the list for someone else to take.",
+      "Self-claims no longer show \u201cby organiser\u201d on the label.",
+    ],
+  },
 ];
 
 export function whatsNewForVersion(version: string): WhatsNewRelease | null {

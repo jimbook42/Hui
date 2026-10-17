@@ -21,6 +21,7 @@ const KINDS: NotificationKind[] = [
   "stale_proposal_passed",
   "stale_proposal_auto_cancelled",
   "planning_cycle_opens",
+  "new_proposed_time",
 ];
 
 describe("displayNotificationTitle", () => {
@@ -58,6 +59,7 @@ describe("notificationPresentation", () => {
       "event_rescheduled",
       "proposal_deadline_reminder",
       "host_proposed",
+      "new_proposed_time",
     ]);
   });
 });

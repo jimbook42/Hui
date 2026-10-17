@@ -14,7 +14,8 @@ export type NotificationKind =
   | "proposal_deadline_reminder"
   | "stale_proposal_passed"
   | "stale_proposal_auto_cancelled"
-  | "planning_cycle_opens";
+  | "planning_cycle_opens"
+  | "new_proposed_time";
 
 export type MemberNotification = {
   id: string;
@@ -33,6 +34,7 @@ const PARTICIPANT_RESPOND_KINDS = new Set<NotificationKind>([
   "consensus_ready",
   "event_rescheduled",
   "proposal_deadline_reminder",
+  "new_proposed_time",
 ]);
 
 export function notificationHref(
