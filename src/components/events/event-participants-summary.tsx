@@ -27,8 +27,7 @@ export function EventParticipantsSummary({
       </h2>
       <p className="mt-2 text-sm text-muted-foreground">
         {eligibleMemberCount} active {eligibleMemberCount === 1 ? "member" : "members"} can
-        respond. Private notes stay private; attendance above shows who can come when responses are
-        shared with the group.
+        respond. If someone can&apos;t come and adds a reason, the group can see it on that time.
       </p>
 
       <div className="mt-4 space-y-4 text-sm">

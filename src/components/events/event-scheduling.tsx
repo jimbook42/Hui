@@ -42,6 +42,10 @@ import type {
 } from "@/lib/scheduling/types";
 import { useActionStateRefresh } from "@/lib/ui/use-action-state-refresh";
 import { perTimeAvailabilityRowLabel } from "@/domain/scheduling/per-time-availability";
+import {
+  DECLINE_REASON_FIELD_LABEL,
+  DECLINE_REASON_PLACEHOLDER,
+} from "@/domain/scheduling/decline-reason-copy";
 import { GatheringVisual } from "@/components/hui/gathering-visual";
 import { AttendanceLegend } from "@/components/hui/attendance-legend";
 import { HuiSurface } from "@/components/hui/hui-surface";
@@ -106,7 +110,7 @@ function AttendanceSummary({
   listLayout?: boolean;
 }) {
   const namedGroups = roster
-    ? groupAttendanceByResponse(roster, { showLateTags })
+    ? groupAttendanceByResponse(roster, { showLateTags, showDeclineReasons: true })
     : [];
 
   return (
@@ -128,17 +132,24 @@ function AttendanceSummary({
           {namedGroups.map((group) => (
             <div key={group.label}>
               <p className="font-medium text-foreground">{group.label}</p>
-              {group.entries && showLateTags ? (
+              {group.entries ? (
                 <ul className="mt-1 space-y-1">
                   {group.entries.map((entry) => (
-                    <li key={entry.displayName} className="flex flex-wrap items-center gap-2">
-                      <span>{entry.displayName}</span>
-                      {entry.submittedLate ? (
-                        <span
-                          className="rounded-full bg-clay-soft px-2 py-0.5 text-xs font-medium text-foreground"
-                        >
-                          Late
-                        </span>
+                    <li key={entry.displayName}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{entry.displayName}</span>
+                        {entry.submittedLate ? (
+                          <span
+                            className="rounded-full bg-clay-soft px-2 py-0.5 text-xs font-medium text-foreground"
+                          >
+                            Late
+                          </span>
+                        ) : null}
+                      </div>
+                      {entry.declineReason ? (
+                        <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+                          {entry.declineReason}
+                        </p>
                       ) : null}
                     </li>
                   ))}
@@ -250,17 +261,19 @@ function CandidateResponseForm({
           </label>
         ))}
       </fieldset>
-      <label className="hui-label">
-        Reason (optional, private)
-        <textarea
-          name="private_note"
-          rows={2}
-          maxLength={500}
-          defaultValue={candidate.viewerPrivateNote ?? ""}
-          placeholder="Only you can see this note"
-          className="hui-input max-w-md"
-        />
-      </label>
+      {selectedResponse === "unavailable" ? (
+        <label className="hui-label">
+          {DECLINE_REASON_FIELD_LABEL}
+          <textarea
+            name="private_note"
+            rows={2}
+            maxLength={500}
+            defaultValue={candidate.viewerPrivateNote ?? ""}
+            placeholder={DECLINE_REASON_PLACEHOLDER}
+            className="hui-input max-w-md"
+          />
+        </label>
+      ) : null}
       {state.error ? (
         <p className="hui-message-error" role="alert">
           {state.error}
@@ -744,8 +757,8 @@ export function EventScheduling({
         <>
           <h2 className="hui-type-section text-foreground">Finding a time</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Share your availability for each time on the table. Your answer is visible to the group;
-            private notes stay private.
+            Share your availability for each time on the table. If you can&apos;t come, an optional
+            reason is shared with the group.
           </p>
           <details className="hui-details mt-3 rounded-hui-lg bg-muted px-4 py-2">
             <summary className="hui-focus-ring cursor-pointer text-sm font-extrabold text-foreground">
