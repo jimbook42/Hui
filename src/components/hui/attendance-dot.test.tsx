@@ -14,6 +14,17 @@ describe("AttendanceDot legend swatches", () => {
   });
 });
 
+describe("AttendanceDot can't come", () => {
+  it("uses attendance-no border so the dot stays visible on dark surfaces", () => {
+    const { container } = render(
+      <AttendanceDot state="no" label="Can't come" size="sm" />,
+    );
+    const dot = container.querySelector("span.inline-flex.items-center");
+    expect(dot?.className).toMatch(/border-attendance-no/);
+    expect(dot?.className).not.toMatch(/\bopacity-60\b/);
+  });
+});
+
 describe("AttendanceDot subdued options", () => {
   it("uses neutral pending styling for unselected yes/maybe/no", () => {
     const { container: yesContainer } = render(

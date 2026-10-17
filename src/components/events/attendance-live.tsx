@@ -17,6 +17,7 @@ import {
   setAvailabilityResponseAction,
 } from "@/app/events/scheduling-actions";
 import { AttendanceDot } from "@/components/hui/attendance-dot";
+import { AttendanceLegend } from "@/components/hui/attendance-legend";
 import { GatheringVisual } from "@/components/hui/gathering-visual";
 import { HuiButton, HuiLinkButton } from "@/components/hui/hui-button";
 import { HuiSurface } from "@/components/hui/hui-surface";
@@ -260,7 +261,12 @@ export function ViewerResponseCard({
         </div>
       </div>
       {answerDetailRows && answerDetailRows.length > 0 ? (
-        <ul className="mt-4 space-y-3 border-t border-border/60 pt-4">
+        <>
+        <AttendanceLegend
+          maybeEnabled={maybeResponsesEnabled}
+          className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-muted-foreground"
+        />
+        <ul className="mt-3 space-y-3">
           {answerDetailRows.map((row) => {
             const rowState = row.passed
               ? "pending"
@@ -305,6 +311,7 @@ export function ViewerResponseCard({
             );
           })}
         </ul>
+        </>
       ) : null}
 
       {pending ? (

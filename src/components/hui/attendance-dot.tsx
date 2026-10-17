@@ -15,7 +15,8 @@ const legendStateStyles: Record<AttendanceVisualState, { dot: string }> = {
     dot: "border-2 border-dashed border-attendance-maybe bg-[color-mix(in_srgb,var(--attendance-maybe)_18%,var(--bg-surface))]",
   },
   no: {
-    dot: "border-2 border-muted bg-muted/40",
+    dot:
+      "border-2 border-attendance-no bg-[color-mix(in_srgb,var(--attendance-no)_28%,var(--bg-surface))]",
   },
   pending: {
     dot: "border-2 border-dotted border-attendance-pending bg-surface",
@@ -34,8 +35,9 @@ const stateStyles: Record<AttendanceVisualState, { dot: string; text: string; ba
     badge: "bg-attendance-maybe text-[#ffffff]",
   },
   no: {
-    dot: "bg-muted opacity-60",
-    text: "text-muted-foreground",
+    dot:
+      "border-2 border-attendance-no bg-[color-mix(in_srgb,var(--attendance-no)_32%,var(--bg-surface))] ring-[2px] ring-[color-mix(in_srgb,var(--attendance-no)_22%,transparent)]",
+    text: "text-foreground",
     badge: "bg-attendance-no text-[#ffffff]",
   },
   pending: {
